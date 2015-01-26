@@ -28,6 +28,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 
 /**
  * Abstract super class for our activities.
@@ -37,7 +38,7 @@ import android.os.Bundle;
  * @author mstevens
  *
  */
-public abstract class BaseActivity extends Activity
+public abstract class BaseActivity extends ActionBarActivity  
 {
 	
 	private static final int HIDE_BUTTON = -1;

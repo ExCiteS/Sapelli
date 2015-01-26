@@ -18,13 +18,13 @@
  -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
 
+    <string name="app_name">Sapelli</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
     
-    <string name="app_name">Sapelli Collector</string>
     <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&quot;&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators.</string>
     <string name="license">&lt;a href=&quot;http://github.com/ExCiteS/Sapelli&quot;&gt;Source code available&lt;/a&gt; under the terms of the &lt;a href=&quot;http://www.apache.org/licenses/LICENSE-2.0&quot;&gt;Apache License, Version 2.0&lt;/a&gt;.</string>
     <string name="project_manager">Project Manager</string>
@@ -36,15 +36,13 @@
     <string name="browse">Browse</string>
     <string name="scan_qr_code">Scan QR Code</string>
     <string name="software_and_device_info">App &amp; device info</string>
-    <string name="shortcuts">Shortcuts</string>
-    <string name="create_shortcut">Create Shortcut</string>
-    <string name="remove_shortcut">Remove Shortcut</string>
+    <string name="shortcut">Shortcut</string>
     <string name="take_photo">Take photo</string>
-    <string name="sender_settings_menuitem">Data Sender Settings</string>
+    <string name="transmission_settings">Transmission Settings</string>
     <string name="copy_db_menuitem">Dump databases</string>
-    <string name="about">About &#8230;</string>
+    <string name="about">About</string>
     <string name="statistics_menuitem">Statistics</string>
-    <string name="export_records_menuitem">Export records</string>
+    <string name="export_records">Export records</string>
     <string name="import_records_menuitem">Import records</string>
     <string name="title_activity_dropbox">Dropbox Authentication</string>
     <string name="title_activity_main">Sapelli Background Service</string>
@@ -70,7 +68,6 @@
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>
     <string name="useAlternativeStorage">Try another&#8230;</string>
     <string name="insertSDcard">Retry current&#8230;</string>
-    
     <string name="txtNullModeCreate">&#8212; Touch to set &#8212;</string>
 	<string name="txtNullModeEdit">&#8212; Touch to edit &#8212;</string>
 	<string name="txtNullModeDisabled">(no value set)</string>
@@ -92,23 +89,21 @@
     <string name="removeProjectConfirm">Are you sure that you want to remove the project?</string>
     <string name="demoLoadFail">Could not load demo project.</string>
     <string name="chooseSapelliFile">Choose a .sapelli or .sap  file</string>
-    
     <string name="projectLoadFailure">Could not find project %1$s[id: %2$d; fingerprint: %3$d].</string>
     <string name="shortcutRemoved">Shortcut was removed.</string>
     <string name="noProjectSpecified">CollectorActivity started without project-specifying intent parameters, don\'t know which project to load.</string>
-    
     <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
     <string name="exportSelection">Select records to export:</string>
     <string name="exportSelectedProj">All records of %s</string>
-    <string name="exportAllProj">All records of all projects</string>
+    <string name="exportAllProj">Export all records</string>
     <string name="exportDateRange">Date range:</string>
     <string name="exportDateRangeFrom">From %s</string>
     <string name="exportDateRangeTo">To %s</string>
     <string name="exportDateRangeAnytime">anytime</string>
     <string name="exportDestination">Destination:</string>
     <string name="exportFormat">Output format:</string>
-    <string name="exportXMLMode">Represent composite columns as:</string>
+    <string name="exportXMLMode">Composite columns:</string>
     <string name="exportCSVSeparator">CSV separator:</string>
     <string name="exportRemove">Delete records after successful export</string>
     <string name="exportFetching">Fetching records…</string>
@@ -126,6 +121,19 @@
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records&#8230;</string>
     <string name="exporting_data">Exporting data&#8230;</string>
+    <string name="criteria">Criteria</string>
+    <string name="output">Output</string>
+    <string name="expand_transmission">Expand Transmission Settings</string>
+    <string name="expand_export">Expand Export Settings</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="send">Send Data</string>
+    <string name="receive">Receive Data</string>
+    <string name="add_project">Please add a project</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
+    <string name="load_projects">Loading Projects</string>
 
     <string name="backup">Back-up</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>

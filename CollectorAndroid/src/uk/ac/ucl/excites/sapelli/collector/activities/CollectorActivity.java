@@ -109,20 +109,24 @@ public class CollectorActivity extends ProjectActivity
 		// Scheduling...
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(4); // Creates a thread pool that can schedule commands to run after a given duration, or to execute periodically.
 		fixedTimerTriggerFutures = new HashMap<Trigger, ScheduledFuture<?>>();
-		
+
 		// Key press triggers
 		keyPressTriggers = new ArrayList<Trigger>();
 		keyCodeToTrigger = new SparseArray<Trigger>();
-		
+
 		// UI setup:
 		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
+		// Hide the action bar
+		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
+			getSupportActionBar().hide();
+		}
 
 		// Set-up root layout
 		collectorView = new CollectorView(this);
 		setContentView(collectorView);
-		
+
 		// Enable HierarchyViewer in Debug versions
 		if(BuildConfig.DEBUG)
 		{
@@ -228,22 +232,20 @@ public class CollectorActivity extends ProjectActivity
 	 * Handle device key presses (down)
 	 */
 	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event)
-	{
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		// Log interaction:
 		controller.addLogLine("KEY_DOWN", KeyEventUtils.keyEventCodeToString(event));
 		//Log.d(TAG, event.getDisplayLabel() + "; " + KeyEventUtils.keyEventCodeToString(event));
 		
 		// Check for keytriggers...
 		Trigger keyTrigger = null;
-		//	"Any" key trigger:
+		// "Any" key trigger:
 		keyTrigger = anyKeyTrigger;
-		//	Specific key trigger:
-		if(keyTrigger == null)
+		// Specific key trigger:
+		if (keyTrigger == null)
 			keyTrigger = keyCodeToTrigger.get(keyCode);
-		//	Fire if we found a matching trigger:
-		if(keyTrigger != null)
-		{
+		// Fire if we found a matching trigger:
+		if (keyTrigger != null) {
 			controller.fireTrigger(keyTrigger);
 			return true;
 		}
@@ -265,7 +267,7 @@ public class CollectorActivity extends ProjectActivity
 				DeviceControl.increaseMediaVolume(this);
 				return true;
 		}
-		
+
 		// Pass to super...
 		return super.onKeyDown(keyCode, event);
 	}
@@ -274,10 +276,8 @@ public class CollectorActivity extends ProjectActivity
 	 * Handle device key presses (up)
 	 */
 	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event)
-	{
-		switch(keyCode)
-		{
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		switch (keyCode) {
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
@@ -307,7 +307,6 @@ public class CollectorActivity extends ProjectActivity
 	{
 		// TODO call native audio recorder (maybe look at how ODK Collect does it)
 	}
-	
 	private void audioRecorderDone(int resultCode)
 	{
 		// Just in case ...

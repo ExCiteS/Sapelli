@@ -76,7 +76,6 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
 	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT"; // used as a System property as well as on Crashlytics
-	
 	public static enum StorageStatus
 	{
 		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
@@ -112,16 +111,15 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getVersionInfo());
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
-	
+
 		// Collector client:
 		this.collectorClient = new SapelliCollectorClient();
 		
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
-		
+
 		// Initialise file storage:
-		try
-		{
+		try {
 			this.fileStorageProvider = initialiseFileStorage(); // throws FileStorageException
 		}
 		catch(FileStorageException fse)

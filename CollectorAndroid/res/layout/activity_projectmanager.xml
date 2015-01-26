@@ -16,152 +16,68 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/projectManager_ScrollView"
+<android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_marginBottom="0dp"
-    android:layout_marginLeft="5dp"
-    android:layout_marginRight="5dp"
-    android:layout_marginTop="0dp"
-    android:background="#fff"
-    android:fillViewport="true" >
+    android:layout_height="match_parent" >
 
-    <LinearLayout
+    <!-- The main content view -->
+
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="0dp"
-        android:orientation="vertical" >
+        android:layout_height="match_parent"
+        android:background="@color/grey_transparent" >
+
+        <com.astuetz.PagerSlidingTabStrip
+            android:id="@+id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="48dip"
+            android:background="@color/white" />
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tabs"
+            android:paddingTop="10dp" />
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/available_projects"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textColor="@color/black" />
-
-        <include
+            android:id="@+id/addProjects"
             android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            layout="@layout/hr" />
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@string/add_project"
+            android:textAppearance="?attr/textAppearanceLargePopupMenu"
+            android:textColor="@android:color/darker_gray" />
 
-        <RelativeLayout
-            android:id="@+id/ProjectsListLayout"
+        <View
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" >
+            android:layout_height="1dp"
+            android:layout_above="@+id/btn_runProject"
+            android:background="@android:color/darker_gray" />
 
-            <ImageView
-                android:id="@+id/ProjectsListBackgroundImage"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#00000000"
-                android:scaleType="fitCenter"
-                android:padding="5dp"
-                android:contentDescription="@string/app_name"/>
-
-            <ListView
-                android:id="@+id/ProjectsList"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginBottom="4dp"
-                android:layout_marginTop="4dp"
-				android:cacheColorHint="#fff"
-                android:choiceMode="singleChoice"
-                android:background="@drawable/projectlist_background"
-                android:divider="@color/grey"
-                android:dividerHeight="1dip" >
-
-                <requestFocus />
-            </ListView>
-
-        </RelativeLayout>
-
-        <LinearLayout
-            android:id="@+id/AddRemoveProjectsButons"
+        <Button
+            android:id="@+id/btn_runProject"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:layout_marginTop="4dp" >
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:background="@layout/button_style"
+            android:onClick="runProject"
+            android:padding="10dp"
+            android:text="@string/run_project" />
+    </RelativeLayout>
 
-            <Button
-                android:id="@+id/RunProjectButton"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:layout_weight=".5"
-                android:onClick="runProject"
-                android:text="@string/run_project" />
+    <!-- The navigation drawer -->
 
-            <Button
-                android:id="@+id/RemoveProjectButton"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:layout_weight=".5"
-                android:onClick="removeDialog"
-                android:text="@string/remove_project" />
-        </LinearLayout>
+    <ListView
+        android:id="@+id/left_drawer"
+        android:layout_width="240dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@android:color/white"
+        android:choiceMode="singleChoice"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:layout_marginTop="4dp"
-            android:orientation="vertical" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/load_new_projects"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/black" />
-
-            <include layout="@layout/hr" />
-
-            <LinearLayout
-                android:id="@+id/URLBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="4dp" >
-
-                <EditText
-                    android:id="@+id/txtProjectPathOrURL"
-                    android:layout_width="0dip"
-                    android:layout_height="wrap_content"
-                    android:layout_weight=".75"
-                    android:inputType="textUri"
-                    android:textSize="10sp" />
-
-                <Button
-                    android:id="@+id/browseButton"
-                    android:layout_width="0dip"
-                    android:layout_height="wrap_content"
-                    android:layout_weight=".25"
-                    android:onClick="browse"
-                    android:text="@string/browse" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/LoadProjectButtons"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" >
-
-                <Button
-                    android:id="@+id/scanQRButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:onClick="scanQR"
-                    android:text="@string/scan_qr_code" />
-
-                <Button
-                    android:id="@+id/loadProjectButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:onClick="loadProject"
-                    android:text="@string/load_project" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-
-</ScrollView>
+</android.support.v4.widget.DrawerLayout>

@@ -25,12 +25,15 @@ import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
+import uk.ac.ucl.excites.sapelli.collector.ui.PagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -50,42 +53,44 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Debug;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.util.Patterns;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.astuetz.PagerSlidingTabStrip;
 import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
-import com.larvalabs.svgandroid.SVG;
-import com.larvalabs.svgandroid.SVGBuilder;
-import com.larvalabs.svgandroid.SVGDrawable;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements StoreClient, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback
+public class ProjectManagerActivity extends ExportActivity implements StoreClient, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener
 {
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
-	
+
 	static protected final String XML_FILE_EXTENSION = "xml";
 
 	static private final String DEMO_PROJECT = "demo.excites";
@@ -95,14 +100,22 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
+	private Project selectedProject;
+	private String[] projectsArray;
+	private List<Project> parsedProjects;
 
 	// UI
-	private EditText txtProjectPathOrURL;
-	private ListView projectList;
-	private Button runBtn;
-	private Button removeBtn;
+	private TextView addProjects;
+	private PagerSlidingTabStrip tabs;
+	private ViewPager pager;
+	private int pageMargin;
+	private PagerAdapter adapter;
 	private Dialog encryptionDialog;
 	private DeviceID deviceID;
+	private ListView drawerList;
+	private ActionBarDrawerToggle drawerToggle;
+	private DrawerLayout drawerLayout;
+	private Button runProject;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -115,76 +128,67 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		// Only if not in demo mode:
 		
 		// Set-up UI...
-		setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));
 		// Hide soft keyboard on create
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_projectmanager);
-		// Get View Elements
-		txtProjectPathOrURL = (EditText) findViewById(R.id.txtProjectPathOrURL);
-		projectList = (ListView) findViewById(R.id.ProjectsList);
-		runBtn = (Button) findViewById(R.id.RunProjectButton);
-		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
-		// Set background logo under project list:
-		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT /* = 19 */)
-			try	// For some reason the background image blows up the size of the containing RelativeLayout on Android < KitKat. TODO investigate further & ask on StackOverflow and/or contact AndroidSVG creator
-			{
-				ImageView projListBackground = (ImageView) findViewById(R.id.ProjectsListBackgroundImage);
-				SVG svg = new SVGBuilder().readFromResource(getResources(), R.drawable.sapelli_logo).build();
-				projListBackground.setImageDrawable(new SVGDrawable(svg));
-				//SVG svg = SVG.getFromResource(getResources(), R.drawable.sapelli_logo);
-				//projListBackground.setImageDrawable(new PictureDrawable(svg.renderToPicture()));
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-			}
-		// Make title bar click open the about dialog:
-		View v = findViewById (android.R.id.title);
-	    v.setClickable(true);
-	    v.setOnClickListener(new OnClickListener()
-	    {
-	        @Override
-	        public void onClick(View v)
-	        {
-	        	openAboutDialog(null);
-	        }
-	    });
-		// Get scrolling right
-		findViewById(R.id.projectManager_ScrollView).setOnTouchListener(new View.OnTouchListener()
-		{
+		drawerList = (ListView) findViewById(R.id.left_drawer);
+		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
+		pager = (ViewPager) findViewById(R.id.pager);
+		pageMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
+		addProjects = (TextView) findViewById(R.id.addProjects);
+		runProject = (Button) findViewById(R.id.btn_runProject);
+
+		addProjects.setOnClickListener(new OnClickListener() {
+
 			@SuppressLint("ClickableViewAccessibility")
 			@Override
-			public boolean onTouch(View v, MotionEvent event)
-			{
-				projectList.getParent().requestDisallowInterceptTouchEvent(false);
-				return false;
-			}
-		});
-		projectList.setOnTouchListener(new View.OnTouchListener()
-		{
-			@SuppressLint("ClickableViewAccessibility")
-			public boolean onTouch(View v, MotionEvent event)
-			{	// Disallow the touch request for parent scroll on touch of child view
-				v.getParent().requestDisallowInterceptTouchEvent(true);
-				return false;
+			public void onClick(View v) {
+				browse();
 			}
 		});
 
-/*		// TODO Re-enable the service at same point
-		// Check the Preferences
-		if(DataSenderPreferences.getTimeSchedule(this) == 1)
-		{
-			DataSenderPreferences.printPreferences(this);
-			Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
-			
-			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
-			startActivity(settingsActivity);
+		// Set the drawer toggle as the DrawerListener
+		drawerLayout.setDrawerListener(drawerToggle);
+		// enable ActionBar icon to behave as action to toggle drawer
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		getSupportActionBar().setHomeButtonEnabled(true);
+		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+
+			/** Called when a drawer has settled in a completely closed state. */
+			public void onDrawerClosed(View view) {
+				super.onDrawerClosed(view);
+				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+			}
+
+			/** Called when a drawer has settled in a completely open state. */
+			public void onDrawerOpened(View drawerView) {
+				super.onDrawerOpened(drawerView);
+				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+			}
+		};
+
+		// Set the drawer toggle as the DrawerListener
+		drawerLayout.setDrawerListener(drawerToggle);
+
+		// Set the list's click listener
+		drawerList.setOnItemClickListener(this);
+
+	}
+
+	public void browse() {
+		// Use the GET_CONTENT intent from the utility class
+		Intent target = FileUtils.createGetContentIntent();
+		// Create the chooser Intent
+		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+		try {
+			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
+		} catch (ActivityNotFoundException e) {
 		}
-		
-		// Start the DataSenderService
-		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
-			ServiceChecker.startService(this);
-*/
+	}
+
+	public void browse(MenuItem item) {
+		browse();
 	}
 
 	@Override
@@ -210,10 +214,13 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		if(app.getBuildInfo().isDemoBuild())
 			demoMode();
 		else
-			populateProjectList(); 	// Update project list
+			new RetrieveProjectsTask().execute(); // Update project list
 		// TODO remember & re-select last selected project
+
+		// stop tracing
+		Debug.stopMethodTracing();
 	}
-	
+
 	@Override
 	public void initialisationSuccess(DeviceID deviceID)
 	{
@@ -267,36 +274,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
-		super.onCreateOptionsMenu(menu);
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
+		if (parsedProjects != null)
+			menu.findItem(R.id.action_remove).setVisible(!parsedProjects.isEmpty());
 		return true;
-	}
-	
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item)
-	{
-		/* 	Note:
-		 * 	the android:onClick attribute in the XML only works on Android >= v3.0,
-		 *	so we need to direct the handling of menu clicks manually here for things
-		 *	to work on earlier versions. */
-	    switch(item.getItemId())
-	    {
-	    	case R.id.sender_settings_menuitem :
-	    		return openSenderSettings(item);
-	    	case R.id.export_records_menuitem :
-	    		return exportRecords(item);
-	    	//case R.id.import_records_menuitem :
-	    		//return importRecords(item);
-	    	case R.id.create_shortcut :
-	    		return createShortcut(item);
-	    	case R.id.remove_shortcut :
-	    		return removeShortcut(item);
-			case R.id.backup:
-				return backupSapelli(item);
-	    	case R.id.about_menuitem :
-	    		return openAboutDialog(item);
-	    }
-	    return true;
 	}
 
 	public boolean openSenderSettings(MenuItem item)
@@ -335,25 +316,32 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
 		dialogBuilder.setPositiveButton(getString(android.R.string.ok), null); // click will dismiss the dialog (BACK press will too)
 		AlertDialog aboutDialog = dialogBuilder.create();
-		aboutDialog.setView(view, 0, 0, 0, 0); // no margins
+		aboutDialog.setView(view, 0, 10, 0, 0);
+		aboutDialog.setTitle(R.string.software_and_device_info);
 
 		// Show the dialog:
 		aboutDialog.show();
-		
+
 		return true;
 	}
-	
-	public boolean exportRecords(MenuItem item)
-	{
-		Project selectedProject = getSelectedProject(false);
-		Intent i = new Intent(getApplicationContext(), ExportActivity.class);
-		if(selectedProject != null)
-		{
-			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, selectedProject.getID());
-			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, selectedProject.getFingerPrint());
-		}
-		i.setAction(Intent.ACTION_MAIN);
-		startActivity(i);
+
+	// Export all projects!!
+	public boolean exportRecords(MenuItem item) {
+		ExportFragment exportFragment = ExportFragment.newInstance(true);
+		exportFragment.show(getSupportFragmentManager(), TAG);
+		getSupportFragmentManager().executePendingTransactions();
+		exportFragment.getExportLayout().setBackgroundResource(0);
+		exportFragment.getDialog().setTitle(R.string.exportAllProj);
+
+		// Grab the window of the dialog, and change the width
+		WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+		Window window = exportFragment.getDialog().getWindow();
+		lp.copyFrom(window.getAttributes());
+		// This makes the dialog take up the full width
+		lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+		lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+		window.setAttributes(lp);
+
 		return true;
 	}
 
@@ -383,55 +371,60 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		Backup.Run(this, fileStorageProvider, app);
 		return true;
 	}
-	
-	public void browse(View view)
-	{
-		// Use the GET_CONTENT intent from the utility class
-		Intent target = FileUtils.createGetContentIntent();
-		// Create the chooser Intent
-		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
-		try
-		{
-			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
-		}
-		catch(ActivityNotFoundException e){}
-	}
+
+	// public void browse(View view) {
+	// // Use the GET_CONTENT intent from the utility class
+	// Intent target = FileUtils.createGetContentIntent();
+	// // Create the chooser Intent
+	// Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+	// try {
+	// startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
+	// } catch (ActivityNotFoundException e) {
+	// }
+	// }
 
 	/**
-	 * Retrieve all parsed projects from db and populate list
+	 * Retrieve all parsed projects from db and populate tabs
 	 */
-	private void populateProjectList()
-	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, projectStore.retrieveProjects()));
-		if(!projectList.getAdapter().isEmpty())
-		{
-			runBtn.setEnabled(true);
-			removeBtn.setEnabled(true);
-			projectList.setItemChecked(0, true); // check first project in the list
+	public void populateTabs() {
+		projectsArray = new String[parsedProjects.size()];
+		for (int i = 0; i < parsedProjects.size(); i++) {
+			projectsArray[i] = parsedProjects.get(i).getName() + " " + parsedProjects.get(i).getVersion();
 		}
-		else
-		{
-			runBtn.setEnabled(false);
-			removeBtn.setEnabled(false);
+
+		// Set the adapter for the list view
+		drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, projectsArray));
+
+		adapter = new PagerAdapter(getSupportFragmentManager());
+		pager.setAdapter(adapter);
+		if (!parsedProjects.isEmpty()) {
+			getSupportActionBar().setTitle(parsedProjects.get(0).getName());
+			selectedProject = parsedProjects.get(0);
+			pager.setPageMargin(pageMargin);
+			tabs.setViewPager(pager);
+			tabs.setVisibility(View.VISIBLE);
+			pager.setVisibility(View.VISIBLE);
+			runProject.setVisibility(View.VISIBLE);
+			addProjects.setVisibility(View.GONE);
+		} else {
+			getSupportActionBar().setTitle(R.string.app_name);
+			tabs.setVisibility(View.GONE);
+			pager.setVisibility(View.GONE);
+			runProject.setVisibility(View.GONE);
+			addProjects.setVisibility(View.VISIBLE);
+
 		}
+
+		supportInvalidateOptionsMenu();
 	}
 
-	@SuppressWarnings("unchecked")
-	protected void selectProjectInList(Project project)
-	{
-		projectList.setItemChecked(((ArrayAdapter<Project>) projectList.getAdapter()).getPosition(project), true);
-	}
-
-	@SuppressWarnings("unchecked")
-	protected Project getSelectedProject(boolean errorIfNull)
-	{
-		if(projectList.getCheckedItemPosition() == -1)
-		{
-			if(errorIfNull)
+	public Project getSelectedProject(boolean errorIfNull) {
+		if (selectedProject == null) {
+			if (errorIfNull)
 				showErrorDialog(R.string.selectProject, false);
 			return null;
 		}
-		return ((ArrayAdapter<Project>) projectList.getAdapter()).getItem(projectList.getCheckedItemPosition());
+		return selectedProject;
 	}
 
 	public void runProject(View view)
@@ -457,23 +450,23 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		ProjectRunHelpers.removeShortcut(this, project);
 		
 		// Refresh list:
-		populateProjectList();
+		new RetrieveProjectsTask().execute();
 
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to stop monitoring the deleted project
 		// ServiceChecker.restartActiveDataSender(this);
 	}
 
-	public void loadProject(View view)
+	public void loadProject(String path)
 	{
-		String location = txtProjectPathOrURL.getText().toString().trim();
+		String location = path.trim();
 		if(location.isEmpty())
 			// Download Sapelli file if path is a URL
 			showErrorDialog(R.string.pleaseSelect);
 		else
 		{
 			// Extract & parse a local Sapelli file
-			txtProjectPathOrURL.setText("");
+//			txtProjectPathOrURL.setText("");
 
 			// Add project
 			if(Patterns.WEB_URL.matcher(location).matches())
@@ -508,7 +501,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 	 * Create a shortcut
 	 * 
 	 */
-	public boolean createShortcut(MenuItem item)
+	public boolean createShortcut()
 	{
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
@@ -521,7 +514,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 	 * Remove a shortcut
 	 * 
 	 */
-	public boolean removeShortcut(MenuItem item)
+	public boolean removeShortcut()
 	{
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
@@ -549,14 +542,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 				// Get the File path from the Uri
 				path = FileUtils.getPath(this, uri);
 
-				// Alternatively, use FileUtils.getFile(Context, Uri)
-				if(path != null && FileUtils.isLocal(path))
-				{
-					txtProjectPathOrURL.setText(path);
-					// Move the cursor to the end
-					txtProjectPathOrURL.setSelection(path.length());
-				}
-
+				loadProject(path);
 				break;
 
 			// File browse dialog for record importing:
@@ -587,19 +573,17 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 							showWarningDialog(bldr.toString());
 						}
 
-						/*//TEST CODE (export again to compare with imported file):
-						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
-						exporter.export(records);*/
-	
-						//Store the records:
-						//for(Record r : records)
-						//	dao.store(r); //TODO avoid duplicates!
-						
-						//User feedback:
-						showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
-					}
-					catch(Exception e)
-					{
+						/*
+						 * //TEST CODE (export again to compare with imported file): RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao); exporter.export(records);
+						 */
+
+						// Store the records:
+						// for(Record r : records)
+						// dao.store(r); //TODO avoid duplicates!
+
+						// User feedback:
+						showInfoDialog("Succesfully imported " + records.size() + " records."); // TODO report skipped duplicates
+					} catch (Exception e) {
 						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
 					}
 				}
@@ -608,12 +592,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 			// QR Reader
 			case IntentIntegrator.REQUEST_CODE:
 				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-				if(scanResult != null)
-				{
+				if (scanResult != null) {
 					String fileUrl = data.getStringExtra("SCAN_RESULT");
-					txtProjectPathOrURL.setText(fileUrl);
-					// Move the cursor to the end
-					txtProjectPathOrURL.setSelection(fileUrl.length());
+					loadProject(fileUrl);
 				}
 				break;
 			}
@@ -690,8 +671,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
 		
 		// Update project list:
-		populateProjectList();
-		selectProjectInList(project); // select the new project
+		new RetrieveProjectsTask().execute();
 
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project
@@ -708,6 +688,42 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		// Report problem:
 		Log.e(TAG, "Could not load/store Sapelli file", cause);
 		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		selectedProject = parsedProjects.get(position);
+		if (!parsedProjects.isEmpty())
+			getSupportActionBar().setTitle(selectedProject.getName());
+		else
+			getSupportActionBar().setTitle(R.string.app_name);
+		drawerLayout.closeDrawer(drawerList);
+
+	}
+
+	private class RetrieveProjectsTask extends AsyncTaskWithWaitingDialog<Void, List<Project>>
+	{
+
+		public RetrieveProjectsTask()
+		{
+			super(ProjectManagerActivity.this, getString(R.string.load_projects));
+		}
+
+		@Override
+		protected List<Project> doInBackground(Void... params)
+		{
+			return projectStore.retrieveProjects();
+		}
+
+		@Override
+		protected void onPostExecute(List<Project> result)
+		{
+			parsedProjects = result;
+			super.onPostExecute(result); // dismiss dialog
+			populateTabs();
+
+		}
+
 	}
 
 }
