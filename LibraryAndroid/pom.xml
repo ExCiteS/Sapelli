@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>android</groupId>
 			<artifactId>android</artifactId>
-			<version>4.4.2_r4</version>
+			<version>5.0.1_r2</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -70,7 +70,7 @@
 			<plugin>
 				<groupId>com.simpligility.maven.plugins</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.0.0</version>
+				<version>4.1.0</version>
 				<configuration>
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
