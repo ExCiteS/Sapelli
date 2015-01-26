@@ -24,16 +24,11 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -237,29 +232,12 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	@Override
 	protected ImageItem generateCaptureButton(Context context)
 	{
-		ImageItem captureButton = null;
 		if(!recording)
-		{
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
-			if(FileHelpers.isReadableFile(captureImgFile))
-				// use a custom video capture image if available
-				captureButton = new FileImageItem(captureImgFile);
-			else
-				// otherwise just use the default resource
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_video_capture_svg);
-		}
+			return generateButton(context, field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg, field.getBackgroundColor());
 		else
-		{
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
-			if(FileHelpers.isReadableFile(stopImgFile))
-				captureButton = new FileImageItem(stopImgFile);
-			else
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg);
-		}
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
+			return generateButton(context, field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg, field.getBackgroundColor());
 	}
 
 	@Override

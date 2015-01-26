@@ -25,15 +25,11 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.hardware.Camera;
@@ -140,16 +136,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	protected ImageItem generateCaptureButton(Context context)
 	{
-		ImageItem captureButton = null;
-		File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(captureImgFile))
-			// return a custom photo capture button if it exists
-			captureButton = new FileImageItem(captureImgFile);
-		else
-			// otherwise just use the default resource
-			captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_photo_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
+		return generateButton(context, field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg, field.getBackgroundColor());
 	}
 
 	@Override

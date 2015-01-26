@@ -309,14 +309,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	public Item generateDiscardButton(Context context)
 	{
-		Item discardButton = null;
-		File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(discardImgFile))
-			discardButton = new FileImageItem(discardImgFile);
-		else
-			discardButton = new ResourceImageItem(context.getResources(), R.drawable.button_trash_svg);
-		discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return discardButton;
+		return generateButton(context, field.getDiscardButtonImageRelativePath(), R.drawable.button_trash_svg, field.getBackgroundColor());
 	}
 	
 	/**
@@ -419,6 +412,29 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		});
 
 		return view;
+	}
+	
+	/**
+	 * Method that creates an ImageItem for the provided custom image, using the image found at the default resource ID if no custom is found.
+	 * @param context
+	 * @param customImagePath path to the custom image to be used as the icon for this button, as specified in PROJECT.xml
+	 * @param defaultResourceID the default Android resource ID to fall back on if no custom icon is found
+	 * @param backgroundColorHex the background colour of the button (as a hexadecimal string)
+	 * @return an ImageItem for the button
+	 */
+	protected ImageItem generateButton(Context context, String customImagePath, int defaultResourceID, String backgroundColorHex)
+	{
+		ImageItem button = null;
+		// Try to get custom image from path specified in XML:
+		File customImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), customImagePath);
+		if(FileHelpers.isReadableFile(customImgFile))
+			// return a custom drawing button if it exists
+			button = new FileImageItem(customImgFile);
+		else
+			// otherwise just use the default resource
+			button = new ResourceImageItem(context.getResources(), defaultResourceID);
+		button.setBackgroundColor(ColourHelpers.ParseColour(backgroundColorHex, Field.DEFAULT_BACKGROUND_COLOR));
+		return button;
 	}
 	
 	// -------------- CAPTURE UI:

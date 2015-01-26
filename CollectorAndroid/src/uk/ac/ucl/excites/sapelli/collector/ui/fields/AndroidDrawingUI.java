@@ -6,15 +6,11 @@ import java.io.FileOutputStream;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.DrawingField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
@@ -106,32 +102,13 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	@Override
 	protected Item generateCaptureButton(Context context)
 	{
-		ImageItem captureButton = null;
-		File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(captureImgFile))
-			// return a custom drawing capture button if it exists
-			captureButton = new FileImageItem(captureImgFile);
-		else
-			// otherwise just use the default resource (a tick)
-			captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_tick_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
+		return generateButton(context, field.getCaptureButtonImageRelativePath(), R.drawable.button_tick_svg, field.getBackgroundColor());
 	}
 	
-	// TODO this is a bit of a mess
 	@Override
 	protected Item generateCaptureMoreButton(Context context)
 	{
-		ImageItem captureMoreButton = null;
-		File captureMoreImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getAddDrawingImageRelativePath());
-		if(FileHelpers.isReadableFile(captureMoreImgFile))
-			// return a custom drawing capture button if it exists
-			captureMoreButton = new FileImageItem(captureMoreImgFile);
-		else
-			// otherwise just use the default resource (a pencil)
-			captureMoreButton = new ResourceImageItem(context.getResources(), R.drawable.pencil_black_svg);
-		captureMoreButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureMoreButton;
+		return generateButton(context, field.getAddDrawingImageRelativePath(), R.drawable.pencil_black_svg, field.getBackgroundColor());
 	}
 	
 
@@ -163,16 +140,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 			this.canvasColor = Color.parseColor(field.getCanvasColor());
 			LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
-			ImageItem background = null;
-			File backgroundImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCanvasImageRelativePath());
-			if(FileHelpers.isReadableFile(backgroundImgFile))
-				// return a custom background image if it exists
-				background = new FileImageItem(backgroundImgFile);
-			else
-				// otherwise just use the default resource (a pencil)
-				background = new ResourceImageItem(context.getResources(), R.drawable.pencil_grey_svg);
-			
-			background.setBackgroundColor(canvasColor);
+			ImageItem background = generateButton(context, field.getCanvasImageRelativePath(), R.drawable.pencil_grey_svg, field.getCanvasColor());
 			addView(background.getView(context), params);
 			
 			drawingView = new DrawingView(context);
