@@ -63,6 +63,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		}
 
 		// Block calling thread until the TTS engine is initialised:
+		Log.d("TTV","Waiting for init...");
 		try
 		{
 			ttvInitialised.acquire();
@@ -71,6 +72,8 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		{
 			e.printStackTrace();
 		}
+		Log.d("TTV","Init complete");
+
 	}
 
 	/**
@@ -79,6 +82,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	@Override
 	public void onInit(int status)
 	{
+		Log.d("TTV","INIT !!");
 		if(status == TextToSpeech.SUCCESS && tts != null)
 			ttvInitialised.release();
 		// if null, has probably been destroyed before initialisation completed
@@ -120,13 +124,14 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		
 		// Block thread until synthesis job completes:
 		try
-		{
+		{	Log.d("TTV","Waiting for job to complete...");
 			ttvJobComplete.acquire();
 		}
 		catch(InterruptedException e)
 		{
 			e.printStackTrace();
 		}
+		Log.d("TTV","Job completed");
 	}
 
 	/**

@@ -38,7 +38,7 @@ import android.support.v7.app.ActionBarActivity;
  * @author mstevens
  *
  */
-public abstract class BaseActivity extends ActionBarActivity  
+public abstract class BaseActivity extends ActionBarActivity
 {
 	
 	private static final int HIDE_BUTTON = -1;

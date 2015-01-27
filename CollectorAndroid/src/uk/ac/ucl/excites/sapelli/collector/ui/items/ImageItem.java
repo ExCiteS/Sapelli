@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import android.content.Context;
+import android.support.v4.view.ViewCompat;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -49,6 +50,13 @@ public abstract class ImageItem extends Item
 		setImage(context, view);
 		// Set scaling (raster-based images are only scaled down, never up; vector-based ones can be scaled up or down):
 		view.setScaleType(isVectorBased() ? (keepVectorAspectRatio ? ScaleType.FIT_CENTER : ScaleType.FIT_XY) : ScaleType.CENTER_INSIDE);
+		 /* Disable h/w acceleration for vector (SVG) images
+		  *  Reason explained here:
+		  *  - https://github.com/japgolly/svg-android/commit/a1a613b
+		  *  - http://stackoverflow.com/q/10384613/1084488 */
+		if(isVectorBased())
+			ViewCompat.setLayerType(view, ViewCompat.LAYER_TYPE_SOFTWARE, null);
+		
 		return view;
 	}
 	

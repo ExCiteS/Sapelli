@@ -100,6 +100,10 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
+		// Not doing this here can cause crashes -- http://stackoverflow.com/a/16939962/4186768
+		//	Use this rather than requestWindowFeature since we use appcompat-v7 -- see http://stackoverflow.com/a/25261208/4186768
+		supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+		
 		super.onCreate(savedInstanceState); // sets app, projectStore & recordStore members!
 		
 		// Retrieve the tmpPhotoLocation for the saved state
@@ -115,13 +119,10 @@ public class CollectorActivity extends ProjectActivity
 		keyCodeToTrigger = new SparseArray<Trigger>();
 
 		// UI setup:
-		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
-		// Hide the action bar
-		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
-			getSupportActionBar().hide();
-		}
+		// Hide the action bar regardless of API level:
+		getSupportActionBar().hide();
 
 		// Set-up root layout
 		collectorView = new CollectorView(this);

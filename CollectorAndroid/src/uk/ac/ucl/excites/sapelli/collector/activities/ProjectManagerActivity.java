@@ -116,6 +116,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 	private ActionBarDrawerToggle drawerToggle;
 	private DrawerLayout drawerLayout;
 	private Button runProject;
+	private boolean initialised = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -214,7 +215,12 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 		if(app.getBuildInfo().isDemoBuild())
 			demoMode();
 		else
-			new RetrieveProjectsTask().execute(); // Update project list
+			if (!initialised)
+			{
+				// TODO think about the fact that this will be called when you return to the PMActivity after selecting a file... temp fix for now but need more thought:
+				new RetrieveProjectsTask().execute(); // Update project list
+				initialised = true;
+			}
 		// TODO remember & re-select last selected project
 
 		// stop tracing
@@ -466,8 +472,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 		else
 		{
 			// Extract & parse a local Sapelli file
-//			txtProjectPathOrURL.setText("");
-
+			
 			// Add project
 			if(Patterns.WEB_URL.matcher(location).matches())
 				// Location is a (remote) URL: download Sapelli file:
@@ -671,8 +676,9 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
 		
 		// Update project list:
+		Log.d("","Going to dispatch...");
 		new RetrieveProjectsTask().execute();
-
+		Log.d("","Dispatched");
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project
 		// ServiceChecker.restartActiveDataSender(this);
@@ -712,16 +718,21 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 		@Override
 		protected List<Project> doInBackground(Void... params)
 		{
-			return projectStore.retrieveProjects();
+			Log.d("","About to retrieve...");
+			List<Project> ret = projectStore.retrieveProjects();
+			Log.d("","Retrieved");
+			return ret;
 		}
 
 		@Override
 		protected void onPostExecute(List<Project> result)
 		{
+			Log.d("","PostExecute");
+
 			parsedProjects = result;
 			super.onPostExecute(result); // dismiss dialog
 			populateTabs();
-
+			Log.d("", "Done");
 		}
 
 	}
