@@ -88,14 +88,10 @@
 				</property>
 			</activation>
 			<dependencies>
-				<dependency>
-					<groupId>android.support</groupId>
-					<artifactId>compatibility-v4</artifactId>
-					<version>${android.support.libs.version}</version>
-					<type>jar</type>
-				</dependency>
 				<!-- appcompat-v7 to be included as Android Library project in Eclipse -->
+				<!-- support-v4 jar to be exported from appcompat-v7 project above  -->
 				<!-- afilechooser-library to be included as Android Library project in Eclipse -->
+				<!-- PagerSlidingTabStrip to be included as Android Library project in Eclipse -->
 			</dependencies>
 		</profile>
 		<profile>
@@ -145,6 +141,7 @@
 					<groupId>com.jpardogo.materialtabstrip</groupId>
 					<artifactId>library</artifactId>
 					<version>1.0.8</version>
+					<type>aar</type>
 				</dependency>
 			</dependencies>
 			<build>

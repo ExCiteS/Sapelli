@@ -490,7 +490,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 		}
 	}
 	
-	public void scanQR(View view)
+	public void scanQR(MenuItem item)
 	{
 		// Start the Intent to Scan a QR code
 		IntentIntegrator integrator = new IntentIntegrator(this);
@@ -605,7 +605,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 	 * 
 	 * @param view
 	 */
-	public void removeDialog(View view)
+	public void removeDialog(MenuItem item)
 	{
 		Project project = getSelectedProject(true);
 		if(project != null)
