@@ -27,11 +27,13 @@
         android:id="@+id/DTdatePicker"
         android:spinnersShown="true"
         android:calendarViewShown="false"
+        android:datePickerMode="spinner" 
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" />
 
     <TimePicker
         android:id="@+id/DTtimePicker"
+        android:timePickerMode="spinner" 
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" />
 

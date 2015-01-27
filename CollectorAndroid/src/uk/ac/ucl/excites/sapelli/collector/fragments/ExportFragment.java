@@ -218,7 +218,7 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 		// Create the dialog
 		AlertDialog.Builder builder = new Builder(getActivity());
 		// Set the title:
-		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '�'))
+		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, ':'))
 		// Set UI:
 				.setView(view)
 				// Set the buttons:
