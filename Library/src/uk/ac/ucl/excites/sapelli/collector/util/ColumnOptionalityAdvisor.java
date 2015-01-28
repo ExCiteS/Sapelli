@@ -182,14 +182,14 @@ public class ColumnOptionalityAdvisor
 				else
 				{	// Backtrack...
 					nextFields.pop();
-					if(!passedFields.isEmpty()) // there is always 1 item less on the visited stacks
+					if(!passedFields.isEmpty()) // there is always 1 item less on the visited stack
 						passedFields.pop();
 				}
 			}
 		}
 		
 		public void goTo(FieldWithArguments nextFieldAndArguments)
-		{		
+		{
 			// Null check...
 			if(nextFieldAndArguments == null || nextFieldAndArguments.field == null)
 				return;
@@ -199,7 +199,7 @@ public class ColumnOptionalityAdvisor
 				if(ps.field == nextFieldAndArguments.field)
 					return;
 			
-			// the nextField the "current field":
+			// the nextField becomes the "current field":
 			currentField = nextFieldAndArguments.field;
 			nextFields.push(new ArrayList<FieldWithArguments>());
 			
@@ -216,7 +216,8 @@ public class ColumnOptionalityAdvisor
 		}
 		
 		private void goForward()
-		{	// add next field to nextFields stack/list:
+		{
+			// add next field to nextFields stack/list:
 			nextFields.peek().add(form.getNextFieldAndArguments(currentField));
 		}
 		
