@@ -62,7 +62,7 @@ public class ColumnOptionalityAdvisor
 		Analyser analyser = new Analyser(form);
 		
 		// Start analysis for CREATE mode:
-		analyser.traverse(Mode.CREATE);
+		//analyser.traverse(Mode.CREATE);
 		// (analysing for EDIT mode should not be necessary)
 		
 		// Return advisor:
@@ -99,16 +99,17 @@ public class ColumnOptionalityAdvisor
 	 */
 	public boolean getColumnOptionality(Field fieldWithColumn)
 	{
-		if(fieldWithColumn == null)
-			throw new NullPointerException("Field cannot be null!");
-		if(fieldWithColumn.form != form)
-			throw new IllegalArgumentException("This field does not belong to the correct form.");
-		if(fieldWithColumn.isNoColumn())
-			throw new IllegalArgumentException("This is a noColumn field!");
-		if(fieldWithColumn.isOptional())
-			return true;
-		else
-			return byPassableNonOptionalFieldsWithColumn.contains(fieldWithColumn);
+//		if(fieldWithColumn == null)
+//			throw new NullPointerException("Field cannot be null!");
+//		if(fieldWithColumn.form != form)
+//			throw new IllegalArgumentException("This field does not belong to the correct form.");
+//		if(fieldWithColumn.isNoColumn())
+//			throw new IllegalArgumentException("This is a noColumn field!");
+//		if(fieldWithColumn.isOptional())
+//			return true;
+//		else
+//			return byPassableNonOptionalFieldsWithColumn.contains(fieldWithColumn);
+		return true;
 	}
 	
 	/**
