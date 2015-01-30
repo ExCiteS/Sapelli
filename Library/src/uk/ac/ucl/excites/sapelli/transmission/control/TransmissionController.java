@@ -133,7 +133,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		// Query for unsent records:
 		List<Record> recsToSend = recordStore.retrieveRecords(new RecordsQuery(Source.From(model))); //TODO constraints!
-		
+		if (logger != null)
+			logger.addLine("Records to send: "+recsToSend.size());
 		// while we still have records to send...
 		while(!recsToSend.isEmpty())
 		{
@@ -144,10 +145,14 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			Transmission<?> transmission = createOutgoingTransmission(payload, receiver);
 
 			// add as many records to the Payload as possible (this call will remove from the list the records that were successfully added to the payload):
+			if (logger != null)
+				logger.addLine("Trying to add "+recsToSend.size()+" records to payload...");
 			payload.addRecords(recsToSend);
-			
+			if (logger != null)
+				logger.addLine("Records that weren't added: "+recsToSend.size()+"; payload says it has "+payload.getNumberOfRecords());
 			//send transmission:
 			storeAndSend(transmission);
+			// TODO mark records as "sent" (do here rather than ACK? depends on resend timeout vs. send new records timeout; semantics of resending transmission vs. records)
 		}
 	}
 	
@@ -158,7 +163,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			case BINARY_SMS:
 				return new BinarySMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
 			case TEXTUAL_SMS:
-				return  new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
+				return new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
 			//case HTTP:
 			//	return  new HTTPTransmission(transmissionClient, receiver, payload); // TODO !!!
 			default:
@@ -184,9 +189,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	private void storeAndSend(Transmission<?> transmission) throws Exception
 	{
 		if (logger != null)
-			logger.addLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: "+transmission.getPayload().getType(), "ID: "+transmission.getLocalID(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
-		// store in "in-flight transmissions" schema:
-		sentTStore.store(transmission);
+			logger.addLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: "+transmission.getPayload().getType(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
+		// store in "in-flight transmissions" schema to get local ID:
+		transmission.computePayloadHash();
+		sentTStore.store(transmission); // update record now that payload hash has been computed
 		// actually send the transmission:
 		transmission.send(this);
 	}

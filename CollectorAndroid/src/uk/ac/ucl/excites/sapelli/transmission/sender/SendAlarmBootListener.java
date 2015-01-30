@@ -36,7 +36,7 @@ import android.util.Log;
  */
 public class SendAlarmBootListener extends BroadcastReceiver
 {
-	private static final String TAG = SendAlarmBootListener.class.getName();
+	private static final String TAG = SendAlarmBootListener.class.getSimpleName();
 	
 	@Override
 	public void onReceive(Context context, Intent intent)

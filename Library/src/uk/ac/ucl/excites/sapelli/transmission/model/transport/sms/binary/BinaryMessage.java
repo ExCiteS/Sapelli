@@ -98,9 +98,9 @@ public class BinaryMessage extends Message
 	 * @param totalParts a value from [1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS]
 	 * @param payload
 	 */
-	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, BitArray body)
+	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, BitArray body, boolean checkingCapacity)
 	{
-		super(transmission, partNumber, totalParts);
+		super(transmission, partNumber, totalParts, checkingCapacity);
 		if(totalParts > BinarySMSTransmission.MAX_TRANSMISSION_PARTS)
 			throw new IllegalArgumentException("Max transmission length exceded (" + totalParts + "; max is " + BinarySMSTransmission.MAX_TRANSMISSION_PARTS + ").");
 		if(body.length() > MAX_BODY_SIZE_BITS)

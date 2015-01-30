@@ -36,7 +36,7 @@ import android.util.Log;
  */
 public class SendAlarmInitialiserService extends IntentService implements StoreHandle.StoreUser
 {
-	private static final String TAG = SendAlarmInitialiserService.class.getName();
+	private static final String TAG = SendAlarmInitialiserService.class.getSimpleName();
 	
 	private CollectorApp app;
 

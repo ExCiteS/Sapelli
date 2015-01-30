@@ -155,9 +155,11 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 		return parts.size();
 	}
 	
+	// TODO isTotalNumberOfParts set?
 	public int getTotalNumberOfParts()
 	{
-		return parts.first().getTotalParts(); // Do not use parts.size() because that is not correct for incomplete transmissions on the receiving side
+	// TODO "0" is not really true...
+		return  parts.isEmpty() ? 0 : parts.first().getTotalParts(); // Do not use parts.size() because that is not correct for incomplete transmissions on the receiving side
 	}
 	
 	/**

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -111,8 +112,9 @@ public class RecordsPayload extends Payload
 		if(!isTansmissionSet())
 			throw new IllegalStateException("No transmission set!");
 				
-		for(Record record : records)
+		for(Iterator<Record> iterator = records.iterator(); iterator.hasNext();) // use an iterator so we can remove elements during for loop
 		{
+			Record record = iterator.next();
 			if(!record.isFilled())
 				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping?
 			Schema schema = record.getSchema();
@@ -129,15 +131,17 @@ public class RecordsPayload extends Payload
 	
 
 			// Try serialising and check capacity:
-			try
+			if (getNumberOfRecords() > 0) // only bother checking if we have already added a record
 			{
-				transmission.checkCapacity();
+				try
+				{
+					transmission.checkCapacity();
+				}
+				catch(TransmissionCapacityExceededException tcee)
+				{	// adding this record caused transmission capacity to be exceeded so do not "mark" it as added (i.e. do not remove it from the input list)
+					return;
+				}
 			}
-			catch(TransmissionCapacityExceededException tcee)
-			{	// adding this record caused transmission capacity to be exceeded so do not "mark" it as added (i.e. do not remove it from the input list)
-				return;
-			}
-			
 			// If we succeeded...
 			
 			// Add the record to the list of attached records for this schema:
@@ -150,7 +154,7 @@ public class RecordsPayload extends Payload
 			recordsOfSchema.add(record);
 			
 			// Remove the record from the list of remaining records:
-			records.remove(record);
+			iterator.remove(); // (removes the last element returned by the iterator)
 		}
 	}
 	
@@ -358,11 +362,14 @@ public class RecordsPayload extends Payload
 						}
 						else
 						{	// Check if these values are these same in subsequent records:
-							for(Column<?> factoredOutCol : factoredOutValues.keySet())
+							for(Iterator<Column<?>> iterator = factoredOutValues.keySet().iterator(); iterator.hasNext();) // use an iterator so we can remove in the for-loop
+							{
+								Column<?> factoredOutCol = iterator.next();
 								if(!Record.EqualValues(factoredOutValues.get(factoredOutCol), factoredOutCol.retrieveValue(r)))
-									factoredOutValues.remove(factoredOutCol); // value mismatch -> this column can not be factored out
+									iterator.remove(); // value mismatch -> this column can not be factored out
 							if(factoredOutValues.isEmpty())
 								break; // no factored-out columns left -> no need to loop over rest of the records
+							}
 						}
 					}
 					//	Write factoring-out header (including factored-out values, if used):
@@ -430,8 +437,7 @@ public class RecordsPayload extends Payload
 		try
 		{
 			in = new BitArrayInputStream(recordsBits);
-			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField();
-			
+			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField(); // TODO divide by zero ArithmeticException here!
 			// Per schema...
 			for(Schema schema : schemataInT)
 			{

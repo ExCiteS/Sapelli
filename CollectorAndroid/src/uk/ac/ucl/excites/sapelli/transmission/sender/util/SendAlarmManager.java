@@ -23,7 +23,7 @@ import android.util.Log;
  */
 public class SendAlarmManager
 {
-	private static final String TAG = SendAlarmManager.class.getName();
+	private static final String TAG = SendAlarmManager.class.getSimpleName();
 	
 	public static final String INTENT_KEY_PROJECT_ID = "projectId";
 	public static final String INTENT_KEY_PROJECT_FINGERPRINT = "fingerPrint";

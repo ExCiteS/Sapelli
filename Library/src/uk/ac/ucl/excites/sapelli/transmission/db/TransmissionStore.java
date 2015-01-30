@@ -599,8 +599,9 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			
 			// Set values of all columns will be set except for Correspondent & NumberOfParts:
 			if(transmission.isLocalIDSet())
-				TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());			
-			TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
+				TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());	
+			if (transmission.isRemoteIDSet())
+				TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
 			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage
 			if(transmission.isPayloadSet())

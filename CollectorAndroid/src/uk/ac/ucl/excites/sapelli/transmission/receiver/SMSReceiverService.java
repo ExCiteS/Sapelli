@@ -59,7 +59,8 @@ public class SMSReceiverService extends IntentService
 		mainHandler = new Handler(Looper.getMainLooper());
 		try
 		{
-			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), this);
+			// Use application context or SMS callbacks will be invalidated when this service terminates:
+			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), getApplicationContext());
 		}
 		catch(Exception e)
 		{
@@ -128,7 +129,7 @@ public class SMSReceiverService extends IntentService
 		
 		// Get correspondent:
 		SMSCorrespondent sender = transmissionController.getSendingCorrespondentFor(androidMsg.getOriginatingAddress(), binary);
-		
+		Log.d(TAG,"MESSAGE BODY: "+androidMsg.getMessageBody());
 		// Return Sapelli Message:
 		if(binary)
 			return new BinaryMessage(sender, androidMsg.getUserData());

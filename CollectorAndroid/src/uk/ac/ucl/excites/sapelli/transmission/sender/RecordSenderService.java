@@ -98,7 +98,8 @@ public class RecordSenderService extends IntentService implements StoreUser
 				throw new Exception("Could not find receiver for project with ID "+projectID+" and fingerprint "+projectFingerprint+".");
 			
 			if (transmissionController == null)
-				transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), this);
+				// Use application context or SMS callbacks will be invalidated when this service terminates:
+				transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), getApplicationContext());
 			
 			transmissionController.sendRecords(project.getModel(), sendSchedule.getReceiver());
 			

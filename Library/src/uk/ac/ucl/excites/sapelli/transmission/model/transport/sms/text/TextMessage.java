@@ -84,9 +84,9 @@ public class TextMessage extends Message
 	 * @param totalParts a value from [1, TextSMSTransmission.MAX_TRANSMISSION_PARTS]
 	 * @param body
 	 */
-	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, String body)
+	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, String body, boolean checkingCapacity)
 	{
-		super(transmission, partNumber, totalParts);
+		super(transmission, partNumber, totalParts, checkingCapacity);
 		if(body == null)
 			throw new NullPointerException("Payload cannot be null!");
 		if(body.length() > MAX_BODY_CHARS)
@@ -120,7 +120,7 @@ public class TextMessage extends Message
 		
 		// Check content size:
 		if(content.length() < HEADER_SIZE_CHARS)
-			throw new InvalidMessageException("Data byte array is too short for this to be a valid Sapelli text SMS message");
+			throw new InvalidMessageException("Data byte array is too short for this to be a valid Sapelli text SMS message.");
 		
 		// Read header:
 		//	Convert from chars and remove separator bits:
@@ -129,14 +129,18 @@ public class TextMessage extends Message
 		{
 			for(int h = 0; h < HEADER_SIZE_CHARS; h++)
 			{
-				// Read header char (7 bits):				
-				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h));
+				// Read header char (7 bits):
+				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h)); // may throw a NPE if char not found
 				// Check separator bit:
 				if(c >> (TextSMSTransmission.BITS_PER_CHAR - 1) != HEADER_SEPARATOR_BIT)
 					throw new InvalidMessageException("This is not a valid Sapelli text SMS message (invalid separator bit in header)");
 				// Strip away the separator bit and write remaining 6 bit header part:
 				hdrFieldBitsOut.write(c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1)), TextSMSTransmission.BITS_PER_CHAR - 1, false); 
 			}
+		}
+		catch (NullPointerException npe)
+		{
+			throw new InvalidMessageException("Message contained invalid GSM characters.");
 		}
 		finally
 		{

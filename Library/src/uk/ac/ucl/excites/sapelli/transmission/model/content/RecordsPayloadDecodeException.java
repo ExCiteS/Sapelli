@@ -41,7 +41,7 @@ public class RecordsPayloadDecodeException extends PayloadDecodeException
 	public RecordsPayloadDecodeException(RecordsPayload payload, String message, Throwable cause)
 	{
 		super(payload, message, cause);
-		this.partialRecords = new ArrayList<Record>(partialRecords);
+		this.partialRecords = new ArrayList<Record>();
 	}
 	
 	public RecordsPayloadDecodeException(RecordsPayload payload, String message)

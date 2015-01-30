@@ -281,6 +281,11 @@ public abstract class Transmission<C extends Correspondent>
 			throw new IllegalStateException("LocalID has not been set yet");
 		return localID.intValue();
 	}
+	
+	public boolean isRemoteIDSet()
+	{
+		return remoteID != null;
+	}
 		
 	/**
 	 * @return the remoteID
@@ -319,6 +324,20 @@ public abstract class Transmission<C extends Correspondent>
 	public void checkCapacity() throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		prepareAndSend(null);
+	}
+	
+	public void computePayloadHash() throws TransmissionCapacityExceededException, UnknownModelException, IOException
+	{
+		// Get serialised payload bits:
+		BitArray payloadBits = payload.serialise();
+		
+		// Capacity check:
+		if(payloadBits.length() > getMaxPayloadBits())
+			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
+	
+		
+		// Compute & store payload hash:
+		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!	
 	}
 	
 	/**
@@ -376,7 +395,7 @@ public abstract class Transmission<C extends Correspondent>
 		BitArray bodyBits = bitstream.toBitArray();
 		
 		// Wrap body for transmission:
-		wrap(bodyBits); // note: payloadHash must be set before this call
+		wrap(bodyBits, transmissionSender == null); // note: payloadHash must be set before this call
 		
 		// Do the actual sending:
 		if (transmissionSender != null)
@@ -474,7 +493,7 @@ public abstract class Transmission<C extends Correspondent>
 	 * @throws TransmissionCapacityExceededException
 	 * @throws IOException
 	 */
-	protected abstract void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException;
+	protected abstract void wrap(BitArray bodyBits, boolean checkingCapacity) throws TransmissionCapacityExceededException, IOException;
 	
 	/**
 	 * Unwraps/decoded/joins the payload bits

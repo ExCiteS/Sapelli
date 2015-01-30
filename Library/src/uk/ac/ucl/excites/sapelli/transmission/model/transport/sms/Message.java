@@ -57,7 +57,7 @@ public abstract class Message implements Comparable<Message>
 	protected int partNumber;
 	
 	protected int totalParts;
-
+	
 	/**
 	 * To be called on sending side.
 	 * 
@@ -66,18 +66,20 @@ public abstract class Message implements Comparable<Message>
 	 * @param partNumber a value from [1, totalParts]
 	 * @param totalParts
 	 */
-	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts)
+	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts, boolean checkingCapacity)
 	{
 		// Some checks:
-		if(!transmission.isLocalIDSet())
+		if(!transmission.isLocalIDSet() && !checkingCapacity)
 			throw new IllegalStateException("Cannot create Messages for sending until local transmission ID is set by means of persistent storage.");
 		if(partNumber < 1 || totalParts < 1 || partNumber > totalParts)
 			throw new IllegalArgumentException("Invalid part number (" + partNumber + ") of total number of parts (" + totalParts + ").");
 		
 		// Transmission:
 		this.transmission = transmission;
-		this.sendingSideTransmissionID = transmission.getLocalID();
-		this.payloadHash = transmission.getPayloadHash();
+		if (!checkingCapacity)
+			this.sendingSideTransmissionID = transmission.getLocalID();
+		if (!checkingCapacity)
+			this.payloadHash = transmission.getPayloadHash();
 		
 		// Part numbers:
 		this.partNumber  = partNumber;
@@ -107,7 +109,7 @@ public abstract class Message implements Comparable<Message>
 	 */
 	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt)
 	{
-		this(transmission, partNumber, totalParts);
+		this(transmission, partNumber, totalParts, false);
 		this.sentAt = sentAt;
 		this.deliveredAt = deliveredAt;
 		this.receivedAt = receivedAt;
