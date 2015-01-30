@@ -60,7 +60,7 @@ public final class BitArrayInputStream extends BitInputStream
 	 */
 	public int available() throws IOException
 	{
-		return bitsAvailable() * Byte.SIZE;
+		return bitsAvailable() / Byte.SIZE;
 	}
 		
 }
