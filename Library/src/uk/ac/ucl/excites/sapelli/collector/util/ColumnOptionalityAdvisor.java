@@ -18,17 +18,21 @@
 
 package uk.ac.ucl.excites.sapelli.collector.util;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -46,38 +50,41 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
-import uk.ac.ucl.excites.sapelli.collector.model.Control;
+import uk.ac.ucl.excites.sapelli.shared.collections.EmptyQueue;
+import uk.ac.ucl.excites.sapelli.shared.collections.SingletonQueue;
 
 /**
  * Helper class used to determine the optionality of columns backing Fields of a Form.
  * 
  * @author mstevens
  */
-public class ColumnOptionalityAdvisor
+public final class ColumnOptionalityAdvisor
 {
 
 	// STATICS-------------------------------------------------------
-	static public ColumnOptionalityAdvisor For(Form form)
+	static public ColumnOptionalityAdvisor For(final Form form)
 	{
-		Analyser analyser = new Analyser(form);
+		final Analyser analyser = new Analyser(form);
 		
 		// Start analysis for CREATE mode:
 		analyser.traverse(Mode.CREATE);
 		// (analysing for EDIT mode should not be necessary)
 		
 		// Return advisor:
-		return new ColumnOptionalityAdvisor(form, analyser.getByPassableOptionalFieldsWithColumn());
+		return new ColumnOptionalityAdvisor(form, analyser.bypassableFields);
 	}
+	
+	private static final Queue<FieldWithArguments> EMPTY_QUEUE = new EmptyQueue<FieldWithArguments>();
 	
 	// DYNAMICS------------------------------------------------------
 	private final Form form;
-	private final Set<Field> byPassableNonOptionalFieldsWithColumn;
+	private final List<Field> byPassableNonOptionalFieldsWithColumn;
 	
 	/**
 	 * @param form
 	 * @param byPassableNonOptionalFieldsWithColumn
 	 */
-	private ColumnOptionalityAdvisor(Form form, Set<Field> byPassableNonOptionalFieldsWithColumn)
+	private ColumnOptionalityAdvisor(Form form, List<Field> byPassableNonOptionalFieldsWithColumn)
 	{
 		this.form = form;
 		this.byPassableNonOptionalFieldsWithColumn = byPassableNonOptionalFieldsWithColumn;
@@ -114,7 +121,7 @@ public class ColumnOptionalityAdvisor
 	/**
 	 * @return
 	 */
-	public Set<Field> getByPassableNonOptionalFieldsWithColumn()
+	public List<Field> getByPassableNonOptionalFieldsWithColumn()
 	{
 		return byPassableNonOptionalFieldsWithColumn;
 	}
@@ -127,21 +134,37 @@ public class ColumnOptionalityAdvisor
 	 * 
 	 * @author mstevens
 	 */
-	private static class Analyser implements FieldVisitor
+	private final static class Analyser implements FieldVisitor
 	{
 		
-		private Form form;
-		private Mode mode;
-		private List<Field> fieldsToCheck;
-		private Field currentField;
-		private Stack<PassedField> passedFields;
-		private Stack<List<FieldWithArguments>> nextFields;
-		private Set<Field> bypassableFields;
+		private final Form form;
+		private final List<Field> fieldsToCheck;
+		private final List<Field> bypassableFields;
 		
-		public Analyser(Form form)
+		private Mode mode;
+		
+		/**
+		 * Contains visited Fields and nulls for skipped fields
+		 */
+		private final Stack<Field> passed;
+		
+		/**
+		 * Contains skipped Fields
+		 */
+		private final Stack<Field> skipped;
+		
+		private final Set<FieldWithArguments> assembleNextFields;
+		
+		private Field currentField;
+		
+		public Analyser(final Form form)
 		{
 			this.form = form;
-			fieldsToCheck = assembleFieldsToCheck(form.getFields(), new ArrayList<Field>());	
+			this.fieldsToCheck = new LinkedList<Field>(assembleFieldsToCheck(form.getFields(), new HashSet<Field>()));
+			this.bypassableFields = new ArrayList<Field>(fieldsToCheck.size());
+			this.passed = new Stack<Field>();
+			this.skipped = new Stack<Field>();
+			this.assembleNextFields = new HashSet<FieldWithArguments>(8); // initial capacity of 8 (rather than the default of 16)
 		}
 		
 		/**
@@ -151,7 +174,7 @@ public class ColumnOptionalityAdvisor
 		 * @param result
 		 * @return
 		 */
-		private List<Field> assembleFieldsToCheck(List<Field> fields, List<Field> result)
+		private Set<Field> assembleFieldsToCheck(final List<Field> fields, final Set<Field> result)
 		{
 			for(Field f : fields)
 			{
@@ -163,112 +186,149 @@ public class ColumnOptionalityAdvisor
 			return result;
 		}
 		
-		public void traverse(Mode mode)
+		public void traverse(final Mode mode)
 		{
 			this.mode = mode;
-			this.currentField = null;
-			this.passedFields = new Stack<PassedField>();
-			this.nextFields = new Stack<List<FieldWithArguments>>();
 			
-			// Start at the beginning:
-			List<FieldWithArguments> startList = nextFields.push(new ArrayList<FieldWithArguments>());
-			startList.add(new FieldWithArguments(form.getStartField()));
-			
-			// Depth-first traversal loop:
-			while(!nextFields.isEmpty())
+			// Fields that are not to be shown in the current mode are will be "by-passed" by definition...
+			Iterator<Field> iter = fieldsToCheck.iterator();
+			while(iter.hasNext())
 			{
-				if(!nextFields.peek().isEmpty())
-					goTo(nextFields.peek().remove(0));
-				else
-				{	// Backtrack...
-					nextFields.pop();
-					if(!passedFields.isEmpty()) // there is always 1 item less on the visited stack
-						passedFields.pop();
+				Field fieldToCheck = iter.next();
+				if(!Controller.IsFieldToBeShown(mode, fieldToCheck))
+				{
+					bypassableFields.add(fieldToCheck);
+					iter.remove(); // !!! remove field from fieldsToCheck (we now know it is "by-passable" so we don't need to check it against paths)
 				}
 			}
+			if(fieldsToCheck.isEmpty())
+				return;
+			
+			// Do a depth-first traversal to investigate all possible paths through the form to find which of the fields to check are "by-passable"...
+			//	Initialise...
+			this.currentField = null;
+			this.passed.clear();
+			this.skipped.clear();
+			//	DFT stack (containing lists of fields-with-args left to visit):
+			final Stack<Queue<FieldWithArguments>> toVisit = new Stack<Queue<FieldWithArguments>>();
+			//	Start at the beginning:
+			toVisit.push(new SingletonQueue<FieldWithArguments>(new FieldWithArguments(form.getStartField())));
+			//	DFT loop:
+			do
+			{
+				Queue<FieldWithArguments> queue = toVisit.peek();
+				if(!queue.isEmpty())
+				{
+					Queue<FieldWithArguments> nextFields = goTo(queue.poll());
+					if(nextFields != null)
+						toVisit.push(nextFields); // Note: nextFields may be empty (but will never contain nulls)
+				}
+				else
+				{	// Backtrack...
+					toVisit.pop();
+					while(!passed.isEmpty()) // there is always 1 item less on the passed stack
+					{
+						Field popped = passed.pop();
+						if(popped == null)
+							skipped.pop(); // a null on the passed stack corresponds to a skipped field on the skipped stack
+						else if(popped.isOnPage())
+							continue; // if the field is part of a page we must keep popping until we pop the containing page
+						break;
+					}
+				}
+			}
+			while(!toVisit.isEmpty() && !fieldsToCheck.isEmpty());
 		}
 		
-		public void goTo(FieldWithArguments nextFieldAndArguments)
+		public Queue<FieldWithArguments> goTo(final FieldWithArguments nextFieldAndArguments)
 		{
-			// Null check...
-			if(nextFieldAndArguments == null || nextFieldAndArguments.field == null)
-				return;
-		
 			// Avoid endless loops:
-			for(PassedField ps : passedFields)
-				if(ps.field == nextFieldAndArguments.field)
-					return;
+			if(passed.contains(nextFieldAndArguments.field) || skipped.contains(nextFieldAndArguments.field))
+				return null;
 			
-			// the nextField becomes the "current field":
+			// The nextField becomes the "current field":
 			currentField = nextFieldAndArguments.field;
-			nextFields.push(new ArrayList<FieldWithArguments>());
 			
-			if(!Controller.IsFieldToBeShown(mode, currentField))
-			{	// Skip the next field if it is not meant to be shown in the current form mode:
-				passedFields.push(PassedField.Skipped(currentField));
-				goForward();
-			}
-			else
-			{	// actually visit next field:
-				passedFields.push(PassedField.Visited(currentField));
+			// Clear assembleNextFields set:
+			assembleNextFields.clear();
+			
+			if(Controller.IsFieldToBeShown(mode, currentField))
+			{	
+				// This field would be shown to the user...
+				passed.push(currentField); // remember we visited it
+
+				// Actually enter the field:
 				currentField.enter(this, nextFieldAndArguments.arguments, false); // there's no UI so return value is ignored
 			}
+			else
+			{
+				// This field is not meant to be shown in the current form mode, so skip it...
+				skipped.push(currentField); // remember we skipped the field (for loop check)
+				passed.push(null); // *and* also insert a null on passed skip
+				
+				// Go to field below:
+				addNext(form.getNextFieldAndArguments(currentField, false)); // no jump allowed
+			}
+			
+			// Return queue of next fields (w/ args) to visit:
+			return assembleNextFields.isEmpty() ? EMPTY_QUEUE : new ArrayDeque<FieldWithArguments>(assembleNextFields);
+		}
+		
+		private void addNext(final FieldWithArguments next)
+		{
+			if(next != null)
+				assembleNextFields.add(next);
 		}
 		
 		private void goForward()
 		{
-			// add next field to nextFields stack/list:
-			nextFields.peek().add(form.getNextFieldAndArguments(currentField));
+			addNext(form.getNextFieldAndArguments(currentField, true)); // jump allowed
 		}
 		
-		private boolean enterLinearField(boolean withPage)
+		private boolean enterLinearField(final boolean withPage)
 		{
 			if(!withPage)
 			{
-				// simulate form triggers triggering while on current field:
+				// Simulate form triggers triggering while on current field:
 				simulateTriggers(form.getTriggers());
 				
-				// next:
+				// Next:
 				goForward();
 			}
 			return false;
 		}
 		
-		public void simulateTriggers(List<Trigger> triggers)
+		public void simulateTriggers(final List<Trigger> triggers)
 		{
 			for(Trigger trigger : triggers)
 				if(trigger.getJump() != null)
-					nextFields.peek().add(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
+					addNext(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
 		}
 
 		@Override
 		public boolean enterChoiceField(ChoiceField cf, FieldParameters arguments, boolean withPage)
 		{
-			if(withPage || cf.isLeaf())
-				return true; // should never happen
-			// We are not on a page and this is not a leaf, so this choice will be displayed to the user
+			if(withPage)
+				return false; // should never happen
 			
-			// Children the user can choose from:
 			boolean atLeast1Child = false;
-			for(ChoiceField child : cf.getChildren())
-				if(Controller.IsFieldEnabled(mode, child))
-				{
-					atLeast1Child = true;
-					// add to next stack/list:
-					if(child.isLeaf())
-						// Go to next/jump of chosenChild (not to the chosen child itself because it is a leaf):
-						nextFields.peek().add(form.getNextFieldAndArguments(child));
-					else
-						// Go to chosen child:
-						nextFields.peek().add(new FieldWithArguments(child, cf.getNextFieldArguments()));
-				}
+			if(!cf.isLeaf())
+				// Children the user can choose from:
+				for(ChoiceField child : cf.getChildren())
+					if(Controller.IsFieldEnabled(mode, child))
+					{
+						atLeast1Child = true;
+						// Add to next stack/list:
+						addNext(new FieldWithArguments(child, cf.getNextFieldArguments())); // Note: we also add children which are leaves because we want them in the path
+					}
 			
 			// Simulate form triggers firing before user is able to make a choice:
 			if(atLeast1Child)
 				simulateTriggers(form.getTriggers());
 			
-			//	Next field of choice itself:
-			//		either because there are no children (meaning we automatically advance),
+			//	Advance to next field of choice itself, either because...
+			//		this is a leaf,
+			//		there are no enabled children (meaning we automatically advance),
 			//		or because the user hits "forward" instead of making a choice (if field is optional and the forward button is shown)
 			if(!atLeast1Child || (cf.isOptional() && cf.isControlAllowedToBeShown(Control.Type.Forward, mode)))
 				goForward();
@@ -290,14 +350,14 @@ public class ColumnOptionalityAdvisor
 				goForward();
 			
 			// Enter child fields (but signal that they are entered as part of entering the page):
-			for(Field f : page.getFields())
-			{	
-				if(Controller.IsFieldToBeShown(mode, f))
+			for(Field fieldOnPage : page.getFields())
+				if(Controller.IsFieldToBeShown(mode, fieldOnPage))
 				{
-					passedFields.peek().addSubField(f);
-					f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
+					// Remember the field is visited:
+					passed.push(fieldOnPage);
+					// Enter it:
+					fieldOnPage.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 				}
-			}
 			
 			return false;
 		}
@@ -307,7 +367,7 @@ public class ColumnOptionalityAdvisor
 		{	
 			// Simulate jump upon click:
 			if(buttonField.getJump() != null)
-				nextFields.peek().add(new FieldWithArguments(buttonField.getJump(), buttonField.getNextFieldArguments()));
+				addNext(new FieldWithArguments(buttonField.getJump(), buttonField.getNextFieldArguments()));
 			
 			if(!withPage)
 			{
@@ -381,94 +441,20 @@ public class ColumnOptionalityAdvisor
 		{
 			if(ef.isSave())
 			{
-				// Assemble list of all visited fields:
-				List<Field> allVisited = new ArrayList<Field>();
-				for(PassedField ps : passedFields)
-					if(!ps.skipped)
-					{
-						allVisited.add(ps.field);
-						allVisited.addAll(ps.getSubFields());
-					}
-				
 				// Which of the fieldsToCheck have *not* been visited?
-				for(Field field : fieldsToCheck)
+				Iterator<Field> iter = fieldsToCheck.iterator();
+				while(iter.hasNext())
 				{
-					if(	// avoid checking fields which we already know are "by-passable":
-						(bypassableFields == null || !bypassableFields.contains(field)) &&
-						// check if field was *not* visited in this traversal, ...
-						!allVisited.contains(field))
-					{	// ... field was *not* visited while traversing from start to end/saving: so it is "by-passable"
-						if(bypassableFields == null)
-							bypassableFields = new HashSet<Field>();
-						bypassableFields.add(field);
-						// Debug:
-						/*System.out.println("\nBypassable: " + field.getID());
-						System.out.print("Passed: ");
-						for(Field f : visitedFields)
-							System.out.print(f.getID() + ",");
-						System.out.println("");*/
+					final Field fieldToCheck = iter.next();
+					if(!passed.contains(fieldToCheck))
+					{	// ... field would have been shown in the current mode but was *not* visited while traversing from start to end/saving: so it is "by-passable"
+						bypassableFields.add(fieldToCheck);
+						iter.remove(); // !!! remove field from fieldsToCheck (we now know it is "by-passable" so we don't need to check it against other paths)
 					}
 				}
 			}
 			// We go nowhere from here, backtrack will start...
-			
 			return false;
-		}
-		
-		public Set<Field> getByPassableOptionalFieldsWithColumn()
-		{
-			return bypassableFields == null ? Collections.<Field> emptySet() : bypassableFields;
-		}
-		
-		/**
-		 * Helper class
-		 * 
-		 * @author mstevens
-		 */
-		static private class PassedField
-		{
-			
-			// STATICS-------------------------------------
-			static public PassedField Visited(Field field)
-			{
-				return new PassedField(field, false);
-			}
-			
-			static public PassedField Skipped(Field field)
-			{
-				return new PassedField(field, true);
-			}
-			
-			// DYNAMICS------------------------------------
-			final Field field;
-			final boolean skipped;
-			List<Field> subFields;
-			
-			/**
-			 * @param field
-			 * @param skipped
-			 * @param subfields
-			 */
-			private PassedField(Field field, boolean skipped)
-			{
-				this.field = field;
-				this.skipped = skipped;
-			}
-			
-			public void addSubField(Field subField)
-			{
-				if(skipped)
-					throw new IllegalStateException("A skipped field cannot have subfields");
-				if(subFields == null)
-					subFields = new ArrayList<Field>();
-				subFields.add(subField);
-			}
-			
-			public List<Field> getSubFields()
-			{
-				return subFields == null ? Collections.<Field> emptyList() : subFields;
-			}
-			
 		}
 
 	}
