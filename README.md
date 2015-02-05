@@ -1,6 +1,8 @@
 Sapelli
 =======
 
+[![Join the chat at https://gitter.im/ExCiteS/Sapelli](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ExCiteS/Sapelli?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ### What? ###
 [Sapelli](http://sapelli.org) is a mobile data collection and sharing platform designed with a specific focus on non-literate and illiterate users with little or no prior ICT experience.
 
