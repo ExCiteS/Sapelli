@@ -145,7 +145,7 @@ public class CollectorActivity extends ProjectActivity
 		
 		// Show demo disclaimer if needed:
 		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
+			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getNameAndVersion() + ".\nFor demonstration purposes only.");
 	}
 
 	@Override

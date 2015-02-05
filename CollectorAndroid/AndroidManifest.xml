@@ -18,8 +18,9 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="uk.ac.ucl.excites.sapelli.collector"
-    android:versionCode="2000000"
-    android:versionName="2.0.0-SNAPSHOT" >
+    android:versionCode="0"
+    android:versionName="x.x.x" >
+	<!-- Please do *NOT* change versionName & versionCode manually in this file. Instead change the version in the pom.xml file(s). -->
 
     <uses-sdk
         android:minSdkVersion="10"
@@ -124,7 +125,6 @@
             android:label="@string/service_name" >
         </service>
         -->
-
 
         <!--
         <receiver
