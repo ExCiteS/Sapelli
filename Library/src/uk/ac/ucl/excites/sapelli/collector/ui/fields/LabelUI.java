@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class LabelUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<LabelField, V, UI>
 {
 
-	public LabelUI(LabelField labelField, Controller controller, UI collectorUI)
+	public LabelUI(LabelField labelField, Controller<UI> controller, UI collectorUI)
 	{
 		super(labelField, controller, collectorUI);
 	}

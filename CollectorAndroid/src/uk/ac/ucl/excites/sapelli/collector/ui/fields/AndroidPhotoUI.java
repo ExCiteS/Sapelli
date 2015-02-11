@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -72,14 +72,11 @@ import android.widget.ViewSwitcher;
 public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 {
 	
-	private CollectorController controller;
 	private CameraView photoView;
 	
 	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
-
-		this.controller = controller;
 	}
 	
 	@Override
@@ -172,7 +169,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 			// Add the CaptureLayout to the screen
 			this.addView(captureLayout);
-
 			
 			// --- Review UI:
 			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, null);
@@ -246,7 +242,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 		public void update()
@@ -296,7 +292,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Capture button:
 				Item captureButton = null;
-				File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getCaptureButtonImageRelativePath());
+				File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(captureImgFile))
 					captureButton = new FileImageItem(captureImgFile);
 				else
@@ -329,7 +325,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Approve button:
 				Item approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getApproveButtonImageRelativePath());
+				File approveImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
 				else
@@ -339,7 +335,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
 				// Discard button:
 				Item discardButton = null;
-				File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getDiscardButtonImageRelativePath());
+				File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else
@@ -353,9 +349,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		/**
 		 * @author mstevens
 		 */
-		private abstract class CameraButtonView extends PickerView
+		private abstract class CameraButtonView extends ItemPickerView
 		{
-			private int buttonPadding;
+			
 			private int buttonBackColor;
 			
 			/**
@@ -379,8 +375,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 				// Button size, padding & background colour:
 				this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
-				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP * 3);
-				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
+				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getControlBackgroundColor(), Form.DEFAULT_CONTROL_BACKGROUND_COLOR /*light gray*/);
 				
 				// The addButtons() should be called after the button parameters (size, padding etc.) have been setup
 				addButtons();
@@ -391,7 +386,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			
 			protected void addButton(Item button)
 			{
-				button.setPaddingPx(buttonPadding);
+				button.setPaddingDip(CollectorView.PADDING_DIP * 3);
 				button.setBackgroundColor(buttonBackColor);
 				getAdapter().addItem(button);
 			}

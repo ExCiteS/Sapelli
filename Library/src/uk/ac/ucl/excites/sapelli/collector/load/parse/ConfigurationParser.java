@@ -61,7 +61,7 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 	}
 
 	@Override
-	public void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws SAXException
+	public void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws Exception
 	{
 		// <Configuration>
 		if(qName.equals(TAG_CONFIGURATION))
@@ -142,7 +142,7 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 	}
 
 	@Override
-	public void parseEndElement(String uri, String localName, String qName) throws SAXException
+	public void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
 		// </Transmission>
 		if(qName.equals(TAG_TRANSMISSION))

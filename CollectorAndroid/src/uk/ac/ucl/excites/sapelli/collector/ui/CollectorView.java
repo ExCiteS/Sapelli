@@ -22,7 +22,8 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
@@ -53,8 +54,10 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Build;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
@@ -79,29 +82,33 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float SPACING_DIP = 8.0f;
 	static public final float PADDING_DIP = 2.0f;
 
+	// Colors:
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// ScreenTransition duration
 	static public final int SCREEN_TRANSITION_DURATION = 800;
 
-	private CollectorActivity activity;
+	public final CollectorActivity activity;
 	private CollectorController controller;
 
 	// UI elements:
 	private AndroidControlsUI controlsUI;
 	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
-	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
+	private HashMap<Field, FieldUI<? extends Field, View, CollectorView>> fieldUICache;
 
 	// Input manager:
 	private InputMethodManager imm;
+	
+	// Audio feedback controller:
+	private AndroidAudioFeedbackController audioFeedbackController;
 
 	public CollectorView(CollectorActivity activity)
 	{
 		super(activity);
 		this.activity = activity;
-		this.fieldUICache = new HashMap<Field, FieldUI<?, View, CollectorView>>();
+		this.fieldUICache = new HashMap<Field, FieldUI<? extends Field, View, CollectorView>>();
 
 		this.imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
 
@@ -151,14 +158,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.disable();
 
 		// Get or create fieldUI for field...
-		FieldUI<?, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
-		if(newFieldUI == null)
-		{ // no cached fieldUI for this field...
-			newFieldUI = field.createUI(this); // create new fieldUI for field
-			if(newFieldUI == null) // just in case
-				throw new IllegalStateException("Could not construct UI for field \"" + field.getID() + "\".");
-			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
-		}
+		FieldUI<?, View, CollectorView> newFieldUI = getFieldUI(field);
 		
 		// Hide current fieldUI, if there is one, it is not the same as the new one (i.e. it does probably not represent the same field), and it is currently shown...
 		if(fieldUI != null && newFieldUI != fieldUI && fieldUI.isFieldShown())
@@ -186,20 +186,20 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 					// Check whether it is a backwards or forwards direction and create Right or Left animation:
 					if(controller.isGoBack())
 						// Right:
-						ViewAnimator.SlideRight(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Left:
-						ViewAnimator.SlideLeft(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				case VERTICAL:
 					// Check whether it is a backwards or forwards direction and create Up or Down animation:
 					if(controller.isGoBack())
 						// Down:
-						ViewAnimator.slideDown(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Up:
-						ViewAnimator.slideUp(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				default:
@@ -220,10 +220,28 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			// New becomes current:
 			fieldUIView = newFieldUIView;
 			
-			// Set up listener if needed:
+			// Set up view tree listener if needed (notify field when Android is actually displaying its View):
 			if(fieldUI.informOnDisplay(false))
 			{
-				// TODO set up listener and if listeren called call fieldUI.onDisplay(false);
+				fieldUIView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener()
+				{
+					
+					@SuppressLint("NewApi")
+					@SuppressWarnings("deprecation")
+					@Override
+					public void onGlobalLayout()
+					{
+						// call the field's onDisplay method:
+						fieldUI.onDisplay(false);
+						// remove this listener once this has occurred, so the field's onDisplay method is not called too many times:
+						if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN /* 16 */)
+							fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+						else
+							// use deprecated version (probably changed due to "on" typo):
+							fieldUIView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+					}
+
+				});
 			}
 		}
 
@@ -234,15 +252,62 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.enable();
 	}
 
-	public CollectorActivity getActivity()
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI#getFieldUI(uk.ac.ucl.excites.sapelli.collector.model.Field)
+	 */
+	@Override
+	public FieldUI<? extends Field, View, CollectorView> getFieldUI(Field field)
 	{
-		return activity;
+		FieldUI<? extends Field, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
+		if(newFieldUI == null)
+		{	// no cached fieldUI for this field...
+			newFieldUI =  field.createUI(this); // create new fieldUI for field
+			if(newFieldUI == null) // just in case
+				throw new IllegalStateException("Could not construct UI for field \"" + field.id + "\".");
+			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
+		}
+		return newFieldUI;
 	}
 
 	@Override
 	public FieldUI<?, View, CollectorView> getCurrentFieldUI()
 	{
 		return fieldUI;
+	}
+	
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 */
+	public void clickView(View clickedView, final Runnable action)
+	{
+		// Block the UI so other events are ignored until we are done:
+		controller.blockUI();
+		
+		// Execute the "press" animation if allowed, then perform the action:
+		if(controller.getCurrentForm().isClickAnimation())
+			// Execute animation and the action afterwards:
+			ViewAnimator.Click(	clickedView,
+								null,
+								new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										if(action != null)
+											action.run();
+										controller.unblockUI(); // !!!
+									}
+								});
+		else
+		{
+			// Block the UI before running the action and unblock it afterwards
+			if(action != null)
+				action.run();
+			controller.unblockUI();
+		}
 	}
 
 	@Override
@@ -406,7 +471,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return ScreenMetrics.GetScreenHeight(activity);
 	}
 
-	// TODO pull all getFieldUI*Px methods up to CollectorUI
 	public int getFieldUIWidthPx()
 	{
 		return getScreenWidthPx();
@@ -492,10 +556,26 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	}
 
 	@Override
-	public AbstractAudioFeedbackController<View> getAudioFeebackController()
+	public AudioFeedbackController<View> getAudioFeebackController()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		if (audioFeedbackController == null)
+			audioFeedbackController = new AndroidAudioFeedbackController(controller);
+		return audioFeedbackController;
+	}
+	
+	@Override
+	public void stopAudioFeedback()
+	{
+		if(audioFeedbackController != null)
+			audioFeedbackController.stop();
+	}
+
+	@Override
+	public void destroyAudioFeedback()
+	{
+		if(audioFeedbackController != null)
+			audioFeedbackController.destroy();
+		audioFeedbackController = null;
 	}
 
 }

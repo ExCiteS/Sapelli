@@ -42,14 +42,15 @@ public class LabelField extends Field
 	
 	/**
 	 * @param form
-	 * @param id
+	 * @param id the id, may be null
 	 * @param caption the label's caption, cannot be null.
+	 * @throws NullPointerException when the caption is null
 	 */
-	public LabelField(Form form, String id, String caption)
+	public LabelField(Form form, String id, String caption) throws NullPointerException
 	{	
 		super(	form,
-				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
-				caption);
+				GetID(id, form, ID_PREFIX, caption),
+				CheckCaption(caption));
 		this.noColumn = true;
 		this.optional = true;
 	}

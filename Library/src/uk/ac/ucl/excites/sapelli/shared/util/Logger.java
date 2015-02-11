@@ -50,14 +50,26 @@ public class Logger
 	}
 
 	/**
-	 * Add a new line with the following format: TIMESTAMP;MSG;
+	 * Add a new line with the following format: TIMESTAMP;MSG
 	 * 
 	 * @param line
 	 */
 	public void addLine(String line)
 	{
-		checkWriter();
-		fileWriter.writeLine(getTime() + FIELD_SEPARATOR + line + FIELD_SEPARATOR);
+		addLine(line, true);
+	}
+	
+	/**
+	 * Add a new line with format:
+	 * 	- when timestamp=true: TIMESTAMP;MSG
+	 * 	- when timestamp=false: MSG
+	 * 
+	 * @param line
+	 * @param timestamp whether or not to include a timestamp
+	 */
+	public void addLine(String line, boolean timestamp)
+	{
+		addLine(timestamp, new String[] { line });
 	}
 
 	/**
@@ -67,11 +79,32 @@ public class Logger
 	 */
 	public void addLine(String... fields)
 	{
+		addLine(true, fields);
+	}
+	
+	/**
+	 * Add a new line with format:
+	 * 	- when timestamp=true: TIMESTAMP;fields[0];...;fields[fields.length-1]
+	 * 	- when timestamp=false: fields[0];...;fields[fields.length-1]
+	 * 
+	 * @param timestamp
+	 * @param fields
+	 */
+	public void addLine(boolean timestamp, String... fields)
+	{
 		checkWriter();
-		fileWriter.write(getTime());
-		for(String field : fields)
-			fileWriter.write(FIELD_SEPARATOR + field);
-		fileWriter.writeLine(FIELD_SEPARATOR);
+		if(timestamp)
+			fileWriter.write(getTime());
+		boolean written = timestamp;
+		if(fields != null)
+			for(String field : fields)
+			{
+				if(written)
+					fileWriter.write(FIELD_SEPARATOR);
+				fileWriter.write(field);
+				written = true;
+			}
+		fileWriter.writeLine("");
 	}
 
 	/**

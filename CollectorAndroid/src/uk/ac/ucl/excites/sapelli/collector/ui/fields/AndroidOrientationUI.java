@@ -19,19 +19,19 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
+import android.graphics.Color;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
@@ -48,7 +48,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 
 	static public final float PADDING = 40.0f;
 
-	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI)
+	public AndroidOrientationUI(OrientationField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
@@ -68,9 +68,8 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 				{
 					@Override
 					public void onClick(View v)
-					{
-						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field
-																											// itself
+					{	// force leaving of the page, to go to the field itself:
+						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); 
 					}
 				});
 			}
@@ -82,14 +81,12 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
+				View compassIcon = new ResourceImageItem(context.getResources(), R.drawable.compass_svg).setBackgroundColor(Color.BLACK).getView(context);
+				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
+				compassIcon.setPadding(padding, padding, padding, padding);
+				waitView.addView(compassIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 				params.addRule(RelativeLayout.CENTER_IN_PARENT);
-				ImageView gpsIcon = new ImageView(context);
-				gpsIcon.setImageDrawable(context.getResources().getDrawable(R.drawable.compass));
-				gpsIcon.setScaleType(ScaleType.CENTER_INSIDE);
-				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
-				gpsIcon.setPadding(padding, padding, padding, padding);
-				waitView.addView(gpsIcon);
 				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge), params);
 
 			}

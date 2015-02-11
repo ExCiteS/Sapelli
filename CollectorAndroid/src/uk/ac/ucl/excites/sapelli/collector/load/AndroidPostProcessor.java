@@ -18,25 +18,83 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
-import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+import android.content.Context;
 
 /**
- * @author mstevens
+ * @author mstevens, benelliott
  *
  */
 public class AndroidPostProcessor implements PostProcessor
 {
 	
+	@SuppressWarnings("unused")
+    private static final String TAG = "AndroidPostProcessor";
+	
+	private Context context;
+	private FileStorageProvider fileStorageProvider;
+	private TextToVoice ttv;
+	private boolean warnedAboutLanguage = false;
+
+	public AndroidPostProcessor(Context context, FileStorageProvider fileStorageProvider)
+	{
+		this.context = context;
+		this.fileStorageProvider = fileStorageProvider;
+	}
+	
+	@Override
+    public void initialise(Project project)
+	{
+		// Reset "already warned" flags:
+		warnedAboutLanguage = false;
+    }
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor#execute(uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask, uk.ac.ucl.excites.sapelli.collector.model.Project, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
 	 */
 	@Override
-	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception
+	public void execute(TTVSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception
 	{
-		// TODO implement TTS support here, avoid throwing exceptions unless really fatal, for everything else (including failure to produce mp3) use warningKeeper.addWarning(String)
+		if (ttv == null)
+			ttv = new TextToVoice(context);
+		
+		String filepath = (fileStorageProvider.getProjectSoundFile(project, ttsTask.getAudioFileRelativePath())).getAbsolutePath();
+		
+		// keep track of whether or not the user has been warned about an invalid language code (only want to warn them once):
+	    try
+	    {
+	    	ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath, ttsTask.getLanguage());
+	    }
+	    catch (TTVSynthesisFailedException e)
+	    {
+			warningKeeper.addWarning("Text-to-speech synthesis: Error when trying to synthesise text -- \""+e.getText()+"\". This synthesis job will be skipped and nothing will be played when the project is run.");
+	    }
+	    catch (TTVUnsupportedLanguageException e)
+	    {
+	    	if (!warnedAboutLanguage)
+	    	{
+	    		warningKeeper.addWarning("Text-to-speech synthesis: specified language code not supported for synthesis. Make sure the provided language code is valid, but know that Android will not support all valid language codes for speech synthesis.");
+	    		warnedAboutLanguage = true;
+	    	}
+	    }
+	}
+
+	/**
+	 * Frees any resources that were being used by the PostProcessor
+	 */
+	@Override
+	public void freeResources()
+	{
+		// destroy TTS engine:
+		if(ttv != null)
+		{
+			ttv.destroy();
+			ttv = null;
+		}
 	}
 
 }

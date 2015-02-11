@@ -32,6 +32,16 @@ public final class StringUtils
 {
 
 	private StringUtils() {}
+
+	static public String nullToEmpty(String str)
+	{
+		return str == null ? "" : str;
+	}
+	
+	static public String emptyToNull(String str)
+	{
+		return str != null && str.isEmpty() ? null : str;
+	}
 	
 	/**
 	 * Returns the number bytes a given string takes up when encoded with a given charset 

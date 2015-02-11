@@ -87,14 +87,14 @@ public abstract class Message implements Comparable<Message>
 	 * @param partNumber
 	 * @param totalParts
 	 * @param sentAt - may be null
-	 * @param deliverdAt - may be null
+	 * @param deliveredAt - may be null
 	 * @param receivedAt - may be null
 	 */
-	protected Message(SMSTransmission<?> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt)
+	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt)
 	{
 		this(transmission, partNumber, totalParts);
 		this.sentAt = sentAt;
-		this.deliveredAt = deliverdAt;
+		this.deliveredAt = deliveredAt;
 		this.receivedAt = receivedAt;
 	}
 	

@@ -42,13 +42,13 @@ public class CheckBoxField extends Field
 
 	/**
 	 * @param form
-	 * @param id
-	 * @param caption
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null (in which case there will be no text shown next to the checkbox)
 	 */
 	public CheckBoxField(Form form, String id, String caption)
 	{
 		super(	form,
-				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
+				GetID(id, form, ID_PREFIX, caption),
 				caption);
 		this.initialValue = DEFAULT_INITIAL_VALUE;
 	}

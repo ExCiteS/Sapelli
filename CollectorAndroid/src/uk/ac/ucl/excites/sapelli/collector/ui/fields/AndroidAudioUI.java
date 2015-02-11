@@ -27,12 +27,11 @@ import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
@@ -50,7 +49,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	
 	static private final String TAG = "AndroidAudioUI";
 
-	private CollectorController controller;
 	private AudioView view;
 	private File audioFile;
 	private AudioRecorder audioRecorder;
@@ -58,8 +56,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	public AndroidAudioUI(AudioField audioField, CollectorController controller, CollectorView collectorView)
 	{
 		super(audioField, controller, collectorView);
-
-		this.controller = controller;
 	}
 	
 	private boolean startRecording()
@@ -126,13 +122,12 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		return view;
 	}
 	
-	public class AudioView extends PickerView implements AdapterView.OnItemClickListener
+	public class AudioView extends ItemPickerView implements AdapterView.OnItemClickListener
 	{
 		
 		static private final int BUTTON_INDEX_START = 0;
 		static private final int BUTTON_INDEX_STOP = 1;
 		
-		private int buttonPadding;
 		private int buttonBackColor;
 
 		public AudioView(Context context)
@@ -150,13 +145,12 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 
 			// Button size, padding & background colour:
 			this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIPartHeightPx(2));
-			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			this.buttonBackColor = ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
 			
 			// Adapter & button images:
 			// Start rec button:
 			Item startButton = null;
-			File startRecImageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStartRecImageRelativePath());
+			File startRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(startRecImageFile))
 				startButton = new FileImageItem(startRecImageFile);
 			else
@@ -166,7 +160,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 
 			// Stop rec button:
 			Item stopButton = null;
-			File stopRecImageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopRecImageRelativePath());
+			File stopRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopRecImageFile))
 				stopButton = new FileImageItem(stopRecImageFile);
 			else
@@ -180,7 +174,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		
 		private void addButton(Item button)
 		{
-			button.setPaddingPx(buttonPadding);
+			button.setPaddingDip(CollectorView.PADDING_DIP);
 			button.setBackgroundColor(buttonBackColor);
 			getAdapter().addItem(button);
 		}
@@ -200,7 +194,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 							controller.addLogLine("CLICK_START_RECORDING");
 							
 							if(field.isUseNativeApp())
-								collectorUI.getActivity().startAudioRecorderApp(AndroidAudioUI.this);
+								collectorUI.activity.startAudioRecorderApp(AndroidAudioUI.this);
 							else if(startRecording())
 							{
 								view.setStartVisibility(false);
@@ -226,7 +220,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 		public void setStartVisibility(boolean visible)

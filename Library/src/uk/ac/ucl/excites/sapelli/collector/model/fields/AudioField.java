@@ -19,8 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -96,13 +95,16 @@ public class AudioField extends MediaField
 			return EXTENSION_3GPP; //or the default
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
+	 */
 	@Override
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, startRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, stopRecImageRelativePath));
-		return paths;
+		super.addFiles(filesSet, fileStorageProvider); // !!!
+		
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
 	}
 
 	@Override

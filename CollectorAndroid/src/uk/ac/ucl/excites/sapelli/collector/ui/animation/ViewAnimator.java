@@ -19,25 +19,129 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationSet;
 import android.view.animation.CycleInterpolator;
+import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
 
 /**
+ * Library of different animations that can be applied to Views
+ * 
  * @author Michalis Vitos, mstevens
- *
  */
-public final class ViewAnimator
+public class ViewAnimator
 {
 	
+	public static final int DEFAULT_CLICK_DURATION = 400; // ms
+
+	/**
+	 * @param viewToAnimate
+	 * @param animationSet
+	 * @param duringAnimation code to run, *off* the main/UI thread, when the animation starts and while it is running (may be null; should not touch views directly; animation will invisible or interrupted if work is passed to the main/UI thread before it completes)
+	 * @param afterAnimation code to run, *on* the main/UI thread, when the animation ends (may be null)
+	 */
+	static protected void Animate(final View viewToAnimate, final AnimationSet animationSet, final Runnable duringAnimation, final Runnable afterAnimation)
+	{
+		final Looper mainLooper = Looper.getMainLooper();
+
+		// Set up listener for the animation:
+		if(duringAnimation != null || afterAnimation != null)
+			animationSet.setAnimationListener(new AnimationListener()
+			{
+				@Override
+				public void onAnimationStart(Animation animation)
+				{	// We are on the main/UI thread here so must spawn a new thread to do something concurrently with the animation
+					if(duringAnimation != null)
+						new Thread(duringAnimation).start(); // run *off* main/UI thread
+				}
+	
+				@Override
+				public void onAnimationRepeat(Animation animation)
+				{
+					// not used
+				}
+	
+				@Override
+				public void onAnimationEnd(Animation animation)
+				{
+					/*
+					 * We are on the main/UI thread here BUT we still need to post this runnable into the event queue (rather than running it directly) because
+					 * Android is not expecting us to touch the View hierarchy here and doing so can cause NullPointerExceptions -- see
+					 * http://stackoverflow.com/a/7445557/4186768.
+					 * 
+					 * For some reason using a Handler also prevents a strange "splitting" effect when SplitItems are animated on-click.
+					 */
+					if(afterAnimation != null)
+						new Handler(mainLooper).post(afterAnimation);
+				}
+			});
+
+		// Run the animation:
+		Runnable runAnimation = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				viewToAnimate.startAnimation(animationSet);
+			}
+		};
+
+		// Decide on thread:
+		if(Thread.currentThread() != mainLooper.getThread())
+			new Handler(mainLooper).post(runAnimation);
+		else
+			runAnimation.run();
+	}
+	
+	/**
+	 * "Button click" animation
+	 * 
+	 * @param clickedView
+	 * @param onAnimationStart code to run (on the main/UI thread) when the animation starts (may be null)
+	 * @param onAnimationEnd code to run (on the main/UI thread) when the animation ends (may be null)
+	 */
+	public static void Click(View clickedView, Runnable onAnimationStart, Runnable onAnimationEnd)
+	{
+		Click(DEFAULT_CLICK_DURATION, clickedView, onAnimationStart, onAnimationEnd);
+	}
+
+	/**
+	 * "Button click" animation
+	 * 
+	 * @param duration
+	 * @param clickedView
+	 * @param onAnimationStart code to run (on the main/UI thread) when the animation starts (may be null)
+	 * @param onAnimationEnd code to run (on the main/UI thread) when the animation ends (may be null)
+	 */
+	public static void Click(long duration, View clickedView, Runnable onAnimationStart, Runnable onAnimationEnd)
+	{
+		// Set the alpha level of the object
+		AlphaAnimation alpha = new AlphaAnimation((float) 1.0, (float) 0.5);
+		alpha.setDuration(duration);
+
+		// Control the scale level of the object
+		ScaleAnimation scale = new ScaleAnimation(1, (float) 0.96, 1, (float) 0.96, Animation.RELATIVE_TO_SELF, (float) 0.5, Animation.RELATIVE_TO_SELF, (float) 0.5);
+		scale.setDuration(duration);
+
+		// Create an animation set
+		AnimationSet animationSet = new AnimationSet(true);
+		animationSet.addAnimation(alpha);
+		animationSet.addAnimation(scale);
+
+		// Run the animation:
+		Animate(clickedView, animationSet, onAnimationStart, onAnimationEnd);
+	}
+
 	private static final int DIRECTION_RIGHT = 0;
 	private static final int DIRECTION_LEFT = 1;
 	private static final int DIRECTION_DOWN = 2;
 	private static final int DIRECTION_UP = 3;
-	
 	
 	private static final boolean isHorizontal(int direction)
 	{
@@ -48,62 +152,64 @@ public final class ViewAnimator
 	{
 		return direction > DIRECTION_LEFT;
 	}
-
+	
 	/**
 	 * Slide on the right the previous and the next views
 	 * 
-	 * @param context
-	 * @param previousView
-	 * @param nextView
+	 * @param previousView the view to slide away (may be null)
+	 * @param nextView the view to slide in (should *never* be null)
 	 * @param duration
 	 */
-	public static void SlideRight(Context context, View previousView, View nextView, int duration)
+	public static void SlideRight(View previousView, View nextView, int duration)
 	{
-		Slide(context, previousView, nextView, duration, DIRECTION_RIGHT);
+		Slide(previousView, nextView, duration, DIRECTION_RIGHT);
 	}
 
 	/**
 	 * Slide on the left the previous and the next views
 	 * 
-	 * @param context
-	 * @param previousView
-	 * @param nextView
+	 * @param previousView the view to slide away (may be null)
+	 * @param nextView the view to slide in (should *never* be null)
 	 * @param duration
 	 */
-	public static void SlideLeft(Context context, View previousView, View nextView, int duration)
+	public static void SlideLeft(View previousView, View nextView, int duration)
 	{
-		Slide(context, previousView, nextView, duration, DIRECTION_LEFT);
+		Slide(previousView, nextView, duration, DIRECTION_LEFT);
 	}
 	
 	/**
 	 * Slide Down the previous and the next views
 	 * 
-	 * @param context
-	 * @param previousView
-	 * @param nextView
+	 * @param previousView the view to slide away (may be null)
+	 * @param nextView the view to slide in (should *never* be null)
 	 * @param duration
 	 */
-	public static void slideDown(Context context, View previousView, View nextView, int duration)
+	public static void SlideDown(View previousView, View nextView, int duration)
 	{
-		Slide(context, previousView, nextView, duration, DIRECTION_DOWN);
+		Slide(previousView, nextView, duration, DIRECTION_DOWN);
 	}
 
 	/**
 	 * Slide Up the previous and the next views
 	 * 
-	 * @param context
-	 * @param previousView
-	 * @param nextView
+	 * @param previousView the view to slide away (may be null)
+	 * @param nextView the view to slide in (should *never* be null)
 	 * @param duration
 	 */
-	public static void slideUp(Context context, View previousView, View nextView, int duration)
+	public static void SlideUp(View previousView, View nextView, int duration)
 	{
-		Slide(context, previousView, nextView, duration, DIRECTION_UP);
+		Slide(previousView, nextView, duration, DIRECTION_UP);
 	}
 
-	private static void Slide(Context context, View previousView, View nextView, int duration, int direction)
+	/**
+	 * @param previousView the view to slide away (may be null)
+	 * @param nextView the view to slide in (should *never* be null)
+	 * @param duration
+	 * @param direction
+	 */
+	private static void Slide(View previousView, View nextView, int duration, int direction)
 	{
-		int screenWidth = ScreenMetrics.GetScreenWidth(context);
+		int screenWidth = ScreenMetrics.GetScreenWidth(nextView.getContext());
 
 		// Slide previousView:
 		if(previousView != null)
@@ -117,8 +223,9 @@ public final class ViewAnimator
 			// Create an animation set
 			AnimationSet previousSet = new AnimationSet(true);
 			previousSet.addAnimation(previousAnimation);
-
-			previousView.startAnimation(previousSet);
+			
+			// Run the animation:
+			Animate(previousView, previousSet, null, null);
 		}
 
 		// Slide nextView:
@@ -133,10 +240,17 @@ public final class ViewAnimator
 		// Create an animation set
 		AnimationSet nextSet = new AnimationSet(true);
 		nextSet.addAnimation(nextAnimation);
-		nextView.startAnimation(nextSet);
+		
+		// Run the animation:
+		Animate(nextView, nextSet, null, null);
 	}
 	
-	public static void alphaAnimation(View view)
+	/**
+	 * @param viewToAnimate
+	 * @param onAnimationStart code to run (on the main/UI thread) when the animation starts (may be null)
+	 * @param onAnimationEnd code to run (on the main/UI thread) when the animation ends (may be null)
+	 */
+	public static void Alpha(View viewToAnimate, Runnable onAnimationStart, Runnable onAnimationEnd)
 	{
 		AlphaAnimation alpha = new AlphaAnimation((float) 1.0, (float) 0.5);
 		alpha.setDuration(400);
@@ -145,28 +259,33 @@ public final class ViewAnimator
 		AnimationSet animationSet = new AnimationSet(true);
 		animationSet.addAnimation(alpha);
 
-		view.startAnimation(animationSet);
+		// Run the animation:
+		Animate(viewToAnimate, animationSet, onAnimationStart, onAnimationEnd);
 	}
 
-	public static void shakeAnimation(Context context, View view)
+	/**
+	 * @param viewToAnimate
+	 * @param onAnimationStart code to run (on the main/UI thread) when the animation starts (may be null)
+	 * @param onAnimationEnd code to run (on the main/UI thread) when the animation ends (may be null)
+	 */
+	public static void Shake(View viewToAnimate, Runnable onAnimationStart, Runnable onAnimationEnd)
 	{
 		// Create the animation set
 		AnimationSet animationSet = new AnimationSet(true);
 		animationSet.setInterpolator(new CycleInterpolator(3)); // Repeat 3 times
 
 		// Create movement
-		final int horizontalShake = ScreenMetrics.ConvertDipToPx(context, 3);
-		TranslateAnimation shake = new TranslateAnimation(0, horizontalShake, 0, 0);
+		TranslateAnimation shake = new TranslateAnimation(0, ScreenMetrics.ConvertDipToPx(viewToAnimate.getContext(), 3), 0, 0);
 		shake.setDuration(600);
-
 		animationSet.addAnimation(shake);
 
-		view.startAnimation(animationSet);
+		// Run the animation:
+		Animate(viewToAnimate, animationSet, onAnimationStart, onAnimationEnd);
 	}
 	
 	private ViewAnimator()
 	{
-		// should never be instantiated
+		// no need to instantiate this
 	}
-	
+
 }

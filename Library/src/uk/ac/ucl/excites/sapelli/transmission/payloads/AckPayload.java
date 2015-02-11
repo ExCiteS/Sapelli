@@ -83,8 +83,8 @@ public class AckPayload extends Payload
 	@Override
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
-		subjectSenderSideID = (int) Transmission.TRANSMISSION_ID_FIELD.read(bitstream);
-		subjectPayloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(bitstream);
+		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
+		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
 		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream); 
 	}
 

@@ -109,7 +109,7 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 		if(!BuildConfig.DEBUG)
 		{
 			Crashlytics.start(this);
-			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getVersionInfo());
+			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getNameAndVersion() + " [" + buildInfo.getExtraVersionInfo() + "]");
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 	

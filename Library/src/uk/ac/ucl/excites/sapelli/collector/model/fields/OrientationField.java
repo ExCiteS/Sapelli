@@ -40,6 +40,8 @@ public class OrientationField extends Field
 	static public final boolean DEFAULT_STORE_PITCH = true;
 	static public final boolean DEFAULT_STORE_ROLL = true;
 	
+	static public final String ID_PREFIX = "orient";
+	
 	//Dynamics:
 	private boolean storeAzimuth = DEFAULT_STORE_AZIMUTH;
 	private boolean storePitch = DEFAULT_STORE_PITCH;
@@ -47,12 +49,12 @@ public class OrientationField extends Field
 	
 	/**
 	 * @param form the form the field belongs to
-	 * @param id the id of the field, should not be null
-	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null
 	 */
 	public OrientationField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
+		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 	}
 
 	/**

@@ -20,14 +20,17 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.util.ColumnOptionalityAdvisor;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
@@ -73,7 +76,7 @@ public class Form implements WarningKeeper
 	public static final boolean DEFAULT_SKIP_ON_BACK = false;
 	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
-	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#BABABA"; // gray
+	public static final String DEFAULT_CONTROL_BACKGROUND_COLOR = "#BABABA"; // light gray
 	public static final boolean DEFAULT_CLICK_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
@@ -99,14 +102,9 @@ public class Form implements WarningKeeper
 
 	public static final AudioFeedback DEFAULT_AUDIO_FEEDBACK = AudioFeedback.NONE;
 
-	// Buttons Default Description Text (used for accessibility support)
-	public static final String DEFAULT_FORWARD_BUTTON_DESCRIPTION = "Forward";
-	public static final String DEFAULT_CANCEL_BUTTON_DESCRIPTION = "Cancel";
-	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
-
 	// Dynamics-------------------------------------------------------
-	private final Project project;
-	private final String id;
+	public final Project project;
+	public final String id;
 	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
@@ -120,6 +118,9 @@ public class Form implements WarningKeeper
 	private final List<Field> fields;
 	private List<Trigger> triggers;
 	
+	// Form language:
+	private String defaultLanguage; // null by default (because project language should be used if form language not specified)
+
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
@@ -140,17 +141,13 @@ public class Form implements WarningKeeper
 
 	// End action:
 	private Next next = DEFAULT_NEXT;
+	private transient EndField defaultEndField;
 	private boolean vibrateOnSave = DEFAULT_VIBRATE;
 	private String saveSoundRelativePath;
 
-	// Buttons:
-	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
-	private String backButtonImageRelativePath;
-	private String backButtonDescription = DEFAULT_BACK_BUTTON_DESCRIPTION;
-	private String cancelButtonImageRelativePath;
-	private String cancelButtonDescription = DEFAULT_CANCEL_BUTTON_DESCRIPTION;
-	private String forwardButtonImageRelativePath;
-	private String forwardButtonDescription = DEFAULT_FORWARD_BUTTON_DESCRIPTION;
+	// Controls:
+	private String controlBackgroundColor = DEFAULT_CONTROL_BACKGROUND_COLOR;
+	private final Control[] controls;
 	
 	public Form(Project project, String id)
 	{
@@ -163,12 +160,17 @@ public class Form implements WarningKeeper
 		this.fields = new ArrayList<Field>();
 		this.position = (short) project.getForms().size();
 		project.addForm(this); //!!!
+		
+		// Initialise controls array:
+		controls = new Control[Control.Type.values().length];
+		for(Control.Type type : Control.Type.values())
+			controls[type.ordinal()] = new Control(this, type);
 	}
 
 	/**
 	 * @return the project
 	 */
-	public Project getProject()
+	public final Project getProject()
 	{
 		return project;
 	}
@@ -190,15 +192,20 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param current
+	 * @param current (should not be null)
 	 * @return the next field to go to along with passed arguments, or null if the next field could not be determined (likely because the current field is part of a page)
+	 * @throws NullPointerException when current is null
 	 */
-	public FieldWithArguments getNextFieldAndArguments(Field current)
+	public FieldWithArguments getNextFieldAndArguments(Field current, boolean allowJump) throws NullPointerException
 	{
-		// Check for jump field (possibly the one of a parent in case of ChoiceField):
-		Field nextF = current.getJump();
+		if(current == null)
+			throw new NullPointerException("Given \"current\" field cannot be null");
+		Field nextF = null;
+		// If allowed, check for jump field (possibly the one of a parent in case of ChoiceField):
+		if(allowJump)
+			nextF = current.getJump();
 		if(nextF == null)
-		{	// No jump is set, check for field below current one:
+		{	// No jump is set or allowed, check for field below current one:
 			int currentPos = getFieldPosition(current);
 			if(currentPos < 0)
 				// This field is not part of the form (it is likely part of a page):
@@ -206,7 +213,7 @@ public class Form implements WarningKeeper
 			if(currentPos + 1 < fields.size())
 				nextF = fields.get(currentPos + 1); // go to next field in the form
 			else
-				nextF = new EndField(this, true, next); // current field is the last of the form, go to the form's "next", but save the record first
+				nextF = getDefaultEndField(); // current field is the last of the form
 		}
 		return new FieldWithArguments(nextF, current.getNextFieldArguments());
 	}
@@ -216,7 +223,7 @@ public class Form implements WarningKeeper
 	 * 
 	 * @return
 	 */
-	public String getID()
+	public final String getID()
 	{
 		return id;
 	}
@@ -226,14 +233,36 @@ public class Form implements WarningKeeper
 	 * 
 	 * @return
 	 */
-	public String getName()
+	public final String getName()
 	{
 		return getID();
 	}
 
+	/**
+	 * Returns all top-level fields of the form
+	 * 
+	 * @return
+	 */
 	public List<Field> getFields()
 	{
-		return fields;
+		return Collections.unmodifiableList(fields);
+	}
+	
+	/**
+	 * @param recurse when true the fields contained within Pages will be counted as well
+	 * @return
+	 */
+	public int getNumberOfFields(boolean recurse)
+	{
+		// Top-level fields:
+		int total = fields.size();
+		// Fields contained in Pages:
+		if(recurse)
+			for(Field f : fields)
+				if(f instanceof Page)
+					total += ((Page) f).getFields().size();
+		// Return total:
+		return total;
 	}
 	
 	/**
@@ -245,7 +274,7 @@ public class Form implements WarningKeeper
 	public Field getField(String fieldID)
 	{
 		for(Field f : fields)
-			if(f.getID().equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
+			if(f.id.equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
 				return f;
 		return null;
 	}
@@ -277,12 +306,11 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param start
-	 *            the start to set
+	 * @param startField the startField to set
 	 */
-	public void setStartField(Field start)
+	public void setStartField(Field startField)
 	{
-		this.startField = start;
+		this.startField = startField;
 	}
 
 	public void addTrigger(Trigger trigger)
@@ -309,8 +337,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param clickAnimation
-	 *            the animation to set
+	 * @param clickAnimation the clickAnimation to set
 	 */
 	public void setClickAnimation(boolean clickAnimation)
 	{
@@ -326,8 +353,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param screenTransitionStr
-	 *            the screenTransition to set
+	 * @param screenTransitionStr the screenTransition to set
 	 */
 	public void setScreenTransition(String screenTransitionStr)
 	{
@@ -343,7 +369,24 @@ public class Form implements WarningKeeper
 			throw iae;
 		}
 	}
+	
+	/**
+	 * @return the BCP-47 format string representing the currently set default language for this form
+	 */
+	public String getDefaultLanguage()
+	{
+		return defaultLanguage != null ? defaultLanguage : project.getDefaultLanguage();
+	}
 
+	/**
+	 * Set the project's default language (the language that will be used for text-to-speech synthesis).
+	 * @param defaultLanguage the language to set, as a valid BCP 47 format string (e.g. "en-GB")
+	 */
+	public void setDefaultLanguage(String defaultLanguage)
+	{
+		this.defaultLanguage = defaultLanguage;
+	}
+	
 	/**
 	 * @return the obfuscateMediaFiles
 	 */
@@ -361,22 +404,17 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param audioFeedbackStr
-	 *            the audioFeedbackStr to set
+	 * @param audioFeedbackStr the audioFeedbackStr to set
 	 */
 	public void setAudioFeedback(String audioFeedbackStr)
 	{
 		if(audioFeedbackStr == null)
 			return; // default Audio Feedback will be used
-		audioFeedbackStr = audioFeedbackStr.toUpperCase(); // Make upper case
 		try
 		{
-			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr);
+			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr.toUpperCase());
 		}
-		catch(IllegalArgumentException iae)
-		{
-			throw iae;
-		}
+		catch(IllegalArgumentException ignore) {}
 	}
 
 	/**
@@ -388,8 +426,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param obfuscateMediaFiles
-	 *            the obfuscateMediaFiles to set
+	 * @param obfuscateMediaFiles the obfuscateMediaFiles to set
 	 */
 	public void setObfuscateMediaFiles(boolean obfuscateMediaFiles)
 	{
@@ -405,8 +442,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param shortcutImageRelativePath
-	 *            the shortcutImageRelativePath to set
+	 * @param shortcutImageRelativePath the shortcutImageRelativePath to set
 	 */
 	public void setShortcutImageRelativePath(String shortcutImageRelativePath)
 	{
@@ -414,117 +450,29 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @return the backButtonImageRelativePath
+	 * @param controlType
+	 * @return
 	 */
-	public String getBackButtonImageRelativePath()
+	public Control getControl(Control.Type controlType)
 	{
-		return backButtonImageRelativePath;
+		return controls[controlType.ordinal()];
 	}
 
 	/**
-	 * @param backButtonImageRelativePath the backButtonImageRelativePath to set
+	 * @return the controlBackgroundColor
 	 */
-	public void setBackButtonImageRelativePath(String backButtonImageRelativePath)
+	public String getControlBackgroundColor()
 	{
-		this.backButtonImageRelativePath = backButtonImageRelativePath;
+		return controlBackgroundColor;
 	}
 
 	/**
-	 * @return the cancelButtonImageRelativePath
+	 * @param controlBackgroundColor the controlBackgroundColor to set
 	 */
-	public String getBackButtonDescription()
+	public void setControlBackgroundColor(String controlBackgroundColor)
 	{
-		return backButtonDescription;
+		this.controlBackgroundColor = controlBackgroundColor;
 	}
-
-	/**
-	 * @param backButtonDescription the backButtonDescription to set
-	 */
-	public void setBackButtonDescription(String backButtonDescription)
-	{
-		this.backButtonDescription = backButtonDescription;
-	}
-
-	/**
-	 * @return the cancelButtonImageRelativePath
-	 */
-	public String getCancelButtonImageRelativePath()
-	{
-		return cancelButtonImageRelativePath;
-	}
-
-	/**
-	 * @param cancelButtonImageRelativePath the cancelButtonImageRelativePath to set
-	 */
-	public void setCancelButtonImageRelativePath(String cancelButtonImageRelativePath)
-	{
-		this.cancelButtonImageRelativePath = cancelButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the forwardButtonImageRelativePath
-	 */
-	public String getCancelButtonDescription()
-	{
-		return cancelButtonDescription;
-	}
-
-	/**
-	 * @param cancelButtonDescription the cancelButtonDescription to set
-	 */
-	public void setCancelButtonDescription(String cancelButtonDescription)
-	{
-		this.cancelButtonDescription = cancelButtonDescription;
-	}
-
-	/**
-	 * @return the forwardButtonImageRelativePath
-	 */
-	public String getForwardButtonImageRelativePath()
-	{
-		return forwardButtonImageRelativePath;
-	}
-
-	/**
-	 * @param forwardButtonImageRelativePath the forwardButtonImageRelativePath to set
-	 */
-	public void setForwardButtonImageRelativePath(String forwardButtonImageRelativePath)
-	{
-		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the buttonBackgroundColor
-	 */
-	public String getForwardButtonDescription()
-	{
-		return forwardButtonDescription;
-	}
-
-	/**
-	 * @param forwardButtonDescription the forwardButtonDescription to set
-	 */
-	public void setForwardButtonDescription(String forwardButtonDescription)
-	{
-		this.forwardButtonDescription = forwardButtonDescription;
-	}
-
-	/**
-	 * @return the buttonBackgroundColor
-	 */
-	public String getButtonBackgroundColor()
-	{
-		return buttonBackgroundColor;
-	}
-
-	/**
-	 * @param buttonBackgroundColor the buttonBackgroundColor to set
-	 */
-	public void setButtonBackgroundColor(String buttonBackgroundColor)
-	{
-		this.buttonBackgroundColor = buttonBackgroundColor;
-	}
-
 	public List<LocationField> getLocationFields()
 	{
 		List<LocationField> locFields = new ArrayList<LocationField>();
@@ -540,7 +488,7 @@ public class Form implements WarningKeeper
 		{
 			List<LocationField> startLF = new ArrayList<LocationField>();
 			for(LocationField lf : getLocationFields())
-				if(lf.getStartWith() == LocationField.START_WITH.FORM)
+				if(lf.getStartWith() == LocationField.StartWith.FORM)
 					startLF.add(lf);
 			return startLF;
 		}
@@ -556,8 +504,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param storeEndTime
-	 *            the storeEndTime to set
+	 * @param storeEndTime the storeEndTime to set
 	 */
 	public void setStoreEndTime(boolean storeEndTime)
 	{
@@ -570,22 +517,6 @@ public class Form implements WarningKeeper
 	public Next getNext()
 	{
 		return next;
-	}
-
-	/**
-	 * @return the skipOnBack
-	 */
-	public boolean isSkipOnBack()
-	{
-		return skipOnBack;
-	}
-
-	/**
-	 * @param skipOnBack the skipOnBack to set
-	 */
-	public void setSkipOnBack(boolean skipOnBack)
-	{
-		this.skipOnBack = skipOnBack;
 	}
 
 	/**
@@ -602,6 +533,7 @@ public class Form implements WarningKeeper
 		try
 		{
 			this.next = Next.valueOf(nextStr);
+			getDefaultEndField(); // update default EndField accordingly
 		}
 		catch(IllegalArgumentException iae)
 		{
@@ -612,6 +544,34 @@ public class Form implements WarningKeeper
 			else
 				throw iae;
 		}
+	}
+	
+	/**
+	 * Returns the default EndField, which goes to the form's "next", but always saves the record first
+	 * 
+	 * @return
+	 */
+	public EndField getDefaultEndField()
+	{
+		if(defaultEndField == null)
+			defaultEndField = new EndField(this, true, next);
+		return defaultEndField;
+	}
+	
+	/**
+	 * @return the skipOnBack
+	 */
+	public boolean isSkipOnBack()
+	{
+		return skipOnBack;
+	}
+
+	/**
+	 * @param skipOnBack the skipOnBack to set
+	 */
+	public void setSkipOnBack(boolean skipOnBack)
+	{
+		this.skipOnBack = skipOnBack;
 	}
 
 	/**
@@ -760,9 +720,9 @@ public class Form implements WarningKeeper
 	{
 		if(!field.isNoColumn() && producesRecords && schema != null)
 		{
-			Column<?> col = schema.getColumn(field.getID(), false);
+			Column<?> col = schema.getColumn(field.id, false);
 			if(col == null)
-				col = schema.getColumn(Column.SanitiseName(field.getID()), false); // try again with sanitised name!
+				col = schema.getColumn(Column.SanitiseName(field.id), false); // try again with sanitised name!
 			return col; // may still be null
 		}
 		else
@@ -862,21 +822,21 @@ public class Form implements WarningKeeper
 	}
 
 	/**
+	 * @param filesSet set to add files to
 	 * @param fileStorageProvider to resolve relative paths
-	 * @return
 	 */
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, backButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, cancelButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, forwardButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, shortcutImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(fileStorageProvider, saveSoundRelativePath));
-		//Add paths for fields:
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(project, shortcutImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectSoundFile(project, saveSoundRelativePath));
+	
+		// Add files for controls:
+		for(Control control : controls)
+			control.addFiles(filesSet, fileStorageProvider);
+		
+		// Add files for fields:
 		for(Field field : fields)
-			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(fileStorageProvider));
-		return paths;
+			field.addFiles(filesSet, fileStorageProvider);
 	}
 	
 	public String toString()
@@ -904,19 +864,15 @@ public class Form implements WarningKeeper
 					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
 					this.clickAnimation == that.clickAnimation &&
 					this.screenTransition == that.screenTransition &&
+					(this.defaultLanguage != null ? this.defaultLanguage.equals(that.defaultLanguage) : that.defaultLanguage == null) &&
 					this.audioFeedback == that.audioFeedback &&
 					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
 					this.storeEndTime == that.storeEndTime &&
 					this.next == that.next &&
 					this.vibrateOnSave == that.vibrateOnSave &&
 					(this.saveSoundRelativePath != null ? this.saveSoundRelativePath.equals(that.saveSoundRelativePath) : that.saveSoundRelativePath == null) &&
-					this.buttonBackgroundColor.equals(that.backButtonImageRelativePath) &&
-					(this.backButtonImageRelativePath != null ? this.backButtonImageRelativePath.equals(that.backButtonImageRelativePath) : that.backButtonImageRelativePath == null) &&
-					this.backButtonDescription.equals(that.backButtonDescription) &&
-					(this.cancelButtonImageRelativePath != null ? this.cancelButtonImageRelativePath.equals(that.cancelButtonImageRelativePath) : that.cancelButtonImageRelativePath == null) &&
-					this.cancelButtonDescription.equals(that.cancelButtonDescription) &&
-					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null) &&
-					this.forwardButtonDescription.equals(that.forwardButtonDescription);
+					this.controlBackgroundColor.equals(that.controlBackgroundColor) &&
+					Arrays.equals(this.controls, that.controls);
 		}
 		else
 			return false;
@@ -937,19 +893,15 @@ public class Form implements WarningKeeper
 		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
 		hash = 31 * hash + (clickAnimation ? 0 : 1);
 		hash = 31 * hash + screenTransition.ordinal();
+		hash = 31 * hash + (defaultLanguage == null ? 0 : defaultLanguage.hashCode());
 		hash = 31 * hash + audioFeedback.ordinal();
 		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
 		hash = 31 * hash + (storeEndTime ? 0 : 1);
 		hash = 31 * hash + next.ordinal();
 		hash = 31 * hash + (vibrateOnSave ? 0 : 1);
 		hash = 31 * hash + (saveSoundRelativePath == null ? 0 : saveSoundRelativePath.hashCode());
-		hash = 31 * hash + buttonBackgroundColor.hashCode();
-		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
-		hash = 31 * hash + backButtonDescription.hashCode();
-		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
-		hash = 31 * hash + cancelButtonDescription.hashCode();
-		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
-		hash = 31 * hash + forwardButtonDescription.hashCode();
+		hash = 31 * hash + controlBackgroundColor.hashCode();
+		hash = 31 * hash + Arrays.hashCode(controls);
 		// There is no need to include the schema.hashCode() in this computation because the schema it is entirely inferred from things that are included in the computation.
 		return hash;
 	}

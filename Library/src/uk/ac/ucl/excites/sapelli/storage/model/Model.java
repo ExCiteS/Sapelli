@@ -187,8 +187,8 @@ public class Model implements Serializable
 	 */
 	public Model(long id, String name)
 	{
-		if(!MODEL_ID_FIELD.fits(id))
-			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getLogicalRangeString() + ".");
+		if(!MODEL_ID_FIELD.inEffectiveRange(id))
+			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
 		if(name == null || name.isEmpty())
 			throw new NullPointerException("Please provide a model name");
 		this.id = id;

@@ -33,8 +33,9 @@ public class FieldWithArguments
 	
 	/**
 	 * @param field the field
+	 * @throws NullPointerException when the field is null
 	 */
-	public FieldWithArguments(Field field)
+	public FieldWithArguments(Field field) throws NullPointerException
 	{
 		this(field, FieldParameters.EMPTY);
 	}
@@ -42,11 +43,39 @@ public class FieldWithArguments
 	/**
 	 * @param field the field
 	 * @param arguments arguments passed along by previous field
+	 * @throws NullPointerException when either the field or the arguments are null
 	 */
-	public FieldWithArguments(Field field, FieldParameters arguments)
+	public FieldWithArguments(Field field, FieldParameters arguments) throws NullPointerException
 	{
+		if(field == null)
+			throw new NullPointerException("Field cannot be null");
+		if(arguments == null)
+			throw new NullPointerException("Arguments cannot be null");
 		this.field = field;
 		this.arguments = new FieldParameters(arguments); // create a copy!
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if(obj instanceof FieldWithArguments)
+		{
+			FieldWithArguments that = (FieldWithArguments) obj;
+			return	this.field.equals(that.field) &&
+					this.arguments.equals(that.arguments);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + field.hashCode();
+		hash = 31 * hash + arguments.hashCode();
+		return hash;
 	}
 	
 }

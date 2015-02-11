@@ -22,14 +22,15 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -53,9 +54,7 @@ public class Project
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
 
-	// Subfolders of project installation folder:
-	static public final String IMAGE_FOLDER = "img";
-	static public final String SOUND_FOLDER = "snd";
+	static public final String DEFAULT_DEFAULT_LANGUAGE = "en"; // the default "default language" to set if there isn't one specified (English)
 	
 	static public final boolean DEFAULT_LOGGING = true;
 		
@@ -71,6 +70,7 @@ public class Project
 	private String version;
 
 	private TransmissionSettings transmissionSettings;
+	private String defaultLanguage;
 	private boolean logging;
 	private Schema heartbeatSchema;
 	private final List<Form> forms;
@@ -112,6 +112,8 @@ public class Project
 		
 		// Forms list:
 		this.forms = new ArrayList<Form>();
+		// Project language (for TTV):
+		this.defaultLanguage = DEFAULT_DEFAULT_LANGUAGE;
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
 	}
@@ -124,12 +126,12 @@ public class Project
 	private void initialise(int id)
 	{
 		// Check & set id:
-		if(PROJECT_ID_FIELD.fits(this.id)) // check is there is already a valid id set
+		if(PROJECT_ID_FIELD.inEffectiveRange(this.id)) // check is there is already a valid id set
 			throw new IllegalStateException("Project id cannot be changed after it has been set.");
-		if(PROJECT_ID_FIELD.fits(id))
+		if(PROJECT_ID_FIELD.inEffectiveRange(id))
 			this.id = id;
 		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");
+			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getEffectiveRangeString() + ".");
 		
 		// Initialise Model (important this should remain last):
 		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
@@ -168,10 +170,10 @@ public class Project
 		if(!isV1xProject())
 			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
 		initialise(schemaID); // schemaID of first (and only) form is used as projectID
-		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
+		if(Schema.V1X_SCHEMA_VERSION_FIELD.inEffectiveRange(schemaVersion))
 			this.v1xSchemaVersion = schemaVersion;
 		else
-			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
+			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getEffectiveRangeString() + ".");
 	}
 	
 	/**
@@ -225,7 +227,7 @@ public class Project
 	
 	public List<Form> getForms()
 	{
-		return forms;
+		return Collections.unmodifiableList(forms);
 	}
 	
 	public Model getModel()
@@ -260,7 +262,7 @@ public class Project
 	public Form getForm(String id)
 	{
 		for(Form f : forms)
-			if(f.getID().equalsIgnoreCase(id)) // form IDs are treated as case insensitive
+			if(f.id.equalsIgnoreCase(id)) // form IDs are treated as case insensitive
 				return f;
 		return null; // no such form
 	}
@@ -312,28 +314,6 @@ public class Project
 		this.transmissionSettings = transmissionSettings;
 	}
 	
-	/**
-	 * @param imageFileRelativePath
-	 * @return file object, or null if the given path was null or empty
-	 */
-	public File getImageFile(FileStorageProvider fileStorageProvider, String imageFileRelativePath)
-	{
-		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
-			return null;
-		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
-	}
-	
-	/**
-	 * @param soundFileRelativePath
-	 * @return file object, or null if the given path was null or empty
-	 */
-	public File getSoundFile(FileStorageProvider fileStorageProvider, String soundFileRelativePath)
-	{
-		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
-			return null;
-		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
-	}
-	
 	@Override
 	public String toString()
 	{
@@ -363,17 +343,34 @@ public class Project
 	}
 	
 	/**
+	 * @return the BCP 47 format string representing the currently set default language for this project
+	 */
+	public String getDefaultLanguage()
+	{
+		return defaultLanguage;
+	}
+	
+	/**
+	 * Set the project's default language (the language that will be used for text-to-speech synthesis unless a language is specified in the current form)
+	 * @param defaultLanguage the language to set, as a valid BCP 47 format string (e.g. "en-GB")
+	 */
+	public void setDefaultLanguage(String defaultLanguage)
+	{
+		this.defaultLanguage = defaultLanguage;
+	}
+	
+	/**
 	 * Find all files used by the project
 	 * 
 	 * @param fileStorageProvider to resolve relative paths
-	 * @return a list of files that the project depends on
+	 * @return a set of files that the project depends on
 	 */
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public Set<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
-		List<File> files = new ArrayList<File>();
+		Set<File> filesSet = new HashSet<File>();
 		for(Form form : forms)
-			CollectionUtils.addAllIgnoreNull(files, form.getFiles(fileStorageProvider));
-		return files;
+			form.addFiles(filesSet, fileStorageProvider);
+		return filesSet;
 	}
 	
 	/**
@@ -383,7 +380,7 @@ public class Project
 	{
 		SortedSet<File> missingFiles = new TreeSet<File>();
 		for(File file : getFiles(fileStorageProvider))
-			if(!file.isFile() || !file.exists() || !file.canRead())
+			if(file != null && (!file.isFile() || !file.exists() || !file.canRead()))
 				missingFiles.add(file);
 		// Return as list:
 		if(missingFiles.isEmpty())
@@ -429,6 +426,7 @@ public class Project
 					equalSignature(that) && // checks name, variant & version
 					this.fingerPrint == that.fingerPrint &&
 					// TODO transmission settings?
+					(this.defaultLanguage != null ? this.defaultLanguage.equals(that.defaultLanguage) : that.defaultLanguage == null) &&
 					this.logging == that.logging &&
 					this.forms.equals(that.forms) &&
 					(this.startForm != null ? this.startForm.equals(that.startForm) : that.startForm == null) &&
@@ -448,6 +446,7 @@ public class Project
 		hash = 31 * hash + version.hashCode();
 		hash = 31 * hash + fingerPrint;
 		// TODO include transmission settings?
+		hash = 31 * hash + (defaultLanguage == null ? 0 : defaultLanguage.hashCode());
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();
 		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());

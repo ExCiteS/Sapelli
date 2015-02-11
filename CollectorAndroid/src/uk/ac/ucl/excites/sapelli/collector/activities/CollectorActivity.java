@@ -30,16 +30,17 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
+import uk.ac.ucl.excites.sapelli.util.KeyEventUtils;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -144,7 +145,7 @@ public class CollectorActivity extends ProjectActivity
 		
 		// Show demo disclaimer if needed:
 		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
+			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getNameAndVersion() + ".\nFor demonstration purposes only.");
 	}
 
 	@Override
@@ -219,9 +220,7 @@ public class CollectorActivity extends ProjectActivity
 			
 			// Start project:
 			controller.startProject();
-			
-			// Enable audio feedback
-			controller.enableAudioFeedback(); // TODO make the Controller/collectorController handle this on its own
+
 		}
 	}
 
@@ -231,6 +230,10 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
+		// Log interaction:
+		controller.addLogLine("KEY_DOWN", KeyEventUtils.keyEventCodeToString(event));
+		//Log.d(TAG, event.getDisplayLabel() + "; " + KeyEventUtils.keyEventCodeToString(event));
+		
 		// Check for keytriggers...
 		Trigger keyTrigger = null;
 		//	"Any" key trigger:
@@ -250,10 +253,10 @@ public class CollectorActivity extends ProjectActivity
 		{
 			case KeyEvent.KEYCODE_BACK:
 			case KeyEvent.KEYCODE_DPAD_LEFT:
-				collectorView.getControlsUI().handleControlEvent(Control.BACK, true);
+				collectorView.getControlsUI().handleControlEvent(Control.Type.Back, true);
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
-				collectorView.getControlsUI().handleControlEvent(Control.FORWARD, true);
+				collectorView.getControlsUI().handleControlEvent(Control.Type.Forward, true);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				DeviceControl.safeDecreaseMediaVolume(this);
@@ -266,7 +269,7 @@ public class CollectorActivity extends ProjectActivity
 		// Pass to super...
 		return super.onKeyDown(keyCode, event);
 	}
-
+	
 	/**
 	 * Handle device key presses (up)
 	 */
@@ -476,10 +479,9 @@ public class CollectorActivity extends ProjectActivity
 
 			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
-
-		// Release audio feedback resources
+		// Stop all audio (feedback) playback & release associated resources:
 		if(controller != null)
-			controller.disableAudioFeedback();
+			controller.destroyAudio();
 
 		// super:
 		super.onPause();

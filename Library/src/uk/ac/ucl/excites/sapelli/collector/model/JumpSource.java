@@ -69,7 +69,7 @@ public abstract class JumpSource
 		if(obj instanceof JumpSource)
 		{
 			JumpSource that = (JumpSource) obj;
-			return	(this.jump != null ? that.jump != null && this.jump.getID().equals(that.jump.getID()) : that.jump == null) && // DO NOT INCLUDE jump ITSELF HERE (otherwise we may create an endless loop!)
+			return	(this.jump != null ? that.jump != null && this.jump.id.equals(that.jump.id) : that.jump == null) && // DO NOT INCLUDE jump ITSELF HERE (otherwise we may create an endless loop!)
 					(this.nextFieldArgs != null ? this.nextFieldArgs.equals(that.nextFieldArgs) : that.nextFieldArgs == null);
 		}
 		else
@@ -80,7 +80,7 @@ public abstract class JumpSource
 	public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + (jump == null ? 0 : jump.getID().hashCode()); // DO NOT INCLUDE jump ITSELF HERE (otherwise we may create an endless loop!)
+		hash = 31 * hash + (jump == null ? 0 : jump.id.hashCode()); // DO NOT INCLUDE jump ITSELF HERE (otherwise we may create an endless loop!)
 		hash = 31 * hash + (nextFieldArgs == null ? 0 : nextFieldArgs.hashCode());
 		return hash;
 	}
