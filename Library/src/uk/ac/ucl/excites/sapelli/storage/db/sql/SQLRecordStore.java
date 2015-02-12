@@ -1719,29 +1719,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public void visit(RuleConstraint ruleConstr)
 		{
-			Object sapValue = ruleConstr.getValue();
 			// Check for null comparison (see class javadoc):
-			if(sapValue == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
+			if(ruleConstr.isRHSValue() && ruleConstr.getRHSValue() == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
 			{
-				new EqualityConstraint(ruleConstr.getColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
+				new EqualityConstraint(ruleConstr.getLHSColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
 				return;
 			}
 			// All other cases:
-			SColumn sqlCol = table.getSQLColumn(ruleConstr.getColumnPointer());
-			if(sqlCol == null)
-			{
-				new DBException("Failed to generate SQL for ruleConstraint on column " + ruleConstr.getColumnPointer().getQualifiedColumnName(table.schema));
-				return;
-			}
-			bldr.append(sqlCol.name);
+			SColumn lhsSCol = table.getSQLColumn(ruleConstr.getLHSColumnPointer());
+			bldr.append(lhsSCol.name);
 			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
-			if(isParameterised())
-			{
-				bldr.append(valuePlaceHolder);
-				addParameterColumnAndValue(sqlCol, sapValue);
-			}
+			if(ruleConstr.isRHSColumn())
+				bldr.append(table.getSQLColumn(ruleConstr.getRHSColumnPointer()).name);
 			else
-				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+			{
+				Object sapValue = ruleConstr.getRHSValue();
+				if(isParameterised())
+				{
+					bldr.append(valuePlaceHolder);
+					addParameterColumnAndValue(lhsSCol, sapValue);
+				}
+				else
+					bldr.append(lhsSCol.sapelliObjectToLiteral(sapValue, true));
+			}
 		}
 		
 	}
