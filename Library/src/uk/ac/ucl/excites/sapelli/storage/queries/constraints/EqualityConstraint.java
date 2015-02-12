@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -93,7 +94,7 @@ public class EqualityConstraint extends Constraint
 	@Override
 	protected boolean _isValid(Record record)
 	{
-		return equal == Record.EqualValues(columnPointer.retrieveValue(record), value);
+		return equal == Objects.deepEquals(columnPointer.retrieveValue(record), value);
 	}
 	
 	/* (non-Javadoc)
