@@ -36,6 +36,20 @@ public class Index extends Schema
 	
 	private boolean unique;
 	
+	/**
+	 * @param column
+	 * @param unique
+	 */
+	public Index(Column<?> column, boolean unique)
+	{
+		this("Idx-" + column.name, unique, column);
+	}
+	
+	/**
+	 * @param name
+	 * @param unique
+	 * @param columns
+	 */
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
 		super(InternalKind.Index, name);
