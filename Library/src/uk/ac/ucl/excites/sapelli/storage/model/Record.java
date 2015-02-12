@@ -551,7 +551,7 @@ public class Record implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + schema.hashCode();
