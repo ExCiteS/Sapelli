@@ -61,9 +61,6 @@ public class Record implements Serializable
 	protected Schema schema;
 	protected Object[] values;
 	
-	protected boolean exported = false;
-	protected Long transmissionID;
-	
 	/**
 	 * Creates a new "empty" record of the given schema
 	 * 
@@ -312,37 +309,6 @@ public class Record implements Serializable
 			constraints.addConstraint(new EqualityConstraint(keyPartCol, getValue(keyPartCol)));
 		
 		return constraints.reduce();
-	}
-	
-	/**
-	 * @return the exported
-	 */
-	public boolean isExported()
-	{
-		return exported;
-	}
-
-	/**
-	 * @param exported the exported to set
-	 */
-	public void setExported(boolean exported)
-	{
-		this.exported = exported;
-	}
-
-	public boolean isTransmissionIDSet()
-	{
-		return transmissionID != null;
-	}
-
-	public Long getTransmissionID()
-	{
-		return transmissionID;
-	}
-
-	public void setTransmissionID(Long transmissionID)
-	{
-		this.transmissionID = transmissionID;
 	}
 	
 	@Override
