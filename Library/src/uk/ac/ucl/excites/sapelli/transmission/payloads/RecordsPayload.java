@@ -116,7 +116,7 @@ public class RecordsPayload extends Payload
 		for(Record record : records)
 		{
 			if(!record.isFilled())
-				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping?
+				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping? TODO what with autoIncrementingPK? should such records be transferable at all?
 			Schema schema = record.getSchema();
 			if(schema.isInternal())
 				throw new IllegalArgumentException("Cannot directly transmit records of an internal schema.");
