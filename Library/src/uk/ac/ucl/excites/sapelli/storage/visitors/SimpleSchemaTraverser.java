@@ -36,14 +36,14 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 {
 
 	private final Stack<Column<?>> columnStack = new Stack<Column<?>>();
-	private Set<Column<?>> skipColumns;
+	private Set<? extends Column<?>> skipColumns;
 	
 	public void traverse(Schema schema)
 	{
 		traverse(schema, Collections.<Column<?>>emptySet());
 	}
 	
-	public void traverse(Schema schema, Set<Column<?>> skipColumns)
+	public void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
 	{
 		this.skipColumns = skipColumns;
 		columnStack.clear();
