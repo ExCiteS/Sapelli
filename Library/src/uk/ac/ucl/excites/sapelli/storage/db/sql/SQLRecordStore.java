@@ -556,6 +556,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.autoIncrementKeyColumn = schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? ((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn() : null;
 		}
 		
+		public void setTableConstraint(List<String> tableConstraints)
+		{
+			this.tableConstraints = new ArrayList<String>(tableConstraints);
+		}
+		
+		public void setExplicitIndexes(List<Index> indexes)
+		{
+			this.explicitIndexes = indexes;
+		}
+		
 		public void addColumn(SColumn sqlColumn)
 		{
 			ColumnPointer sourceCP = sqlColumn.sourceColumnPointer;
@@ -577,34 +587,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				// Next parent...
 				sourceCP = parentCP;
 			}
-		}
-		
-		public void setTableConstraint(List<String> tableConstraints)
-		{
-			this.tableConstraints = new ArrayList<String>(tableConstraints);
-		}
-		
-		public void setExplicitIndexes(List<Index> indexes)
-		{
-			this.explicitIndexes = indexes;
-		}
-		
-		public SColumn getSQLColumn(ColumnPointer sapColumnPointer)
-		{
-			return getSQLColumn(sapColumnPointer.getColumn());
-		}
-		
-		public SColumn getSQLColumn(Column<?> sapColumn)
-		{
-			return sqlColumns.get(new ColumnPointer(schema, sapColumn));
-		}
-		
-		public List<SColumn> getSQLColumns(Column<?> sapColumn)
-		{
-			if(sapColumn instanceof RecordColumn)
-				return composite2SqlColumns.get((RecordColumn<?>) sapColumn);
-			else
-				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
 		
 		public boolean isInDB()
@@ -690,27 +672,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return bldr.toString();
 		}
 		
-		/**
-		 * Drop the table from the database.
-		 * Assumes the table exists in the database!
-		 * 
-		 * May be overridden.
-		 * 
-		 * @throws DBException
-		 */
-		public void drop() throws DBException
+		public SColumn getSQLColumn(ColumnPointer sapColumnPointer)
 		{
-			executeSQL(generateDropTableStatement());
-			existsInDB = false; // !!!
+			return getSQLColumn(sapColumnPointer.getColumn());
 		}
 		
-		protected String generateDropTableStatement()
+		public SColumn getSQLColumn(Column<?> sapColumn)
 		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("DROP TABLE");
-			bldr.append(tableName);
-			bldr.append(";", false);
-			return bldr.toString();
+			return sqlColumns.get(new ColumnPointer(schema, sapColumn));
+		}
+		
+		public List<SColumn> getSQLColumns(Column<?> sapColumn)
+		{
+			if(sapColumn instanceof RecordColumn)
+				return composite2SqlColumns.get((RecordColumn<?>) sapColumn);
+			else
+				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
 		
 		/**
@@ -880,6 +857,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public abstract long getRecordCount() throws DBException;
 		
 		/**
+		 * Drop the table from the database.
+		 * Assumes the table exists in the database!
+		 * 
+		 * May be overridden.
+		 * 
+		 * @throws DBException
+		 */
+		public void drop() throws DBException
+		{
+			executeSQL(generateDropTableStatement());
+			existsInDB = false; // !!!
+		}
+		
+		protected String generateDropTableStatement()
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("DROP TABLE");
+			bldr.append(tableName);
+			bldr.append(";", false);
+			return bldr.toString();
+		}
+		
+		/**
 		 * @param selection
 		 * @return list of records (possibly empty)
 		 * @throws DBException
@@ -896,7 +896,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			return "database table '" + tableName + "'";
 		}
-
+		
 	}
 	
 	/**

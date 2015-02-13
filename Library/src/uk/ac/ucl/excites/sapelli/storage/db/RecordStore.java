@@ -48,7 +48,7 @@ public abstract class RecordStore implements Store
 
 	// STATIC -----------------------------------------------------------------
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
-	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp 
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
 	
 	// DYNAMIC ----------------------------------------------------------------
 	protected StorageClient client;
