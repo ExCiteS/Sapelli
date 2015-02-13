@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -119,13 +118,33 @@ public class Schema implements Serializable
 	protected final String name;
 	private boolean sealed = false;
 	
-	// Columns & indexes:
-	private final List<Column<?>> realColumns = new ArrayList<Column<?>>(); // only contains non-virtual ("real") columns
-	private final Map<String, Integer> columnNameToPosition = new LinkedHashMap<String, Integer>(); // only contains non-virtual ("real") columns
+	/**
+	 * List of all (and only) non-virtual ("real") columns, in order of addition
+	 */
+	private final List<Column<?>> realColumns = new ArrayList<Column<?>>();
+	
+	/**
+	 * Name to position mapping for all (and only) non-virtual ("real") columns
+	 */
+	private final Map<String, Integer> columnNameToPosition = new HashMap<String, Integer>();
+	
+	/**
+	 * Name to column mapping for all (and only) virtual columns
+	 */
 	private Map<String, VirtualColumn<?, ?>> virtualColumnsByName;
+	
 	private PrimaryKey primaryKey;
-	private List<Index> indexes; // also includes the primary key
-	private transient List<Column<?>> allColumns; // contains non-virtual and virtual columns
+	
+	/**
+	 * List of indexes, also includes the primary key
+	 */
+	private List<Index> indexes;
+
+	/**
+	 * Contains both non-virtual ("real") and virtual columns,
+	 * in order of addition with virtual columns following their "real" owner and preceeding the next "real" column
+	 */
+	private transient List<Column<?>> allColumns;
 	
 	/**
 	 * Make a schema instance of an internal kind
@@ -377,10 +396,10 @@ public class Schema implements Serializable
 	 */
 	protected int getColumnPosition(String realColumnName)
 	{
-		Integer idx = columnNameToPosition.get(realColumnName);
-		if(idx == null)
+		Integer pos = columnNameToPosition.get(realColumnName);
+		if(pos == null)
 			return UNKNOWN_COLUMN_POSITION;
-		return idx.intValue();
+		return pos.intValue();
 	}
 
 	/**
@@ -396,7 +415,7 @@ public class Schema implements Serializable
 		{
 			if(!sealed || allColumns == null) // (re)initialise the allColumns list if it is null or as long as the schema is not sealed.
 			{
-				allColumns = new ArrayList<Column<?>>();
+				allColumns = new ArrayList<Column<?>>(realColumns.size() + virtualColumnsByName.size());
 				for(Column<?> nonVirtualCol : realColumns)
 				{
 					allColumns.add(nonVirtualCol); // "real" column
