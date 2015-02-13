@@ -1255,6 +1255,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		protected STable table;
 		protected TransactionalStringBuilder bldr;
+		protected String query;
 		protected List<SColumn> parameterColumns;
 		
 		protected DBException exception = null;
@@ -1284,7 +1285,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			if(exception != null)
 				throw exception;
-			return bldr.toString();
+			if(bldr != null)
+			{
+				query = bldr.toString();
+				bldr = null;
+			}
+			return query;
 		}
 		
 		/**
