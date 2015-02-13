@@ -53,7 +53,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
@@ -538,7 +537,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		private List<String> tableConstraints = Collections.<String> emptyList();
 		private List<Index> explicitIndexes;
 		private Boolean existsInDB;
-		protected final IntegerColumn autoIncrementKeyColumn;
 		
 		/**
 		 * Mapping of Sapelli ColumnPointers (usually leaf columns) to corresponding  SQLColumns.
@@ -551,6 +549,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public final Map<RecordColumn<?>, List<SColumn>> composite2SqlColumns;
 		
+		/**
+		 * The auto-incrementing primary key column as (a Sapelli Column, not an S/SQLColumn), will be null if there is none
+		 */
+		protected final IntegerColumn autoIncrementKeySapColumn;
+		protected SColumn autoIncrementKeySQLColumn;
+		
 		public SQLTable(Schema schema)
 		{
 			this.tableName = sanitiseIdentifier(client.getTableName(schema));
@@ -559,7 +563,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
 			composite2SqlColumns = new HashMap<RecordColumn<?>, List<SColumn>>();
 			// Deal with auto-increment key:
-			this.autoIncrementKeyColumn = schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? ((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn() : null;
+			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
 		}
 		
 		public void setTableConstraint(List<String> tableConstraints)
@@ -572,10 +576,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.explicitIndexes = indexes;
 		}
 		
+		/**
+		 * @param sqlColumn
+		 */
 		public void addColumn(SColumn sqlColumn)
 		{
 			ColumnPointer sourceCP = sqlColumn.sourceColumnPointer;
+			if(sourceCP == null || sourceCP.getColumn() == null)
+				throw new IllegalArgumentException("SQLColumn needs a valid sourceColumnPointer in order to be added to a SQLTable instance");
+			
+			// Add SQLColumn:
 			sqlColumns.put(sourceCP, sqlColumn);
+			
+			// Deal with AutoIncr...
+			if(sourceCP.getColumn().equals(autoIncrementKeySapColumn, true, true))
+				this.autoIncrementKeySQLColumn = sqlColumn;
+			
 			// Deal with composites...
 			while(sourceCP.isSubColumn())
 			{
@@ -723,6 +739,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Checks if the given record already exists in the database table.
 		 * Also works for recordReferences to records of this table's schema!
 		 * 
+		 * Warning: If the autoIncrementing PK is set we assume the record is in the/this database, without actually checking!
+		 * 
 		 * May be overridden.
 		 * 
 		 * @param record
@@ -733,9 +751,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public boolean isRecordInDB(Record record) throws DBException, IllegalStateException
 		{
-			return (autoIncrementKeyColumn == null) ?
+			return	isInDB() &&
+					(autoIncrementKeySapColumn == null ?
 						select(record.getRecordQuery()) != null :
-						autoIncrementKeyColumn.isValueSet(record);
+						autoIncrementKeySapColumn.isValueSet(record));
 		}
 		
 		/**
@@ -752,8 +771,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
 			// This method cannot be used on schemata with auto-incrementing PKs:
-			if(autoIncrementKeyColumn != null)
+			if(autoIncrementKeySapColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
+			//else...
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
 		}
 		
@@ -1338,14 +1358,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Columns names:
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(sqlCol.sourceColumnPointer.getColumn() != table.autoIncrementKeyColumn) // skip auto-incrementing key
+				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
 					bldr.append(sqlCol.name);
 			bldr.commitTransaction(false);
 			// Values:
 			bldr.append(") VALUES (", false);
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(sqlCol.sourceColumnPointer.getColumn() != table.autoIncrementKeyColumn) // skip auto-incrementing key
+				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
 				{
 					if(isParameterised())
 					{

@@ -323,8 +323,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public boolean isRecordInDB(Record record) throws DBException
 		{
-			if(autoIncrementKeyColumn != null)
-				return autoIncrementKeyColumn.isValueSet(record);
+			if(!isInDB())
+				return false;
+			if(autoIncrementKeySapColumn != null)
+				return autoIncrementKeySapColumn.isValueSet(record);
 			else
 			{
 				if(existsStatement == null)
@@ -364,8 +366,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			long rowID = insertStatement.executeInsert();
 			
 			// Set auto-incrementing key value:
-			if(autoIncrementKeyColumn != null)
-				autoIncrementKeyColumn.storeValue(record, rowID);
+			if(autoIncrementKeySapColumn != null)
+				autoIncrementKeySapColumn.storeValue(record, rowID);
 		}
 
 		/**
