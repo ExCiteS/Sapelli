@@ -682,10 +682,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Checks if the given record already exists in the database table.
+		 * Checks if the given {@link Record} instance already exists in the database table.
 		 * Also works for recordReferences to records of this table's schema!
-		 * 
-		 * Warning: If the autoIncrementing PK is set we assume the record is in the/this database, without actually checking!
 		 * 
 		 * May be overridden.
 		 * 
@@ -698,9 +696,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isRecordInDB(Record record) throws DBException, IllegalStateException
 		{
 			return	isInDB() &&
-					(autoIncrementKeySapColumn == null ?
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(record)) ? 
 						select(record.getRecordQuery()) != null :
-						autoIncrementKeySapColumn.isValueSet(record));
+						false;
 		}
 		
 		/**

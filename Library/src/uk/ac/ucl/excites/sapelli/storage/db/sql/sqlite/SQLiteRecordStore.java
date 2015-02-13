@@ -323,26 +323,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public boolean isRecordInDB(Record record) throws DBException
 		{
+			// Check if table itself exists in db:
 			if(!isInDB())
 				return false;
-			if(autoIncrementKeySapColumn != null)
-				return autoIncrementKeySapColumn.isValueSet(record);
-			else
+			
+			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
+			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
+			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(record))
+				return false;
+			
+			// Perform actual check by querying...
+			//	Get/recycle statement...
+			if(existsStatement == null)
 			{
-				if(existsStatement == null)
-				{
-					SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
-					existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
-				}
-				else
-					existsStatement.clearAllBindings();
-				
-				// Bind parameters:
-				existsStatement.retrieveAndBindAll(record);
-				
-				// Execute:
-				return existsStatement.executeLongQuery() != null;
+				SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
+				existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
 			}
+			else
+				existsStatement.clearAllBindings();
+			//	Bind parameters:
+			existsStatement.retrieveAndBindAll(record);
+			//	Execute:
+			return existsStatement.executeLongQuery() != null;
 		}
 		
 		/* (non-Javadoc)
