@@ -556,7 +556,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param sqlColumn
-		 * @param spec
 		 */
 		protected void addColumn(SColumn sqlColumn)
 		{
@@ -645,7 +644,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * Default implementation for SQL databases.
 		 * 
-		 * First does a SELECT based on the PKy to verify whether the record exists,
+		 * First does a SELECT based on the PK to verify whether the record exists,
 		 * if it does it is UPDATEd (provided UPDATEing is allowed), if it does not it is INSERTed (provided INSERTing is allowed).
 		 * 
 		 * @param record
