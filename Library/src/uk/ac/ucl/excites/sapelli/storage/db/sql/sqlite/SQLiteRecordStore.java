@@ -854,7 +854,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				}
 				
 			}), getColumnConstraint(listCol));
-			
 		}
 		
 	}
