@@ -447,7 +447,7 @@ public class Schema implements Serializable
 	}
 
 	/**
-	 * Checks whether the schema contains the given column (checked by object identity).
+	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
 	 * 
 	 * @param column
 	 * @return whether or not this Schema contains the given Column
@@ -458,7 +458,7 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Checks whether the schema contains the given column (checked by object identity).
+	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
 	 * 
 	 * @param column
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
@@ -469,7 +469,7 @@ public class Schema implements Serializable
 		return	column != null &&
 				(column instanceof VirtualColumn<?, ?> ?
 					checkVirtual && column == getVirtualColumn(column.name) :
-					realColumns.contains(column));
+					column == getColumn(column.name, false));
 	}
 	
 	/**
@@ -496,9 +496,7 @@ public class Schema implements Serializable
 		if(containsColumn(column, checkVirtual))
 			return true;
 		// Try finding an equivalent column with the same name:
-		if(column == null)
-			return false;
-		Column<?> myColumn = getColumn(column.getName(), checkVirtual);
+		Column<?> myColumn = column != null ? getColumn(column.getName(), checkVirtual) : null;
 		return myColumn != null && myColumn.equals(column, false, true); // name is already checked
 	}
 	
