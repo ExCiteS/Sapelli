@@ -1525,8 +1525,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			bldr.append("WHERE");
 			if(keyPartSqlCols.size() > 1)
+			{
 				bldr.append("(");
-			bldr.openTransaction(" AND ");
+				bldr.openTransaction(" AND ");
+			}
 			for(SColumn keyPartSqlCol : keyPartSqlCols)
 			{
 				bldr.openTransaction(SPACE);
@@ -1541,9 +1543,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(keyPartSqlCol.retrieveAsLiteral(record, true));
 				bldr.commitTransaction();
 			}
-			bldr.commitTransaction(keyPartSqlCols.size() == 1); // no space after "(" if it is there
 			if(keyPartSqlCols.size() > 1)
+			{
+				bldr.commitTransaction(false); // no space after "("
 				bldr.append(")", false); // no space before ")"
+			}
 		}
 		
 	}
