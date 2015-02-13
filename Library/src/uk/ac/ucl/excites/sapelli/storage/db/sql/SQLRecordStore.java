@@ -751,6 +751,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
+			// This method cannot be used on schemata with auto-incrementing PKs:
 			if(autoIncrementKeyColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
