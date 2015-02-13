@@ -551,6 +551,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			super(name, type, sourceSchema, sourceColumn, mapping);
 		}
+		
 		/**
 		 * @param statement
 		 * @param paramIdx

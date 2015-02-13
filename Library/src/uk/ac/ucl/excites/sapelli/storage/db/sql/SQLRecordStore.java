@@ -1289,7 +1289,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @throws DBException 
 		 */
 		protected abstract STable initialiseTable(Schema schema) throws DBException;
-
+		
 		protected void addColumn(SColumn sqlColumn, String constraint)
 		{
 			if(!existingTable)
