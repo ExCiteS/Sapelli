@@ -38,42 +38,39 @@ public class SQLiteIntegerColumn<SapType> extends SQLiteRecordStore.SQLiteColumn
 	
 	/**
 	 * @param store
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteIntegerColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
+	public SQLiteIntegerColumn(SQLiteRecordStore store, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
 	{
-		store.super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteIntegerColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
+	public SQLiteIntegerColumn(SQLiteRecordStore store, String name, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
 	{
-		store.super(name, SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(name, SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
 	}
 	
 	/**
 	 * For boolean
 	 * 
 	 * @param store
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 * @param type
 	 */
-	/*package*/ SQLiteIntegerColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping, String type)
+	/*package*/ SQLiteIntegerColumn(SQLiteRecordStore store, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping, String type)
 	{
-		store.super(type, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(type, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
@@ -81,15 +78,14 @@ public class SQLiteIntegerColumn<SapType> extends SQLiteRecordStore.SQLiteColumn
 	 * 
 	 * @param store
 	 * @param name
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 * @param type
 	 */
-	/*package*/ SQLiteIntegerColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping, String type)
+	/*package*/ SQLiteIntegerColumn(SQLiteRecordStore store, String name, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping, String type)
 	{
-		store.super(name, type, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(name, type, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**

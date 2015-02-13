@@ -39,27 +39,25 @@ public class SQLiteStringColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	
 	/**
 	 * @param store
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteStringColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
+	public SQLiteStringColumn(SQLiteRecordStore store, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
 	{
-		store.super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteStringColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
+	public SQLiteStringColumn(SQLiteRecordStore store, String name, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
 	{
-		store.super(name, SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(name, SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
 	}
 	
 	/**

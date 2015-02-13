@@ -51,25 +51,23 @@ public class SQLiteBooleanColumn extends SQLiteIntegerColumn<Boolean>
 	
 	/**
 	 * @param store
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, BooleanColumn sourceColumn)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, Schema sourceSchema, BooleanColumn sourceColumn)
 	{
-		super(store, constraint, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
+		super(store, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, BooleanColumn sourceColumn)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, Schema sourceSchema, BooleanColumn sourceColumn)
 	{
-		super(store, name, constraint, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
+		super(store, name, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
 	}
 	
 }

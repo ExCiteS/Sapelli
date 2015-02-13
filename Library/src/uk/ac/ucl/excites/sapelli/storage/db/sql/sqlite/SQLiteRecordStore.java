@@ -191,7 +191,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		try
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null, null)),
+									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null)),
 									Collections.<Object> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
@@ -513,28 +513,27 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 
 		/**
 		 * @param type
-		 * @param constraint
 		 * @param sourceSchema
 		 * @param sourceColumn
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLiteColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLiteColumn(String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			super(type, constraint, sourceSchema, sourceColumn, mapping);
+			super(type, sourceSchema, sourceColumn, mapping);
 		}
 
 		/**
 		 * @param name
 		 * @param type
-		 * @param constraint
 		 * @param sourceSchema
 		 * @param sourceColumn
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLiteColumn(String name, String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLiteColumn(String name, String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			super(name, type, constraint, sourceSchema, sourceColumn, mapping);
+			super(name, type, sourceSchema, sourceColumn, mapping);
 		}
+		
 		/**
 		 * @param statement
 		 * @param paramIdx
@@ -622,9 +621,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 		
 		@Override
-		protected void initialiseTable() throws DBException
+		protected SQLiteTable initialiseTable(Schema schema) throws DBException
 		{
-			table = new SQLiteTable(schema);
+			return new SQLiteTable(schema);
 		}
 		
 		private String getColumnConstraint(Column<?> sourceColum)
@@ -640,7 +639,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				{	// the sourceColumn is indexed (on its own) ...
 					bldr.openTransaction();
 					// Check which kind of index it is:
-					if(idx == schema.getPrimaryKey())
+					if(idx == table.schema.getPrimaryKey())
 					{	// the sourceColumn is the primary key
 						bldr.append("PRIMARY KEY");
 						// ASC/DESC?
@@ -691,10 +690,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return bldr.toString();
 		}
 		
-		protected List<String> getTableConstraints()
+		@Override
+		protected void addTableConstraints()
 		{
-			List<String> tConstraints = new ArrayList<String>();
-			
 			// Primary key & unique indexes:
 			Iterator<Index> idxIter = indexesToProcess.iterator();
 			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
@@ -702,7 +700,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				Index idx = idxIter.next();
 				TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 				// Check which kind of index it is:
-				if(idx == schema.getPrimaryKey())
+				if(idx == table.schema.getPrimaryKey())
 					// index is the primary key:
 					bldr.append("PRIMARY KEY");
 				else if(idx.isUnique())
@@ -725,15 +723,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				// conflict-clause?
 				
 				// Add constraint:
-				tConstraints.add(bldr.toString());
+				spec.addTableConstraint(bldr.toString());
 				
 				// We are done processing this index:
 				idxIter.remove();
 			}
 			
 			// foreign-key-clause?
-			
-			return tConstraints;
 		}
 		
 		/* (non-Javadoc)
@@ -743,13 +739,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, getColumnConstraint(boolCol), schema, boolCol));
+			addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, table.schema, boolCol), getColumnConstraint(boolCol));
 		}
 		
 		@Override
 		public void visit(final TimeStampColumn timeStampCol)
 		{
-			table.addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, getColumnConstraint(timeStampCol), schema, timeStampCol, new TypeMapping<String, TimeStamp>()
+			addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, table.schema, timeStampCol, new TypeMapping<String, TimeStamp>()
 			{
 
 				@Override
@@ -764,31 +760,31 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					return timeStampCol.parse(value);
 				}
 				
-			}));
+			}), getColumnConstraint(timeStampCol));
 		}
 		
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, getColumnConstraint(byteArrayCol), schema, byteArrayCol, null));
+			addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, table.schema, byteArrayCol, null), getColumnConstraint(byteArrayCol));
 		}
 		
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			table.addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, getColumnConstraint(stringCol), schema, stringCol, null));
+			addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, table.schema, stringCol, null), getColumnConstraint(stringCol));
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			table.addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, getColumnConstraint(intCol), schema, intCol, null));
+			addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, table.schema, intCol, null), getColumnConstraint(intCol));
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, getColumnConstraint(floatCol), schema, floatCol, null));
+			addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, table.schema, floatCol, null), getColumnConstraint(floatCol));
 		}
 		
 		/**
@@ -799,7 +795,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, getColumnConstraint(listCol), schema, listCol, new TypeMapping<byte[], L>()
+			addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, table.schema, listCol, new TypeMapping<byte[], L>()
 			{
 
 				@Override
@@ -855,7 +851,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					}
 				}
 				
-			}));
+			}), getColumnConstraint(listCol));
 			
 		}
 		
