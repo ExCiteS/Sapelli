@@ -105,7 +105,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
-		super(client);
+		super(client, true); // make use of roll-back tasks
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
 	}
@@ -606,7 +606,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		protected void create() throws DBException
+		public void create() throws DBException
 		{
 			// Check if it really doesn't exist yet:
 			if(isInDB())
@@ -615,6 +615,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Get spec if needed:
 			if(spec == null)
 				spec = getTableFactory().generateTableSpec((STable) this);
+			
+			if(isInTransaction())
+			{	// this means the table creation might be rolled-back...
+				final SQLTableSpec holdSpec = spec;
+				addRollbackTask(new RollbackTask()
+				{
+					@Override
+					public void run() throws DBException
+					{	// If this code run that means the table wasn't created in the DB after all, so...
+						//	mark table as non-existing in DB:
+						existsInDB = false;
+						//	and re-set the spec so it doesn't have to be generated again:
+						spec = holdSpec;
+					}
+				});
+			}
 			
 			// Create the table & indexes:
 			spec.createTableAndIndexes();
@@ -838,12 +854,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @return
+		 * @return true if the table is empty (i.e. containing 0 records) or does not exist in the DB
 		 * @throws DBException
 		 */
 		public boolean isEmpty() throws DBException
 		{
-			return getRecordCount() == 0;
+			return isInDB() || getRecordCount() == 0;
 		}
 		
 		/**

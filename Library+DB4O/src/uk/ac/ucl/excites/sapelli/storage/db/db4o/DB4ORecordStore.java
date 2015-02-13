@@ -69,7 +69,7 @@ public class DB4ORecordStore extends RecordStore
 	
 	public DB4ORecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
-		super(client);
+		super(client, false); // don't make use of roll-back tasks
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class, Schema.class);
 		
