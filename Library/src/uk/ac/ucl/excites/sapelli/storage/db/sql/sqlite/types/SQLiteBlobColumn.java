@@ -91,9 +91,9 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 	protected String sqlToLiteral(byte[] value, boolean quotedIfNeeded)
 	{
 		if(value != null)
-			return 'x' + getQuoteChar() + Hex.encodeHexString(value) + getQuoteChar();
+			return 'x' + SQLiteRecordStore.QUOTE_CHAR + Hex.encodeHexString(value) + SQLiteRecordStore.QUOTE_CHAR;
 		else
-			return getNullString();
+			return SQLiteRecordStore.NULL_STRING;
 	}
 
 }

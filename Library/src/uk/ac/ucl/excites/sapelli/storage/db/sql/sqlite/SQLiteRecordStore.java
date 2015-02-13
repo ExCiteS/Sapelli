@@ -71,6 +71,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
 	static public final String PARAM_PLACEHOLDER = "?";
 	
+	static public final String NULL_STRING = "NULL";
+	static public final char QUOTE_CHAR = '\'';
+	static public final String QUOTE_ESCAPE_STRING = "''";
+	
 	/**
 	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
 	 */
@@ -210,6 +214,24 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public boolean hasFullIndexSupport()
 	{
 		return true;
+	}
+	
+	@Override
+	protected String getNullString()
+	{
+		return NULL_STRING;
+	}
+
+	@Override
+	protected char getQuoteChar()
+	{
+		return QUOTE_CHAR;
+	}
+
+	@Override
+	protected String getQuoteEscapeString()
+	{
+		return QUOTE_ESCAPE_STRING;
 	}
 	
 	/**
@@ -554,24 +576,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @throws DBException
 		 */
 		protected abstract void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
-
-		@Override
-		protected String getNullString()
-		{
-			return "null";
-		}
-
-		@Override
-		protected String getQuoteChar()
-		{
-			return "'";
-		}
-
-		@Override
-		protected String getQuoteEscape()
-		{
-			return "''";
-		}
 		
 		/**
 		 * @param record

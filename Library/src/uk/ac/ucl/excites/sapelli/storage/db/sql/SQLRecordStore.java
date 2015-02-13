@@ -500,13 +500,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)
 	}
 	
+	protected abstract String getNullString();
+	
+	protected abstract char getQuoteChar();
+	
+	protected abstract String getQuoteEscapeString();
+	
 	/**
 	 * Get subclasses may need to override this because some SQL dialects use != instead of <> (Note: SQLite supports both)
 	 * 
 	 * @param comparison
 	 * @return
 	 */
-	public String getComparisonOperator(RuleConstraint.Comparison comparison)
+	protected String getComparisonOperator(RuleConstraint.Comparison comparison)
 	{
 		switch(comparison)
 		{
@@ -1017,7 +1023,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			if(value != null)
 				return (quotedIfNeeded && needsQuotedLiterals() ?
-							getQuoteChar() + value.toString().replace(getQuoteChar(), getQuoteEscape()) + getQuoteChar() :
+							getQuoteChar() + value.toString().replace("" + getQuoteChar(), getQuoteEscapeString()) + getQuoteChar() :
 							value.toString());
 			else
 				return getNullString();
@@ -1032,12 +1038,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			return false;
 		}
-		
-		protected abstract String getNullString();
-
-		protected abstract String getQuoteChar();
-		
-		protected abstract String getQuoteEscape();
 		
 	}
 	
@@ -1679,7 +1679,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(sqlCol != null)
 			{	// Equality constraint on non-composite (leaf) column...
 				Object sapValue = equalityConstr.getValue();
-				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one
+				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one (unless the defaults are also put new Record instances)
 				bldr.append(sqlCol.name);
 				if(sapValue != null)
 				{
@@ -1697,7 +1697,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append("IS");
 					if(!equalityConstr.isEqual())
 						bldr.append("NOT");
-					bldr.append("NULL");
+					bldr.append(getNullString()); // "NULL"
 				}
 			}
 			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
