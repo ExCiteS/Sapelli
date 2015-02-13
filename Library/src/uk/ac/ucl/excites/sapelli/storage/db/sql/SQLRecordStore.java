@@ -94,11 +94,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	private final Map<RecordReference, STable> tables;
 	
 	
+	/**
+	 * If non-null (all) SQL statements/queries will use parameters instead of literal values
+	 */
 	private final String valuePlaceHolder;
 
 	/**
 	 * @param client
-	 * @param valuePlaceHolder - may be null if no parameters are to be used on SQL statements/queries (only literal values)
+	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
 	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
@@ -733,6 +736,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// This method cannot be used on schemata with auto-incrementing PKs:
 			if(autoIncrementKeySapColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
+			//else...
 			
 			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source), otherwise use current time
 			Long recLsa = GetLastStoredAt(record);
@@ -1415,10 +1419,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract class StatementHelper
 	{
 		
-		protected STable table;
+		protected final STable table;
+		private final List<SColumn> parameterColumns;
 		protected TransactionalStringBuilder bldr;
 		protected String query;
-		protected List<SColumn> parameterColumns;
 		
 		protected DBException exception = null;
 		
@@ -1428,11 +1432,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public StatementHelper(STable table)
 		{
 			this.table = table;
-			if(isParameterised())
-				this.parameterColumns = new ArrayList<SColumn>();
+			this.parameterColumns = isParameterised() ? new ArrayList<SColumn>() : null;
 			this.bldr = new TransactionalStringBuilder(SPACE); // use SPACE as connective!
 		}
 		
+		/**
+		 * May be overridden in cases where literal values must be used despite there being a non-null valuePlaceHolder
+		 * 
+		 * @return
+		 */
 		protected boolean isParameterised()
 		{
 			return valuePlaceHolder != null;
@@ -1533,7 +1541,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract class RecordByPrimaryKeyHelper extends StatementHelper
 	{
 		
-		protected Set<SColumn> keyPartSqlCols;
+		protected final Set<SColumn> keyPartSqlCols;
 		
 		/**
 		 * @param table
@@ -1750,7 +1758,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected class RecordSelectHelper extends StatementHelper implements ConstraintVisitor
 	{
 		
-		protected List<Object> sapArguments;
+		private final List<Object> sapArguments;
 		
 		/**
 		 * @param table
@@ -1802,8 +1810,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected RecordSelectHelper(STable table)
 		{
 			super(table);
-			if(isParameterised())
-				this.sapArguments = new ArrayList<Object>();
+			this.sapArguments = isParameterised() ? new ArrayList<Object>() : null;
 		}
 		
 		protected void buildQuery(RecordsQuery recordsQuery, String projection)
