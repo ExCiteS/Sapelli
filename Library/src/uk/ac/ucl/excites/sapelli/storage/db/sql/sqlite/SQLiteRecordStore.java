@@ -59,6 +59,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
@@ -300,8 +301,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected abstract SapelliSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/**
+	 * 
 	 * @author mstevens
-	 *
 	 */
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
@@ -316,7 +317,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			super(schema);
 		}
-
+		
+		@Override
+		protected SQLRecordStore<SQLiteRecordStore, SQLiteTable, SQLiteColumn<?, ?>>.TableCreationHelper getTableCreationHelper()
+		{
+			return new SQLiteTableCreationHelper(this);
+		}
+		
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
@@ -615,123 +622,16 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	}
 	
 	/**
+	 * 
 	 * @author mstevens
-	 *
-	 * @see http://www.sqlite.org/lang_createtable.html
 	 */
 	protected class SQLiteTableFactory extends BasicTableFactory
 	{
 		
 		@Override
-		protected SQLiteTable initialiseTable(Schema schema) throws DBException
+		protected SQLiteTable createTable(Schema schema) throws DBException
 		{
 			return new SQLiteTable(schema);
-		}
-		
-		private String getColumnConstraint(Column<?> sourceColum)
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-		
-			// Primary key & unique indexes:
-			Iterator<Index> idxIter = indexesToProcess.iterator();
-			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
-			{
-				Index idx = idxIter.next();
-				if(idx.containsColumn(sourceColum, false) && !idx.isMultiColumn())
-				{	// the sourceColumn is indexed (on its own) ...
-					bldr.openTransaction();
-					// Check which kind of index it is:
-					if(idx == table.schema.getPrimaryKey())
-					{	// the sourceColumn is the primary key
-						bldr.append("PRIMARY KEY");
-						// ASC/DESC?
-						// conflict-clause?
-						if(idx instanceof AutoIncrementingPrimaryKey)
-							bldr.append("AUTOINCREMENT");
-					}
-					else if(idx.isUnique())
-					{	//Regular single-column, unique index (unnamed)
-						bldr.append("UNIQUE");
-						// conflict-clause?
-					}
-					// else : index will have to be created separately (outside of column & table definition)
-					
-					if(!bldr.isCurrentTransactionEmpty())
-					{
-						bldr.commitTransaction();
-						// We are done processing this index:
-						idxIter.remove();
-					}
-					else
-						bldr.rollbackTransaction();
-				}
-			}
-	
-			// Optionality:
-			boolean optional = sourceColum.isOptional();
-			// Check parents, if one of them is optional the subcolumn in the DB should be too:
-			if(!optional)
-				for(Column<?> parent : parents) // iterates through the stack from bottom to top! (But that's fine in this case)
-					if(parent.isOptional())
-					{
-						optional = true;
-						break;
-					}
-			if(!optional)
-				bldr.append("NOT NULL");
-			// TODO Reassess this: it could be a bad idea because it means we cannot persistently store incomplete records (which was no problem with DB4O).
-			
-			// TODO Default value?
-			
-			// foreign-key-clause?
-			/*if(sourceColum instanceof ForeignKeyColumn)
-			{
-				// ...
-			}*/
-			
-			return bldr.toString();
-		}
-		
-		@Override
-		protected void addTableConstraints()
-		{
-			// Primary key & unique indexes:
-			Iterator<Index> idxIter = indexesToProcess.iterator();
-			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
-			{
-				Index idx = idxIter.next();
-				TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-				// Check which kind of index it is:
-				if(idx == table.schema.getPrimaryKey())
-					// index is the primary key:
-					bldr.append("PRIMARY KEY");
-				else if(idx.isUnique())
-					// index is a regular, unique index:
-					bldr.append("UNIQUE");
-				else
-					// index is a not the primary key, nor unique, these cannot be created as part of the SQLite table definition
-					continue; // will be created separately from the table
-				
-				// Continue generating constraint definition for primary key or unique index:
-				bldr.append("(");
-				bldr.openTransaction(", ");
-				// List indexed columns:
-				for(Column<?> idxCol : idx.getColumns(false))
-					// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SQLiteColumn that represents part of it:
-					for(SQLiteColumn<?, ?> idxSCol : table.getSQLColumns(idxCol))
-						bldr.append(idxSCol.name);
-				bldr.commitTransaction(false);
-				bldr.append(")", false);
-				// conflict-clause?
-				
-				// Add constraint:
-				spec.addTableConstraint(bldr.toString());
-				
-				// We are done processing this index:
-				idxIter.remove();
-			}
-			
-			// foreign-key-clause?
 		}
 		
 		/* (non-Javadoc)
@@ -741,13 +641,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, table.schema, boolCol), getColumnConstraint(boolCol));
+			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, table.schema, boolCol));
 		}
 		
 		@Override
 		public void visit(final TimeStampColumn timeStampCol)
 		{
-			addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, table.schema, timeStampCol, new TypeMapping<String, TimeStamp>()
+			table.addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, table.schema, timeStampCol, new TypeMapping<String, TimeStamp>()
 			{
 
 				@Override
@@ -762,31 +662,31 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					return timeStampCol.parse(value);
 				}
 				
-			}), getColumnConstraint(timeStampCol));
+			}));
 		}
 		
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{
-			addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, table.schema, byteArrayCol, null), getColumnConstraint(byteArrayCol));
+			table.addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, table.schema, byteArrayCol, null));
 		}
 		
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, table.schema, stringCol, null), getColumnConstraint(stringCol));
+			table.addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, table.schema, stringCol, null));
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, table.schema, intCol, null), getColumnConstraint(intCol));
+			table.addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, table.schema, intCol, null));
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, table.schema, floatCol, null), getColumnConstraint(floatCol));
+			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, table.schema, floatCol, null));
 		}
 		
 		/**
@@ -797,7 +697,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol)
 		{
-			addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, table.schema, listCol, new TypeMapping<byte[], L>()
+			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, table.schema, listCol, new TypeMapping<byte[], L>()
 			{
 
 				@Override
@@ -853,14 +753,132 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					}
 				}
 				
-			}), getColumnConstraint(listCol));
+			}));
 		}
 		
 	}
 	
 	/**
+	 * 
 	 * @author mstevens
-	 *
+	 * @see http://www.sqlite.org/lang_createtable.html
+	 */
+	protected class SQLiteTableCreationHelper extends TableCreationHelper
+	{
+
+		public SQLiteTableCreationHelper(SQLiteTable table)
+		{
+			super(table);
+		}
+
+		@Override
+		public String getColumnConstraint(ColumnPointer sourceCP, List<Index> indexesToProcess)
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+		
+			// Primary key & unique indexes:
+			Iterator<Index> idxIter = indexesToProcess.iterator();
+			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
+			{
+				Index idx = idxIter.next();
+				if(idx.containsColumn(sourceCP.getColumn(), false) && !idx.isMultiColumn())
+				{	// the sourceColumn is indexed (on its own) ...
+					bldr.openTransaction();
+					// Check which kind of index it is:
+					if(idx == table.schema.getPrimaryKey())
+					{	// the sourceColumn is the primary key
+						bldr.append("PRIMARY KEY");
+						// ASC/DESC?
+						// conflict-clause?
+						if(idx instanceof AutoIncrementingPrimaryKey)
+							bldr.append("AUTOINCREMENT");
+					}
+					else if(idx.isUnique())
+					{	//Regular single-column, unique index (unnamed)
+						bldr.append("UNIQUE");
+						// conflict-clause?
+					}
+					// else : index will have to be created separately (outside of column & table definition)
+					
+					if(!bldr.isCurrentTransactionEmpty())
+					{
+						bldr.commitTransaction();
+						// We are done processing this index:
+						idxIter.remove();
+					}
+					else
+						bldr.rollbackTransaction();
+				}
+			}
+
+			// Optionality:
+			boolean optional = false;
+			ColumnPointer cp = sourceCP;
+			while(cp != null)
+				cp = (optional = cp.getColumn().optional) ? null : cp.getParentPointer();
+			//	If the (sub)column is not optional, and neither is one of its parents, then the DB column should not accept null values:
+			if(!optional)
+				bldr.append("NOT NULL");
+			// TODO Reassess this: it could be a bad idea because it means we cannot persistently store incomplete records (which was no problem with DB4O).
+			
+			// TODO Default value?
+			
+			// foreign-key-clause?
+			/*if(sourceColum instanceof ForeignKeyColumn)
+			{
+				// ...
+			}*/
+			
+			return bldr.toString();
+		}
+
+		@Override
+		protected void addTableConstraints(List<Index> indexesToProcess)
+		{
+			// Primary key & unique indexes:
+			Iterator<Index> idxIter = indexesToProcess.iterator();
+			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
+			{
+				Index idx = idxIter.next();
+				TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+				// Check which kind of index it is:
+				if(idx == table.schema.getPrimaryKey())
+					// index is the primary key:
+					bldr.append("PRIMARY KEY");
+				else if(idx.isUnique())
+					// index is a regular, unique index:
+					bldr.append("UNIQUE");
+				else
+					// index is a not the primary key, nor unique, these cannot be created as part of the SQLite table definition
+					continue; // will be created separately from the table
+				
+				// Continue generating constraint definition for primary key or unique index:
+				bldr.append("(");
+				bldr.openTransaction(", ");
+				// List indexed columns:
+				for(Column<?> idxCol : idx.getColumns(false))
+					// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SQLiteColumn that represents part of it:
+					for(SQLiteColumn<?, ?> idxSCol : table.getSQLColumns(idxCol))
+						bldr.append(idxSCol.name);
+				bldr.commitTransaction(false);
+				bldr.append(")", false);
+				// conflict-clause?
+				
+				// Add constraint:
+				tableConstraints.add(bldr.toString());
+				
+				// We are done processing this index:
+				idxIter.remove(); // !!!
+			}
+			
+			// foreign-key-clause?
+		}
+		
+	}
+	
+	/**
+	 * 
+	 * @author mstevens
 	 */
 	protected class SelectROWIDHelper extends RecordByPrimaryKeyHelper
 	{
