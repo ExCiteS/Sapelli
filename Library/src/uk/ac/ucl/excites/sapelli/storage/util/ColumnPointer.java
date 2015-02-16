@@ -273,15 +273,16 @@ public class ColumnPointer
 	}
 	
 	/**
-	 * @return
+	 * @return a new ColumnPointer pointing to the parent of the column to which this ColumnPoiter points, or null if that column was already top level
 	 */
-	@SuppressWarnings("unchecked")
 	public ColumnPointer getParentPointer()
 	{
 		if(isSubColumn())
 		{
-			Stack<Column<?>> parentStack = (Stack<Column<?>>) columnStack.clone();
-			parentStack.pop();
+			Stack<Column<?>> parentStack = new Stack<Column<?>>();
+			for(Column<?> col : columnStack) // (iterates from bottom to top)
+				if(parentStack.size() < columnStack.size() - 1)
+					parentStack.push(col);
 			return new ColumnPointer(parentStack);
 		}
 		else
