@@ -407,7 +407,7 @@ public class Schema implements Serializable
 	 * If {@code includeVirtual} is {@code true} virtual columns are inserted between their "real" owner and the next "real" column.
 	 * 
 	 * @param includeVirtual
-	 * @return
+	 * @return an unmodifiable list of columns
 	 */
 	public List<Column<?>> getColumns(boolean includeVirtual)
 	{
@@ -530,8 +530,10 @@ public class Schema implements Serializable
 	}
 
 	/**
+	 * Returns a list of all indexes, including the primary key if {@code includePrimaryKey} is {@code true}. 
+	 * 
 	 * @param includePrimaryKey
-	 * @return the indexes
+	 * @return an unmodifiable list of indexes
 	 */
 	public List<Index> getIndexes(boolean includePrimaryKey)
 	{
