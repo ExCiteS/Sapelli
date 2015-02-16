@@ -80,8 +80,8 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	public RecordColumn(String name, Schema schema, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
 		super(name, optional);
-		if(schema == null)
-			throw new NullPointerException("RecordColumn needs a non-null schema to specify its subcolumns.");
+		if(schema == null || !schema.isSealed())
+			throw new IllegalArgumentException("RecordColumn needs a non-null, sealed schema to specify its subcolumns.");
 		this.schema = schema;
 		this.includeSkipColsInStringSerialisation = includeSkipColsInStringSerialisation;
 		this.includeVirtualColsInStringSerialisation = includeVirtualColsInStringSerialisation;
