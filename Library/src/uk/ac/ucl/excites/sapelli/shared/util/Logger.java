@@ -132,7 +132,7 @@ public class Logger
 	 */
 	public void addBlankLine()
 	{
-		// To stream: don't reproduce blank lines on System.out
+		// To stream: nope, don't reproduce blank lines on System.out
 		// To file:
 		writeLine("");
 	}
@@ -145,7 +145,7 @@ public class Logger
 	 */
 	public void addFinalLine(String... fields)
 	{
-		addLine(fields); // these calls will also print to output stream if appropriate
+		addLine(fields); // will also print to output stream if appropriate
 		addBlankLine();
 		close();
 	}
@@ -193,5 +193,5 @@ public class Logger
 		DateTime now = new DateTime();
 		return formatter.withZone(now.getZone()).print(now) + FIELD_SEPARATOR + TimeUtils.PrettyTimestampWithoutMSFormatter.print(now);
 	}
-	
+
 }

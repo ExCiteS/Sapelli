@@ -36,6 +36,20 @@ public class Index extends Schema
 	
 	private boolean unique;
 	
+	/**
+	 * @param column
+	 * @param unique
+	 */
+	public Index(Column<?> column, boolean unique)
+	{
+		this("Idx-" + column.name, unique, column);
+	}
+	
+	/**
+	 * @param name
+	 * @param unique
+	 * @param columns
+	 */
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
 		super(InternalKind.Index, name);
@@ -49,7 +63,9 @@ public class Index extends Schema
 		
 		// Add columns (but check if they are not virtual):
 		for(Column<?> iCol : columns)
-			if(iCol instanceof VirtualColumn)
+			if(iCol == null)
+				throw new NullPointerException("Indexed column cannot be null!");
+			else if(iCol instanceof VirtualColumn)
 				throw new IllegalArgumentException("Indexing of virtual columns is not supported!");
 			else
 				addColumn(iCol, false); // add column but *not* its virtual version

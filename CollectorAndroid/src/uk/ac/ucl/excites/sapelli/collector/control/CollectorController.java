@@ -58,8 +58,9 @@ import android.util.Log;
 import com.crashlytics.android.Crashlytics;
 
 /**
- * @author mstevens, Michalis Vitos, Julia
+ * Controller subclass for the "Sapelli Collector for Android"
  * 
+ * @author mstevens, Michalis Vitos, Julia, benelliott
  */
 public class CollectorController extends Controller<CollectorView> implements LocationListener, OrientationListener
 {
@@ -270,15 +271,6 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 		// does nothing for now
 	}
 	
-	/**
-	 * Create an Android-specific logger that writes to Logcat as well as to file.
-	 */
-	@Override
-	protected Logger createLogger() throws FileStorageException, IOException
-	{
-		return new AndroidLogger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
-	}
-
 	@Override
 	protected void setupKeyPressTrigger(Trigger trigger)
 	{
@@ -336,6 +328,15 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	protected long getElapsedMillis()
 	{
 		return SystemClock.elapsedRealtime();
+	}
+	
+	/**
+	 * Create an Android-specific logger that writes to Logcat as well as to file.
+	 */
+	@Override
+	protected Logger createLogger() throws FileStorageException, IOException
+	{
+		return new AndroidLogger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
 	}
 	
 }

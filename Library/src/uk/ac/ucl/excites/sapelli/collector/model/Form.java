@@ -140,6 +140,7 @@ public class Form implements WarningKeeper
 
 	// End action:
 	private Next next = DEFAULT_NEXT;
+	private transient EndField defaultEndField;
 	private boolean vibrateOnSave = DEFAULT_VIBRATE;
 	private String saveSoundRelativePath;
 
@@ -190,15 +191,20 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param current
+	 * @param current (should not be null)
 	 * @return the next field to go to along with passed arguments, or null if the next field could not be determined (likely because the current field is part of a page)
+	 * @throws NullPointerException when current is null
 	 */
-	public FieldWithArguments getNextFieldAndArguments(Field current)
+	public FieldWithArguments getNextFieldAndArguments(Field current, boolean allowJump) throws NullPointerException
 	{
-		// Check for jump field (possibly the one of a parent in case of ChoiceField):
-		Field nextF = current.getJump();
+		if(current == null)
+			throw new NullPointerException("Given \"current\" field cannot be null");
+		Field nextF = null;
+		// If allowed, check for jump field (possibly the one of a parent in case of ChoiceField):
+		if(allowJump)
+			nextF = current.getJump();
 		if(nextF == null)
-		{	// No jump is set, check for field below current one:
+		{	// No jump is set or allowed, check for field below current one:
 			int currentPos = getFieldPosition(current);
 			if(currentPos < 0)
 				// This field is not part of the form (it is likely part of a page):
@@ -206,7 +212,7 @@ public class Form implements WarningKeeper
 			if(currentPos + 1 < fields.size())
 				nextF = fields.get(currentPos + 1); // go to next field in the form
 			else
-				nextF = new EndField(this, true, next); // current field is the last of the form, go to the form's "next", but save the record first
+				nextF = getDefaultEndField(); // current field is the last of the form
 		}
 		return new FieldWithArguments(nextF, current.getNextFieldArguments());
 	}
@@ -513,22 +519,6 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @return the skipOnBack
-	 */
-	public boolean isSkipOnBack()
-	{
-		return skipOnBack;
-	}
-
-	/**
-	 * @param skipOnBack the skipOnBack to set
-	 */
-	public void setSkipOnBack(boolean skipOnBack)
-	{
-		this.skipOnBack = skipOnBack;
-	}
-
-	/**
 	 * @param next the next to set
 	 * @throws IllegalArgumentException	when the nextStr is not recognised
 	 */
@@ -542,6 +532,7 @@ public class Form implements WarningKeeper
 		try
 		{
 			this.next = Next.valueOf(nextStr);
+			getDefaultEndField(); // update default EndField accordingly
 		}
 		catch(IllegalArgumentException iae)
 		{
@@ -552,6 +543,34 @@ public class Form implements WarningKeeper
 			else
 				throw iae;
 		}
+	}
+	
+	/**
+	 * Returns the default EndField, which goes to the form's "next", but always saves the record first
+	 * 
+	 * @return
+	 */
+	public EndField getDefaultEndField()
+	{
+		if(defaultEndField == null)
+			defaultEndField = new EndField(this, true, next);
+		return defaultEndField;
+	}
+	
+	/**
+	 * @return the skipOnBack
+	 */
+	public boolean isSkipOnBack()
+	{
+		return skipOnBack;
+	}
+
+	/**
+	 * @param skipOnBack the skipOnBack to set
+	 */
+	public void setSkipOnBack(boolean skipOnBack)
+	{
+		this.skipOnBack = skipOnBack;
 	}
 
 	/**

@@ -315,7 +315,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p><b>" + app.getBuildInfo().getVersionInfo() + "</b></p>" +
+				"<p><b>" + app.getBuildInfo().getNameAndVersion() + "</b><br/>[" + app.getBuildInfo().getExtraVersionInfo() + "]</p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
 				"<p>" + getString(R.string.license)  + "</p>" +

@@ -207,7 +207,7 @@ public class ColumnPointer
 		Stack<Column<?>> path = columnStack;
 		
 		// Check if we have a complete path to the pointed-at column starting from the top-level schema:
-		if(!topLevelRecord.getSchema().containsColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
+		if(!topLevelRecord.getSchema().containsEquivalentColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelRecord.getSchema(), getColumn()); // Try to construct a path to the pointed-at record
 		
 		// Get the right (sub)record:
@@ -273,15 +273,16 @@ public class ColumnPointer
 	}
 	
 	/**
-	 * @return
+	 * @return a new ColumnPointer pointing to the parent of the column to which this ColumnPoiter points, or null if that column was already top level
 	 */
-	@SuppressWarnings("unchecked")
 	public ColumnPointer getParentPointer()
 	{
 		if(isSubColumn())
 		{
-			Stack<Column<?>> parentStack = (Stack<Column<?>>) columnStack.clone();
-			parentStack.pop();
+			Stack<Column<?>> parentStack = new Stack<Column<?>>();
+			for(Column<?> col : columnStack) // (iterates from bottom to top)
+				if(parentStack.size() < columnStack.size() - 1)
+					parentStack.push(col);
 			return new ColumnPointer(parentStack);
 		}
 		else
@@ -322,7 +323,7 @@ public class ColumnPointer
 		Stack<Column<?>> path = columnStack;
 		
 		// Check if we have a complete path to the pointed-at column starting from the top-level schema (if one was given):
-		if(topLevelSchema != null && !topLevelSchema.containsColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
+		if(topLevelSchema != null && !topLevelSchema.containsEquivalentColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelSchema, getColumn()); // Try to construct a path to the pointed-at record
 		
 		StringBuilder bldr = new StringBuilder();

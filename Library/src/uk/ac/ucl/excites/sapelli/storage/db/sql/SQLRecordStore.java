@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -54,7 +53,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
@@ -96,15 +94,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	private final Map<RecordReference, STable> tables;
 	
 	
+	/**
+	 * If non-null (all) SQL statements/queries will use parameters instead of literal values
+	 */
 	private final String valuePlaceHolder;
 
 	/**
 	 * @param client
-	 * @param valuePlaceHolder - may be null if no parameters are to be used on SQL statements/queries (only literal values)
+	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
 	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
-		super(client);
+		super(client, true); // make use of roll-back tasks
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
 	}
@@ -118,8 +119,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected void initialise(boolean newDB) throws DBException
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
-		this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
-		this.schemataTable = getTable(Model.META_SCHEMA, newDB);
+		if(newDB)
+			startTransaction();
+		try
+		{
+			this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
+			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
+		}
+		catch(DBException e)
+		{
+			rollbackTransactions();
+			throw e;
+		}
+		if(newDB)
+			commitTransaction();
 	}
 	
 	protected abstract void executeSQL(String sql) throws DBException;
@@ -501,13 +514,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)
 	}
 	
+	protected abstract String getNullString();
+	
+	protected abstract char getQuoteChar();
+	
+	protected abstract String getQuoteEscapeString();
+	
 	/**
 	 * Get subclasses may need to override this because some SQL dialects use != instead of <> (Note: SQLite supports both)
 	 * 
 	 * @param comparison
 	 * @return
 	 */
-	public String getComparisonOperator(RuleConstraint.Comparison comparison)
+	protected String getComparisonOperator(RuleConstraint.Comparison comparison)
 	{
 		switch(comparison)
 		{
@@ -530,10 +549,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 
 		public final String tableName;
 		public final Schema schema;
-		private List<String> tableConstraints = Collections.<String> emptyList();
-		private List<Index> explicitIndexes;
+		
 		private Boolean existsInDB;
-		protected final IntegerColumn autoIncrementKeyColumn;
+		private TableCreationHelper creator;
 		
 		/**
 		 * Mapping of Sapelli ColumnPointers (usually leaf columns) to corresponding  SQLColumns.
@@ -546,21 +564,39 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public final Map<RecordColumn<?>, List<SColumn>> composite2SqlColumns;
 		
+		/**
+		 * The auto-incrementing primary key column as (a Sapelli Column, not an S/SQLColumn), will be null if there is none
+		 */
+		protected final IntegerColumn autoIncrementKeySapColumn;
+		protected SColumn autoIncrementKeySQLColumn;
+		
 		public SQLTable(Schema schema)
 		{
 			this.tableName = sanitiseIdentifier(client.getTableName(schema));
 			this.schema = schema;
 			// Init collections:
-			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
+			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>(); // we use a LHP to preserve column order!
 			composite2SqlColumns = new HashMap<RecordColumn<?>, List<SColumn>>();
 			// Deal with auto-increment key:
-			this.autoIncrementKeyColumn = schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? ((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn() : null;
+			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
 		}
 		
+		/**
+		 * @param sqlColumn
+		 */
 		public void addColumn(SColumn sqlColumn)
 		{
 			ColumnPointer sourceCP = sqlColumn.sourceColumnPointer;
+			if(sourceCP == null || sourceCP.getColumn() == null)
+				throw new IllegalArgumentException("SQLColumn needs a valid sourceColumnPointer in order to be added to a SQLTable instance");
+			
+			// Add SQLColumn:
 			sqlColumns.put(sourceCP, sqlColumn);
+			
+			// Deal with AutoIncr...
+			if(sourceCP.getColumn().equals(autoIncrementKeySapColumn, true, true))
+				this.autoIncrementKeySQLColumn = sqlColumn;
+			
 			// Deal with composites...
 			while(sourceCP.isSubColumn())
 			{
@@ -580,15 +616,54 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 		}
 		
-		public void setTableConstraint(List<String> tableConstraints)
+		public boolean isInDB()
 		{
-			this.tableConstraints = new ArrayList<String>(tableConstraints);
+			if(existsInDB == null)
+				existsInDB = doesTableExist(tableName);
+			return existsInDB;
 		}
 		
-		public void setExplicitIndexes(List<Index> indexes)
-		{
-			this.explicitIndexes = indexes;
+		/**
+		 * Creates the table (+ any indexes) in the database.
+		 * Assumes the table does not already exist in the database! (caller must therefore first call isInDB())
+		 * 
+		 * @param factory
+		 * @throws DBException
+		 */
+		public void create() throws DBException
+		{		
+			// Get creator if needed:
+			if(creator == null)
+				creator = getTableCreationHelper();
+			
+			if(isInTransaction())
+			{	// this means the table creation might be rolled-back...
+				final TableCreationHelper holdCreator = creator;
+				addRollbackTask(new RollbackTask()
+				{
+					@Override
+					public void run() throws DBException
+					{	// If this code run that means the table wasn't created in the DB after all, so...
+						//	mark table as non-existing in DB:
+						existsInDB = false;
+						//	and re-set the creator so it doesn't have to be generated again:
+						creator = holdCreator;
+					}
+				});
+			}
+			
+			// Create the table & indexes:
+			creator.createTableAndIndexes();
+			// Note: if there is an exception the lines below will not be executed but the roll-back task above will...
+			
+			// Now the table exists...
+			existsInDB = true; // !!!
+			
+			// Discard the creator to limit memory consumption:
+			creator = null;
 		}
+		
+		protected abstract TableCreationHelper getTableCreationHelper();
 		
 		public SColumn getSQLColumn(ColumnPointer sapColumnPointer)
 		{
@@ -606,112 +681,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				return composite2SqlColumns.get((RecordColumn<?>) sapColumn);
 			else
 				return Collections.singletonList(getSQLColumn(sapColumn));
-		}
-		
-		public boolean isInDB()
-		{
-			if(existsInDB == null)
-				existsInDB = doesTableExist(tableName);
-			return existsInDB;
-		}
-		
-		/**
-		 * Create table in database, as well as any explicit indexes on its columns.
-		 * Default implementation, may be overridden by subclasses
-		 * 
-		 * @throws DBException
-		 */
-		public void create() throws DBException
-		{
-			executeSQL(generateCreateTableStatement());
-			existsInDB = true; // !!!
-			// Create explicit indexes:
-			for(Index idx : explicitIndexes)
-				executeSQL(generateCreateIndexStatement(idx));
-		}
-		
-		/**
-		 * @return sql statement to create database table
-		 * 
-		 * @see http://www.w3schools.com/sql/sql_create_table.asp
-		 * @see http://www.sqlite.org/lang_createtable.html
-		 */
-		protected String generateCreateTableStatement()
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("CREATE TABLE");
-			// "IF NOT EXISTS"? (probably SQLite specific)
-			bldr.append(tableName);
-			bldr.append("(");
-			bldr.openTransaction(", ");
-			// Columns:
-			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
-			{
-				bldr.openTransaction(SPACE);
-				bldr.append(sqlCol.name);
-				bldr.append(sqlCol.type);
-				bldr.append(sqlCol.constraint);
-				bldr.commitTransaction();
-			}
-			// Table constraints:
-			for(String tConstr : tableConstraints)
-				bldr.append(tConstr);
-			bldr.commitTransaction(false);
-			bldr.append(");", false);
-			return bldr.toString();
-		}
-		
-		/**
-		 * @param idx
-		 * @return sql statement to create database table index
-		 * 
-		 * @see http://www.w3schools.com/sql/sql_create_index.asp
-		 * @see http://www.sqlite.org/lang_createindex.html
-		 */
-		protected String generateCreateIndexStatement(Index idx)
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("CREATE");
-			if(idx.isUnique())
-				bldr.append("UNIQUE");
-			bldr.append("INDEX");
-			// "IF NOT EXISTS"? (probably SQLite specific)
-			bldr.append(sanitiseIdentifier(tableName + "_" + idx.getName()));
-			bldr.append("ON");
-			bldr.append(tableName);
-			bldr.append("(");
-			bldr.openTransaction(", ");
-			// List indexed columns:
-			for(Column<?> idxCol : idx.getColumns(false))
-				// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
-				for(SColumn idxSCol : getSQLColumns(idxCol))
-					bldr.append(idxSCol.name);
-			bldr.commitTransaction(false);
-			bldr.append(");", false);
-			return bldr.toString();
-		}
-		
-		/**
-		 * Drop the table from the database.
-		 * Assumes the table exists in the database!
-		 * 
-		 * May be overridden.
-		 * 
-		 * @throws DBException
-		 */
-		public void drop() throws DBException
-		{
-			executeSQL(generateDropTableStatement());
-			existsInDB = false; // !!!
-		}
-		
-		protected String generateDropTableStatement()
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("DROP TABLE");
-			bldr.append(tableName);
-			bldr.append(";", false);
-			return bldr.toString();
 		}
 		
 		/**
@@ -738,7 +707,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Checks if the given record already exists in the database table.
+		 * Checks if the given {@link Record} instance already exists in the database table.
 		 * Also works for recordReferences to records of this table's schema!
 		 * 
 		 * May be overridden.
@@ -751,9 +720,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public boolean isRecordInDB(Record record) throws DBException, IllegalStateException
 		{
-			return (autoIncrementKeyColumn == null) ?
+			return	isInDB() &&
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(record)) ? 
 						select(record.getRecordQuery()) != null :
-						autoIncrementKeyColumn.isValueSet(record);
+						false;
 		}
 		
 		/**
@@ -769,8 +739,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
-			if(autoIncrementKeyColumn != null)
+			// This method cannot be used on schemata with auto-incrementing PKs:
+			if(autoIncrementKeySapColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
+			//else...
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
 		}
 		
@@ -863,12 +835,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @return
+		 * @return true if the table is empty (i.e. containing 0 records) or does not exist in the DB
 		 * @throws DBException
 		 */
 		public boolean isEmpty() throws DBException
 		{
-			return getRecordCount() == 0;
+			return !isInDB() || getRecordCount() == 0;
 		}
 		
 		/**
@@ -879,6 +851,45 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @throws DBException 
 		 */
 		public abstract long getRecordCount() throws DBException;
+		
+		/**
+		 * Drop the table from the database.
+		 * Assumes the table exists in the database!
+		 * 
+		 * May be overridden.
+		 * 
+		 * @throws DBException
+		 */
+		public void drop() throws DBException
+		{
+			if(isInTransaction())
+			{	// this means the drop operation might be rolled-back...
+				addRollbackTask(new RollbackTask()
+				{
+					@Override
+					public void run() throws DBException
+					{	// If this code run that means the table wasn't dropped after all, so...
+						existsInDB = true;
+					}
+				});
+			}
+			
+			// Perform the DROP operation:
+			executeSQL(generateDropTableStatement());
+			// Note: if there is an exception the line below will not be executed but the roll-back task above will...
+			
+			// Now the table is gone...
+			existsInDB = false; // !!!
+		}
+		
+		protected String generateDropTableStatement()
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("DROP TABLE");
+			bldr.append(tableName);
+			bldr.append(";", false);
+			return bldr.toString();
+		}
 		
 		/**
 		 * @param selection
@@ -897,7 +908,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			return "database table '" + tableName + "'";
 		}
-
+		
 	}
 	
 	/**
@@ -912,38 +923,34 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		static public final char QUALIFIED_COLUMN_NAME_SEPARATOR = '_'; 
 		
 		public final String name;
-		protected final String type;
-		protected final String constraint;
-		protected final ColumnPointer sourceColumnPointer;
+		public final String type;
+		public final ColumnPointer sourceColumnPointer;
 		protected final TypeMapping<SQLType, SapType> mapping;
 		
 		/**
 		 * @param type
-		 * @param constraint
 		 * @param sourceSchema
 		 * @param sourceColumn
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLColumn(String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			this(null, type, constraint, sourceSchema, sourceColumn, mapping);
+			this(null, type, sourceSchema, sourceColumn, mapping);
 		}
 
 		/**
 		 * @param name
 		 * @param type
-		 * @param constraint
 		 * @param sourceSchema - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
 		 * @param sourceColumn - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
 		@SuppressWarnings("unchecked")
-		public SQLColumn(String name, String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLColumn(String name, String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
 			this.sourceColumnPointer = (sourceSchema != null && sourceColumn != null) ? new ColumnPointer(sourceSchema, sourceColumn) : null;
 			this.name = sanitiseIdentifier(name != null ? name : (sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR)));
 			this.type = type;
-			this.constraint = constraint;
 			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
 		}
 		
@@ -1018,7 +1025,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			if(value != null)
 				return (quotedIfNeeded && needsQuotedLiterals() ?
-							getQuoteChar() + value.toString().replace(getQuoteChar(), getQuoteEscape()) + getQuoteChar() :
+							getQuoteChar() + value.toString().replace("" + getQuoteChar(), getQuoteEscapeString()) + getQuoteChar() :
 							value.toString());
 			else
 				return getNullString();
@@ -1033,12 +1040,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			return false;
 		}
-		
-		protected abstract String getNullString();
-
-		protected abstract String getQuoteChar();
-		
-		protected abstract String getQuoteEscape();
 		
 	}
 	
@@ -1083,19 +1084,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
+	 * Interface for SQLTable factory implementations, responsible for generating SQLTable instances from Schemata 
+	 * 
 	 * @author mstevens
-	 *
 	 */
 	public abstract class TableFactory
 	{
 		
+		/**
+		 * Generate a SQLTable for a Schema
+		 * 
+		 * @param schema
+		 * @return
+		 * @throws DBException
+		 */
 		public abstract STable generateTable(Schema schema) throws DBException;
 		
 	}
 	
 	/**
-	 * This TableFactory implementation uses a column visitor and assumes all
-	 * non-composite Sapelli columns will be represented by by exactly 1 SQLColumn.
+	 * Default TableFactory implementation.
+	 * 
+	 * It uses a column visitor and assumes all non-composite Sapelli columns will be
+	 * represented by by exactly 1 SQLColumn.
 	 * Composites (i.e. RecordColumns) will be mapped to sets of SQLColumns, each
 	 * corresponding to exactly 1 subcolumn.
 	 * 
@@ -1106,43 +1117,26 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	public abstract class BasicTableFactory extends TableFactory implements ColumnVisitor
 	{
 		
-		protected Schema schema;
-		protected List<Index> indexesToProcess;
 		protected STable table;
-		protected final Stack<Column<?>> parents = new Stack<Column<?>>();
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
 		{
-			this.schema = schema;
-			indexesToProcess = new ArrayList<Index>(schema.getIndexes(true)); // copy list of all indexes, including the primary key
-			initialiseTable(); // instantiates the table object
+			table = createTable(schema);
 			
-			schema.accept(this); // traverse schema --> columnSpecs will be added to TableSpec
-			table.setTableConstraint(getTableConstraints()); // generate additional table constraints
+			// Traverse schema:
+			schema.accept(this); // generates SQLColumns which get added to the table
 			
-			/* indexes that will be implicitly created as part of the table (and columns) definitions
-			 * will have been removed from the list at this point. Any indexes that are left will have
-			 * to be created explicitly: */
-			table.setExplicitIndexes(indexesToProcess);
 			return table;
 		}
 		
 		/**
-		 * Initialises the table variable with a new STable object.
-		 * Assumes schema has been set beforehand!
+		 * Instantiates and returns a new SQLTable object
 		 * 
 		 * @return
 		 * @throws DBException 
 		 */
-		protected abstract void initialiseTable() throws DBException;
-				
-		/**
-		 * This method is assumed to be called only after all columns have been added to the table!
-		 * 
-		 * @return
-		 */
-		protected abstract List<String> getTableConstraints();
+		protected abstract STable createTable(Schema schema) throws DBException;
 		
 		/**
 		 * TODO implement ListColumns using normalisation:
@@ -1242,13 +1236,150 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public void enter(RecordColumn<?> recordCol)
 		{
-			parents.push(recordCol);
+			// does nothing
 		}
 		
 		@Override
 		public void leave(RecordColumn<?> recordCol)
 		{
-			parents.pop();
+			// does nothing
+		}
+		
+	}
+	
+	/**
+	 * Helper class to create a table (along with any indexes) in the database.
+	 * 
+	 * Upon construction it generate and (temporarily) holds on to all information
+	 * (mostly partial SQL expressions) necessary to create the table and indexes.
+	 * 
+	 * After the table has been created the helper object is no longer needed to use the table.
+	 * 
+	 * @author mstevens
+	 */
+	public abstract class TableCreationHelper
+	{
+	
+		protected final STable table;
+		private final Map<SColumn, String> colConstraints;
+		protected final List<String> tableConstraints;
+		private final List<Index> explicitIndexes;
+		
+		public TableCreationHelper(STable table)
+		{
+			this.table = table;
+
+			// Copy all indexes (incl. PK) to a modifiable list:
+			List<Index> indexesToProcess = new ArrayList<Index>(table.schema.getIndexes(true)); 
+			
+			// Generate column constraints:
+			this.colConstraints = new HashMap<SColumn, String>();
+			for(SColumn sqlCol : table.sqlColumns.values())
+				colConstraints.put(sqlCol, getColumnConstraint(sqlCol.sourceColumnPointer, indexesToProcess)); // processed indexes are removed from list
+			
+			// Generate any additional table constraints:
+			tableConstraints = new ArrayList<String>();
+			addTableConstraints(indexesToProcess); // processed indexes are removed from list
+				
+			/* Indexes that will be implicitly created as part of the table (and columns) definitions
+			 * will have been removed from the list at this point. Any indexes that are left will have
+			 * to be created explicitly: */
+			this.explicitIndexes = indexesToProcess; // (may be empty)
+		}
+
+		/**
+		 * Generates SQL constraint expression for a column, pointed at by the given ColumnPointer
+		 * 
+		 * @param sourceCP 
+		 * @param indexesToProcess indexes which may relate to the column, any which do and which are described entirely by the returned constraint will be removed from the list
+		 * @return an SQL constraint expression for the given column
+		 */
+		protected abstract String getColumnConstraint(ColumnPointer sourceCP, List<Index> indexesToProcess);
+		
+		/**
+		 * Generates SQL constraint expressions for the table as a whole and adds them to the tableConstraints list.
+		 * This method is assumed to be called only after all column constraints have been generated!
+		 * 
+		 * @param indexesToProcess indexes which may be expressed as a table constraint, any which could be described entirely as a table constraint will be removed from the list
+		 */
+		protected abstract void addTableConstraints(List<Index> indexesToProcess);
+		
+		/**
+		 * Create table in database, as well as any explicit indexes on its columns.
+		 * 
+		 * Default implementation, may be overridden by subclasses
+		 * 
+		 * @throws DBException
+		 */
+		public void createTableAndIndexes() throws DBException
+		{
+			// Create the table:
+			executeSQL(generateCreateTableStatement());
+			// Create explicit indexes:
+			for(Index idx : explicitIndexes)
+				executeSQL(generateCreateIndexStatement(idx));
+		}
+		
+		/**
+		 * @return sql statement to create database table
+		 * 
+		 * @see http://www.w3schools.com/sql/sql_create_table.asp
+		 * @see http://www.sqlite.org/lang_createtable.html
+		 */
+		protected String generateCreateTableStatement()
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("CREATE TABLE");
+			// "IF NOT EXISTS"? (probably SQLite specific)
+			bldr.append(table.tableName);
+			bldr.append("(");
+			bldr.openTransaction(", ");
+			// Columns:
+			int c = 0;
+			for(SColumn sqlCol : table.sqlColumns.values())
+			{
+				bldr.openTransaction(SPACE);
+				bldr.append(sqlCol.name);
+				bldr.append(sqlCol.type);
+				bldr.append(colConstraints.get(c++));
+				bldr.commitTransaction();
+			}
+			// Table constraints:
+			for(String tConstr : tableConstraints)
+				bldr.append(tConstr);
+			bldr.commitTransaction(false);
+			bldr.append(");", false);
+			return bldr.toString();
+		}
+		
+		/**
+		 * @param idx
+		 * @return sql statement to create database table index
+		 * 
+		 * @see http://www.w3schools.com/sql/sql_create_index.asp
+		 * @see http://www.sqlite.org/lang_createindex.html
+		 */
+		protected String generateCreateIndexStatement(Index idx)
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("CREATE");
+			if(idx.isUnique())
+				bldr.append("UNIQUE");
+			bldr.append("INDEX");
+			// "IF NOT EXISTS"? (probably SQLite specific)
+			bldr.append(sanitiseIdentifier(table.tableName + "_" + idx.getName()));
+			bldr.append("ON");
+			bldr.append(table.tableName);
+			bldr.append("(");
+			bldr.openTransaction(", ");
+			// List indexed columns:
+			for(Column<?> idxCol : idx.getColumns(false))
+				// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
+				for(SColumn idxSCol : table.getSQLColumns(idxCol))
+					bldr.append(idxSCol.name);
+			bldr.commitTransaction(false);
+			bldr.append(");", false);
+			return bldr.toString();
 		}
 		
 	}
@@ -1260,9 +1391,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract class StatementHelper
 	{
 		
-		protected STable table;
+		protected final STable table;
+		private final List<SColumn> parameterColumns;
 		protected TransactionalStringBuilder bldr;
-		protected List<SColumn> parameterColumns;
+		protected String query;
 		
 		protected DBException exception = null;
 		
@@ -1272,11 +1404,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public StatementHelper(STable table)
 		{
 			this.table = table;
-			if(isParameterised())
-				this.parameterColumns = new ArrayList<SColumn>();
+			this.parameterColumns = isParameterised() ? new ArrayList<SColumn>() : null;
 			this.bldr = new TransactionalStringBuilder(SPACE); // use SPACE as connective!
 		}
 		
+		/**
+		 * May be overridden in cases where literal values must be used despite there being a non-null valuePlaceHolder
+		 * 
+		 * @return
+		 */
 		protected boolean isParameterised()
 		{
 			return valuePlaceHolder != null;
@@ -1291,7 +1427,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			if(exception != null)
 				throw exception;
-			return bldr.toString();
+			if(bldr != null)
+			{
+				query = bldr.toString();
+				bldr = null;
+			}
+			return query;
 		}
 		
 		/**
@@ -1338,14 +1479,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Columns names:
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(sqlCol.sourceColumnPointer.getColumn() != table.autoIncrementKeyColumn) // skip auto-incrementing key
+				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
 					bldr.append(sqlCol.name);
 			bldr.commitTransaction(false);
 			// Values:
 			bldr.append(") VALUES (", false);
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(sqlCol.sourceColumnPointer.getColumn() != table.autoIncrementKeyColumn) // skip auto-incrementing key
+				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
 				{
 					if(isParameterised())
 					{
@@ -1369,7 +1510,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract class RecordByPrimaryKeyHelper extends StatementHelper
 	{
 		
-		protected Set<SColumn> keyPartSqlCols;
+		protected final Set<SColumn> keyPartSqlCols;
 		
 		/**
 		 * @param table
@@ -1391,8 +1532,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			bldr.append("WHERE");
 			if(keyPartSqlCols.size() > 1)
+			{
 				bldr.append("(");
-			bldr.openTransaction(" AND ");
+				bldr.openTransaction(" AND ");
+			}
 			for(SColumn keyPartSqlCol : keyPartSqlCols)
 			{
 				bldr.openTransaction(SPACE);
@@ -1407,9 +1550,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(keyPartSqlCol.retrieveAsLiteral(record, true));
 				bldr.commitTransaction();
 			}
-			bldr.commitTransaction(keyPartSqlCols.size() == 1); // no space after "(" if it is there
 			if(keyPartSqlCols.size() > 1)
+			{
+				bldr.commitTransaction(false); // no space after "("
 				bldr.append(")", false); // no space before ")"
+			}
 		}
 		
 	}
@@ -1525,7 +1670,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected class RecordSelectHelper extends StatementHelper implements ConstraintVisitor
 	{
 		
-		protected List<Object> sapArguments;
+		private final List<Object> sapArguments;
 		
 		/**
 		 * @param table
@@ -1577,8 +1722,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected RecordSelectHelper(STable table)
 		{
 			super(table);
-			if(isParameterised())
-				this.sapArguments = new ArrayList<Object>();
+			this.sapArguments = isParameterised() ? new ArrayList<Object>() : null;
 		}
 		
 		protected void buildQuery(RecordsQuery recordsQuery, String projection)
@@ -1686,7 +1830,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(sqlCol != null)
 			{	// Equality constraint on non-composite (leaf) column...
 				Object sapValue = equalityConstr.getValue();
-				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one
+				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one (unless the defaults are also put new Record instances)
 				bldr.append(sqlCol.name);
 				if(sapValue != null)
 				{
@@ -1704,7 +1848,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append("IS");
 					if(!equalityConstr.isEqual())
 						bldr.append("NOT");
-					bldr.append("NULL");
+					bldr.append(getNullString()); // "NULL"
 				}
 			}
 			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
@@ -1726,29 +1870,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public void visit(RuleConstraint ruleConstr)
 		{
-			Object sapValue = ruleConstr.getValue();
 			// Check for null comparison (see class javadoc):
-			if(sapValue == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
+			if(ruleConstr.isRHSValue() && ruleConstr.getRHSValue() == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
 			{
-				new EqualityConstraint(ruleConstr.getColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
+				new EqualityConstraint(ruleConstr.getLHSColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
 				return;
 			}
 			// All other cases:
-			SColumn sqlCol = table.getSQLColumn(ruleConstr.getColumnPointer());
-			if(sqlCol == null)
-			{
-				new DBException("Failed to generate SQL for ruleConstraint on column " + ruleConstr.getColumnPointer().getQualifiedColumnName(table.schema));
-				return;
-			}
-			bldr.append(sqlCol.name);
+			SColumn lhsSCol = table.getSQLColumn(ruleConstr.getLHSColumnPointer());
+			bldr.append(lhsSCol.name);
 			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
-			if(isParameterised())
-			{
-				bldr.append(valuePlaceHolder);
-				addParameterColumnAndValue(sqlCol, sapValue);
-			}
+			if(ruleConstr.isRHSColumn())
+				bldr.append(table.getSQLColumn(ruleConstr.getRHSColumnPointer()).name);
 			else
-				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+			{
+				Object sapValue = ruleConstr.getRHSValue();
+				if(isParameterised())
+				{
+					bldr.append(valuePlaceHolder);
+					addParameterColumnAndValue(lhsSCol, sapValue);
+				}
+				else
+					bldr.append(lhsSCol.sapelliObjectToLiteral(sapValue, true));
+			}
 		}
 		
 	}

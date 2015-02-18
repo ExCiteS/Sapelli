@@ -18,12 +18,30 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="uk.ac.ucl.excites.sapelli.collector"
-    android:versionCode="2000000"
-    android:versionName="2.0.0-SNAPSHOT" >
+    android:versionCode="0"
+    android:versionName="x.x.x" >
+	<!-- Please do *NOT* change versionName & versionCode manually in this file. Instead change the version in the pom.xml file(s). -->
 
     <uses-sdk
         android:minSdkVersion="10"
         android:targetSdkVersion="11" />
+	<!-- Note:
+			As lint says it would be better to always target the latest SDK version (currently 21).
+			The reason we do not (at least for now) is to activate compatibility mode(s) which are
+			necessary to make the following things work properly:
+				- SVG support (at least with v2.0.6 of the svg-android lib):
+					When a >11 SDK version is targeted SVGs are simply not drawn (at least on phones running Android ICS or newer).
+					This is probably caused by a known h/w acceleration issue (see comment on draw() in https://github.com/japgolly/svg-android/commit/a1a613b).
+				  	We should try other ways around this problem, e.g.:
+				  	 - disabling h/w acceleration on SVG-backed ImageViews
+				  	 - changing *how* we use svg-library to load SVGs into ImageViews (i.e. not using SVGDrawable)
+				  	 - switching to another fork/version of svg-library which doesn't have the problem (if there is one)
+				  	 - switching to the alternative AndroidSVG library (assuming it does not have the same problem)
+				- Legacy menu support in the ProjectManagerActivity:
+					When a >11 SDK version is targeted "modern" Android devices (without a physical menu button) do not render the
+					"3-stacked-dots" widget, making the menu inaccessible.
+					This issue should be resolved once we move to Julia's new ProjectManagerActivity UI which no longer uses a legacy menu at all.
+	-->
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />

@@ -293,20 +293,30 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	}
 
 	/**
-	 * Go forward to next field
+	 * Go forward to next field (either the one below the current one or the one it jumps to)
 	 * 
 	 * @param requestedByUser
 	 */
 	public void goForward(boolean requestedByUser)
+	{
+		advance(requestedByUser, true); // jump is allowed
+	}
+	
+	/**
+	 * Advance to the field below the current field, or, if allowJump is true, the one the current field jumps to.
+	 * 
+	 * @param requestedByUser
+	 * @param allowJump
+	 */
+	protected void advance(boolean requestedByUser, boolean allowJump)
 	{
 		if(handlingUserGoBackRequest && !requestedByUser)
 		{
 			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
 			return;
 		}
-		
 		if(currFormSession.atField())
-			goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField()));
+			goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
 		else
 			openFormSession(currFormSession); // this shouldn't happen really...
 	}
@@ -398,7 +408,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(!isFieldToBeShown(currField))
 		{
 			addLogLine("SKIPPING", currField.id, "Not shown on " + currFormSession.mode.name());
-			goForward(false);
+			advance(false, false); // no jump allowed
 			return;
 		}
 		
@@ -974,11 +984,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		startLocationListener(Arrays.asList(locField));
 	}
 	
-	protected Logger createLogger() throws FileStorageException, IOException
-	{
-		return new Logger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
-	}
-
 	protected abstract void startOrientationListener();
 	
 	protected abstract void stopOrientationListener();
@@ -1034,6 +1039,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	public synchronized void unblockUI()
 	{
 		this.blockedUI = false;
+	}
+	
+	protected Logger createLogger() throws FileStorageException, IOException
+	{
+		return new Logger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
 	}
 	
 }

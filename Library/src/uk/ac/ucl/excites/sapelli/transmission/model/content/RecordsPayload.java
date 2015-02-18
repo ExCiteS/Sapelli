@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -116,7 +117,7 @@ public class RecordsPayload extends Payload
 		{
 			Record record = iterator.next();
 			if(!record.isFilled())
-				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping?
+				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping? TODO what with autoIncrementingPK? should such records be transferable at all?
 			Schema schema = record.getSchema();
 			if(schema.isInternal())
 				throw new IllegalArgumentException("Cannot directly transmit records of an internal schema.");
@@ -365,7 +366,7 @@ public class RecordsPayload extends Payload
 							for(Iterator<Map.Entry<Column<?>, Object>> it = factoredOutValues.entrySet().iterator(); it.hasNext();) // use an iterator so we can remove in the for-loop
 							{
 								Map.Entry<Column<?>, Object> entry = it.next();
-								if(!Record.EqualValues(entry.getValue(), entry.getKey().retrieveValue(r)))
+								if(!Objects.deepEquals(entry.getValue(), entry.getKey().retrieveValue(r)))
 									it.remove(); // value mismatch -> this column can not be factored out
 							}
 							if(factoredOutValues.isEmpty())
