@@ -24,13 +24,13 @@ import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.util.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.AndroidSMSSender;
+import uk.ac.ucl.excites.sapelli.util.AndroidLogger;
 import android.content.Context;
 
 /**

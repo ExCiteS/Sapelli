@@ -42,7 +42,6 @@ public class Logger
 	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
 	protected boolean printToOutputStream;
-
 	
 	/**
 	 * 
@@ -163,21 +162,21 @@ public class Logger
 		return formatter.withZone(now.getZone()).print(now) + FIELD_SEPARATOR + TimeUtils.PrettyTimestampWithoutMSFormatter.print(now);
 	}
 	
-	
 	protected void printToOutputStream(String line)
 	{
-		if (printToOutputStream)
+		if(printToOutputStream)
 			System.out.println(line);
 	}
 	
 	protected void printToOutputStream(String time, String... fields)
 	{
-		if (printToOutputStream)
+		if(printToOutputStream)
 		{
 			System.out.print(time);
-			for (String field : fields)
+			for(String field : fields)
 				System.out.print(FIELD_SEPARATOR + field);
 			System.out.println(FIELD_SEPARATOR);
 		}
 	}
+	
 }

@@ -1,4 +1,22 @@
-package uk.ac.ucl.excites.sapelli.collector.util;
+/**
+ * Sapelli data collection platform: http://sapelli.org
+ * 
+ * Copyright 2012-2014 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ */
+
+package uk.ac.ucl.excites.sapelli.util;
 
 import java.io.IOException;
 
@@ -8,12 +26,12 @@ import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 /**
  * Android-specific subclass of Logger which mirrors log writes to Android Logcat while writing to file.
  * 
- * @author benelliott
+ * @author benelliott, mstevens
  */
 public class AndroidLogger extends Logger
 {
 
-	private static String TAG = "Sapelli logger";
+	private static String TAG = "SapelliLogger";
 	
 	public AndroidLogger(String folderPath, String baseFileName, boolean printToOutputStream) throws IOException
 	{
@@ -28,17 +46,17 @@ public class AndroidLogger extends Logger
 	@Override
 	protected void printToOutputStream(String line)
 	{
-		if (printToOutputStream)
+		if(printToOutputStream)
 			Log.i(TAG, line);
 	}
 	
 	@Override
 	protected void printToOutputStream(String time, String... fields)
 	{
-		if (printToOutputStream)
+		if(printToOutputStream)
 		{
 			StringBuilder stringBuilder = new StringBuilder(time);
-			for (String field : fields)
+			for(String field : fields)
 				stringBuilder.append(FIELD_SEPARATOR + field);
 			stringBuilder.append(FIELD_SEPARATOR);
 			
