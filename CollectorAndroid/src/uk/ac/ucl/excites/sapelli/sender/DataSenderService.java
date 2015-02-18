@@ -138,7 +138,7 @@ public class DataSenderService extends Service implements Sender, StoreClient
 			{
 				try
 				{
-					Logger logger = new Logger(((CollectorApp) getApplication()).getFileStorageProvider().getProjectLogsFolder(p, true).getAbsolutePath(), LOG_PREFIX);
+					Logger logger = new Logger(((CollectorApp) getApplication()).getFileStorageProvider().getProjectLogsFolder(p, true).getAbsolutePath(), LOG_PREFIX, true);
 					for(Entry<Project, Logger> pl : loggers.entrySet())
 						pl.getValue().addLine("DataSender", "Service started.");
 					loggers.put(p, logger);
