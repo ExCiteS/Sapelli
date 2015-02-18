@@ -49,19 +49,5 @@ public class AndroidLogger extends Logger
 		if(printToOutputStream)
 			Log.i(TAG, line);
 	}
-	
-	@Override
-	protected void printToOutputStream(String time, String... fields)
-	{
-		if(printToOutputStream)
-		{
-			StringBuilder stringBuilder = new StringBuilder(time);
-			for(String field : fields)
-				stringBuilder.append(FIELD_SEPARATOR + field);
-			stringBuilder.append(FIELD_SEPARATOR);
-			
-			Log.i(TAG, stringBuilder.toString());
-		}
-	}
 
 }

@@ -41,7 +41,7 @@ public class Logger
 	
 	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
-	protected boolean printToOutputStream;
+	protected final boolean printToOutputStream;
 	
 	/**
 	 * 
@@ -72,15 +72,26 @@ public class Logger
 	}
 
 	/**
-	 * Add a new line with the following format: TIMESTAMP;MSG;
+	 * Add a new line with the following format: TIMESTAMP;MSG
 	 * 
 	 * @param line
 	 */
 	public void addLine(String line)
 	{
-		checkWriter();
-		fileWriter.writeLine(getTime() + FIELD_SEPARATOR + line + FIELD_SEPARATOR);
-		printToOutputStream(line);
+		addLine(line, true);
+	}
+	
+	/**
+	 * Add a new line with format:
+	 * 	- when timestamp=true: TIMESTAMP;MSG
+	 * 	- when timestamp=false: MSG
+	 * 
+	 * @param line
+	 * @param timestamp whether or not to include a timestamp
+	 */
+	public void addLine(String line, boolean timestamp)
+	{
+		addLine(timestamp, new String[] { line });
 	}
 
 	/**
@@ -90,18 +101,42 @@ public class Logger
 	 */
 	public void addLine(String... fields)
 	{
-		checkWriter();
+		addLine(true, fields);
+	}
+	
+	/**
+	 * Add a new line with format:
+	 * 	- when timestamp=true: TIMESTAMP;fields[0];...;fields[fields.length-1]
+	 * 	- when timestamp=false: fields[0];...;fields[fields.length-1]
+	 * 
+	 * @param timestamp
+	 * @param fields
+	 */
+	public void addLine(boolean timestamp, String... fields)
+	{
+		TransactionalStringBuilder bff = new TransactionalStringBuilder(FIELD_SEPARATOR);
+		if(timestamp)
+			bff.append(getTime());
+		if(fields != null)
+			for(String field : fields)
+				bff.append(field);
 		
-		String time = getTime(); // hang on to this so the same time is printed to System.out
-		
-		fileWriter.write(time);
-		for(String field : fields)
-			fileWriter.write(FIELD_SEPARATOR + field);
-		fileWriter.writeLine(FIELD_SEPARATOR);
-		
-		printToOutputStream(time, fields);
+		// To stream:
+		printToOutputStream(bff.toString());
+		// To file:
+		writeLine(bff.toString());
 	}
 
+	/**
+	 * Add some whitespace
+	 */
+	public void addBlankLine()
+	{
+		// To stream: don't reproduce blank lines on System.out
+		// To file:
+		writeLine("");
+	}
+	
 	/**
 	 * Adds the final line to the Logger
 	 * 
@@ -114,15 +149,18 @@ public class Logger
 		addBlankLine();
 		close();
 	}
-
-	/**
-	 * Add some whitespace
-	 */
-	public void addBlankLine()
+	
+	private void writeLine(String str)
 	{
-		checkWriter();
-		fileWriter.writeLine("");
-		// don't reproduce empty lines on System.out
+		if(fileWriter == null || !fileWriter.isWritable())
+			throw new IllegalStateException("Logger " + fileWriter.getFullPath() + "has been closed or file is not writable.");
+		fileWriter.writeLine(str);
+	}
+	
+	protected void printToOutputStream(String line)
+	{
+		if(printToOutputStream)
+			System.out.println(line);
 	}
 	
 	@Override
@@ -144,12 +182,6 @@ public class Logger
 		}
 	}
 
-	private void checkWriter()
-	{
-		if(fileWriter == null || !fileWriter.isWritable())
-			throw new IllegalStateException("Logger " + fileWriter.getFullPath() + "has been closed or file is not writable.");
-	}
-
 	/**
 	 * Return the time in two formats, one in ISO8601 and one in "pretty ISO" format ("yyyy-MM-dd HH:mm:ss"), which should be correctly interpreted by (most)
 	 * Excel installations.
@@ -160,23 +192,6 @@ public class Logger
 	{
 		DateTime now = new DateTime();
 		return formatter.withZone(now.getZone()).print(now) + FIELD_SEPARATOR + TimeUtils.PrettyTimestampWithoutMSFormatter.print(now);
-	}
-	
-	protected void printToOutputStream(String line)
-	{
-		if(printToOutputStream)
-			System.out.println(line);
-	}
-	
-	protected void printToOutputStream(String time, String... fields)
-	{
-		if(printToOutputStream)
-		{
-			System.out.print(time);
-			for(String field : fields)
-				System.out.print(FIELD_SEPARATOR + field);
-			System.out.println(FIELD_SEPARATOR);
-		}
 	}
 	
 }
