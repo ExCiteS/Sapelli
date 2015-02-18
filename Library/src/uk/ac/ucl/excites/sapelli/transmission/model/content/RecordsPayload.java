@@ -362,14 +362,14 @@ public class RecordsPayload extends Payload
 						}
 						else
 						{	// Check if these values are these same in subsequent records:
-							for(Iterator<Column<?>> iterator = factoredOutValues.keySet().iterator(); iterator.hasNext();) // use an iterator so we can remove in the for-loop
+							for(Iterator<Map.Entry<Column<?>, Object>> it = factoredOutValues.entrySet().iterator(); it.hasNext();) // use an iterator so we can remove in the for-loop
 							{
-								Column<?> factoredOutCol = iterator.next();
-								if(!Record.EqualValues(factoredOutValues.get(factoredOutCol), factoredOutCol.retrieveValue(r)))
-									iterator.remove(); // value mismatch -> this column can not be factored out
+								Map.Entry<Column<?>, Object> entry = it.next();
+								if(!Record.EqualValues(entry.getValue(), entry.getKey().retrieveValue(r)))
+									it.remove(); // value mismatch -> this column can not be factored out
+							}
 							if(factoredOutValues.isEmpty())
 								break; // no factored-out columns left -> no need to loop over rest of the records
-							}
 						}
 					}
 					//	Write factoring-out header (including factored-out values, if used):
