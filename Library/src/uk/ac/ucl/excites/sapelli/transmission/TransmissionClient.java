@@ -96,7 +96,7 @@ public abstract class TransmissionClient extends StorageClient
 	
 	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
 	
-	public abstract Payload newPayload(int nonBuiltinType);
+	public abstract Payload createPayload(int nonBuiltinType);
 	
 	/**
 	 * Returns columns from the given schema that should not be transmitted.

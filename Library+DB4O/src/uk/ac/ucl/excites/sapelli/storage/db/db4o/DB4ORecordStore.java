@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
@@ -318,14 +318,14 @@ public class DB4ORecordStore extends RecordStore
 	}
 	
 	@Override
-	public void finalise() throws DBException
+	protected void doClose() throws DBException
 	{
 		doCommitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before closing.
-		super.finalise();
+		super.doClose();
 	}
 
 	@Override
-	protected void close() throws DBException
+	protected void closeConnection() throws DBException
 	{
 		try
 		{
@@ -338,7 +338,7 @@ public class DB4ORecordStore extends RecordStore
 	}
 
 	@Override
-	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
+	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		doCommitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before backing-up
 		try
