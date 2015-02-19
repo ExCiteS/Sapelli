@@ -42,7 +42,6 @@ import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.hardware.Camera;
@@ -426,37 +425,24 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			@Override
 			protected Bitmap doInBackground(Void... params)
 			{
-				Bitmap picture = null;
-
+				Bitmap bitmap = null;
 				try
 				{
 					// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
 
-					// Decode image size, do not create the actual bitmap (picture is null)
-					BitmapFactory.Options options = new BitmapFactory.Options();
-					options.inJustDecodeBounds = true;
-					picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-					// Find the preview size
-					int previewWidth = (ScreenMetrics.GetScreenWidth(getContext()) > 0) ? ScreenMetrics.GetScreenWidth(getContext()) : PREVIEW_SIZE;
-					int previewHeight = (ScreenMetrics.GetScreenHeight(getContext()) > 0) ? ScreenMetrics.GetScreenHeight(getContext()) : PREVIEW_SIZE;
-
-					// Decode with inSampleSize and get the correct, scaled image
-					options.inJustDecodeBounds = false;
-					options.inSampleSize = BitmapUtils.calculateInSampleSize(options, previewWidth, previewHeight);
-					picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-					// Rotate
+					// Decode scaled bitmap:
+					bitmap = BitmapUtils.loadBitmap(getContext(), data);
+					
+					// Rotate (TODO is this always needed?)
 					Matrix bitmapMatrix = new Matrix();
 					bitmapMatrix.postRotate(90);
-					picture = Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), bitmapMatrix, false);
+					bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), bitmapMatrix, false);
 				}
 				catch(Exception e)
 				{
 					Debug.e(e);
 				}
-
-				return picture;
+				return bitmap;
 			}
 
 			@Override
