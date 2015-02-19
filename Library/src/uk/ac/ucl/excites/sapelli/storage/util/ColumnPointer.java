@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -326,13 +327,9 @@ public class ColumnPointer
 		if(topLevelSchema != null && !topLevelSchema.containsEquivalentColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelSchema, getColumn()); // Try to construct a path to the pointed-at record
 		
-		StringBuilder bldr = new StringBuilder();
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(separator);
 		for(Column<?> col : path)
-		{
-			if(col != path.firstElement())
-				bldr.append(separator);
-			bldr.append(col.getName());				
-		}
+			bldr.append(col.getName());
 		return bldr.toString();
 	}
 	
