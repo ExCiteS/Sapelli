@@ -155,8 +155,13 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	protected Item getItemForAttachment(int index, File photoFile)
 	{
-		// TODO create thumbnail first? see http://alvinalexander.com/java/jwarehouse/android/media/java/android/media/ThumbnailUtils.java.shtml
-		return new FileImageItem(index, photoFile);
+		// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
+		/*// Old example code to rotate bitmap (would have to be integrated in (File)ImageItem):
+		Matrix bitmapMatrix = new Matrix();
+		bitmapMatrix.postRotate(90);
+		bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), bitmapMatrix, false);*/
+		
+		return new FileImageItem(index, photoFile); // will use BitmapUtils for memory-safe scaling
 	}
 
 	@Override
