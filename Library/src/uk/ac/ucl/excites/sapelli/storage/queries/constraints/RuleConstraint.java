@@ -250,6 +250,7 @@ public class RuleConstraint extends Constraint
 	@Override
 	public boolean _isValid(Record record)
 	{
+		// TODO use ColumnPointer#getComparator()?
 		// Get (sub)record(s) and the rhs value:
 		Object theRhsValue = rhsValue;
 		Record lhsRecord = lhsColumnPointer.getRecord(record, false);
