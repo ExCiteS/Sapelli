@@ -128,7 +128,7 @@ public abstract class Column<T> implements Serializable
 	// DYNAMICS------------------------------------------------------
 	public final String name;
 	public final boolean optional;
-	protected List<VirtualColumn<?, T>> virtualVersions;
+	private List<VirtualColumn<?, T>> virtualVersions;
 
 	public Column(String name, boolean optional)
 	{
@@ -654,9 +654,21 @@ public abstract class Column<T> implements Serializable
 	 */
 	public <VT> void addVirtualVersion(Column<VT> targetColumn, VirtualColumn.ValueMapper<VT, T> valueMapper)
 	{
+		addVirtualVersion(new VirtualColumn<VT, T>(this, targetColumn, valueMapper));
+	}
+	
+	/**
+	 * Add the given VirtualColumn as a virtual version of this column.
+	 * 
+	 * @param virtualVersion
+	 */
+	protected <VT> void addVirtualVersion(VirtualColumn<VT, T> virtualVersion)
+	{
+		if(virtualVersion == null || virtualVersion.getSourceColumn() != this)
+			throw new IllegalArgumentException("Invalid virtual column");
 		if(virtualVersions == null)
 			virtualVersions = new ArrayList<VirtualColumn<?,T>>();
-		virtualVersions.add(new VirtualColumn<VT, T>(this, targetColumn, valueMapper));
+		virtualVersions.add(virtualVersion);
 	}
 
 	/**

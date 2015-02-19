@@ -42,7 +42,9 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	@Override
 	public int compare(Record lhs, Record rhs)
 	{
-		return compareValues(retrieveValue(lhs), retrieveValue(rhs));
+		return lhs == null ?
+				(rhs == null ? 0 : Integer.MIN_VALUE) :
+				(rhs == null ? Integer.MAX_VALUE : compareValues(retrieveValue(lhs), retrieveValue(rhs)));
 	}
 	
 	/**
@@ -58,17 +60,17 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	}
 	
 	/**
-	 * @param record
-	 * @param value
+	 * @param record (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param value (may be null if column is optional)
 	 * @return comparison result
 	 */
 	public int retrieveAndCompareToValue(Record record, T value)
 	{
-		return compareValues(retrieveValue(record), value);
+		return compareValues(record != null ? retrieveValue(record) : null, value);
 	}
 	
 	/**
-	 * @param record
+	 * @param record (probably shouldn't be null, but if it we will compare the given value to null)
 	 * @param value (as object, may be null if column is optional)
 	 * @return comparison result
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
@@ -78,7 +80,7 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	@SuppressWarnings("unchecked")
 	public int retrieveAndCompareToObject(Record record, Object value) throws ClassCastException
 	{
-		return compareValues(retrieveValue(record), (T) convert(value));
+		return compareValues(record != null ? retrieveValue(record) : null, (T) convert(value));
 	}
 	
 	/**

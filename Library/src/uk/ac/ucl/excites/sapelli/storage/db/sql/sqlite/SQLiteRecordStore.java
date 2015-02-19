@@ -797,7 +797,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
 			{
 				Index idx = idxIter.next();
-				if(idx.containsColumn(sourceCP.getColumn(), false) && !idx.isMultiColumn())
+				if(idx.containsColumn(sourceCP.getColumn()) && !idx.isMultiColumn())
 				{	// the sourceColumn is indexed (on its own) ...
 					bldr.openTransaction();
 					// Check which kind of index it is:
