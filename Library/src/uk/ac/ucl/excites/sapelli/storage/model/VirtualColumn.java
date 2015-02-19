@@ -59,7 +59,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional);
 		if(sourceColumn == null || targetColumn == null || valueMapper == null)
 			throw new NullPointerException("sourceColumn, targetColumn & valueMapper cannot be null!");
-		if(sourceColumn instanceof VirtualColumn<?, ?> || targetColumn instanceof VirtualColumn<?, ?>)
+		if(sourceColumn instanceof VirtualColumn || targetColumn instanceof VirtualColumn)
 			throw new IllegalArgumentException("source- & targetColumn cannot be VirtualColumns themselves!");
 		if(sourceColumn == targetColumn)
 			throw new IllegalArgumentException("source- & targetColumn cannot be the same!");
