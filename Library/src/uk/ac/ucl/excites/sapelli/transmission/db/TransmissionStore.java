@@ -91,7 +91,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	static final public Schema RECEIVER_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Receiver");
 	static final public Schema SENDER_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Sender");
 	//	Correspondent columns:
-	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID_corr", false, Correspondent.CORRESPONDENT_ID_FIELD); // TODO rename!!! temporary column name to avoid clash in foreign keys
+	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID", false, Correspondent.CORRESPONDENT_ID_FIELD);
 	static final public StringColumn CORRESPONDENT_COLUMN_NAME = new StringColumn("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_BYTES);
 	static final public IntegerColumn CORRESPONDENT_COLUMN_TRANSMISSION_TYPE = new IntegerColumn("TransmissionType", false);
 	static final public StringColumn CORRESPONDENT_COLUMN_ADDRESS = new StringColumn("Address", true, Correspondent.CORRESPONDENT_ADDRESS_MAX_LENGTH_BYTES);
