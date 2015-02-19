@@ -23,7 +23,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import android.os.Bundle;
@@ -34,7 +34,7 @@ import android.os.Bundle;
  * 
  * @author mstevens
  */
-public abstract class ProjectActivity extends BaseActivity implements StoreClient
+public abstract class ProjectActivity extends BaseActivity implements StoreHandle.StoreUser
 {
 
 	// INTENT PARAMETERS (used on "direct" intents; i.e. when coming from ProjectManagerActivity & in case of shortcut intents):
@@ -59,8 +59,8 @@ public abstract class ProjectActivity extends BaseActivity implements StoreClien
 		// Get project store:
 		try
 		{
-			projectStore = app.getProjectStore(this);
-			recordStore = app.getRecordStore(this);
+			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
+			recordStore = app.collectorClient.recordStoreHandle.getStore(this);
 		}
 		catch(Exception e)
 		{
@@ -104,8 +104,8 @@ public abstract class ProjectActivity extends BaseActivity implements StoreClien
 	protected void onDestroy()
 	{
 		// Signal that the activity no longer needs the Store objects:
-		app.discardStoreUsage(projectStore, this);
-		app.discardStoreUsage(recordStore, this);
+		app.collectorClient.projectStoreHandle.doneUsing(this);
+		app.collectorClient.recordStoreHandle.doneUsing(this);
 		// super:
 		super.onDestroy();
 	}

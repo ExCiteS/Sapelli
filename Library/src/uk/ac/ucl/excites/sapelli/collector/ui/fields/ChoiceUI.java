@@ -80,7 +80,7 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 			if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
 				field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
 			// Go to next/jump of chosenChild (not to the chosen child itself because it is a leaf):
-			next = field.form.getNextFieldAndArguments(chosenChild);
+			next = field.form.getNextFieldAndArguments(chosenChild, true);
 		}
 		else
 			// Go to chosen child:

@@ -149,10 +149,11 @@ public class ExportActivity extends ProjectActivity {
 					schemata.addAll(project.getModel().getSchemata());
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
-				if (dateRange[ExportFragment.DT_RANGE_IDX_FROM] != null)
+				if(dateRange[ExportFragment.DT_RANGE_IDX_FROM] != null)
 					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[ExportFragment.DT_RANGE_IDX_FROM])));
-				if (dateRange[ExportFragment.DT_RANGE_IDX_TO] != null)
+				if(dateRange[ExportFragment.DT_RANGE_IDX_TO] != null)
 					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[ExportFragment.DT_RANGE_IDX_TO])));
+				// TODO Exclude previously exported:
 				// Retrieve by query:
 				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
 			}

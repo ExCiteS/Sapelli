@@ -134,30 +134,27 @@ public class BuildInfo
 		return res.getBoolean(R.buildinfo.demoBuild);
 	}
 	
-	public String getVersionInfo()
-	{
-		return getVersionInfo(false);
-	}
-	
-	public String getVersionInfo(boolean includeVersionCode)
+	public String getNameAndVersion()
 	{
 		TransactionalStringBuilder bldr = new TransactionalStringBuilder(" ");
 		bldr.append(res.getString(R.string.app_name));
 		if(pi != null)
-		{
 			bldr.append("v" + pi.versionName);
-			bldr.append("(");
-			bldr.openTransaction("; ");
-			if(includeVersionCode)
-				bldr.append("version-code: " + pi.versionCode);
+		else
+			bldr.append("[version unknown]");
+		return bldr.toString();
+	}
+	
+	public String getExtraVersionInfo()
+	{
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("; ");
+		if(pi != null)
+		{
+			bldr.append("versionCode: " + pi.versionCode);
 			bldr.append(BuildConfig.DEBUG ? "debug" : "release");
 			if(isDemoBuild())
 				bldr.append("demo");
-			bldr.commitTransaction(false);
-			bldr.append(")", false);
 		}
-		else
-			bldr.append("[version unknown]");
 		return bldr.toString();
 	}
 	
@@ -168,7 +165,7 @@ public class BuildInfo
 	
 	public String getAllInfo()
 	{
-		return getVersionInfo() + '\n' + getBuildInfo();
+		return getNameAndVersion() + "\n[" + getExtraVersionInfo() + "; " + getBuildInfo() + "]";
 	}
 			
 }

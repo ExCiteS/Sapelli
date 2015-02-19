@@ -81,7 +81,7 @@ public class CrashReporter implements UncaughtExceptionHandler
 			bldr.append("Application info:\n");
 			if(buildInfo != null)
 			{
-				bldr.append("\t" + buildInfo.getVersionInfo() + ".\n");
+				bldr.append("\t" + buildInfo.getNameAndVersion() + " [" + buildInfo.getExtraVersionInfo() + "]" + ".\n");
 				bldr.append("\t" + buildInfo.getBuildInfo() + ".\n");
 			}
 			if(lastProject != null)

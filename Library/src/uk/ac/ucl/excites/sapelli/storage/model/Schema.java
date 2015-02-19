@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +42,6 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-@SuppressWarnings("rawtypes")
 public class Schema implements Serializable
 {
 
@@ -120,13 +118,33 @@ public class Schema implements Serializable
 	protected final String name;
 	private boolean sealed = false;
 	
-	// Columns & indexes:
-	private final List<Column> realColumns = new ArrayList<Column>(); // only contains non-virtual ("real") columns
-	private final Map<String, Integer> columnNameToPosition = new LinkedHashMap<String, Integer>(); // only contains non-virtual ("real") columns
-	private Map<String, VirtualColumn> virtualColumnsByName;
+	/**
+	 * List of all (and only) non-virtual ("real") columns, in order of addition
+	 */
+	private final List<Column<?>> realColumns = new ArrayList<Column<?>>();
+	
+	/**
+	 * Name to position mapping for all (and only) non-virtual ("real") columns
+	 */
+	private final Map<String, Integer> columnNameToPosition = new HashMap<String, Integer>();
+	
+	/**
+	 * Name to column mapping for all (and only) virtual columns
+	 */
+	private Map<String, VirtualColumn<?, ?>> virtualColumnsByName;
+	
 	private PrimaryKey primaryKey;
-	private List<Index> indexes; // also includes the primary key
-	private transient List<Column> allColumns; // contains non-virtual and virtual columns
+	
+	/**
+	 * List of indexes, also includes the primary key
+	 */
+	private List<Index> indexes;
+
+	/**
+	 * Contains both non-virtual ("real") and virtual columns,
+	 * in order of addition with virtual columns following their "real" owner and preceeding the next "real" column
+	 */
+	private transient List<Column<?>> allColumns;
 	
 	/**
 	 * Make a schema instance of an internal kind
@@ -211,20 +229,23 @@ public class Schema implements Serializable
 		return modelSchemaNumber;
 	}
 
-	@SuppressWarnings("unchecked")
 	public void addColumns(List<Column<?>> columns)
 	{
-		for(Column c : columns)
+		for(Column<?> c : columns)
 			addColumn(c);
 	}
 	
 	/**
-	 * Add a new column to the schema
+	 * Add a new non-virtual column to the schema
 	 * @param column
 	 * @return the added column
 	 */
 	public <C extends Column<T>, T> C addColumn(C column)
 	{
+		if(column == null)
+			throw new NullPointerException("Cannot add null column!");
+		if(column instanceof VirtualColumn<?, ?>)
+			throw new IllegalArgumentException("Cannot directly add a virtual columns to a schema!");
 		addColumn(column, true);
 		return column;
 	}
@@ -233,7 +254,7 @@ public class Schema implements Serializable
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
-		if(containsColumn(column, true))
+		if(containsColumn(column.name, true))
 			throw new IllegalArgumentException("The schema already contains a column with name \"" + column.getName() + "\"!");
 		// Add the column:
 		columnNameToPosition.put(column.getName(), realColumns.size());
@@ -245,7 +266,7 @@ public class Schema implements Serializable
 				if(!containsColumn(vCol.getSourceColumn(), false))
 					throw new IllegalArgumentException("The schema does not contain the source column (" + vCol.getSourceColumn().getName() + ") of the given virtual column.");
 				if(virtualColumnsByName == null)
-					virtualColumnsByName = new HashMap<String, VirtualColumn>();
+					virtualColumnsByName = new HashMap<String, VirtualColumn<?, ?>>();
 				virtualColumnsByName.put(vCol.getName(), vCol);
 			}
 	}
@@ -287,9 +308,12 @@ public class Schema implements Serializable
 		if(index == null)
 			throw new NullPointerException("Index cannot be null!");
 		// Check if the indexed columns are columns of this Schema instance:
-		for(Column idxCol : index.getColumns(false))
-			if(!containsColumn(idxCol, false))
+		for(Column<?> idxCol : index.getColumns(false))
+		{
+			// Check if idxCol is known:
+			if(!containsColumn(idxCol, false)) 
 				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before indexes are added or the primary key is set.");
+		}
 		// Initialise collection if needed:
 		if(indexes == null)
 			indexes = new ArrayList<Index>();
@@ -323,16 +347,29 @@ public class Schema implements Serializable
 	}
 	
 	/**
+	 * Gets a column by its name
+	 * 
 	 * @param name
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
 	 * @return the {@link Column} instance with this name, or {@code null} if the Schema contains no such column
 	 */
-	public Column getColumn(String name, boolean checkVirtual)
+	public Column<?> getColumn(String name, boolean checkVirtual)
 	{
 		Integer pos = columnNameToPosition.get(name);
 		if(pos == null)
-			return checkVirtual && virtualColumnsByName != null ? virtualColumnsByName.get(name) : null;
+			return checkVirtual ? getVirtualColumn(name) : null;
 		return realColumns.get(pos);
+	}
+	
+	/**
+	 * Gets a virtual column by its name
+	 * 
+	 * @param name
+	 * @return the {@link VirtualColumn} instance with this name, or {@code null} if the Schema contains no such column
+	 */
+	public VirtualColumn<?, ?> getVirtualColumn(String name)
+	{
+		return virtualColumnsByName != null ? virtualColumnsByName.get(name) : null;
 	}
 	
 	/**
@@ -359,19 +396,26 @@ public class Schema implements Serializable
 	 */
 	protected int getColumnPosition(String realColumnName)
 	{
-		Integer idx = columnNameToPosition.get(realColumnName);
-		if(idx == null)
+		Integer pos = columnNameToPosition.get(realColumnName);
+		if(pos == null)
 			return UNKNOWN_COLUMN_POSITION;
-		return idx.intValue();
+		return pos.intValue();
 	}
 
-	public List<Column> getColumns(boolean includeVirtual)
+	/**
+	 * Returns a list of all columns (including virtual ones if {@code includeVirtual} is {@code true}) in the order of addition.
+	 * If {@code includeVirtual} is {@code true} virtual columns are inserted between their "real" owner and the next "real" column.
+	 * 
+	 * @param includeVirtual
+	 * @return an unmodifiable list of columns
+	 */
+	public List<Column<?>> getColumns(boolean includeVirtual)
 	{
 		if(includeVirtual && virtualColumnsByName != null) // includeVirtual=true and we have at least 1 virtual column 
 		{
 			if(!sealed || allColumns == null) // (re)initialise the allColumns list if it is null or as long as the schema is not sealed.
 			{
-				allColumns = new ArrayList<Column>();
+				allColumns = new ArrayList<Column<?>>(realColumns.size() + virtualColumnsByName.size());
 				for(Column<?> nonVirtualCol : realColumns)
 				{
 					allColumns.add(nonVirtualCol); // "real" column
@@ -393,12 +437,14 @@ public class Schema implements Serializable
 	/**
 	 * @return an unordered collection of the virtual columns in the schema
 	 */
-	public Collection<VirtualColumn> getVirtualColumns()
+	public Collection<VirtualColumn<?, ?>> getVirtualColumns()
 	{
-		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : Collections.unmodifiableCollection(virtualColumnsByName.values());
+		return virtualColumnsByName == null ? Collections.<VirtualColumn<?, ?>> emptyList() : Collections.unmodifiableCollection(virtualColumnsByName.values());
 	}
 
 	/**
+	 * Checks whether the schema contains a non-virtual column with the given name.
+	 * 
 	 * @param name the name of a column
 	 * @return
 	 */
@@ -408,9 +454,11 @@ public class Schema implements Serializable
 	}
 	
 	/**
+	 * Checks whether the schema contains a column with the given name.
+	 * 
 	 * @param name the name of a column
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
-	 * @return
+	 * @return whether the schema contains a column with the given name
 	 */
 	public boolean containsColumn(String name, boolean checkVirtual)
 	{
@@ -418,24 +466,56 @@ public class Schema implements Serializable
 	}
 
 	/**
+	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
 	 * 
 	 * @param column
-	 * @return	whether or not this Schema contains the given Column or an exact equivalent of it
+	 * @return whether or not this Schema contains the given Column
 	 */
-	public boolean containsColumn(Column column)
+	public boolean containsColumn(Column<?> column)
 	{
 		return containsColumn(column, false);
 	}
 	
 	/**
+	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
 	 * 
 	 * @param column
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
-	 * @return	whether or not this Schema contains the given Column or an exact equivalent of it
+	 * @return whether or not this Schema contains the given Column
 	 */
-	public boolean containsColumn(Column column, boolean checkVirtual)
+	public boolean containsColumn(Column<?> column, boolean checkVirtual)
 	{
-		Column myColumn = getColumn(column.getName(), checkVirtual);
+		return	column != null &&
+				(column instanceof VirtualColumn<?, ?> ?
+					checkVirtual && column == getVirtualColumn(column.name) :
+					column == getColumn(column.name, false));
+	}
+	
+	/**
+	 * Checks whether the schema contains the given non-virtual Column or an exact equivalent of it.
+	 * 
+	 * @param column
+	 * @return whether or not this Schema contains the given Column or an exact equivalent of it
+	 */
+	public boolean containsEquivalentColumn(Column<?> column)
+	{
+		return containsEquivalentColumn(column, false);
+	}
+	
+	/**
+	 * Checks whether the schema contains the given Column or an exact equivalent of it.
+	 * 
+	 * @param column
+	 * @param checkVirtual whether or not to look in the schema's virtual columns
+	 * @return whether or not this Schema contains the given Column or an exact equivalent of it
+	 */
+	public boolean containsEquivalentColumn(Column<?> column, boolean checkVirtual)
+	{
+		// Try finding the exact same column (object identity): 
+		if(containsColumn(column, checkVirtual))
+			return true;
+		// Try finding an equivalent column with the same name:
+		Column<?> myColumn = column != null ? getColumn(column.getName(), checkVirtual) : null;
 		return myColumn != null && myColumn.equals(column, false, true); // name is already checked
 	}
 	
@@ -450,8 +530,10 @@ public class Schema implements Serializable
 	}
 
 	/**
+	 * Returns a list of all indexes, including the primary key if {@code includePrimaryKey} is {@code true}. 
+	 * 
 	 * @param includePrimaryKey
-	 * @return the indexes
+	 * @return an unmodifiable list of indexes
 	 */
 	public List<Index> getIndexes(boolean includePrimaryKey)
 	{
@@ -483,6 +565,17 @@ public class Schema implements Serializable
 	public boolean hasPrimaryKey()
 	{
 		return primaryKey != null;
+	}
+	
+	/**
+	 * @return the integerColumn of the AutoIncrementingPrimaryKey, or null if there is no primary key or it is not an AutoIncrementingPrimaryKey
+	 */
+	public IntegerColumn getAutoIncrementingPrimaryKeyColumn()
+	{
+		if(primaryKey instanceof AutoIncrementingPrimaryKey)
+			return ((AutoIncrementingPrimaryKey) primaryKey).getColumn();
+		else
+			return null;
 	}
 	
 	/**
@@ -611,7 +704,7 @@ public class Schema implements Serializable
 	 * @param skipColumns columns to ignore in the total
 	 * @return
 	 */
-	public boolean isVariableSize(boolean includeVirtual, Set<Column<?>> skipColumns)
+	public boolean isVariableSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		for(Column<?> c : getColumns(includeVirtual))
 			if(!skipColumns.contains(c) && c.isVariableSize())
@@ -637,7 +730,7 @@ public class Schema implements Serializable
 	 * @param skipColumns columns to ignore in the total
 	 * @return
 	 */
-	public int getMinimumSize(boolean includeVirtual, Set<Column<?>> skipColumns)
+	public int getMinimumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		int total = 0;
 		for(Column<?> c : getColumns(includeVirtual))
@@ -664,7 +757,7 @@ public class Schema implements Serializable
 	 * @param skipColumns columns to ignore the total
 	 * @return
 	 */
-	public int getMaximumSize(boolean includeVirtual, Set<Column<?>> skipColumns)
+	public int getMaximumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		int total = 0;
 		for(Column<?> c : getColumns(includeVirtual))
@@ -718,8 +811,8 @@ public class Schema implements Serializable
 				if(this.realColumns.size() != other.realColumns.size())
 					return false;
 				// Compare columns:
-				Iterator<Column> myCols = this.realColumns.iterator();
-				Iterator<Column> otherCols = other.realColumns.iterator();
+				Iterator<Column<?>> myCols = this.realColumns.iterator();
+				Iterator<Column<?>> otherCols = other.realColumns.iterator();
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
 					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
@@ -778,7 +871,7 @@ public class Schema implements Serializable
 		accept(visitor, Collections.<Column<?>>emptySet());
 	}
 	
-	public void accept(ColumnVisitor visitor, Set<Column<?>> skipColumns)
+	public void accept(ColumnVisitor visitor, Set<? extends Column<?>> skipColumns)
 	{
 		for(Column<?> c : getColumns(visitor.includeVirtualColumns()))
 			if(!skipColumns.contains(c))

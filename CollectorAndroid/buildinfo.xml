@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
@@ -33,8 +33,8 @@
 		<property name="res-values-dir" location="${project-dir}${file.separator}res${file.separator}values"/>
 		<loadproperties srcFile="${project-dir}${file.separator}project.properties" />
 		<xmlproperty file="${project-dir}${file.separator}AndroidManifest.xml" prefix="mani" collapseAttributes="true"/>
-		<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
-		<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
+		<!--<property name="appVersionName" value="${mani.manifest.android:versionName}"/>-->
+		<!--<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>-->
 		<property name="package" value="${mani.manifest.package}"/>
 		<!--<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
 		<property name="mvn-gen-dir" location="${project-dir}${file.separator}target${file.separator}generated-sources${file.separator}r"/>-->
@@ -214,7 +214,7 @@
 		<echo>Generating ${resourcename}.xml resource file...</echo>
 		<echo>	User: ${user.name}</echo>
 		<echo>	Build timestamp: ${TIMESTAMP}</echo>
-		<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>
+		<!--<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>-->
 		<echo>	Active git branch: ${repository-branch}</echo>
 		<echo>	Last git commit hash: ${repository-version}</echo>
 		<echo>	Last git commit tag: ${repository-tag}</echo>

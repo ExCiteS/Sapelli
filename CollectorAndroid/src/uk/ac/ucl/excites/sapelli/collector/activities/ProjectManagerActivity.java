@@ -38,7 +38,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -85,7 +85,7 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends ExportActivity implements StoreClient, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener
+public class ProjectManagerActivity extends ExportActivity implements StoreHandle.StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener
 {
 
 	// STATICS--------------------------------------------------------
@@ -203,7 +203,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 		// Get ProjectStore instance:
 		try
 		{
-			projectStore = app.getProjectStore(this);
+			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 		}
 		catch(Exception e)
 		{
@@ -272,7 +272,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 	protected void onDestroy()
 	{
 		// clean up:
-		app.discardStoreUsage(projectStore, this); // signal that the activity no longer needs the DAO
+		app.collectorClient.projectStoreHandle.doneUsing(this); // signal that the activity no longer needs the DAO
 		// super:
 		super.onDestroy();
 	}
@@ -302,7 +302,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p><b>" + app.getBuildInfo().getVersionInfo() + "</b></p>" +
+				"<p><b>" + app.getBuildInfo().getNameAndVersion() + "</b><br/>[" + app.getBuildInfo().getExtraVersionInfo() + "]</p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
 				"<p>" + getString(R.string.license)  + "</p>" +
@@ -374,7 +374,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 	 */
 	public boolean backupSapelli(MenuItem item)
 	{
-		Backup.Run(this, fileStorageProvider, app);
+		Backup.Run(this, fileStorageProvider);
 		return true;
 	}
 
@@ -564,7 +564,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreClien
 					try
 					{ // TODO make import & storage async
 						// Import:
-						XMLRecordsImporter importer = new XMLRecordsImporter(app.getCollectorClient());
+						XMLRecordsImporter importer = new XMLRecordsImporter(app.collectorClient);
 						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
 
 						// Show parser warnings if needed:

@@ -433,7 +433,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 					// Decode scaled bitmap:
 					bitmap = BitmapUtils.loadBitmap(getContext(), data);
 					
-					// Rotate
+					// Rotate (TODO is this always needed?)
 					Matrix bitmapMatrix = new Matrix();
 					bitmapMatrix.postRotate(90);
 					bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), bitmapMatrix, false);

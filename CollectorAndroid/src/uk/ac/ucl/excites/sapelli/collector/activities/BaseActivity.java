@@ -36,7 +36,6 @@ import android.support.v7.app.ActionBarActivity;
  * Provides dialog methods.
  * 
  * @author mstevens
- *
  */
 public abstract class BaseActivity extends ActionBarActivity
 {
@@ -53,6 +52,11 @@ public abstract class BaseActivity extends ActionBarActivity
 	{
 		super.onCreate(savedInstanceState);
 		this.app = (CollectorApp) getApplication();
+	}
+	
+	public CollectorApp getCollectorApp()
+	{
+		return app;
 	}
 	
 	@Override

@@ -74,7 +74,7 @@ public class FileImageItem extends ImageItem
 				
 				// Using AndroidSVG lib:
 				//SVG svg = SVG.getFromInputStream(new FileInputStream(file));
-		        //view.setImageDrawable(new PictureDrawable(svg.renderToPicture()));
+				//view.setImageDrawable(new PictureDrawable(svg.renderToPicture()));
 			}
 		}
 		catch(Exception e)

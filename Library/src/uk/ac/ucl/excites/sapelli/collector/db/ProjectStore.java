@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
  * 
  * @author mstevens
  */
-public abstract class ProjectStore implements Store
+public abstract class ProjectStore extends Store
 {
 	
 	static public final String DATABASE_NAME_SUFFIX = "_Projects";
