@@ -33,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folder;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreProvider;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
@@ -99,24 +99,22 @@ public class Backup
 		}
 	}
 
-	static public void Run(BaseActivity activity, FileStorageProvider fileStorageProvider, StoreProvider storeProvider)
+	static public void Run(BaseActivity activity, FileStorageProvider fileStorageProvider)
 	{
 		// create Backup instance and start the back-up process by showing the selection diagram...
-		new Backup(activity, fileStorageProvider, storeProvider).showSelectionDialog();
+		new Backup(activity, fileStorageProvider).showSelectionDialog();
 	}
 	
 	// DYNAMIC ----------------------------------------------------------------
 	private final BaseActivity activity;
 	private final FileStorageProvider fileStorageProvider;
-	private final StoreProvider storeProvider;
 	private final Set<Folder> foldersToExport; 
 	
-	private Backup(BaseActivity activity, FileStorageProvider fileStorageProvider, StoreProvider storeProvider)
+	private Backup(BaseActivity activity, FileStorageProvider fileStorageProvider)
 	{
 		// Initialise:
 		this.activity = activity;
 		this.fileStorageProvider = fileStorageProvider;
-		this.storeProvider = storeProvider;
 		foldersToExport = new HashSet<Folder>();
 	}
 	
@@ -251,7 +249,8 @@ public class Backup
 				
 				// Phase 2: Back-up database(s)
 				publishProgress(activity.getString(R.string.backup_progress_db));
-				storeProvider.backupStores(toZip[z], false); // create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labeled as backups)
+				// 	Create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labeled as backups):				
+				StoreBackupper.Backup(toZip[z], false, activity.getCollectorApp().getStoreHandlesForBackup());
 				
 				// Phase 3: Create ZIP archive
 				publishProgress(activity.getString(R.string.backup_progress_zipping));

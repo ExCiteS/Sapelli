@@ -22,11 +22,54 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 
-public interface Store
+/**
+ * Abstract class for "stores" (i.e. database access objects)
+ * 
+ * @author mstevens
+ */
+public abstract class Store
 {
-
-	public void finalise() throws DBException;
 	
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException;
+	private boolean closed = false;
+
+	/**
+	 * Called by GC
+	 * 
+	 * @see java.lang.Object#finalize()
+	 */
+	public void finalize()
+	{
+		try
+		{
+			close();
+		}
+		catch(DBException dbE)
+		{
+			dbE.printStackTrace(System.err);
+		}
+	}
+	
+	public void close() throws DBException
+	{
+		if(!closed)
+		{
+			doClose();
+			closed = true;
+		}
+	}
+	
+	/**
+	 * Close the Store and any underlying connections/files/resources
+	 * 
+	 * @throws DBException
+	 */
+	protected abstract void doClose() throws DBException;
+
+	public boolean isClosed()
+	{
+		return closed;
+	}
+	
+	public abstract void backup(StoreBackupper backupper, File destinationFolder) throws DBException;
 	
 }

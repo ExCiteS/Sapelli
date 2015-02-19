@@ -6,7 +6,6 @@ Sapelli
 
 It supports the creation of surveys (called "projects"), composed of 1 or more forms. Forms can be entirely text-free, using the concept of pictorial decision trees, or have a more conventional appearance consisting of standard UI widgets. Sapelli supports data exchange using a highly efficient protocol that can work across SMS and HTTP.
 
-
 ### Who? ###
 
 Sapelli is being developed by the [Extreme Citizen Science (ExCiteS) research group](http://ucl.ac.uk/excites) at [University College London (UCL)](http://ucl.ac.uk), with help from outside partners & contributors.
@@ -20,7 +19,7 @@ Currently the core Sapelli team consists of:
   * [Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: anthropologist
 
 ### Legal disclaimer ###
-Copyright 2012-2014 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
+Copyright 2012-2015 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
 
 Licensed under the **Apache License, Version 2.0** (the "License");
 you may not use this file except in compliance with the License.

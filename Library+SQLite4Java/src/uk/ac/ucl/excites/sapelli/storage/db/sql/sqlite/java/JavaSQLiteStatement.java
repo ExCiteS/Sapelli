@@ -206,7 +206,10 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		try
 		{
 			javaSQLiteSt.step();
-			return db.getLastInsertId();
+			long rowID = db.getLastInsertId();
+			if(rowID <= 0)
+				throw new DBException("Execution of INSERT statement failed (returned ROWID = " + rowID + ")");
+			return rowID;
 		}
 		catch(SQLiteException e)
 		{

@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -33,14 +33,13 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -61,13 +60,13 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
  * 
  * @author mstevens
  */
-public class ProjectRecordStore extends ProjectStore implements StoreClient
+public class ProjectRecordStore extends ProjectStore implements StoreHandle.StoreUser
 {
 	
 	// STATICS---------------------------------------------
 	// Project storage model:
 	//	Model:
-	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(SapelliCollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement");
+	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement");
 	//	 Project schema:
 	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
 	//		Columns:
@@ -120,20 +119,20 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	}
 			
 	// DYNAMICS--------------------------------------------
-	private final RecordStoreProvider recordStoreProvider;
+	private final CollectorClient client;
 	private final RecordStore recordStore;
 	private final FileStorageProvider fileStorageProvider;
 	private final Map<Long, Project> cache;
 	
 	/**
-	 * @param recordStoreProvider
+	 * @param client
 	 * @param fileStorageProvider
 	 * @throws DBException
 	 */
-	public ProjectRecordStore(RecordStoreProvider recordStoreProvider, FileStorageProvider fileStorageProvider) throws DBException
+	public ProjectRecordStore(CollectorClient client, FileStorageProvider fileStorageProvider) throws DBException
 	{
-		this.recordStoreProvider = recordStoreProvider;
-		this.recordStore = recordStoreProvider.getRecordStore(this);
+		this.client = client;
+		this.recordStore = client.recordStoreHandle.getStore(this);
 		this.fileStorageProvider = fileStorageProvider;
 		this.cache = new HashMap<Long, Project>();
 	}
@@ -398,16 +397,16 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
 	@Override
-	public void finalise() throws DBException
+	protected void doClose() throws DBException
 	{
-		recordStoreProvider.discardStoreUsage(recordStore, this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
+		client.recordStoreHandle.doneUsing(this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
 	 */
 	@Override
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
+	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		backuper.addStoreForBackup(recordStore);
 	}

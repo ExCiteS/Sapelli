@@ -40,27 +40,25 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 
 	/**
 	 * @param store
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteBlobColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<byte[], SapType> mapping)
+	public SQLiteBlobColumn(SQLiteRecordStore store, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<byte[], SapType> mapping)
 	{
-		store.super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteBlobColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<byte[], SapType> mapping)
+	public SQLiteBlobColumn(SQLiteRecordStore store, String name, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<byte[], SapType> mapping)
 	{
-		store.super(name, SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(name, SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
@@ -91,9 +89,9 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 	protected String sqlToLiteral(byte[] value, boolean quotedIfNeeded)
 	{
 		if(value != null)
-			return 'x' + getQuoteChar() + Hex.encodeHexString(value) + getQuoteChar();
+			return 'x' + SQLiteRecordStore.QUOTE_CHAR + Hex.encodeHexString(value) + SQLiteRecordStore.QUOTE_CHAR;
 		else
-			return getNullString();
+			return SQLiteRecordStore.NULL_STRING;
 	}
 
 }

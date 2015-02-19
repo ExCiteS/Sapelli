@@ -19,12 +19,15 @@
 package uk.ac.ucl.excites.sapelli.storage.db;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -43,12 +46,12 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
  * 
  * @author mstevens
  */
-public abstract class RecordStore implements Store
+public abstract class RecordStore extends Store
 {
 
 	// STATIC -----------------------------------------------------------------
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
-	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp 
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
 	
 	// DYNAMIC ----------------------------------------------------------------
 	protected StorageClient client;
@@ -59,11 +62,21 @@ public abstract class RecordStore implements Store
 	 */
 	private int openTransactions = 0;
 	
-	public RecordStore(StorageClient client)
+	/**
+	 * {@link Stack} with {@link List}s of {@link RollbackTask}s to execute upon roll-back of transaction(s)
+	 */
+	private final Stack<List<RollbackTask>> rollbackTasks;
+	
+	/**
+	 * @param client
+	 * @param useRollbackTasks whether or not the subclass will/might make use of roll-back tasks 
+	 */
+	public RecordStore(StorageClient client, boolean useRollbackTasks)
 	{
 		this.client = client;
+		rollbackTasks = useRollbackTasks ? new Stack<List<RollbackTask>>() : null;
 	}
-	
+
 	/**
 	 * Starts a new transaction.
 	 * 
@@ -80,9 +93,43 @@ public abstract class RecordStore implements Store
 			throw dbE;
 		}
 		openTransactions++; // !!!
+		if(rollbackTasks != null)
+			rollbackTasks.push(Collections.<RollbackTask> emptyList()); // will be replaced by proper ArrayList when needed
 	}
 	
 	protected abstract void doStartTransaction() throws DBException;
+	
+	/**
+	 * Add task to be executed upon roll-back of (all) open transaction(s).
+	 * This can be used to perform in memory (as in non-DB) operations to make the (Java) runtime state reflect
+	 * the state of the DB in the event of a roll-back. 
+	 * 
+	 * @param task
+	 * @throws DBException
+	 */
+	protected void addRollbackTask(RollbackTask task) throws DBException
+	{
+		if(rollbackTasks == null)
+			throw new DBException("This RecordStore implementation does not use rollback tasks.");
+		if(rollbackTasks.isEmpty()) // equivalent to: if(!isInTransaction())
+			throw new DBException("Cannot add a rollback task unless there is at least one open transaction!");
+		if(task == null)
+			throw new NullPointerException("Task cannot be null");
+		addRollbackTasks(Collections.singleton(task));
+	}
+	
+	/**
+	 * @param tasks to add to list for current transaction (assumed to be non-empty)
+	 */
+	private void addRollbackTasks(Collection<RollbackTask> tasks)
+	{
+		if(rollbackTasks.peek().isEmpty())
+		{	// Replace immutable empty list with ArrayList:
+			rollbackTasks.pop();
+			rollbackTasks.push(new ArrayList<RollbackTask>(tasks.size()));
+		}
+		rollbackTasks.peek().addAll(tasks);
+	}
 	
 	/**
 	 * Commits the current transaction.
@@ -102,6 +149,16 @@ public abstract class RecordStore implements Store
 				throw dbE;
 			}
 			openTransactions--; // !!!
+			
+			// Deal with roll-back tasks if needed:
+			if(rollbackTasks != null)
+			{
+				// Get tasks for the committed transaction:
+				List<RollbackTask> tasks = rollbackTasks.pop();
+				// If there is another ("outer-more") transaction and the committed transaction had at least 1 task...
+				if(isInTransaction() && !tasks.isEmpty())
+					addRollbackTasks(tasks); // move task(s) to outer-more transaction
+			}
 		}
 		//else
 		//	System.err.println("Warning: there is no open transaction to commit!");
@@ -129,20 +186,16 @@ public abstract class RecordStore implements Store
 	 */
 	private void rollbackTransaction() throws DBException
 	{
-		if(openTransactions > 0)
-		{
-			try
-			{
-				doRollbackTransaction();
-			}
-			catch(DBException dbE)
-			{
-				throw dbE;
-			}
-			openTransactions--; // !!!
-		}
-		//else
-		//	System.err.println("Warning: there is no open transaction to roll back!");
+		if(openTransactions <= 0)
+			return; // System.err.println("Warning: there is no open transaction to roll back!");
+		// Perform actual roll-back:
+		doRollbackTransaction();
+		// Reduce number of open transactions:
+		openTransactions--;
+		// Run RollbackTasks associated with the rolled-back transaction:
+		if(rollbackTasks != null)
+			for(RollbackTask task : rollbackTasks.pop())
+				task.run();
 	}
 	
 	protected abstract void doRollbackTransaction() throws DBException;
@@ -459,14 +512,14 @@ public abstract class RecordStore implements Store
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
-	public void finalise() throws DBException
+	protected void doClose() throws DBException
 	{
 		if(isInTransaction())
 			System.err.println("Warning: record store is being closed but there is an uncommited transaction (changes may be lost)!");
 		// Clean-up:
 		cleanup();
-		// Close:
-		close();
+		// Close DB connection:
+		closeConnection();
 	}
 	
 	/**
@@ -477,13 +530,18 @@ public abstract class RecordStore implements Store
 		// does nothing by default
 	}
 	
-	protected abstract void close() throws DBException;
+	/**
+	 * Subclasses must implement this to close the connection to the underlying database file/service
+	 * 
+	 * @throws DBException
+	 */
+	protected abstract void closeConnection() throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
 	 */
 	@Override
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
+	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		if(isInTransaction())
 			throw new DBException("Cannot back-up database due to uncommited transaction!");
@@ -495,11 +553,23 @@ public abstract class RecordStore implements Store
 	 * @param destinationFolder
 	 * @throws DBException
 	 */
-	protected abstract void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException;
+	protected abstract void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException;
 	
 	/**
 	 * @return whether or not this RecordStore implementation has full support for indexes (and the constraints they impose)
 	 */
 	public abstract boolean hasFullIndexSupport();
+	
+	/**
+	 * A task to execute upon roll-back of open transaction(s)
+	 * 
+	 * @author mstevens
+	 */
+	protected interface RollbackTask
+	{
+		
+		public void run() throws DBException;
+		
+	}
 
 }

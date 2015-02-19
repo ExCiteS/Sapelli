@@ -26,6 +26,9 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -40,7 +43,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
  * @author mstevens
  *
  */
-public class SapelliCollectorClient extends TransmissionClient
+public abstract class CollectorClient extends TransmissionClient implements StoreHandle.StoreUser
 {
 	
 	// STATICS-------------------------------------------------------
@@ -77,12 +80,22 @@ public class SapelliCollectorClient extends TransmissionClient
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	private ProjectStore projectStore;
-	
-	public void setProjectStore(ProjectStore projectStore)
+	public final StoreHandle<ProjectStore> projectStoreHandle = new StoreHandle<ProjectStore>(new StoreCreator<ProjectStore>()
 	{
-		this.projectStore = projectStore;
-	}
+		@Override
+		public ProjectStore createStore() throws DBException
+		{
+			return createProjectStore();
+		}
+	});
+	
+	/**
+	 * Returns a new ProjectStore instance
+	 * 
+	 * @return
+	 * @throws DBException
+	 */
+	protected abstract ProjectStore createProjectStore() throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
@@ -114,9 +127,18 @@ public class SapelliCollectorClient extends TransmissionClient
 	 */
 	public Project getProject(long modelID)
 	{
-		if(projectStore == null)
+		try
+		{
+			return projectStoreHandle.getStore(this).retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
+		}
+		catch(Exception e)
+		{
 			return null;
-		return projectStore.retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
+		}
+		finally
+		{
+			projectStoreHandle.doneUsing(this);
+		}
 	}
 	
 	/**
@@ -156,13 +178,20 @@ public class SapelliCollectorClient extends TransmissionClient
 	@Override
 	public Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException
 	{
-		if(projectStore != null)
+		try
 		{
-			Project project = projectStore.retrieveV1Project(schemaID, schemaVersion);
-			if(project != null)
-				return project.getForm(0).getSchema(); // return schema of the first (and assumed only) form
+			Project project = projectStoreHandle.getStore(this).retrieveV1Project(schemaID, schemaVersion); // can throw NPE or DBException
+			// return schema of the first (and assumed only) form:
+			return project.getForm(0).getSchema(); // can throw NPE
 		}
-		throw new UnknownModelException(schemaID, schemaVersion);
+		catch(Exception e)
+		{	// regardless of whether it is an NPE, DBException or another Exception:
+			throw new UnknownModelException(schemaID, schemaVersion);
+		}
+		finally
+		{
+			projectStoreHandle.doneUsing(this);
+		}
 	}
 
 	@Override
@@ -196,7 +225,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.TransmissionClient#getEncryptionSettingsFor(Model)
 	 */
-	@Override
+	//@Override
 	public EncryptionSettings getEncryptionSettingsFor(Model model)
 	{
 		/*TODO FIX THIS
@@ -219,7 +248,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	}
 
 	@Override
-	public Payload newPayload(int nonBuiltinType)
+	public Payload createPayload(int nonBuiltinType)
 	{
 		return null; // for now there are no Sapelli Collector-specific transmission payloads
 	}

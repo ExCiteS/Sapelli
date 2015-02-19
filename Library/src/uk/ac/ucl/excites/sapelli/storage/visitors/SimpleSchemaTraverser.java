@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -34,9 +36,16 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 {
 
 	private final Stack<Column<?>> columnStack = new Stack<Column<?>>();
+	private Set<? extends Column<?>> skipColumns;
 	
 	public void traverse(Schema schema)
 	{
+		traverse(schema, Collections.<Column<?>>emptySet());
+	}
+	
+	public void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
+	{
+		this.skipColumns = skipColumns;
 		columnStack.clear();
 		schema.accept(this);
 	}
@@ -73,11 +82,12 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	@Override
 	public <T> void visit(Column<T> column)
 	{
-		columnStack.push(column);
-		
-		visit(getColumnPointer());
-		
-		columnStack.pop();
+		if(!skipColumns.contains(column))
+		{
+			columnStack.push(column);
+			visit(getColumnPointer());
+			columnStack.pop();
+		}
 	}
 	
 	protected ColumnPointer getColumnPointer()
