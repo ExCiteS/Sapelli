@@ -33,7 +33,7 @@
 					When a >11 SDK version is targeted SVGs are simply not drawn (at least on phones running Android ICS or newer).
 					This is probably caused by a known h/w acceleration issue (see comment on draw() in https://github.com/japgolly/svg-android/commit/a1a613b).
 				  	We should try other ways around this problem, e.g.:
-				  	 - disabling h/w acceleration on SVG-backed ImageViews
+				  	 - disabling h/w acceleration on SVG-backed ImageViews [DONE]
 				  	 - changing *how* we use svg-library to load SVGs into ImageViews (i.e. not using SVGDrawable)
 				  	 - switching to another fork/version of svg-library which doesn't have the problem (if there is one)
 				  	 - switching to the alternative AndroidSVG library (assuming it does not have the same problem)
