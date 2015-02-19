@@ -250,7 +250,7 @@ public class Schema implements Serializable
 		return column;
 	}
 	
-	protected <C extends Column<T>, T> void addColumn(C column, boolean useVirtual)
+	protected <T> void addColumn(Column<T> column, boolean useVirtual)
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
@@ -263,7 +263,7 @@ public class Schema implements Serializable
 		if(useVirtual)
 			for(VirtualColumn<?, T> vCol : column.getVirtualVersions())
 			{
-				if(!containsColumn(vCol.getSourceColumn(), false))
+				if(!containsColumn(vCol.getSourceColumn()))
 					throw new IllegalArgumentException("The schema does not contain the source column (" + vCol.getSourceColumn().getName() + ") of the given virtual column.");
 				if(virtualColumnsByName == null)
 					virtualColumnsByName = new HashMap<String, VirtualColumn<?, ?>>();
@@ -311,7 +311,7 @@ public class Schema implements Serializable
 		for(Column<?> idxCol : index.getColumns(false))
 		{
 			// Check if idxCol is known:
-			if(!containsColumn(idxCol, false)) 
+			if(!containsColumn(idxCol)) 
 				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before indexes are added or the primary key is set.");
 		}
 		// Initialise collection if needed:
@@ -464,7 +464,7 @@ public class Schema implements Serializable
 	{
 		return columnNameToPosition.containsKey(name) || (checkVirtual && virtualColumnsByName != null && virtualColumnsByName.containsKey(name));
 	}
-
+	
 	/**
 	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
 	 * 
@@ -473,50 +473,43 @@ public class Schema implements Serializable
 	 */
 	public boolean containsColumn(Column<?> column)
 	{
-		return containsColumn(column, false);
-	}
-	
-	/**
-	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
-	 * 
-	 * @param column
-	 * @param checkVirtual whether or not to look in the schema's virtual columns
-	 * @return whether or not this Schema contains the given Column
-	 */
-	public boolean containsColumn(Column<?> column, boolean checkVirtual)
-	{
 		return	column != null &&
-				(column instanceof VirtualColumn<?, ?> ?
-					checkVirtual && column == getVirtualColumn(column.name) :
+				(column instanceof VirtualColumn ?
+					column == getVirtualColumn(column.name) :
 					column == getColumn(column.name, false));
-	}
-	
-	/**
-	 * Checks whether the schema contains the given non-virtual Column or an exact equivalent of it.
-	 * 
-	 * @param column
-	 * @return whether or not this Schema contains the given Column or an exact equivalent of it
-	 */
-	public boolean containsEquivalentColumn(Column<?> column)
-	{
-		return containsEquivalentColumn(column, false);
 	}
 	
 	/**
 	 * Checks whether the schema contains the given Column or an exact equivalent of it.
 	 * 
 	 * @param column
-	 * @param checkVirtual whether or not to look in the schema's virtual columns
 	 * @return whether or not this Schema contains the given Column or an exact equivalent of it
 	 */
-	public boolean containsEquivalentColumn(Column<?> column, boolean checkVirtual)
+	public boolean containsEquivalentColumn(Column<?> column)
+	{
+		return getEquivalentColumn(column) != null;
+	}
+	
+	/**
+	 * Returns a Column which is exactly equivalent (or even object-identical!) to the given column
+	 * and which is contained by the Schema, or null if there is no such column in the Schema.
+	 * 
+	 * @param column
+	 * @return an equivalent column contained by the Schema or null
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> Column<T> getEquivalentColumn(Column<T> column)
 	{
 		// Try finding the exact same column (object identity): 
-		if(containsColumn(column, checkVirtual))
-			return true;
+		if(containsColumn(column))
+			return column; // return the column itself
+		// Make sure the column isn't null:
+		if(column == null)
+			return null;
 		// Try finding an equivalent column with the same name:
-		Column<?> myColumn = column != null ? getColumn(column.getName(), checkVirtual) : null;
-		return myColumn != null && myColumn.equals(column, false, true); // name is already checked
+		Column<T> myColumn = (Column<T>) getColumn(column.getName(), column instanceof VirtualColumn);
+		//	Check if the column is really equivalent:
+		return column.equals(myColumn, /* name is already checked */ false, true) ? myColumn : null;
 	}
 	
 	/**
@@ -587,7 +580,7 @@ public class Schema implements Serializable
 	public Index getIndex(Column<?> column)
 	{
 		for(Index idx : getIndexes())
-			if(idx.containsColumn(column, false))
+			if(idx.containsColumn(column))
 				return idx;
 		return null;
 	}

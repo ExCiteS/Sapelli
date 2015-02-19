@@ -62,7 +62,17 @@ public class TransactionalStringBuilder
 	/**
 	 * New TransactionalStringBuilder using the given connective.
 	 * 
-	 * @param baseConnective
+	 * @param baseConnective a char
+	 */
+	public TransactionalStringBuilder(char baseConnective)
+	{
+		this("" + baseConnective);
+	}
+	
+	/**
+	 * New TransactionalStringBuilder using the given connective.
+	 * 
+	 * @param baseConnective a String
 	 */
 	public TransactionalStringBuilder(String baseConnective)
 	{
@@ -78,11 +88,21 @@ public class TransactionalStringBuilder
 	{
 		openTransaction(connectives.get(0));
 	}
+
+	/**
+	 * Open a new transaction in which to use the given connective
+	 * 
+	 * @param connective a char
+	 */
+	public void openTransaction(char connective)
+	{
+		openTransaction("" + connective);
+	}
 	
 	/**
 	 * Open a new transaction in which to use the given connective
 	 * 
-	 * @param connective
+	 * @param connective a String
 	 */
 	public void openTransaction(String connective)
 	{
