@@ -156,7 +156,7 @@ public class ColumnPointer
 		}
 		else
 		{
-			for(Column<?> c : schema.getColumns(true))
+			for(Column<?> c : schema.getColumns(false))
 				if(c instanceof RecordColumn)
 				{
 					stack.push(c);
