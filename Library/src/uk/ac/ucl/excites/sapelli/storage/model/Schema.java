@@ -250,7 +250,7 @@ public class Schema implements Serializable
 		return column;
 	}
 	
-	protected <C extends Column<T>, T> void addColumn(C column, boolean useVirtual)
+	protected <T> void addColumn(Column<T> column, boolean useVirtual)
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
