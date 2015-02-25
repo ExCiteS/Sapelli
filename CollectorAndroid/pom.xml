@@ -183,7 +183,7 @@
 				<dependency>
 					<groupId>com.jpardogo.materialtabstrip</groupId>
 					<artifactId>library</artifactId>
-					<version>1.0.8</version>
+					<version>1.0.9</version>
 					<type>aar</type>
 				</dependency>
 			</dependencies>
