@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
@@ -261,7 +262,23 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 		{
 			return new ArrayList<T>(minimumCapacity);
 		}
-
+		
+		/**
+		 * Converts Collection<T>s to (Array)List<T>s
+		 * 
+		 * @param value possibly null
+		 * @return
+		 * @throws ClassCastException when the value is not a {@link java.util.Collection}
+		 * 
+		 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
+		 */
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object convert(Object value)
+		{
+			return value == null ? null : (value instanceof List ? value : new ArrayList<T>((Collection<? extends T>) value));
+		}
+		
 		@Override
 		public Simple<T> copy()
 		{

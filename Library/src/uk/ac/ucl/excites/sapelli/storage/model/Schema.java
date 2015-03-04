@@ -293,8 +293,9 @@ public class Schema implements Serializable
 	 * Adding indexes is possible after the Schema has been sealed (setting/changing the primary key is not).
 	 * 
 	 * @param index
+	 * @return the added index
 	 */
-	public void addIndex(Index index)
+	public <I extends Index> I addIndex(I index)
 	{
 		if(index instanceof PrimaryKey)
 			// set as primary key:
@@ -302,6 +303,7 @@ public class Schema implements Serializable
 		else
 			// add as normal index:
 			doAddIndex(index);
+		return index;
 	}
 	
 	/**

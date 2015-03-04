@@ -194,6 +194,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 * @param value possibly null
 	 * @return
 	 * @throws ClassCastException when the value is not a {@link Number}
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
