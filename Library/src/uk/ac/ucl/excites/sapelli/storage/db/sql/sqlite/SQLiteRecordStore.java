@@ -18,10 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,10 +29,6 @@ import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -703,53 +696,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				@Override
 				public byte[] toSQLType(L value)
 				{
-					BitOutputStream bos = null;
 					try
 					{
-						ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-						bos = new BitWrapOutputStream(baos);
-						listCol.writeValue(value, bos);
-						bos.flush();
-						return baos.toByteArray();
+						return listCol.toBytes(value);
 					}
 					catch(Exception e)
 					{
 						e.printStackTrace(System.err);
 						return null;
-					}
-					finally
-					{
-						if(bos != null)
-							try
-							{
-								bos.close();
-							}
-							catch(IOException ignore) { }
 					}
 				}
 
 				@Override
 				public L toSapelliType(byte[] value)
 				{
-					BitInputStream bis = null;
 					try
 					{
-						bis = new BitWrapInputStream(new ByteArrayInputStream(value));
-						return listCol.readValue(bis);
+						return listCol.fromBytes(value);
 					}
 					catch(Exception e)
 					{
 						e.printStackTrace(System.err);
 						return null;
-					}
-					finally
-					{
-						if(bis != null)
-							try
-							{
-								bis.close();
-							}
-							catch(IOException ignore) { }
 					}
 				}
 				
