@@ -19,6 +19,8 @@
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -154,6 +156,24 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	public void visit(StringColumn stringCol)
 	{
 		this.visit((Column<?>) stringCol);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple)
+	 */
+	@Override
+	public <T> void visit(Simple<T> simpleListCol)
+	{
+		this.visit((Column<?>) simpleListCol);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn)
+	 */
+	@Override
+	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol)
+	{
+		this.visit((Column<?>) virtCol);
 	}
 	
 }

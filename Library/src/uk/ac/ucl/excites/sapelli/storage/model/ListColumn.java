@@ -20,16 +20,22 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * @author mstevens
+ * A Column which takes {@link List}s a values.
  *
+ * @param <L> the list type (extends List<T>)
+ * @param <T> the content type
+ * 
+ * @author mstevens
  */
 public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 {
@@ -221,6 +227,53 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	public Class<L> getType()
 	{
 		return (Class<L>) (Class<?>) List.class;
+	}
+	
+	/**
+	 * "Simple" ListColumn implementation which is only generic in terms of the content type (<T>) and not in the list type (<L>).
+	 * 
+	 * @param <T> the content type
+	 *
+	 * @author mstevens
+	 */
+	public static class Simple<T> extends ListColumn<List<T>, T>
+	{
+		
+		static private final long serialVersionUID = 2L;
+
+		public Simple(String name, Column<T> singleColumn, boolean optional)
+		{
+			super(name, singleColumn, optional);
+		}
+		
+		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength)
+		{
+			super(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);
+		}
+		
+		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
+		{
+			super(name, singleColumn, optional, minLength, maxLength);
+		}
+
+		@Override
+		protected List<T> getNewList(int minimumCapacity)
+		{
+			return new ArrayList<T>(minimumCapacity);
+		}
+
+		@Override
+		public Simple<T> copy()
+		{
+			return new Simple<T>(name, singleColumn.copy(), optional, getMinimumLength(), getMaximumLength());
+		}
+
+		@Override
+		public void accept(ColumnVisitor visitor)
+		{
+			visitor.visit(this);
+		}
+		
 	}
 	
 }
