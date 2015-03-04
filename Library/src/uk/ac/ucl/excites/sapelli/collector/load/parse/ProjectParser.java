@@ -42,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
@@ -268,9 +269,13 @@ public class ProjectParser extends DocumentParser
 						// generates Schema, Columns & ValueDictionaries:
 						form.initialiseStorage();
 					}
-					catch(ModelFullException e)
+					catch(ModelFullException mfe)
 					{
 						throw new SAXException("This project contains more data-producing Forms than allowed (maximum: " + Project.MAX_RECORD_PRODUCING_FORMS + ").");
+					}
+					catch(DuplicateColumnException dce)
+					{
+						throw new SAXException("Duplicate column name (\"" + dce.getColumnName() +"\") in schema for form \"" + form.id + "\".");
 					}
 					addWarnings(form.getWarnings()); // !!!
 					form.clearWarnings();

@@ -41,6 +41,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
@@ -641,24 +642,25 @@ public class Form implements WarningKeeper
 	 * at generating a schema.
 	 * 
 	 * @throws ModelFullException
+	 * @throws DuplicateColumnException
 	 */
-	public void initialiseStorage() throws ModelFullException
+	public void initialiseStorage() throws ModelFullException, DuplicateColumnException
 	{
 		if(!producesRecords)
 			return;
 		if(schema == null)
 		{
-			// Generate columns for user-defined top-level fields:
-			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
+			// Generate columns for top-level fields:
+			List<Column<?>> fieldDefinedColumns = new ArrayList<Column<?>>();
 			for(Field f : fields)
 				/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
 				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
 				 *  The reason (in both cases) is that composite fields like Pages, do not
 				 *  have a column of their own but their children do. */
-				f.addColumnTo(userDefinedColumns);
+				f.addColumnTo(fieldDefinedColumns);
 	
-			// Check if there are user-defined columns at all, if not we don't need to generate a schema at all...
-			if(userDefinedColumns.isEmpty())
+			// Check if there is at least 1 field-defined column, if not we don't need to generate a schema at all...
+			if(fieldDefinedColumns.isEmpty())
 			{
 				producesRecords = false; // this will avoid that we try to generate a schema again
 				// this.schema stays null
@@ -685,8 +687,8 @@ public class Form implements WarningKeeper
 				// Add primary key on StartTime & DeviceID:
 				schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
 				
-				// Add user-defined columns
-				schema.addColumns(userDefinedColumns);
+				// Add field-defined columns:
+				schema.addColumns(fieldDefinedColumns);
 				
 				// Seal the schema:
 				schema.seal();
