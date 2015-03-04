@@ -442,9 +442,11 @@ public class Record implements Serializable
 	}
 	
 	/**
+	 * Write record values to the given bitStream
+	 * 
 	 * @param bitStream
-	 * @param includeVirtual
-	 * @param skipColumns
+	 * @param includeVirtual whether or not to include the values corresponding to virtual columns
+	 * @param skipColumns columns no to include the values of
 	 * @throws IOException
 	 */
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
@@ -497,9 +499,11 @@ public class Record implements Serializable
 	}
 	
 	/**
+	 * Read record values from the given bitStream
+	 * 
 	 * @param bitStream
-	 * @param includeVirtual
-	 * @param skipColumns
+	 * @param includeVirtual whether or not to expect, and if so skip(!), the values corresponding to virtual columns
+	 * @param skipColumns columns no to expect the values of
 	 * @throws IOException
 	 */
 	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
@@ -508,10 +512,12 @@ public class Record implements Serializable
 		{	//read fields:
 			for(Column<?> c : schema.getColumns(includeVirtual))
 				if(!skipColumns.contains(c))
+				{
 					if(c instanceof VirtualColumn)
 						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
 					else
 						c.readAndStoreValue(this, bitStream);
+				}
 		}
 		catch(Exception e)
 		{
