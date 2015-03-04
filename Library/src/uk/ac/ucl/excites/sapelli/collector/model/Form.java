@@ -54,6 +54,8 @@ public class Form implements WarningKeeper
 	// Statics--------------------------------------------------------
 	public static final boolean END_TIME_DEFAULT = false;
 
+	static public final int MAX_ID_LENGTH = 256;
+	
 	public static final int MAX_FIELDS = 512;
 	
 	// Where to go next:
@@ -151,11 +153,14 @@ public class Form implements WarningKeeper
 	
 	public Form(Project project, String id)
 	{
-		if(project == null || id == null || id.isEmpty())
-			throw new IllegalArgumentException("A project and non-empty id are required!");
+		String trimmedID; // assigned below
+		if(project == null || id == null || (trimmedID = id.trim()).isEmpty())
+			throw new IllegalArgumentException("A project and non-empty, non-whitespace id are required!");
+		if(trimmedID.length() > MAX_ID_LENGTH)
+			throw new IllegalArgumentException("Form ID \"" + id + "\" is too long (max length: " + MAX_ID_LENGTH + ").");
 		
 		this.project = project;
-		this.id = id;
+		this.id = trimmedID;
 		
 		this.fields = new ArrayList<Field>();
 		this.position = (short) project.getForms().size();
