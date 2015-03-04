@@ -777,7 +777,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	{
 		try
 		{	
-			// Warn about IDs starting with '_': //TODO test if no invalid XML chars
+			// Warn about IDs starting with '_':
 			if(field.id.startsWith("_"))
 			{
 				// For really stupid cases ;-):
@@ -786,6 +786,11 @@ public class FormParser extends SubtreeParser<ProjectParser>
 						throw new SAXException(field.id + " is a reserved ID, don't use it for user-defined fields.");
 				addWarning("Please avoid field IDs starting with '_' (" + field.id + ")."); 
 			}
+			// Note: warnings about chars that are illegal in column-name/XML-tags will be generated in Field#getColumn()
+			
+			// Remember the field ID (upper cased, for case insensitivity), in order to check for duplicates (now) & resolve jumps (later):
+			if(idToField.put(field.id.toUpperCase(), field) != null)
+				throw new SAXException("Duplicate field ID '" + field.id + "' in form '" + currentForm.id + "'! (Note: field and form IDs are case insensitive)");
 			
 			// Get current page if there is one:
 			Page currentPage = getCurrentPage();
@@ -795,12 +800,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			{
 				// Add it to the form or page:
 				if(currentPage == null)
-				{	// field is top-level (directly contained within the form, and not in a page first)...
+					// field is top-level (directly contained within the form, and not in a page first):
 					currentForm.addField(field);
-					// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
-					if(idToField.put(field.id.toUpperCase(), field) != null)
-						throw new SAXException("Duplicate field ID '" + field.id + "' in Form '" + currentForm.id + "'! (Note: field and form IDs are case insensitive)");
-				}
 				else
 					// the field is contained by a page:
 					currentPage.addField(field);
@@ -1077,8 +1078,12 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				Field target = idToField.get(jump.getValue());
 				if(target == null)
 					addWarning("Cannot resolve jump ID '" + jump.getValue() +  "' (case insensitive).");
+				else if(target.isOnPage())
+					addWarning("Cannot jump to field '" + target.id +  "' because it is contained within a page.");
 				else
 					jump.getKey().setJump(target); // set jump pointer (to a field object)
+				// Note: jumping to Choice children is allowed (i.e. choice-graphs, rather than trees, are possible)
+				// TODO we may want to check whether/when jumping to Choice children is desirable (e.g. only from within the tree/graph, or from anywhere?), and rule out certain situations by additional checks here (like the isOnPage() one above)
 			}
 			
 			// Resolve disabling of Choices by MediaAttachments...
