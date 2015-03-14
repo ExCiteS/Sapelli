@@ -45,15 +45,22 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * @param client
 	 * @param context
 	 * @param dbName
-	 * @throws Exception 
+	 * @throws DBException 
 	 */
-	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName) throws Exception
+	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName) throws DBException
 	{
 		super(client);
 		
 		// Open database connection:
-		this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
-		db.open(true);
+		try
+		{
+			this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
+			db.open(true);
+		}
+		catch(SQLiteException sqlE)
+		{
+			throw new DBException(sqlE);
+		}
 		
 		// Initialise:
 		initialise(!doesTableExist(client.getTableName(Model.MODEL_SCHEMA)));
