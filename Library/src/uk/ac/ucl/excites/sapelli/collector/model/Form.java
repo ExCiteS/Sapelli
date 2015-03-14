@@ -111,7 +111,7 @@ public class Form implements WarningKeeper
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
-	private transient ColumnOptionalityAdvisor columnOptionalityAdvisor;
+	private ColumnOptionalityAdvisor columnOptionalityAdvisor;
 
 	private transient List<String> warnings;
 	
@@ -634,7 +634,7 @@ public class Form implements WarningKeeper
 	public ColumnOptionalityAdvisor getColumnOptionalityAdvisor()
 	{
 		if(columnOptionalityAdvisor == null)
-			columnOptionalityAdvisor = ColumnOptionalityAdvisor.For(this);
+			columnOptionalityAdvisor = ColumnOptionalityAdvisor.Analyse(this);
 		return columnOptionalityAdvisor;
 	}
 	
@@ -651,53 +651,74 @@ public class Form implements WarningKeeper
 	 */
 	public void initialiseStorage() throws ModelFullException, DuplicateColumnException
 	{
-		if(!producesRecords)
-			return;
-		if(schema == null)
-		{
-			// Generate columns for top-level fields:
-			List<Column<?>> fieldDefinedColumns = new ArrayList<Column<?>>();
-			for(Field f : fields)
-				/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
-				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
-				 *  The reason (in both cases) is that composite fields like Pages, do not
-				 *  have a column of their own but their children do. */
-				f.addColumnTo(fieldDefinedColumns);
+		initialiseStorage(null);
+	}
 	
-			// Check if there is at least 1 field-defined column, if not we don't need to generate a schema at all...
-			if(fieldDefinedColumns.isEmpty())
-			{
-				producesRecords = false; // this will avoid that we try to generate a schema again
-				// this.schema stays null
-			}
-			else
-			{
-				// Create new Schema:
-				schema = new Schema(project.getModel(),
-									project.getModel().getName() + ":" + id);
-				
-				/* Add implicit columns
-				 * 	StartTime & DeviceID together form the primary key of our records.
-				 * 	These columns are implicitly added, together with EndTime if the
-				 * 	appropriate attribute was set, *BUT* only if there is at least one
-				 * 	user-defined field _with_ a column.
-				 */
-				// StartTime column:
-				schema.addColumn(COLUMN_TIMESTAMP_START);
-				// EndTime column:
-				if(storeEndTime)
-					schema.addColumn(COLUMN_TIMESTAMP_END);
-				// Device ID column:
-				schema.addColumn(COLUMN_DEVICE_ID);
-				// Add primary key on StartTime & DeviceID:
-				schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
-				
-				// Add field-defined columns:
-				schema.addColumns(fieldDefinedColumns);
-				
-				// Seal the schema:
-				schema.seal();
-			}
+	/**
+	 * Generates the {@link Schema} for this form. It will contain all columns defined by fields in the form, and the
+	 * implicitly added columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime).
+	 * However, those implicit columns are only added if at least 1 user-defined field has a column. If there are no
+	 * user-defined fields with columns then no implicit columns are added and then the whole schema is pointless,
+	 * therefore in that case the {@link #producesRecords} variable will be set to {@code false} to avoid future attempts
+	 * at generating a schema.
+	 * 
+	 * @param byPassableFieldIDs list of IDs of fields which are known to be by-passable (will be used to initialise the ColumnOptionalityAdvisor), or {@code null}
+	 * @throws ModelFullException
+	 * @throws DuplicateColumnException
+	 */
+	public void initialiseStorage(List<String> byPassableFieldIDs) throws ModelFullException, DuplicateColumnException
+	{
+		// If we already know this form doesn't produce records, or there is already a schema, then there is nothing to be done here:
+		if(!producesRecords || schema != null)
+			return;
+		//else: Generate columns and populate schema...
+		
+		// If possible, initialise the ColumnOptionalityAdvisor using the given list of known by-passable fields (avoids having to analyse the form):
+		if(byPassableFieldIDs != null && columnOptionalityAdvisor == null)
+			columnOptionalityAdvisor = new ColumnOptionalityAdvisor(this, byPassableFieldIDs);
+		
+		// Generate columns for top-level fields:
+		List<Column<?>> fieldDefinedColumns = new ArrayList<Column<?>>();
+		for(Field f : fields)
+			/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
+			 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
+			 *  The reason (in both cases) is that composite fields like Pages, do not
+			 *  have a column of their own but their children do. */
+			f.addColumnTo(fieldDefinedColumns);
+
+		// Check if there is at least 1 field-defined column, if not we don't need to generate a schema at all...
+		if(fieldDefinedColumns.isEmpty())
+		{
+			producesRecords = false; // this will avoid that we try to generate a schema again
+			// this.schema stays null
+		}
+		else
+		{
+			// Create new Schema:
+			schema = new Schema(project.getModel(),
+								project.getModel().getName() + ":" + id);
+			
+			/* Add implicit columns
+			 * 	StartTime & DeviceID together form the primary key of our records.
+			 * 	These columns are implicitly added, together with EndTime if the
+			 * 	appropriate attribute was set, *BUT* only if there is at least one
+			 * 	user-defined field _with_ a column.
+			 */
+			// StartTime column:
+			schema.addColumn(COLUMN_TIMESTAMP_START);
+			// EndTime column:
+			if(storeEndTime)
+				schema.addColumn(COLUMN_TIMESTAMP_END);
+			// Device ID column:
+			schema.addColumn(COLUMN_DEVICE_ID);
+			// Add primary key on StartTime & DeviceID:
+			schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
+			
+			// Add field-defined columns:
+			schema.addColumns(fieldDefinedColumns);
+			
+			// Seal the schema:
+			schema.seal();
 		}
 	}
 	

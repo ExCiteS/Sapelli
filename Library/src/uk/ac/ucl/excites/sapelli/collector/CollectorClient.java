@@ -57,7 +57,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	static public long GetModelID(Project project)
 	{
-		return	((((long) project.getFingerPrint()) & 0xffffffffL) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
+		return	((((long) project.getFingerPrint()) & 0xffffffffl) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
 				project.getID();																 // Project id takes up next 24 bits
 	}
 	
@@ -116,6 +116,8 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	{
 		if(schema == ProjectRecordStore.PROJECT_SCHEMA)
 			return "Collector_Projects";
+		if(schema == ProjectRecordStore.FSI_SCHEMA)
+			return "Project_FormSchemaInfo";
 		if(schema == ProjectRecordStore.HFK_SCHEMA)
 			return "Relationship_HFKs";
 		return super.getTableName(schema);
