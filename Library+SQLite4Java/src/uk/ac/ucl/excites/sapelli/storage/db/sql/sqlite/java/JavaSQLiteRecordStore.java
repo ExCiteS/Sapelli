@@ -55,7 +55,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		try
 		{
 			this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
-			db.open(true);
+			db.open(true); // allow creation
 		}
 		catch(SQLiteException sqlE)
 		{
@@ -89,7 +89,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		try
 		{
 			int rows = db.getChanges();
-			System.out.println("affected rows: " + rows);
+			//System.out.println("SQLite> Affected rows: " + rows);
 			return rows;
 		}
 		catch(SQLiteException e)
@@ -111,7 +111,6 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		return selectStatement.executeSelectRows();
 	}
 	
-
 	@Override
 	protected JavaSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{

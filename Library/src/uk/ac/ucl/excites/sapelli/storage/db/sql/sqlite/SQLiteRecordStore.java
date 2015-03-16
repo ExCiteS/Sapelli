@@ -51,6 +51,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -413,7 +414,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void delete(Record record) throws DBException
+		public boolean delete(Record record) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -427,7 +428,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			deleteStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			deleteStatement.executeDelete();
+			return deleteStatement.executeDelete() == 1;
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
+		 */
+		public int delete(RecordsQuery query) throws DBException
+		{
+			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
+			SapelliSQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			
+			// Bind parameters:
+			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
+			
+			// Execute:
+			int affected = deleteByQStatement.executeDelete();
+			
+			// Close statement:
+			deleteByQStatement.close();
+			
+			// Return number of affected rows:
+			return affected;
 		}
 
 		/* (non-Javadoc)
@@ -437,7 +459,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
 			ISQLiteCursor cursor = null;
-			
 			try
 			{
 				// Execute query (also binds parameters) to get cursor:
@@ -479,15 +500,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		@Override
-		public void drop() throws DBException
-		{
-			// Release resources:
-			release();
-			
-			// Drop table:
-			super.drop();
-		}
-		
 		public void release()
 		{
 			if(existsStatement != null)

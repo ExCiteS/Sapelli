@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
@@ -110,6 +111,8 @@ public abstract class StorageClient
 	public abstract void recordDeleted(Record record);
 	
 	public abstract void recordDeleted(RecordReference recordReference);
+	
+	public abstract void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords);
 	
 	/**
 	 * Returns a new RecordStore instance
