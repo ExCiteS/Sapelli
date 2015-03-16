@@ -65,7 +65,7 @@ public final class ColumnOptionalityAdvisor
 	// STATICS-------------------------------------------------------
 	static public ColumnOptionalityAdvisor Analyse(final Form form)
 	{
-		System.out.println("Analysing form: " + form.id);
+		//System.out.println("Analysing form: " + form.id);
 		final Analyser analyser = new Analyser(form);
 		
 		// Start analysis for CREATE mode:
