@@ -56,6 +56,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
@@ -350,7 +351,13 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		try
 		{
-			recordStore.delete(getProjectRecordReference(project));
+			Constraint projectMatchConstraint = getProjectRecordReference(project).getRecordQueryConstraint();
+			// Delete project record:
+			recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
+			// Delete associated FSI & HFK records:
+			recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
+			recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
+			// Remove project from cache:
 			cache.remove(getCacheKey(project.getID(), project.getFingerPrint()));
 		}
 		catch(DBException e)
