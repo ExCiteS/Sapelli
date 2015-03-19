@@ -143,7 +143,7 @@ public class Schema implements Serializable
 
 	/**
 	 * Contains both non-virtual ("real") and virtual columns,
-	 * in order of addition with virtual columns following their "real" owner and preceeding the next "real" column
+	 * in order of addition with virtual columns following their "real" owner and preceding the next "real" column
 	 */
 	private transient List<Column<?>> allColumns;
 	
