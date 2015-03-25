@@ -131,6 +131,7 @@ public class ChoiceField extends Field implements DictionaryItem
 			dictionary = root.dictionary; //children share the dictionary of the root (so there is only 1 instance per choice tree)
 			noColumn = root.noColumn;
 			answerDescription = new Description();
+			backgroundColor = parent.backgroundColor; // inherit background colour
 		}
 	}
 	

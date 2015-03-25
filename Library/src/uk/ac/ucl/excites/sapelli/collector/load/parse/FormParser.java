@@ -156,6 +156,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
 	static private final String[] ATTRIBUTE_CHOICE_ANSWER_DESC_DESCRIPTION = { "answerDesc", "answerDescription" };
 	static private final String[] ATTRIBUTE_CHOICE_QUESTION_DESC_DESCRIPTION = { ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_DESCRIPTION, "questionDesc", "questionDescription" };
+	static private final String ATTRIBUTE_CHOICE_CROSSED = "crossed";
+	static private final String ATTRIBUTE_CHOICE_CROSS_COLOR = "crossColor";
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_LOCATION_START_WITH = "startWith";
@@ -230,6 +232,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		v1xFormShowBack = null;
 		v1xFormShowCancel = null;
 		v1xFormShowForward = null;
+		choiceParentHadCaptionHeightAttribute = false;
 	}
 	
 	@Override
@@ -678,8 +681,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// Other attributes:
 		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
-		choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));
-		choice.setCrossColor(attributes.getString("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, true, false));
+		choice.setCrossed(attributes.getBoolean(ATTRIBUTE_CHOICE_CROSSED, ChoiceField.DEFAULT_CROSSED));
+		choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, choice.isRoot() ? ChoiceField.DEFAULT_CROSS_COLOR : parent.getCrossColor(), true, false));
 	}
 	
 	/**
@@ -848,7 +851,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				field.setSkipOnBack(attributes.getBoolean(ATTRIBUTE_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
 				
 				// Background colour:
-				field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, true, false));
+				field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, field.getBackgroundColor(), true, false));
 				
 				// Which buttons are allowed to show...
 				// 	Mode-specific:
