@@ -29,7 +29,7 @@ import android.view.View;
  * 
  * @author mstevens, benelliott
  */
-public class TextItem extends Item
+public class TextItem extends Item<TextItem>
 {
 
 	static public final int DEFAULT_TEXT_COLOR = Color.BLACK;

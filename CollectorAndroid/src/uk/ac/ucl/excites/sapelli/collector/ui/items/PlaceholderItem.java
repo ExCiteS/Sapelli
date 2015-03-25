@@ -21,7 +21,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import android.content.Context;
 import android.view.View;
 
-public class PlaceholderItem extends Item
+/**
+ * @author mstevens
+ *
+ */
+public class PlaceholderItem extends Item<PlaceholderItem>
 {
 	
 	public PlaceholderItem()
@@ -36,7 +40,7 @@ public class PlaceholderItem extends Item
 	}
 	
 	@Override
-	public Item setVisibility(boolean visible)
+	public PlaceholderItem setVisibility(boolean visible)
 	{
 		//do nothing (placeholder can never be visible)
 		return this;

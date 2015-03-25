@@ -31,8 +31,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
@@ -344,7 +344,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
 			{
-				Item childItem = adapter.getItem(c++);
+				Item<?> childItem = adapter.getItem(c++);
 				if(childItem != null)
 					childItem.setVisibility(controller.isFieldEnabled(child));
 			}
@@ -378,7 +378,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param captionCoordinator
 	 * @return
 	 */
-	public Item createItem(ChoiceField choice, float itemPaddingDip, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator)
+	public Item<?> createItem(ChoiceField choice, float itemPaddingDip, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator)
 	{
 		/* Note
 		 * 	If the choice is the root it means we are on a page (meaning the item will be
@@ -386,9 +386,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		 * 	In this case we never show both an image and a caption (due to limited space),
 		 * 	we also avoid repeating the caption which is already displayed above the item. */
 		
-		int bgColor = ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
+		// Determine background colour:
+		int bgColor = grayedOut ? CollectorView.COLOR_GRAY : ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
 		
-		Item item = null;
+		Item<?> item = null;
 		// Decide on appearance and get appropriate item(s):
 		if(choice.getImageRelativePath() != null && choice.getCaptionHeight() < 1)
 		{	// the is an image path (but not necessarily an accessible file) and the caption does not take up the full height
@@ -415,33 +416,26 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{	// there is no image path, or the caption takes up the full height --> CAPTION ONLY
 			item = createCaptionItem(choice, !choice.isRoot(), textOnlyCoordinator); // regardless of the actual captionHeight the caption will take up the fill available height
 		}
-		
-		// Set background colour:
-		item.setBackgroundColor(bgColor);
 
-		// Crossing & graying out
+		// Crossing && graying out:
 		if(choice.isCrossed() || grayedOut)
 		{
-			LayeredItem layeredItem = new LayeredItem();
-			layeredItem.addLayer(item, false);
+			LayeredItem layeredItem = new LayeredItem().addLayer(item, Color.TRANSPARENT, 0.0f); // make inner item background transparent and remove its padding
 			// Crossing:
 			if(choice.isCrossed())
 				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
 			// Graying-out:
 			if(grayedOut)
-			{
-				// Make background of layered stack gray:
-				layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
-				// Add grayed-out layer:
-				Item grayOutOverlay = new EmptyItem();
-				grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
-				layeredItem.addLayer(grayOutOverlay, false);
-			}
+				// Add grayed-out layer on top (also the layer stack background will a opaque gra; see bgValue above):
+				layeredItem.addLayer(new EmptyItem(), CollectorView.COLOR_SEMI_TRANSPARENT_GRAY, 0.0f);
 			// Item becomes layered:
 			item = layeredItem;
 		}
 		
-		// Set size & padding:
+		// Set background colour (possibly gray:
+		item.setBackgroundColor(bgColor);
+		
+		// Set padding:
 		item.setPaddingDip(itemPaddingDip);
 		
 		// Set the answer description used for accessibility support
@@ -457,7 +451,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param coordinator
 	 * @return
 	 */
-	private Item createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator coordinator)
+	private Item<?> createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator coordinator)
 	{
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(field.form.project, choice.getImageRelativePath());
 		if(FileHelpers.isReadableFile(imageFile))
@@ -477,7 +471,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param coordinator
 	 * @return
 	 */
-	private Item createCaptionItem(ChoiceField child, boolean allowCaption, TextSizeCoordinator coordinator)
+	private Item<?> createCaptionItem(ChoiceField child, boolean allowCaption, TextSizeCoordinator coordinator)
 	{	// render caption text:
 		return new TextItem(getCaptionText(child, allowCaption), coordinator);
 	}
