@@ -114,7 +114,7 @@ public class Model implements Serializable
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
 	 * 
-	 * @param schema
+	 * @param columnSet
 	 * @return
 	 * @throws IOException
 	 */

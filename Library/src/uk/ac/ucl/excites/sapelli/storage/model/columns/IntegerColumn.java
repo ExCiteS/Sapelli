@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -178,14 +179,14 @@ public class IntegerColumn extends ComparableColumn<Long>
 	/**
 	 * Integer version of {@link IntegerColumn#storeValue(Record, Long)}
 	 * 
-	 * @param record
+	 * @param valueSet
 	 * @param value
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public void storeValue(Record record, Integer value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(ValueSet<?> valueSet, Integer value) throws IllegalArgumentException, NullPointerException
 	{
-		storeValue(record, (Long) convert(value));
+		storeValue(valueSet, (Long) convert(value));
 	}
 
 	/**
@@ -204,26 +205,26 @@ public class IntegerColumn extends ComparableColumn<Long>
 	}
 
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public long getPrimitiveLong(Record record, long nullReplacement)
+	public long getPrimitiveLong(ValueSet<?> valueSet, long nullReplacement)
 	{
-		Long longValue = retrieveValue(record);
+		Long longValue = retrieveValue(valueSet);
 		if(longValue == null)
 			return nullReplacement;
 		return longValue.longValue();
 	}
 	
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public int getPrimitiveInt(Record record, int nullReplacement)
+	public int getPrimitiveInt(ValueSet<?> valueSet, int nullReplacement)
 	{
-		Long longValue = retrieveValue(record);
+		Long longValue = retrieveValue(valueSet);
 		if(longValue == null)
 			return nullReplacement;
 		return longValue.intValue();

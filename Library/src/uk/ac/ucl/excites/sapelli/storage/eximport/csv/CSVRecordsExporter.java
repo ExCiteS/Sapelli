@@ -214,7 +214,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 							if(!writer.isTransactionBufferEmpty())
 								writer.write(separator.getSeparatorChar());
 							Column<?> col = cp.getColumn();
-							Record rec = cp.getRecord(r, false);
+							Record rec = cp.getValueSet(r, false);
 							if(rec != null && col.isValueSet(rec)) // do write nothing when the value is not set (i.e. null is represented by an empty String)
 							{
 								/* Get String representing the column value...

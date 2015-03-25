@@ -24,7 +24,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -62,17 +62,17 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	/**
-	 * Float version of {@link FloatColumn#storeValue(Record, Double)}
+	 * Float version of {@link FloatColumn#storeValue(ValueSet, Double)}
 	 * 
-	 * @param record
+	 * @param valueSet
 	 * @param value
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public void storeValue(Record record, Float value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(ValueSet<?> valueSet, Float value) throws IllegalArgumentException, NullPointerException
 	{
 		Double doubleValue = (value != null ? Double.valueOf(value.floatValue()) : null);
-		storeValue(record, doubleValue);
+		storeValue(valueSet, doubleValue);
 	}
 	
 	/**
@@ -90,26 +90,26 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public double getPrimitiveDouble(Record record, double nullReplacement)
+	public double getPrimitiveDouble(ValueSet<?> valueSet, double nullReplacement)
 	{
-		Double doubleValue = retrieveValue(record);
+		Double doubleValue = retrieveValue(valueSet);
 		if(doubleValue == null)
 			return nullReplacement;
 		return doubleValue.doubleValue();
 	}
 	
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public float getPrimitiveFloat(Record record, float nullReplacement)
+	public float getPrimitiveFloat(ValueSet<?> valueSet, float nullReplacement)
 	{
-		Double doubleValue = retrieveValue(record);
+		Double doubleValue = retrieveValue(valueSet);
 		if(doubleValue == null)
 			return nullReplacement;
 		return doubleValue.floatValue();

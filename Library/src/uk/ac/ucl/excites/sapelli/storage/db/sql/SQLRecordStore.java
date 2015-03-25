@@ -44,6 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -770,20 +771,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Delete existing record (identified by a Record or RecordReference) in database table.
+		 * Delete existing record (given as a Record or RecordReference) in database table.
 		 * Assumes the table exists in the database!
-		 * Also works for recordReferences to records of this table's schema!
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param record a {@link Record} or {@link RecordReference} instance
+		 * @param valueSet a {@link ValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
 		 * @return whether the record was really deleted
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public boolean delete(Record record) throws DBException
+		public boolean delete(ValueSet<?> valueSet) throws DBException
 		{
-			return executeSQLReturnAffectedRows(new RecordDeleteHelper((STable) this, record).getQuery()) == 1;
+			return executeSQLReturnAffectedRows(new RecordDeleteHelper((STable) this, valueSet).getQuery()) == 1;
 		}
 		
 		/**
@@ -1005,34 +1005,34 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param record
+		 * @param valueSet
 		 * @param quotedIfNeeded
 		 * @return
 		 */
-		public String retrieveAsLiteral(Record record, boolean quotedIfNeeded)
+		public String retrieveAsLiteral(ValueSet<?> valueSet, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(retrieve(record), quotedIfNeeded);
+			return sqlToLiteral(retrieve(valueSet), quotedIfNeeded);
 		}
 		
 		/**
-		 * @param record
+		 * @param valueSet
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		public SQLType retrieve(Record record)
+		public SQLType retrieve(ValueSet<?> valueSet)
 		{
-			SapType value = (SapType) sourceColumnPointer.retrieveValue(record);
+			SapType value = (SapType) sourceColumnPointer.retrieveValue(valueSet);
 			return value != null ? mapping.toSQLType(value) : null;
 		}
 		
 		/**
-		 * @param record
+		 * @param valueSet
 		 * @param value
 		 */
-		public void store(Record record, SQLType value)
+		public void store(ValueSet<?> valueSet, SQLType value)
 		{
 			if(value != null)
-				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getRecord(record, true), mapping.toSapelliType(value));
+				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(valueSet, true), mapping.toSapelliType(value));
 		}
 		
 		/**
@@ -1545,9 +1545,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param a record instance (when the statement is not parameterised) or null (when it is parameterised)
+		 * @param a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
 		 */
-		protected void appendWhereClause(Record record)
+		protected void appendWhereClause(ValueSet<?> valueSet)
 		{
 			bldr.append("WHERE");
 			if(keyPartSqlCols.size() > 1)
@@ -1566,7 +1566,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					addParameterColumn(keyPartSqlCol);
 				}
 				else
-					bldr.append(keyPartSqlCol.retrieveAsLiteral(record, true));
+					bldr.append(keyPartSqlCol.retrieveAsLiteral(valueSet, true));
 				bldr.commitTransaction();
 			}
 			if(keyPartSqlCols.size() > 1)
@@ -1654,9 +1654,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 * @param record a {@link Record} or {@link RecordReference} instance
+		 * @param valueSet a {@link ValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
 		 */
-		public RecordDeleteHelper(STable table, Record record)
+		public RecordDeleteHelper(STable table, ValueSet<?> valueSet)
 		{
 			// Initialise
 			super(table);
@@ -1665,7 +1665,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("DELETE FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
-			appendWhereClause(record);
+			appendWhereClause(valueSet);
 			bldr.append(";", false);
 		}
 		

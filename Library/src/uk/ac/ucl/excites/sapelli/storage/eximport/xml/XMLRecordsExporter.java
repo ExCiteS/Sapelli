@@ -248,7 +248,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public void visit(ColumnPointer leafColumnPointer)
 	{
-		Record record = leafColumnPointer.getRecord(currentRecord, false);
+		Record record = leafColumnPointer.getValueSet(currentRecord, false);
 		
 		// If in nested or flat tags mode and subrecord is null: return
 		if(record == null && compositeMode != CompositeMode.String)

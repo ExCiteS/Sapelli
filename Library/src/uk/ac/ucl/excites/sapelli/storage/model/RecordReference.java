@@ -37,7 +37,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
  * 
  * @author mstevens
  */
-public class RecordReference extends Record
+public class RecordReference extends ValueSet<PrimaryKey>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -104,10 +104,10 @@ public class RecordReference extends Record
 	 */
 	public RecordReference(Record record) throws NullPointerException
 	{
-		this(record.schema); // !!!
+		this(record.columnSet); // !!!
 		
 		// Copy the key part values:
-		for(Column<?> keyPartCol : schema.getColumns(false))
+		for(Column<?> keyPartCol : columnSet.getColumns(false))
 		{
 			Object keyPartValue = keyPartCol.retrieveValueCopy(record);
 			if(keyPartValue == null)
@@ -125,15 +125,6 @@ public class RecordReference extends Record
 	{
 		super(another); // sets schema and copies values
 		this.referencedSchema = another.referencedSchema;
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getReference()
-	 */
-	@Override
-	public RecordReference getReference() throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("Cannot create a RecordReference to a RecordReference");
 	}
 	
 	/**
@@ -171,7 +162,7 @@ public class RecordReference extends Record
 		AndConstraint constraints = new AndConstraint();
 		int c = 0;
 		for(Object keyPart : values)
-			constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
+			constraints.addConstraint(new EqualityConstraint(columnSet.getColumn(c++), keyPart));
 		
 		return constraints.reduce();
 	}

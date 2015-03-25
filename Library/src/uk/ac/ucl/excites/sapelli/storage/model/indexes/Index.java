@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.model.indexes;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 
@@ -29,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
  * 
  * @author mstevens
  */
-public class Index extends Schema
+public class Index extends ColumnSet
 {
 
 	static private final long serialVersionUID = 2L;
@@ -52,7 +53,7 @@ public class Index extends Schema
 	 */
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
-		super(InternalKind.Index, name);
+		super(name, false); // don't use virtual versions
 		
 		// We need at least one column:
 		if(columns == null || columns.length < 1)
@@ -98,18 +99,6 @@ public class Index extends Schema
 	public boolean isMultiColumn()
 	{
 		return getNumberOfColumns(false) > 1;
-	}
-	
-	@Override
-	public <I extends Index> I addIndex(I index) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("Cannot add indexes to an index");
-	}
-	
-	@Override
-	public void setPrimaryKey(PrimaryKey primaryKey) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("Cannot set a primary key on an index");
 	}
 	
 	@Override

@@ -143,14 +143,14 @@ public abstract class Column<T> implements Serializable
 	 */
 	public abstract Column<T> copy();
 
-	public void parseAndStoreValue(Record record, String value) throws ParseException, IllegalArgumentException, NullPointerException
+	public void parseAndStoreValue(ValueSet<?> valueSet, String value) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		T parsedValue;
 		if(value == null || value.isEmpty()) //empty String is treated as null
 			parsedValue = null;
 		else
 			parsedValue = parse(value);
-		storeValue(record, parsedValue);
+		storeValue(valueSet, parsedValue);
 	}
 
 	/**
@@ -164,27 +164,27 @@ public abstract class Column<T> implements Serializable
 	/**
 	 * Stores the given Object value in this column on the given record.
 	 *
-	 * @param record
+	 * @param valueSet
 	 * @param value (as object, may be null if column is optional)
-	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 */
 	@SuppressWarnings("unchecked")
-	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException, ClassCastException
+	public void storeObject(ValueSet<?> valueSet, Object value) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
-		storeValue(record, (T) convert(value));
+		storeValue(valueSet, (T) convert(value));
 	}
 
 	/**
-	 * Stores the given <T> value in this column on the given record.
+	 * Stores the given <T> value in this column on the given valueSet.
 	 *
-	 * @param record
+	 * @param valueSet
 	 * @param value (may be null if column is optional)
-	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is, or when the given value is invalid
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's columnSet, nor compatible with a column by the same name that is, or when the given value is invalid
 	 * @throws NullPointerException if value is null on an non-optional column
 	 */
-	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public void storeValue(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		if(value == null)
 		{
@@ -193,41 +193,41 @@ public abstract class Column<T> implements Serializable
 		}
 		else
 			validate(value); // throws IllegalArgumentException if invalid
-		record.setValue(this, value); // also store null (to overwrite earlier non-values)
+		valueSet.setValue(this, value); // also store null (to overwrite earlier non-values)
 	}
 
 	/**
-	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T).
+	 * Retrieves previously stored value for this column at a given valueSet and casts it to the relevant native type (T).
 	 *
-	 * @param record
+	 * @param valueSet
 	 * @return stored value (may be null)
-	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's columnSet, nor compatible with a column by the same name that is
 	 */
 	@SuppressWarnings("unchecked")
-	public T retrieveValue(Record record) throws IllegalArgumentException
+	public T retrieveValue(ValueSet<?> valueSet) throws IllegalArgumentException
 	{
-		return (T) record.getValue(this);
+		return (T) valueSet.getValue(this);
 	}
 
 	/**
-	 * Checks whether a value (non-null) for this column is set in the given record.
+	 * Checks whether a value (non-null) for this column is set in the given valueSet.
 	 *
-	 * @param record
+	 * @param value
 	 * @return whether or not a (non-null) value is set
 	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
 	 */
-	public boolean isValueSet(Record record) throws IllegalArgumentException
+	public boolean isValueSet(ValueSet<?> valueSet) throws IllegalArgumentException
 	{
-		return retrieveValue(record) != null;
+		return retrieveValue(valueSet) != null;
 	}
 
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @return
 	 */
-	public String retrieveValueAsString(Record record)
+	public String retrieveValueAsString(ValueSet<?> valueSet)
 	{
-		T value = retrieveValue(record);
+		T value = retrieveValue(valueSet);
 		if(value != null)
 			return toString(value);
 		else
@@ -321,9 +321,15 @@ public abstract class Column<T> implements Serializable
 		}
 	}
 
-	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException
+	/**
+	 * @param valueSet
+	 * @param bitStream
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public final void retrieveAndWriteValue(ValueSet<?> valueSet, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
-		writeValue(retrieveValue(record), bitStream);
+		writeValue(retrieveValue(valueSet), bitStream);
 	}
 
 	/**
@@ -378,9 +384,9 @@ public abstract class Column<T> implements Serializable
 	 */
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
 	
-	public final void readAndStoreValue(Record record, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
+	public final void readAndStoreValue(ValueSet<?> valueSet, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
 	{
-		storeValue(record, readValue(bitStream));
+		storeValue(valueSet, readValue(bitStream));
 	}
 
 	/**
@@ -506,9 +512,9 @@ public abstract class Column<T> implements Serializable
 		}
 	}
 
-	public T retrieveValueAsStoredBinary(Record record)
+	public T retrieveValueAsStoredBinary(ValueSet<?> valueSet)
 	{
-		return getValueAsStoredBinary(retrieveValue(record));
+		return getValueAsStoredBinary(retrieveValue(valueSet));
 	}
 
 	/**

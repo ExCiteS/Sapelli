@@ -43,6 +43,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -411,10 +412,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
 		 */
 		@Override
-		public boolean delete(Record record) throws DBException
+		public boolean delete(ValueSet<?> valueSet) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -425,7 +426,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				deleteStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			deleteStatement.retrieveAndBindAll(record);
+			deleteStatement.retrieveAndBindAll(valueSet);
 			
 			// Execute:
 			return deleteStatement.executeDelete() == 1;
@@ -551,12 +552,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		/**
 		 * @param statement
 		 * @param paramIdx
-		 * @param record
+		 * @param valueSet
 		 * @throws DBException
 		 */
-		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, Record record) throws DBException
+		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, ValueSet<?> valueSet) throws DBException
 		{
-			bind(statement, paramIdx, retrieve(record));
+			bind(statement, paramIdx, retrieve(valueSet));
 		}
 		
 		/**
