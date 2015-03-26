@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -57,9 +58,11 @@ public class TextFitView extends View
 	private static final float THRESHOLD = 0.5f;
 	
 	/**
-	 * The default text color is black
+	 * The default text colour is black
 	 */
-	public static final int DEFAULT_TEXT_COLOR = Color.BLACK; 
+	public static final int DEFAULT_TEXT_COLOR = Color.BLACK;
+	
+	public static final int UNASSIGNED_SLOT = -1;
 
 	// DYNAMICS ------------------------------------------------------
 	/**
@@ -100,7 +103,7 @@ public class TextFitView extends View
 	 */
 	public TextFitView(Context context)
 	{
-		this(context, null, -1);
+		this(context, null, UNASSIGNED_SLOT);
 	}
 
 	/**
@@ -109,7 +112,7 @@ public class TextFitView extends View
 	 */
 	public TextFitView(Context context, TextSizeCoordinator coordinator)
 	{
-		this(context, coordinator, -1);
+		this(context, coordinator, UNASSIGNED_SLOT);
 	}
 
 	/**
@@ -123,10 +126,10 @@ public class TextFitView extends View
 		
 		this.coordinator = coordinator;
 		// Set or claim coordinator slot:
-		this.coordinatorSlot = coordinator != null ? (coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this)) : -1;
+		this.coordinatorSlot = coordinator != null ? (coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this)) : UNASSIGNED_SLOT;
 		
 		// Initialise paint:
-		paint = new TextPaint();
+		paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 		paint.setAntiAlias(true); // text looks pixellated otherwise
 		paint.setColor(DEFAULT_TEXT_COLOR);
 		paint.setTextSize(textSizePx);

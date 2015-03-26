@@ -38,7 +38,7 @@ public abstract class Item<I extends Item<I>>
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
 	// Dynamics:
-	protected Integer id;
+	protected final Integer id;
 	protected float paddingDip = DEFAULT_PADDING_DIP;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;

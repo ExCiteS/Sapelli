@@ -96,6 +96,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private boolean matchTextSize = DEFAULT_MATCH_TEXT_SIZE;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
+	
 	private final String value;
 	private final ChoiceDictionary dictionary;
 	

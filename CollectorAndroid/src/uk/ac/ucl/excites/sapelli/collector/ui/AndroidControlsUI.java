@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
@@ -257,6 +258,10 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
 			button.setPaddingDip(PADDING_DIP);
 			button.setBackgroundColor(Color.TRANSPARENT); // button itself should not have a background so we can see the one of the containing ControlItem/LayeredItem
+			
+			// Show button image size:
+			if(control.form.isShowImageSizes())
+				button = MeasureItem.Measure(button); // no need for a TextSizeCoordinator here because all controls have the same size
 			
 			// the overlay
 			grayOutOverlay = new EmptyItem();

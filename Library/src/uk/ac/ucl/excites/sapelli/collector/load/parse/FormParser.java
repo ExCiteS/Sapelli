@@ -119,6 +119,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FORM_AUDIO_FEEDBACK = "audioFeedback";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
+	static private final String ATTRIBUTE_FORM_SHOW_IMAGE_SIZES = "showImgSizes";
 	static private final String ATTRIBUTE_SKIP_ON_BACK = "skipOnBack"; // used on both FORM and FIELD
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
@@ -315,6 +316,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			
 			// Control background colour:
 			currentForm.setControlBackgroundColor(attributes.getString(Form.DEFAULT_CONTROL_BACKGROUND_COLOR, true, false, ATTRIBUTE_FORM_CONTROL_BACKGROUND_COLOR, ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR));
+			
+			// Show image sizes:
+			currentForm.setShowImageSizes(attributes.getBoolean(ATTRIBUTE_FORM_SHOW_IMAGE_SIZES, Form.DEFAULT_SHOW_IMAGE_SIZES));
 			
 			// Single page form (all fields will be added to a single page):
 			if(attributes.getBoolean(Form.DEFAULT_SINGLE_PAGE, ATTRIBUTE_FORM_SINGLE_PAGE))

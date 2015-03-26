@@ -37,7 +37,7 @@ public class TextItem extends Item<TextItem>
 	private String text;
 	private int textColor;
 	private TextSizeCoordinator textSizeCoordinator;
-	private int coordinatorSlot = -1;
+	private int coordinatorSlot = TextFitView.UNASSIGNED_SLOT;
 	
 	/**
 	 * TextItem with given text, default text colour, and uncoordinated text size
