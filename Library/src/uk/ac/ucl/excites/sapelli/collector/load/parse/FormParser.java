@@ -112,6 +112,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor"; // 1.x compatibility
 	static private final String ATTRIBUTE_FORM_CONTROL_BACKGROUND_COLOR = "controlBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
+	static private final String ATTRIBUTE_FORM_SHORTCUT_IMG = "shortcutImg";
+	static private final String[] ATTRIBUTE_FORM_SHORTCUT_IMAGE_IMG = { ATTRIBUTE_FORM_SHORTCUT_IMAGE, ATTRIBUTE_FORM_SHORTCUT_IMG };
 	static private final String ATTRIBUTE_FORM_CLICK_ANIMATION = "clickAnimation";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation"; // 1.x compatibility, the same as clickAnimation
 	static private final String ATTRIBUTE_FORM_DEFAULT_LANGUAGE = "defaultLanguage";
@@ -260,7 +262,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			}
 			currentForm = new Form(project, id); // the form will add itself to the project and take the next available form position
 			// Shortcut image:
-			currentForm.setShortcutImageRelativePath(attributes.getString(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, false, false));
+			currentForm.setShortcutImageRelativePath(attributes.getString(null, false, false, ATTRIBUTE_FORM_SHORTCUT_IMAGE_IMG));
 			// Next/end:
 			try
 			{
