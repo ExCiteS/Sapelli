@@ -112,8 +112,11 @@
 					<version>${android.support.libs.version}</version>
 					<type>jar</type>
 				</dependency>
-				<!-- appcompat-v7 to be included as Android Library project in Eclipse -->
-				<!-- afilechooser-library to be included as Android Library project in Eclipse -->
+				<!-- The CollectorAndroid Eclipse project depends (see project.properties) on these Android
+					 Library projects (all in ../Dependencies/) which must opened in the Eclipse workspace: 
+						- aFileChooser
+					Important: All Android Library projects which depend on android-support-v4.jar must have
+							   the *same* version it in their 'libs' folder. -->
 			</dependencies>
 			<build>
 				<plugins>
@@ -129,7 +132,7 @@
 						</configuration>
 					</plugin>
 					<plugin>
-						<!-- This does not seem to work properly. Possibly we need to disable to fabrik eclipse plugin -->
+						<!-- This does not seem to work properly. Possibly we need to disable to fabric eclipse plugin -->
 						<groupId>com.crashlytics</groupId>
 						<artifactId>crashlytics-maven</artifactId>
 						<configuration>
@@ -161,23 +164,6 @@
 					<version>${android.support.libs.version}</version>
 					<type>aar</type>
 				</dependency>
-				<!--<dependency>
-					<groupId>com.android.support</groupId>
-					<artifactId>appcompat-v7</artifactId>
-					<version>${android.support.libs.version}</version>
-					<type>aar</type>
-					<exclusions>-->
-						<!-- 	The exclusion below is needed due to appcompat-v7-21.0.3.pom not
-							specifying the packaging type of support-v4 is aar (instead of jar),
-							which causes mvn to look for com.android.support:support-v4:jar:*.
-							See: https://github.com/simpligility/maven-android-sdk-deployer/issues/246
-						-->
-					<!--	<exclusion>
-							<groupId>com.android.support</groupId>
-							<artifactId>support-v4</artifactId>
-						</exclusion>
-					</exclusions>
-				</dependency>-->
 				<dependency>
 					<groupId>com.ipaulpro</groupId>
 					<artifactId>afilechooser-library</artifactId>
