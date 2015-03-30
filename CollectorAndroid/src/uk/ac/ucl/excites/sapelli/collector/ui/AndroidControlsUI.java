@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
@@ -219,7 +220,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	{
 	
 		// Overlay to gray-out disabled (but shown) buttons
-		private Item grayOutOverlay;
+		private Item<?> grayOutOverlay;
 	
 		public ControlItem(Context context, Control control)
 		{
@@ -231,7 +232,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			this.setPaddingDip(0);
 			
 			// The actual button:
-			Item button;
+			Item<?> button;
 			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), control.getImageRelativePath());
 			if(FileHelpers.isReadableFile(imgFile))
 				// Use XML specified image:
@@ -256,6 +257,11 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
 			button.setPaddingDip(PADDING_DIP);
+			button.setBackgroundColor(Color.TRANSPARENT); // button itself should not have a background so we can see the one of the containing ControlItem/LayeredItem
+			
+			// Show button image size:
+			if(control.form.isShowImageSizes())
+				button = MeasureItem.Measure(button); // no need for a TextSizeCoordinator here because all controls have the same size
 			
 			// the overlay
 			grayOutOverlay = new EmptyItem();
@@ -263,8 +269,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			setGrayedOut(false);
 			
 			// add the layers:
-			this.addLayer(button, true);
-			this.addLayer(grayOutOverlay, false);
+			this.addLayer(button);
+			this.addLayer(grayOutOverlay);
 			
 			// Set description:
 			this.setDescription(control.description.getText());

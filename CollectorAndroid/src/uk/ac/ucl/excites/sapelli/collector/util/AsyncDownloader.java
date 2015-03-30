@@ -40,6 +40,11 @@ import android.util.Log;
 /**
  * Background Async Task to download files
  * 
+ * Note:
+ * 	This implementation cannot be safely used in combination with an activity that is restarted upon screen orientation changes!
+ * 	More info:	- http://stackoverflow.com/questions/18214293
+ * 				- http://stackoverflow.com/questions/20279216/asynctaskloader-basic-example-android
+ * 
  * @author Michalis Vitos, mstevens
  */
 public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
@@ -173,8 +178,15 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 	@Override
 	protected void onPostExecute(Boolean downloadFinished)
 	{
-		// Dismiss the dialog after the file was downloaded
-		progressDialog.dismiss();
+		// Dismiss the dialog after the file was downloaded:
+		try
+		{
+			progressDialog.dismiss(); // Note: this fails if activity has been restarted in the meantime!
+		}
+		catch(Exception e)
+		{
+			Log.e(this.getClass().getSimpleName(), "Error upon dismissing progress dialog, likely due to Activity restart", e);
+		}
 		// Report success or failure:
 		if(downloadFinished)
 			callback.downloadSuccess(downloadUrl, downloadedFile);

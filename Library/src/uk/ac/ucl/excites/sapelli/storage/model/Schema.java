@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -142,7 +143,7 @@ public class Schema implements Serializable
 
 	/**
 	 * Contains both non-virtual ("real") and virtual columns,
-	 * in order of addition with virtual columns following their "real" owner and preceeding the next "real" column
+	 * in order of addition with virtual columns following their "real" owner and preceding the next "real" column
 	 */
 	private transient List<Column<?>> allColumns;
 	
@@ -229,18 +230,28 @@ public class Schema implements Serializable
 		return modelSchemaNumber;
 	}
 
-	public void addColumns(List<Column<?>> columns)
+	/**
+	 * Add a series of new, non-virtual columns to the schema
+	 * 
+	 * @param columns the columns to add, cannot include {@link VirtualColumn}s
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
+	 */
+	public void addColumns(List<Column<?>> columns) throws DuplicateColumnException, IllegalArgumentException
 	{
 		for(Column<?> c : columns)
 			addColumn(c);
 	}
 	
 	/**
-	 * Add a new non-virtual column to the schema
-	 * @param column
+	 * Add a new, non-virtual column to the schema
+	 * 
+	 * @param column the column to add, cannot be a {@link VirtualColumn}
 	 * @return the added column
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
 	 */
-	public <C extends Column<T>, T> C addColumn(C column)
+	public <C extends Column<T>, T> C addColumn(C column) throws DuplicateColumnException, IllegalArgumentException
 	{
 		if(column == null)
 			throw new NullPointerException("Cannot add null column!");
@@ -250,12 +261,18 @@ public class Schema implements Serializable
 		return column;
 	}
 	
-	protected <T> void addColumn(Column<T> column, boolean useVirtual)
+	/**
+	 * @param column
+	 * @param useVirtual
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
+	 */
+	protected <T> void addColumn(Column<T> column, boolean useVirtual) throws DuplicateColumnException, IllegalArgumentException
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
 		if(containsColumn(column.name, true))
-			throw new IllegalArgumentException("The schema already contains a column with name \"" + column.getName() + "\"!");
+			throw new DuplicateColumnException(column.getName());
 		// Add the column:
 		columnNameToPosition.put(column.getName(), realColumns.size());
 		realColumns.add(column);
@@ -276,8 +293,9 @@ public class Schema implements Serializable
 	 * Adding indexes is possible after the Schema has been sealed (setting/changing the primary key is not).
 	 * 
 	 * @param index
+	 * @return the added index
 	 */
-	public void addIndex(Index index)
+	public <I extends Index> I addIndex(I index)
 	{
 		if(index instanceof PrimaryKey)
 			// set as primary key:
@@ -285,6 +303,7 @@ public class Schema implements Serializable
 		else
 			// add as normal index:
 			doAddIndex(index);
+		return index;
 	}
 	
 	/**

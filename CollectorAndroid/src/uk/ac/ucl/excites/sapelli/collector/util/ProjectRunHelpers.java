@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.media.MediaHelpers;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
@@ -121,8 +122,8 @@ public class ProjectRunHelpers
 		// Create a shortcut in standard Android Home Launcher
 		//-----------------------------------------------------
 		Intent androidLauncherIntent = getShortcutCreationIntent(contextWrapper, shortcutName, shortcutIntent, false);
-		// Get up icon bitmap:
-		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ?	Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : contextWrapper.getResources().getDrawable(R.drawable.ic_sapelli_logo);
+		// Get up icon bitmap (using build-in Sapelli icon if the shortcut file doesn't exist or is not a raster image):
+		Drawable iconResource = (FileHelpers.isReadableFile(shortcutImageFile) && MediaHelpers.isRasterImageFileName(shortcutImageFile.getName())) ? Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : contextWrapper.getResources().getDrawable(R.drawable.ic_sapelli_logo);
 		Bitmap icon = ((BitmapDrawable) iconResource).getBitmap();
 		// Resize the icon bitmap according to the default size:
 		int maxIconSize = (int) contextWrapper.getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size

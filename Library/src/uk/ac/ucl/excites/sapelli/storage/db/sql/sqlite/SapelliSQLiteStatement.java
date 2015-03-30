@@ -64,6 +64,20 @@ public abstract class SapelliSQLiteStatement
 		}
 	}
 	
+	/**
+	 * @param arguments
+	 * @throws DBException
+	 */
+	public void bindAll(List<Object> arguments) throws DBException
+	{
+		if(paramCols != null)
+		{
+			int p = 0;
+			for(SQLiteColumn<?, ?> sqliteCol : paramCols)
+				sqliteCol.bindSapelliObject(this, p, arguments.get(p++));
+		}
+	}
+	
 	public abstract void bindBlob(int paramIdx, byte[] value) throws DBException;
 	
 	public abstract void bindLong(int paramIdx, Long value) throws DBException;

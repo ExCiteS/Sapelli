@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -437,6 +438,22 @@ public final class FileHelpers
 	static public boolean isReadableWritableDirectory(File directory)
 	{
 		return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
+	}
+	
+	/**
+	 * @param file
+	 * @param refuseEmpty whether or not to refuse empty files (i.e. size = 0 bytes)
+	 * @return a FileInputStream
+	 * @throws IllegalArgumentException when the file is empty and refuseEmpty is true
+	 * @throws FileNotFoundException when the file does not exist
+	 * @throws SecurityException when we are not allowed to read the file 
+	 * @throws NullPointerException when file is null
+	 */
+	static public FileInputStream openInputStream(File file, boolean refuseEmpty) throws IllegalArgumentException, FileNotFoundException, SecurityException, NullPointerException
+	{
+		if(file != null && file.exists() && refuseEmpty && file.length() == 0)
+			throw new IllegalArgumentException("File \"" + file.getAbsolutePath() + "\" is empty!");
+		return new FileInputStream(file);
 	}
 
 }

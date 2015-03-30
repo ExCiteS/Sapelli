@@ -266,6 +266,61 @@ public abstract class Column<T> implements Serializable
 	 */
 	public abstract String toString(T value);
 
+	/**
+	 * Convert the given <T> value to byte[] representation
+	 * 
+	 * @param value
+	 * @return a byte[] or null in case of an error
+	 * @throws IOException if an I/O error happens
+	 */
+	public byte[] toBytes(T value) throws IOException
+	{
+		BitOutputStream bos = null;
+		try
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+			bos = new BitWrapOutputStream(baos);
+			writeValue(value, bos);
+			bos.flush();
+			return baos.toByteArray();
+		}
+		finally
+		{
+			if(bos != null)
+				try
+				{
+					bos.close();
+				}
+				catch(IOException ignore) { }
+		}
+	}
+
+	/**
+	 * Convert the given byte[] representation to a value of type <T>
+	 * 
+	 * @param bytes
+	 * @return the value
+	 * @throws IOException if an I/O error happens
+	 */
+	public T fromBytes(byte[] bytes) throws IOException
+	{
+		BitInputStream bis = null;
+		try
+		{
+			bis = new BitWrapInputStream(new ByteArrayInputStream(bytes));
+			return readValue(bis);
+		}
+		finally
+		{
+			if(bis != null)
+				try
+				{
+					bis.close();
+				}
+				catch(IOException ignore) { }
+		}
+	}
+
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		writeValue(retrieveValue(record), bitStream);
@@ -322,7 +377,7 @@ public abstract class Column<T> implements Serializable
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
-
+	
 	public final void readAndStoreValue(Record record, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
 	{
 		storeValue(record, readValue(bitStream));
