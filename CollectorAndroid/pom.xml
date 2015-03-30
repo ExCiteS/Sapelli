@@ -114,7 +114,7 @@
 				</dependency>
 				<!-- The CollectorAndroid Eclipse project depends (see project.properties) on these Android
 					 Library projects (all in ../Dependencies/) which must opened in the Eclipse workspace: 
-						- aFileChooser
+						- afilechooser-library
 					Important: All Android Library projects which depend on android-support-v4.jar must have
 							   the *same* version it in their 'libs' folder. -->
 			</dependencies>
