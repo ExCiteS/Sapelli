@@ -31,9 +31,9 @@
 	<properties>
 		<!-- Android & support libs version -->
 		<!--	Always change Android version & API level together!: -->
-		<android.version>5.0.1_r2</android.version>
-		<android.api-level>21</android.api-level>
-		<android.support.libs.version>21.0.3</android.support.libs.version>
+		<android.version>5.1_r1</android.version>
+		<android.api-level>22</android.api-level>
+		<android.support.libs.version>22.0.0</android.support.libs.version>
 		
 		<!-- Build info generation: -->
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
@@ -106,10 +106,13 @@
 				 This makes such builds unsuitable for release on Play store because different beta's/rc's
 				 of a given version will all get same versionCode. -->
 			<dependencies>
-				<!-- appcompat-v7 to be included as Android Library project in Eclipse -->
-				<!-- support-v4 jar to be exported from appcompat-v7 project above  -->
-				<!-- afilechooser-library to be included as Android Library project in Eclipse -->
-				<!-- PagerSlidingTabStrip to be included as Android Library project in Eclipse -->
+				<!-- The CollectorAndroid Eclipse project depends (see project.properties) on these Android
+					 Library projects (all in ../Dependencies/) which must opened in the Eclipse workspace: 
+						- appcompat-v7
+						- materialtabstrip-library
+						- afilechooser-library
+					Important: All Android Library projects which depend on android-support-v4.jar must have
+							   the *same* version it in their 'libs' folder. -->
 			</dependencies>
 			<build>
 				<plugins>
@@ -125,7 +128,7 @@
 						</configuration>
 					</plugin>
 					<plugin>
-						<!-- This does not seem to work properly. Possibly we need to disable to fabrik eclipse plugin -->
+						<!-- This does not seem to work properly. Possibly we need to disable to fabric eclipse plugin -->
 						<groupId>com.crashlytics</groupId>
 						<artifactId>crashlytics-maven</artifactId>
 						<configuration>
@@ -162,17 +165,6 @@
 					<artifactId>appcompat-v7</artifactId>
 					<version>${android.support.libs.version}</version>
 					<type>aar</type>
-					<exclusions>
-						<!-- 	The exclusion below is needed due to appcompat-v7-21.0.3.pom not
-							specifying the packaging type of support-v4 is aar (instead of jar),
-							which causes mvn to look for com.android.support:support-v4:jar:*.
-							See: https://github.com/simpligility/maven-android-sdk-deployer/issues/246
-						-->
-						<exclusion>
-							<groupId>com.android.support</groupId>
-							<artifactId>support-v4</artifactId>
-						</exclusion>
-					</exclusions>
 				</dependency>
 				<dependency>
 					<groupId>com.ipaulpro</groupId>
