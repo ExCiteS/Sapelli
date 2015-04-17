@@ -438,7 +438,7 @@
 						</goals>
 						<configuration>
 							<target>
-								<ant antfile="${buildinfo.antfile}" target="generateBuildInfoIfNeeded"/>
+								<ant antfile="${buildinfo.antfile}" target="generateBuildInfo"/>
 							</target>
 						</configuration>
 					</execution>
@@ -456,7 +456,7 @@
 			<plugin>
 				<groupId>com.simpligility.maven.plugins</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.1.1</version>
+				<version>4.2.0</version>
 				<configuration>
 					<!-- General config: -->
 					<sdk>
@@ -553,7 +553,7 @@
 									</pluginExecutionFilter>
 									<action>
 										<execute>
-											<runOnIncremental>true</runOnIncremental>
+											<runOnIncremental>false</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
