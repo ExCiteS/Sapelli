@@ -138,9 +138,9 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		// nothing to do
 	}
 	@Override
-	protected ImageItem generateCaptureButton(Context context)
+	protected ImageItem<?> generateCaptureButton(Context context)
 	{
-		ImageItem captureButton = null;
+		ImageItem<?> captureButton = null;
 		File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
 			// return a custom photo capture button if it exists
@@ -153,7 +153,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	protected Item getItemForAttachment(int index, File photoFile)
+	protected Item<?> getItemForAttachment(int index, File photoFile)
 	{
 		// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
 		/*// Old example code to rotate bitmap (would have to be integrated in (File)ImageItem):

@@ -40,7 +40,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * 
  * @author mstevens
  */
-public class ResourceImageItem extends ImageItem
+public class ResourceImageItem extends ImageItem<ResourceImageItem>
 {
 
 	static private final String TAG = "ResourceImageItem";

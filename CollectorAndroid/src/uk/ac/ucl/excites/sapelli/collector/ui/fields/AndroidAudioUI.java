@@ -171,9 +171,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	 * "stop recording" button.
 	 */
 	@Override
-	protected ImageItem generateCaptureButton(Context context)
+	protected ImageItem<?> generateCaptureButton(Context context)
 	{
-		ImageItem captureButton = null;
+		ImageItem<?> captureButton = null;
 		if(!recording)
 		{
 			// recording hasn't started yet, so present "record" button
@@ -199,7 +199,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	}
 
 	@Override
-	protected Item getItemForAttachment(int index, File attachement)
+	protected Item<?> getItemForAttachment(int index, File attachement)
 	{
 		// TODO allow for custom icon
 		return new ResourceImageItem(index, collectorUI.getResources(), R.drawable.audio_item_svg);

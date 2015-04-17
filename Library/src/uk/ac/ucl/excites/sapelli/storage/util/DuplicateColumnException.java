@@ -16,35 +16,30 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.ui.items;
-
-import android.content.Context;
-import android.view.View;
+package uk.ac.ucl.excites.sapelli.storage.util;
 
 /**
  * @author mstevens
- *
  */
-public class EmptyItem extends Item<EmptyItem>
+public class DuplicateColumnException extends IllegalArgumentException
 {
+
+	private static final long serialVersionUID = 2L;
 	
-	public EmptyItem()
-	{
-		this(null);
-	}
+	private final String name;
 	
-	public EmptyItem(Integer id)
+	public DuplicateColumnException(String columnName)
 	{
-		super(id);
+		super("The schema already contains a column with name \"" + columnName + "\"!");
+		this.name = columnName;
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item#createView(android.content.Context)
+	/**
+	 * @return the duplicated column name
 	 */
-	@Override
-	protected View createView(Context context, boolean recycleChildren)
+	public String getColumnName()
 	{
-		return new View(context);
+		return name;
 	}
-
+	
 }

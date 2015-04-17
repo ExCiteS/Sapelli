@@ -184,7 +184,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			String[] argStrings = new String[paramCols.size()];
 			for(int p = 0; p < argStrings.length; p++)
 				argStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), false);
-			// Execute
+			// Execute:
 			return (AndroidSQLiteCursor) db.rawQuery(sql, argStrings);
 		}
 		catch(SQLException e)
@@ -305,7 +305,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 * 
 	 * @author mstevens
 	 */
-	static private class AndroidSQLiteCursorFactory implements CursorFactory
+	static private final class AndroidSQLiteCursorFactory implements CursorFactory
 	{
 	
 		@Override
@@ -325,7 +325,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 * 
 	 * @author mstevens
 	 */
-	static private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
+	static private final class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
 	{
 
 		public static AndroidSQLiteCursor newCursor(SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query)

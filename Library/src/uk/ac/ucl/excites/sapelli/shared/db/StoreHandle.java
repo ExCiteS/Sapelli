@@ -95,7 +95,10 @@ public class StoreHandle<S extends Store>
 				if(store != null)
 					store.close();
 			}
-			catch(DBException ignore) { }
+			catch(DBException dbE)
+			{
+				dbE.printStackTrace(System.err);
+			}
 		}
 	}
 	

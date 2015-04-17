@@ -28,7 +28,7 @@ import android.widget.ImageView.ScaleType;
  * @author mstevens
  *
  */
-public abstract class ImageItem extends Item
+public abstract class ImageItem<II extends ImageItem<II>> extends Item<II>
 {
 	
 	static public final boolean DEFAULT_KEEP_VECTOR_ASPECT_RATIO = true; 

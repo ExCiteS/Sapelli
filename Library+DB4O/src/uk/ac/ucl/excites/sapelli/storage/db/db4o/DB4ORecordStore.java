@@ -313,11 +313,17 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doDelete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public void doDelete(Record record) throws DBException
+	public boolean doDelete(Record record) throws DBException
 	{
 		try
 		{
-			db4o.delete(record);
+			if(db4o.ext().isStored(record))
+			{
+				db4o.delete(record);
+				return true;
+			}
+			else
+				return false;
 		}
 		catch(Exception e)
 		{

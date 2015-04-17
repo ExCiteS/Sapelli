@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 
 /**
@@ -88,7 +89,7 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 			InputStream in = null;
 			try
 			{
-				in = ProjectLoader.openStream(sapelliFile);
+				in = FileHelpers.openInputStream(sapelliFile, true);
 			}
 			catch(Exception e)
 			{
@@ -144,7 +145,8 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 					((StreamSourceCallback) callback).projectLoadStoreSuccess(project, loader.getWarnings());
 			}
 			super.onPostExecute(project);
-		}		
+		}
+
 	}
 	
 }

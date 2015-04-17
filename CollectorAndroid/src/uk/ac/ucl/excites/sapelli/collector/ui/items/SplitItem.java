@@ -36,7 +36,7 @@ import android.widget.LinearLayout.LayoutParams;
  * </ul>
  * @author benelliott, mstevens
  */
-public class SplitItem extends Item
+public class SplitItem extends Item<SplitItem>
 {
 
 	static public final int HORIZONTAL = LinearLayout.HORIZONTAL;
@@ -71,9 +71,9 @@ public class SplitItem extends Item
 	/**
 	 * @param item
 	 * @param weight
-	 * @return
+	 * @return the SplitItem itself
 	 */
-	public SplitItem addItem(Item item, float weight)
+	public SplitItem addItem(Item<?> item, float weight)
 	{
 		items.add(new WeightedItem(item, weight));
 		return this;
@@ -89,7 +89,7 @@ public class SplitItem extends Item
 
 	/**
 	 * @param spacingDip the spacingDip to set
-	 * @return
+	 * @return the SplitItem itself
 	 */
 	public SplitItem setSpacingDip(float spacingDip)
 	{
@@ -107,7 +107,7 @@ public class SplitItem extends Item
 		float weightSum = 0;
 		for(int i = 0, s = items.size(); i < s; i++)
 		{
-			Item item = items.get(i).item;
+			Item<?> item = items.get(i).item;
 			float itemWeight = items.get(i).weight;
 			View itemView = item.getView(context, recycleChildren);
 			
@@ -148,10 +148,10 @@ public class SplitItem extends Item
 	private class WeightedItem
 	{
 		
-		private Item item;
+		private Item<?> item;
 		private float weight;
 
-		private WeightedItem(Item item, float weight)
+		private WeightedItem(Item<?> item, float weight)
 		{
 			this.item = item;
 			this.weight = weight;

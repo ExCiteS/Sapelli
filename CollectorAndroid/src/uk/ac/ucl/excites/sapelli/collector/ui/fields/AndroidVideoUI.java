@@ -235,9 +235,9 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	 * If not currently recording, will return a "start recording" button. If currently recording, will return a "stop recording" button.
 	 */
 	@Override
-	protected ImageItem generateCaptureButton(Context context)
+	protected ImageItem<?> generateCaptureButton(Context context)
 	{
-		ImageItem captureButton = null;
+		ImageItem<?> captureButton = null;
 		if(!recording)
 		{
 			// recording hasn't started yet, so present "record" button
@@ -263,7 +263,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	protected Item getItemForAttachment(int index, File videoFile)
+	protected Item<?> getItemForAttachment(int index, File videoFile)
 	{
 		// Create thumbnail from video file:
 		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);

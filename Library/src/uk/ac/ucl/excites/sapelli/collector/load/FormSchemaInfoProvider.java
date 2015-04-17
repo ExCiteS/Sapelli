@@ -16,35 +16,23 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.ui.items;
+package uk.ac.ucl.excites.sapelli.collector.load;
 
-import android.content.Context;
-import android.view.View;
+import java.util.List;
+
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
 
 /**
  * @author mstevens
  *
  */
-public class EmptyItem extends Item<EmptyItem>
+public interface FormSchemaInfoProvider
 {
 	
-	public EmptyItem()
-	{
-		this(null);
-	}
-	
-	public EmptyItem(Integer id)
-	{
-		super(id);
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item#createView(android.content.Context)
+	/**
+	 * @param form
+	 * @return a list of IDs of fields which are known to be by-passable, or {@code null}
 	 */
-	@Override
-	protected View createView(Context context, boolean recycleChildren)
-	{
-		return new View(context);
-	}
+	public List<String> getByPassableFieldIDs(Form form);
 
 }

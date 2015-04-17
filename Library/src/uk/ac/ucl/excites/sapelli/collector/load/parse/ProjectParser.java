@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 
 import org.xml.sax.SAXException;
 
+import uk.ac.ucl.excites.sapelli.collector.load.FormSchemaInfoProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -42,6 +43,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
@@ -98,6 +100,7 @@ public class ProjectParser extends DocumentParser
 	private Integer fingerPrint;
 	private Project project;
 	private String startFormID;
+	private FormSchemaInfoProvider fsiProvider;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
 	private List<PostProcessTask> postProcessingTasks; 
@@ -121,18 +124,51 @@ public class ProjectParser extends DocumentParser
 		return generatedAudioExtension;
 	}
 
+	/**
+	 * @param xmlFile
+	 * @return the parsed Project instance
+	 * @throws Exception
+	 */
 	public Project parseProject(File xmlFile) throws Exception
 	{
-		return parseProject(open(xmlFile));
+		return parseProject(xmlFile, null);
 	}
 
+	/**
+	 * @param xmlFile
+	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
+	 * @return the parsed Project instance
+	 * @throws Exception
+	 */
+	public Project parseProject(File xmlFile, FormSchemaInfoProvider fsiProvider) throws Exception
+	{
+		return parseProject(open(xmlFile), fsiProvider);
+	}
+	
+	/**
+	 * @param input
+	 * @return the parsed Project instance
+	 * @throws Exception
+	 */
 	public Project parseProject(InputStream input) throws Exception
+	{
+		return parseProject(input, null);
+	}
+	
+	/**
+	 * @param input
+	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
+	 * @return the parsed Project instance
+	 * @throws Exception
+	 */
+	public Project parseProject(InputStream input, FormSchemaInfoProvider fsiProvider) throws Exception
 	{		
 		// (Re)Initialise:
 		format = DEFAULT_FORMAT;
 		project = null;
 		fingerPrint = null;
 		startFormID = null;
+		this.fsiProvider = fsiProvider;
 		if(relationshipToFormID != null)
 			relationshipToFormID.clear();
 		if(relationshipToConstraints != null)
@@ -266,11 +302,15 @@ public class ProjectParser extends DocumentParser
 					try
 					{
 						// generates Schema, Columns & ValueDictionaries:
-						form.initialiseStorage();
+						form.initialiseStorage(fsiProvider != null ? fsiProvider.getByPassableFieldIDs(form) : null); // Note: fsiProvider will be null if this project is loaded/parsed for the first time
 					}
-					catch(ModelFullException e)
+					catch(ModelFullException mfe)
 					{
 						throw new SAXException("This project contains more data-producing Forms than allowed (maximum: " + Project.MAX_RECORD_PRODUCING_FORMS + ").");
+					}
+					catch(DuplicateColumnException dce)
+					{
+						throw new SAXException("Duplicate column name (\"" + dce.getColumnName() +"\") in schema for form \"" + form.id + "\".");
 					}
 					addWarnings(form.getWarnings()); // !!!
 					form.clearWarnings();

@@ -27,7 +27,6 @@ import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
-import uk.ac.ucl.excites.sapelli.collector.media.MediaHelpers;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Description;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -57,6 +56,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.media.MediaHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
@@ -114,6 +114,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor"; // 1.x compatibility
 	static private final String ATTRIBUTE_FORM_CONTROL_BACKGROUND_COLOR = "controlBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
+	static private final String ATTRIBUTE_FORM_SHORTCUT_IMG = "shortcutImg";
+	static private final String[] ATTRIBUTE_FORM_SHORTCUT_IMAGE_IMG = { ATTRIBUTE_FORM_SHORTCUT_IMAGE, ATTRIBUTE_FORM_SHORTCUT_IMG };
 	static private final String ATTRIBUTE_FORM_CLICK_ANIMATION = "clickAnimation";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation"; // 1.x compatibility, the same as clickAnimation
 	static private final String ATTRIBUTE_FORM_DEFAULT_LANGUAGE = "defaultLanguage";
@@ -121,6 +123,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FORM_AUDIO_FEEDBACK = "audioFeedback";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
+	static private final String ATTRIBUTE_FORM_SHOW_IMAGE_SIZES = "showImgSizes";
 	static private final String ATTRIBUTE_SKIP_ON_BACK = "skipOnBack"; // used on both FORM and FIELD
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
@@ -157,10 +160,10 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
 	static private final String[] ATTRIBUTE_CHOICE_ANSWER_DESC_DESCRIPTION = { "answerDesc", "answerDescription" };
 	static private final String[] ATTRIBUTE_CHOICE_QUESTION_DESC_DESCRIPTION = { ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_DESCRIPTION, "questionDesc", "questionDescription" };
-	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
-	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_CHOICE_CROSSED = "crossed";
 	static private final String ATTRIBUTE_CHOICE_CROSS_COLOR = "crossColor";
+	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
+	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
 	static private final String ATTRIBUTE_RELATIONSHIP_REMEMBER = "remember";
@@ -254,6 +257,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		v1xFormShowBack = null;
 		v1xFormShowCancel = null;
 		v1xFormShowForward = null;
+		choiceParentHadCaptionHeightAttribute = false;
 	}
 	
 	@Override
@@ -280,7 +284,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			}
 			currentForm = new Form(project, id); // the form will add itself to the project and take the next available form position
 			// Shortcut image:
-			currentForm.setShortcutImageRelativePath(attributes.getString(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, false, false));
+			currentForm.setShortcutImageRelativePath(attributes.getString(null, false, false, ATTRIBUTE_FORM_SHORTCUT_IMAGE_IMG));
 			// Next/end:
 			try
 			{
@@ -336,6 +340,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			
 			// Control background colour:
 			currentForm.setControlBackgroundColor(attributes.getString(Form.DEFAULT_CONTROL_BACKGROUND_COLOR, true, false, ATTRIBUTE_FORM_CONTROL_BACKGROUND_COLOR, ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR));
+			
+			// Show image sizes:
+			currentForm.setShowImageSizes(attributes.getBoolean(ATTRIBUTE_FORM_SHOW_IMAGE_SIZES, Form.DEFAULT_SHOW_IMAGE_SIZES));
 			
 			// Single page form (all fields will be added to a single page):
 			if(attributes.getBoolean(Form.DEFAULT_SINGLE_PAGE, ATTRIBUTE_FORM_SINGLE_PAGE))
@@ -714,7 +721,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
 		choice.setCrossed(attributes.getBoolean(ATTRIBUTE_CHOICE_CROSSED, ChoiceField.DEFAULT_CROSSED));
-		choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, ChoiceField.DEFAULT_CROSS_COLOR, true, false));
+		choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, choice.isRoot() ? ChoiceField.DEFAULT_CROSS_COLOR : parent.getCrossColor(), true, false));
 	}
 	
 	/**
@@ -814,7 +821,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	{
 		try
 		{	
-			// Warn about IDs starting with '_': //TODO test if no invalid XML chars
+			// Warn about IDs starting with '_':
 			if(field.id.startsWith("_"))
 			{
 				// For really stupid cases ;-):
@@ -823,6 +830,11 @@ public class FormParser extends SubtreeParser<ProjectParser>
 						throw new SAXException(field.id + " is a reserved ID, don't use it for user-defined fields.");
 				addWarning("Please avoid field IDs starting with '_' (" + field.id + ")."); 
 			}
+			// Note: warnings about chars that are illegal in column-name/XML-tags will be generated in Field#getColumn()
+			
+			// Remember the field ID (upper cased, for case insensitivity), in order to check for duplicates (now) & resolve jumps (later):
+			if(idToField.put(field.id.toUpperCase(), field) != null)
+				throw new SAXException("Duplicate field ID '" + field.id + "' in form '" + currentForm.id + "'! (Note: field and form IDs are case insensitive)");
 			
 			// Get current page if there is one:
 			Page currentPage = getCurrentPage();
@@ -832,12 +844,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			{
 				// Add it to the form or page:
 				if(currentPage == null)
-				{	// field is top-level (directly contained within the form, and not in a page first)...
+					// field is top-level (directly contained within the form, and not in a page first):
 					currentForm.addField(field);
-					// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
-					if(idToField.put(field.id.toUpperCase(), field) != null)
-						throw new SAXException("Duplicate field ID '" + field.id + "' in Form '" + currentForm.id + "'! (Note: field and form IDs are case insensitive)");
-				}
 				else
 					// the field is contained by a page:
 					currentPage.addField(field);
@@ -884,7 +892,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				field.setSkipOnBack(attributes.getBoolean(ATTRIBUTE_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
 				
 				// Background colour:
-				field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, true, false));
+				field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, field.getBackgroundColor(), true, false));
 				
 				// Which buttons are allowed to show...
 				// 	Mode-specific:
@@ -1115,8 +1123,12 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				Field target = idToField.get(jump.getValue());
 				if(target == null)
 					addWarning("Cannot resolve jump ID '" + jump.getValue() +  "' (case insensitive).");
+				else if(target.isOnPage())
+					addWarning("Cannot jump to field '" + target.id +  "' because it is contained within a page.");
 				else
 					jump.getKey().setJump(target); // set jump pointer (to a field object)
+				// Note: jumping to Choice children is allowed (i.e. choice-graphs, rather than trees, are possible)
+				// TODO we may want to check whether/when jumping to Choice children is desirable (e.g. only from within the tree/graph, or from anywhere?), and rule out certain situations by additional checks here (like the isOnPage() one above)
 			}
 			
 			// Generate (audio) descriptions for missing Control tags:

@@ -18,10 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,10 +29,6 @@ import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -58,6 +51,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -420,7 +414,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void delete(Record record) throws DBException
+		public boolean delete(Record record) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -434,7 +428,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			deleteStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			deleteStatement.executeDelete();
+			return deleteStatement.executeDelete() == 1;
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
+		 */
+		public int delete(RecordsQuery query) throws DBException
+		{
+			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
+			SapelliSQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			
+			// Bind parameters:
+			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
+			
+			// Execute:
+			int affected = deleteByQStatement.executeDelete();
+			
+			// Close statement:
+			deleteByQStatement.close();
+			
+			// Return number of affected rows:
+			return affected;
 		}
 
 		/* (non-Javadoc)
@@ -444,7 +459,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
 			ISQLiteCursor cursor = null;
-			
 			try
 			{
 				// Execute query (also binds parameters) to get cursor:
@@ -486,15 +500,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		@Override
-		public void drop() throws DBException
-		{
-			// Release resources:
-			release();
-			
-			// Drop table:
-			super.drop();
-		}
-		
 		public void release()
 		{
 			if(existsStatement != null)
@@ -703,53 +708,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				@Override
 				public byte[] toSQLType(L value)
 				{
-					BitOutputStream bos = null;
 					try
 					{
-						ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-						bos = new BitWrapOutputStream(baos);
-						listCol.writeValue(value, bos);
-						bos.flush();
-						return baos.toByteArray();
+						return listCol.toBytes(value);
 					}
 					catch(Exception e)
 					{
 						e.printStackTrace(System.err);
 						return null;
-					}
-					finally
-					{
-						if(bos != null)
-							try
-							{
-								bos.close();
-							}
-							catch(IOException ignore) { }
 					}
 				}
 
 				@Override
 				public L toSapelliType(byte[] value)
 				{
-					BitInputStream bis = null;
 					try
 					{
-						bis = new BitWrapInputStream(new ByteArrayInputStream(value));
-						return listCol.readValue(bis);
+						return listCol.fromBytes(value);
 					}
 					catch(Exception e)
 					{
 						e.printStackTrace(System.err);
 						return null;
-					}
-					finally
-					{
-						if(bis != null)
-							try
-							{
-								bis.close();
-							}
-							catch(IOException ignore) { }
 					}
 				}
 				

@@ -95,7 +95,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	/**
 	 * Map used to cache gallery items so that every attachment doesn't have to be reloaded when a change is made
 	 */
-	private Map<File, Item> galleryCache;
+	private Map<File, Item<?>> galleryCache;
 	
 	// global variable that holds the params for the capture/discard buttons
 	private final LinearLayout.LayoutParams buttonParams; 
@@ -167,7 +167,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				
 				// Gallery cache:
 				if(galleryCache == null)
-					galleryCache = new HashMap<File, Item>();
+					galleryCache = new HashMap<File, Item<?>>();
 				else if(newRecord) // wipe the cache whenever newRecord is true
 					galleryCache.clear();
 	
@@ -306,9 +306,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param context
 	 * @return the "discard" button item
 	 */
-	public Item generateDiscardButton(Context context)
+	public Item<?> generateDiscardButton(Context context)
 	{
-		Item discardButton = null;
+		Item<?> discardButton = null;
 		File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(discardImgFile))
 			discardButton = new FileImageItem(discardImgFile);
@@ -349,7 +349,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param attachement - the attached media file
 	 * @return an Item corresponding to the attachment
 	 */
-	protected abstract Item getItemForAttachment(int index, File attachement);
+	protected abstract Item<?> getItemForAttachment(int index, File attachement);
 
 	/**
 	 * Generate a "capture" button (may vary by media, e.g. microphone
@@ -357,7 +357,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param context
 	 * @return an ImageItem housing an appropriate "capture" button for the media.
 	 */
-	protected abstract Item generateCaptureButton(Context context);
+	protected abstract Item<?> generateCaptureButton(Context context);
 
 	/**
 	 * Creates the main content for the capture UI.
@@ -381,7 +381,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param onClickRunnable - the {@code Runnable} to execute when the button is clicked.
 	 * @return the button as a {@code View}.
 	 */
-	private View buttonFromItem(Context context, Item buttonItem, final Runnable onClickRunnable)
+	private View buttonFromItem(Context context, Item<?> buttonItem, final Runnable onClickRunnable)
 	{
 		final View view = buttonItem.getView(context);
 		view.setOnClickListener(new OnClickListener()
@@ -634,7 +634,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				for(File file : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
 				{
 					// See if it can be found in the gallery cache:
-					Item toAdd = galleryCache.get(file);
+					Item<?> toAdd = galleryCache.get(file);
 					if(toAdd == null)
 					{	// If not, create a new item and put it in the cache:
 						toAdd = getItemForAttachment(f++, file);
@@ -661,24 +661,24 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 * 
 		 * @return the "capture more" button to be added to the UI.
 		 */
-		private Item createCaptureMoreButton()
+		private Item<?> createCaptureMoreButton()
 		{
 			// creates a "normal" capture button and then disables it if max reached.
-			Item captureButton = generateCaptureButton(getContext());
+			Item<?> captureButton = generateCaptureButton(getContext());
 
 			if(!field.isMaxReached(controller.getCurrentRecord()))
 				return captureButton;
 
 			// else make button look unclickable
 			LayeredItem layeredItem = new LayeredItem();
-			layeredItem.addLayer(captureButton, false);
+			layeredItem.addLayer(captureButton);
 
 			// Make background of layered stack gray:
 			layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
 			// Add grayed-out layer:
-			Item grayOutOverlay = new EmptyItem();
+			Item<?> grayOutOverlay = new EmptyItem();
 			grayOutOverlay.setBackgroundColor(CollectorView.COLOR_MOSTLY_OPAQUE_GRAY);
-			layeredItem.addLayer(grayOutOverlay, false);
+			layeredItem.addLayer(grayOutOverlay);
 
 			return layeredItem;
 		}

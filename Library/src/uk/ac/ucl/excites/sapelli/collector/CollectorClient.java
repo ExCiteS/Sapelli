@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
@@ -57,7 +58,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	static public long GetModelID(Project project)
 	{
-		return	((((long) project.getFingerPrint()) & 0xffffffffL) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
+		return	((((long) project.getFingerPrint()) & 0xffffffffl) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
 				project.getID();																 // Project id takes up next 24 bits
 	}
 	
@@ -116,6 +117,8 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	{
 		if(schema == ProjectRecordStore.PROJECT_SCHEMA)
 			return "Collector_Projects";
+		if(schema == ProjectRecordStore.FSI_SCHEMA)
+			return "Project_FormSchemaInfo";
 		if(schema == ProjectRecordStore.HFK_SCHEMA)
 			return "Relationship_HFKs";
 		return super.getTableName(schema);
@@ -217,6 +220,16 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	
 	@Override
 	public void recordDeleted(RecordReference recordReference)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#recordsDeleted(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery, int)
+	 */
+	@Override
+	public void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords)
 	{
 		// TODO Auto-generated method stub
 		

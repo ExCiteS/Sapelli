@@ -71,28 +71,35 @@ public class ProjectLoader implements WarningKeeper
 	 */
 	static public Project ParseProject(String folderPath)
 	{
-		try
-		{
-			return new ProjectParser().parseProject(new File(folderPath + File.separator + PROJECT_FILE));
-		}
-		catch(Exception e)
-		{
-			System.err.println("Failed to load project from path: " + folderPath);
-			e.printStackTrace(System.err);
-			return null;
-		}
+		return ParseProject(new File(folderPath), null);
 	}
 	
 	/**
-	 * @param sapelliFile
-	 * @return
-	 * @throws Exception
+	 * @param folder folder in which the PROJECT.xml file resides
+	 * @return a project instance or null in case something went wrong
 	 */
-	static public FileInputStream openStream(File sapelliFile) throws Exception
+	static public Project ParseProject(File folder)
 	{
-		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
-			throw new IllegalArgumentException("Invalid Sapelli file");
-		return new FileInputStream(sapelliFile);
+		return ParseProject(folder, null);
+	}
+	
+	/**
+	 * @param folder folder in which the PROJECT.xml file resides
+	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
+	 * @return a project instance or null in case something went wrong
+	 */
+	static public Project ParseProject(File folder, FormSchemaInfoProvider fsiProvider)
+	{
+		try
+		{
+			return new ProjectParser().parseProject(new File(folder, PROJECT_FILE), fsiProvider);
+		}
+		catch(Exception e)
+		{
+			System.err.println("Failed to load project from path: " + folder.getAbsolutePath());
+			e.printStackTrace(System.err);
+			return null;
+		}
 	}
 	
 	// DYNAMICS ----------------------------------------------------------
@@ -110,7 +117,7 @@ public class ProjectLoader implements WarningKeeper
 	 */
 	public ProjectLoader(FileStorageProvider fileStorageProvider) throws FileStorageException
 	{
-		this(fileStorageProvider, null, null); // no post-processing nor checking
+		this(fileStorageProvider, null, null); // no post-processing, nor checking
 	}
 	
 	/**
@@ -143,7 +150,7 @@ public class ProjectLoader implements WarningKeeper
 	 */
 	public Project load(File sapelliFile) throws Exception
 	{
-		return load(openStream(sapelliFile));
+		return load(FileHelpers.openInputStream(sapelliFile, true));
 	}
 	
 	/**

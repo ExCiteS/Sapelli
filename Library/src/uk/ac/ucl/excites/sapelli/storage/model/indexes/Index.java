@@ -101,7 +101,7 @@ public class Index extends Schema
 	}
 	
 	@Override
-	public void addIndex(Index index) throws UnsupportedOperationException
+	public <I extends Index> I addIndex(I index) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Cannot add indexes to an index");
 	}
