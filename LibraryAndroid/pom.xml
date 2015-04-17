@@ -30,15 +30,23 @@
 		<version>2.0.0-SNAPSHOT</version>
 	</parent>
 
+	<properties>
+		<!-- Android & support libs version -->
+		<!--	Always change Android version & API level together!: -->
+		<android.version>4.4.2_r4</android.version>
+		<android.api-level>19</android.api-level>
+		<android.support.libs.version>20.0.0</android.support.libs.version>
+	</properties>
+
 	<dependencies>
 
 		<dependency>
 			<groupId>android</groupId>
 			<artifactId>android</artifactId>
-			<version>4.4.2_r4</version>
+			<version>${android.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
+		
 		<dependency>
 			<groupId>uk.ac.ucl.excites</groupId>
 			<artifactId>sapelli-library</artifactId>
@@ -70,11 +78,11 @@
 			<plugin>
 				<groupId>com.simpligility.maven.plugins</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.1.1</version>
+				<version>4.2.0</version>
 				<configuration>
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
-						<platform>19</platform>
+						<platform>${android.api-level}</platform>
 					</sdk>
 					<deleteConflictingFiles>true</deleteConflictingFiles>
 					<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>
