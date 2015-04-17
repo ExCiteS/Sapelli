@@ -158,7 +158,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 	}
 	
-	private int executeUpdateDelete() throws SQLException
+	private final int executeUpdateDelete() throws SQLException
 	{
 		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 			// API levels 11 and higher
@@ -171,7 +171,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	}
 	
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	private int executeUpdateDeleteNew() throws SQLException
+	private final int executeUpdateDeleteNew() throws SQLException
 	{
 		return androidSQLiteSt.executeUpdateDelete();
 	}

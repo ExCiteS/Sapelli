@@ -476,10 +476,12 @@ public abstract class RecordStore extends Store
 	public void delete(Collection<Record> records) throws DBException
 	{
 		startTransaction();
+		List<Record> deleted = new ArrayList<Record>(records.size());
 		try
 		{
 			for(Record record : records)
-				doDelete(record);
+				if(doDelete(record))
+					deleted.add(record);
 		}
 		catch(DBException e)
 		{
@@ -488,7 +490,7 @@ public abstract class RecordStore extends Store
 		}
 		commitTransaction();
 		// Inform client:
-		for(Record record : records)
+		for(Record record : deleted)
 			client.recordDeleted(record);
 	}
 	
@@ -518,9 +520,10 @@ public abstract class RecordStore extends Store
 	
 	/**
 	 * @param record - the record to delete
+	 * @return whether or not the record was really deleted
 	 * @throws DBException
 	 */
-	protected abstract void doDelete(Record record) throws DBException;
+	protected abstract boolean doDelete(Record record) throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()

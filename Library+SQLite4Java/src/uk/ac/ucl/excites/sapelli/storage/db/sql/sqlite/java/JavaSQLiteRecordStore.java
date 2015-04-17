@@ -45,15 +45,22 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * @param client
 	 * @param context
 	 * @param dbName
-	 * @throws Exception 
+	 * @throws DBException 
 	 */
-	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName) throws Exception
+	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName) throws DBException
 	{
 		super(client);
 		
 		// Open database connection:
-		this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
-		db.open(true);
+		try
+		{
+			this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
+			db.open(true); // allow creation
+		}
+		catch(SQLiteException sqlE)
+		{
+			throw new DBException(sqlE);
+		}
 		
 		// Initialise:
 		initialise(!doesTableExist(client.getTableName(Model.MODEL_SCHEMA)));
@@ -82,7 +89,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		try
 		{
 			int rows = db.getChanges();
-			System.out.println("affected rows: " + rows);
+			//System.out.println("SQLite> Affected rows: " + rows);
 			return rows;
 		}
 		catch(SQLiteException e)
@@ -104,7 +111,6 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		return selectStatement.executeSelectRows();
 	}
 	
-
 	@Override
 	protected JavaSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{

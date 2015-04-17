@@ -24,12 +24,13 @@ import android.graphics.Color;
 import android.view.View;
 
 /**
- * An abstract class representing picker items
+ * An abstract class representing items contained within an {@link uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView}.
  * 
  * @author mstevens
  *
+ * @param <I> self-bound generic parameter used to refer to subclass type. All subclasses *must* bind this to themselves! E.g.: {@code class SubItem extends Item<SubItem>}
  */
-public abstract class Item
+public abstract class Item<I extends Item<I>>
 {
 	
 	// Static (defaults):
@@ -37,7 +38,7 @@ public abstract class Item
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
 	// Dynamics:
-	protected Integer id;
+	protected final Integer id;
 	protected float paddingDip = DEFAULT_PADDING_DIP;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;
@@ -105,12 +106,13 @@ public abstract class Item
 
 	/**
 	 * @param visible
-	 * @return
+	 * @return the Item itself
 	 */
-	public Item setVisibility(boolean visible)
+	@SuppressWarnings("unchecked")
+	public I setVisibility(boolean visible)
 	{
 		this.visible = visible;
-		return this;
+		return (I) this;
 	}
 	
 	public boolean isVisible()
@@ -128,12 +130,13 @@ public abstract class Item
 
 	/**
 	 * @param paddingDip the paddingDip to set
-	 * @return
+	 * @return the Item itself
 	 */
-	public Item setPaddingDip(float paddingDip)
+	@SuppressWarnings("unchecked")
+	public I setPaddingDip(float paddingDip)
 	{
 		this.paddingDip = paddingDip;
-		return this;
+		return (I) this;
 	}
 
 	public boolean hasID()
@@ -156,11 +159,13 @@ public abstract class Item
 
 	/**
 	 * @param backgroundColor the backgroundColor to set
+	 * @return the Item itself
 	 */
-	public Item setBackgroundColor(int backgroundColor)
+	@SuppressWarnings("unchecked")
+	public I setBackgroundColor(int backgroundColor)
 	{
 		this.backgroundColor = backgroundColor;
-		return this;
+		return (I) this;
 	}
 
 	/**
@@ -173,11 +178,13 @@ public abstract class Item
 
 	/**
 	 * @param description the description to set
+	 * @return the Item itself
 	 */
-	public Item setDescription(String description)
+	@SuppressWarnings("unchecked")
+	public I setDescription(String description)
 	{
 		this.description = description;
-		return this;
+		return (I) this;
 	}
 	
 }

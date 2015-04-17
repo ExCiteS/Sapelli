@@ -59,7 +59,7 @@ public abstract class ProjectStore extends Store
 		if(!isStored(project, true))
 			// Go ahead with storing project:
 			doAdd(project);
-		// Return if successful:
+		// Return if successful (can also mean the exact same project was already stored):
 		return project;
 	}
 	

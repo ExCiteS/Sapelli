@@ -96,6 +96,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private boolean matchTextSize = DEFAULT_MATCH_TEXT_SIZE;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
+	
 	private final String value;
 	private final ChoiceDictionary dictionary;
 	
@@ -131,6 +132,7 @@ public class ChoiceField extends Field implements DictionaryItem
 			dictionary = root.dictionary; //children share the dictionary of the root (so there is only 1 instance per choice tree)
 			noColumn = root.noColumn;
 			answerDescription = new Description();
+			backgroundColor = parent.backgroundColor; // inherit background colour
 		}
 	}
 	

@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
@@ -66,6 +67,8 @@ public interface ColumnVisitor
 	public void visit(OrientationColumn orCol);
 	
 	public void visit(ByteArrayColumn byteArrayCol);
+	
+	public <T> void visit(ListColumn.Simple<T> simpleListCol);
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	

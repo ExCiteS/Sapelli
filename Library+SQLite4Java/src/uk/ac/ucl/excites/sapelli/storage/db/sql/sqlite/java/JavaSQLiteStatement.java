@@ -64,19 +64,6 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		// ... clear bindings (& reset) if necessary:
 		clearAllBindings(); // will also call reset() if the statement "has stepped"
 	}
-	
-	/**
-	 * @param arguments
-	 * @throws DBException
-	 */
-	public void bindAll(List<Object> arguments) throws DBException
-	{
-		if(paramCols != null)
-		{
-			for(int p = 0, count = paramCols.size(); p < count; p++)
-				paramCols.get(p).bindSapelliObject(this, p, arguments.get(p));
-		}
-	}
 
 	@Override
 	public void bindBlob(int paramIdx, byte[] value) throws DBException
@@ -417,6 +404,12 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	public boolean isClosed()
 	{
 		return javaSQLiteSt.isDisposed();
+	}
+	
+	@Override
+	public String toString()
+	{
+		return javaSQLiteSt.toString();
 	}
 	
 }

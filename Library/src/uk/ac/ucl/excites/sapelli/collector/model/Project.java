@@ -225,6 +225,11 @@ public class Project
 			startForm = frm;
 	}
 	
+	public int getNumberOfForms()
+	{
+		return forms.size();
+	}
+	
 	public List<Form> getForms()
 	{
 		return Collections.unmodifiableList(forms);
