@@ -194,7 +194,7 @@ public class Record implements Serializable
 	 * To be called from {@link Column#storeValue(Record, Object)}
 	 * 
 	 * @param column
-	 * @param value the value to set
+	 * @param value the value to set (may be null, e.g. to clear earlier values)
 	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
 	protected void setValue(Column<?> column, Object value) throws IllegalArgumentException
