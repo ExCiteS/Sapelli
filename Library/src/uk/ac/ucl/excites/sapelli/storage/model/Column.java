@@ -175,7 +175,7 @@ public abstract class Column<T> implements Serializable
 	{
 		storeValue(record, (T) convert(value));
 	}
-
+	
 	/**
 	 * Stores the given <T> value in this column on the given record.
 	 *
@@ -194,6 +194,17 @@ public abstract class Column<T> implements Serializable
 		else
 			validate(value); // throws IllegalArgumentException if invalid
 		record.setValue(this, value); // also store null (to overwrite earlier non-values)
+	}
+	
+	/**
+	 * (Re-)sets the value of this column in the given record to {@code null}, even if the column is optional.
+	 * Use with care!
+	 * 
+	 * @param record
+	 */
+	public void clearValue(Record record)
+	{
+		record.setValue(this, null);
 	}
 
 	/**
