@@ -31,11 +31,9 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
-import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
@@ -46,12 +44,13 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
+import android.graphics.Color;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.AdapterView.OnItemClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -87,26 +86,36 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
 
-	private OnPageView pageView;
+	protected final boolean hasPreCaptureView;
+	protected final boolean unblockUIAfterCaptureClick;
 	
 	private CaptureView captureView;
+	private ReviewView reviewView;
 	private GalleryView galleryView;
-	
-	/**
-	 * Map used to cache gallery items so that every attachment doesn't have to be reloaded when a change is made
-	 */
-	private Map<File, Item<?>> galleryCache;
+
+	private OnPageView pageView;
 	
 	// global variable that holds the params for the capture/discard buttons
 	private final LinearLayout.LayoutParams buttonParams; 
 
-	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI)
+	/**
+	 * @param field
+	 * @param controller
+	 * @param collectorUI
+	 * @param hasPreCaptureView whether or not the capture button should be maximised when the capture UI is first entered
+	 * @param unblockUIAfterCaptureClick indicates whether or not to immediately allow new user interactions (i.e. clicks) after the capture button is clicked
+	 * after this method has returned.
+	 */
+	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI, boolean hasPreCaptureView, boolean unblockUIAfterCaptureClick)
 	{
 		super(field, controller, collectorUI);
 		
+		this.hasPreCaptureView = hasPreCaptureView;
+		this.unblockUIAfterCaptureClick = unblockUIAfterCaptureClick;
+		
 		// Initialise buttonParams:
 		//	create button params to be used for all bottom-of-screen buttons:
-		buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), AndroidControlsUI.CONTROL_HEIGHT_DIP));
+		buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, collectorUI.getControlHeightPx());
 		//	add margin above button to separate it from content:
 		buttonParams.setMargins(0, collectorUI.getSpacingPx(), 0, 0);
 	}
@@ -151,29 +160,32 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		{
 			case CAPTURE:
 			case CAPTURE_FROM_GALLERY:
-				captureView = new CaptureView(collectorUI.getContext(), isMaximiseCaptureButton());
+				if(captureView == null)
+					captureView = new CaptureView(collectorUI.getContext());
+				captureView.refreshCaptureButton();
 				// keep a reference to the capture UI so the capture button can later be maximised/minimised
 				return captureView;
 	
 			case SINGLE_ITEM_REVIEW:
-				return new ReviewView(collectorUI.getContext(), field.getLastAttachment(controller.getFileStorageProvider(), record));
-	
-			case SINGLE_REVIEW_FROM_GALLERY:				
-				return new ReviewView(collectorUI.getContext(), new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY)));
-	
-			default: // Return gallery
+			case SINGLE_REVIEW_FROM_GALLERY:
+				if(reviewView == null)
+					reviewView = new ReviewView(collectorUI.getContext());				
+				// Set file to review:
+				reviewView.setReviewFile(currentState == DisplayState.SINGLE_ITEM_REVIEW ?
+					field.getLastAttachment(controller.getFileStorageProvider(), record) /*post-capture*/ :
+					new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY)) /*from-gallery*/);
+				// Return view:
+				return reviewView;
+				
+			case GALLERY:
+			default:
 				if(galleryView == null)
 					galleryView = new GalleryView(collectorUI.getContext());
-				
-				// Gallery cache:
-				if(galleryCache == null)
-					galleryCache = new HashMap<File, Item<?>>();
 				else if(newRecord) // wipe the cache whenever newRecord is true
-					galleryCache.clear();
-	
+					galleryView.cache.clear();
 				// Force the gallery to update its contents and its button:
 				galleryView.refresh();
-	
+				// Return view:
 				return galleryView;
 		}
 	}
@@ -228,6 +240,46 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 
 	/**
+	 * Force the back button to be shown if in single item review (from gallery) so that the user can always go back
+	 * to the gallery (regardless of field history on the stack).
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#isShowBack()
+	 */
+	@Override
+	protected boolean isShowBack()
+	{
+		DisplayState state =  getCurrentDisplayState();
+		if(	state == DisplayState.SINGLE_REVIEW_FROM_GALLERY ||
+			state == DisplayState.CAPTURE_FROM_GALLERY)
+			return true;
+		return super.isShowBack();
+	}
+
+	/**
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#isShowCancel()
+	 */
+	@Override
+	protected boolean isShowCancel()
+	{
+		if(getCurrentDisplayState() == DisplayState.SINGLE_ITEM_REVIEW)
+			return false;
+		return super.isShowCancel();
+	}
+
+	/**
+	 *
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.SelfLeavingFieldUI#isShowForward()
+	 */
+	@Override
+	public boolean isShowForward()
+	{
+		// Hide the forward button when reviewing a single item from the gallery: 
+		if(getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
+			return false;
+		return super.isShowForward();
+	}
+	
+	/**
 	 * Override the normal "back" behaviour so that the user is returned to the gallery when "back" is pressed
 	 * from the single-item review UI.
 	 */
@@ -256,35 +308,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		// Do not change the button behaviour in any other case (other than removing the capture request)
 		return false;
 	}
-	
-	/**
-	 * Force the back button to be shown if in single item review (from gallery) so that the user can always go back
-	 * to the gallery (regardless of field history on the stack).
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#isShowBack()
-	 */
-	@Override
-	protected boolean isShowBack()
-	{
-		DisplayState state =  getCurrentDisplayState();
-		if(	state == DisplayState.SINGLE_REVIEW_FROM_GALLERY ||
-			state == DisplayState.CAPTURE_FROM_GALLERY)
-			return true;
-		return super.isShowBack();
-	}
-
-	/**
-	 *
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.SelfLeavingFieldUI#isShowForward()
-	 */
-	@Override
-	public boolean isShowForward()
-	{
-		// Hide the forward button when reviewing a single item from the gallery (DISABLED FOR NOW): 
-		//if(getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
-		//	return false;
-		return super.isShowForward();
-	}
 
 	protected void minimiseCaptureButton()
 	{
@@ -299,48 +322,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 	
 	/**
-	 * Return a "discard" button item to be used when reviewing a single media item. Will use field-specific capture button if 
-	 * available, otherwise the default resource is used. Can be overriden by the subclass if some kind of 'dynamic' discard 
-	 * button is needed, analogous to the capture button.
-	 * 
-	 * @param context
-	 * @return the "discard" button item
-	 */
-	public Item<?> generateDiscardButton(Context context)
-	{
-		Item<?> discardButton = null;
-		File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(discardImgFile))
-			discardButton = new FileImageItem(discardImgFile);
-		else
-			discardButton = new ResourceImageItem(context.getResources(), R.drawable.button_trash_svg);
-		discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return discardButton;
-	}
-	
-	/**
-	 * @return whether or not the capture button should be maximised when the capture UI is first entered (can be overriden
-	 * by subclass, but returns {@code false} by default).
-	 */
-	protected boolean isMaximiseCaptureButton()
-	{
-		return false;
-	}
-	
-	// -------- ABSTRACT METHODS:
-
-	/**
 	 * What to do when the capture button has been pressed.
-	 * 
-	 * @return a boolean indicating whether or not to immediately allow new user interactions (i.e. clicks)
-	 * after this method has returned.
 	 */
-	protected abstract boolean onCapture();
+	protected abstract void onCapture();
 
 	/**
 	 * What to do when a piece of media is discarded after review (e.g. release media player resources).
 	 */
-	protected abstract void onDiscard();
+	protected abstract void onLeaveReview();
 	
 	/**
 	 * Returns an appropriate {@link Item} for the provided file.
@@ -358,7 +347,47 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @return an ImageItem housing an appropriate "capture" button for the media.
 	 */
 	protected abstract Item<?> generateCaptureButton(Context context);
-
+	
+	/**
+	 * Return a "approve" button item to be used when reviewing a single media item. Will use XML-specified image if available,
+	 * otherwise the default resource is used.
+	 * Can be overridden by the subclass if needed.
+	 * 
+	 * @param context
+	 * @return the "discard" button item
+	 */
+	public Item<?> generateApproveButton(Context context)
+	{
+		Item<?> approveButton = null;
+		File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getApproveButtonImageRelativePath());
+		if(FileHelpers.isReadableFile(imgFile))
+			approveButton = new FileImageItem(imgFile);
+		else
+			approveButton = new ResourceImageItem(context.getResources(), R.drawable.button_tick_svg);
+		approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		return approveButton;
+	}
+	
+	/**
+	 * Return a "discard" button item to be used when reviewing a single media item. Will use XML-specified image if available,
+	 * otherwise the default resource is used.
+	 * Can be overridden by the subclass if needed.
+	 * 
+	 * @param context
+	 * @return the "discard" button item
+	 */
+	public Item<?> generateDiscardButton(Context context)
+	{
+		Item<?> discardButton = null;
+		File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
+		if(FileHelpers.isReadableFile(discardImgFile))
+			discardButton = new FileImageItem(discardImgFile);
+		else
+			discardButton = new ResourceImageItem(context.getResources(), R.drawable.button_trash_svg);
+		discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		return discardButton;
+	}
+	
 	/**
 	 * Creates the main content for the capture UI.
 	 * @param context
@@ -375,56 +404,26 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected abstract View getReviewContent(Context context, File mediaFile);
 	
 	/**
-	 * Creates a {@code View} to be used as a (capture/discard/etc) button in the media UI.
-	 * @param context
-	 * @param buttonItem - the {@code Item} from which to create the button.
-	 * @param onClickRunnable - the {@code Runnable} to execute when the button is clicked.
-	 * @return the button as a {@code View}.
-	 */
-	private View buttonFromItem(Context context, Item<?> buttonItem, final Runnable onClickRunnable)
-	{
-		final View view = buttonItem.getView(context);
-		view.setOnClickListener(new OnClickListener()
-		{
-			@Override
-			public void onClick(View v)
-			{
-				controller.blockUI();
-				// Execute the "press" animation if allowed, then perform the action:
-				if(controller.getCurrentForm().isClickAnimation())
-					ViewAnimator.Click(view, null, onClickRunnable); // execute animation and the action afterwards (action will often change the page before the animation occurs)
-				else
-					onClickRunnable.run(); // perform task now (animation is disabled)
-
-			}
-		});
-
-		return view;
-	}
-	
-	// -------------- CAPTURE UI:
-
-	/**
 	 * LinearLayout that holds the capture UI.
 	 * 
 	 * @author benelliott, mstevens
 	 */
-	private class CaptureView extends LinearLayout
+	private class CaptureView extends LinearLayout implements OnClickListener
 	{
 
-		private View contentView; // capture UI content (e.g. viewfinder)
-		private View buttonView; // capture button
-		private Runnable captureButtonAction; // capture button action
+		private final View contentView; // capture UI content (e.g. viewfinder)
+		private final Runnable captureButtonAction; // capture button action
+		private View captureButtonView; // capture button
 		private boolean captureButtonMaximised = false;
-		private Context context;
 
-		private CaptureView(Context context, boolean maximiseCaptureButton)
+		private CaptureView(Context context)
 		{
 			super(context);
-			this.context = context;
+
 			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
+			
 			// set weight sum (capture UI content will expand to fill all 'spare' space:
 			this.setWeightSum(1.0f);
 
@@ -435,7 +434,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			contentParams.weight = 1.0f;
 			addView(contentView, contentParams);
 
-			// add button:
+			// Add capture button:
 			captureButtonAction = new Runnable()
 			{
 				@Override
@@ -446,15 +445,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					// force gallery to check for new files next time it is entered (do this here as gallery may be entered in onCapture()):
 					mediaItemsChanged = true;
 					// execute subclass's capture behaviour and make note of whether or not to unblock UI afterwards
-					boolean unblock = onCapture();
+					onCapture();
 					// refresh capture button on press (e.g. might need to change from "record" to "stop recording")
 					refreshCaptureButton();
-					if(unblock)
-						// unblock UI if requested by subclass
-						controller.unblockUI();
 				}
 			};
-			refreshCaptureButton(maximiseCaptureButton);
 		}
 		
 		/**
@@ -465,17 +460,28 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			refreshCaptureButton(captureButtonMaximised);
 		}
 		
+		/**
+		 * Recreate and maximise the capture button
+		 */
 		protected void refreshCaptureButton(boolean maximise)
 		{
 			// Hide captureView when maximised:
 			contentView.setVisibility(maximise ? View.GONE : View.VISIBLE);
 			
-			this.removeView(buttonView);
-			buttonView = buttonFromItem(context, generateCaptureButton(context), captureButtonAction);
-			this.addView(buttonView, maximise ? new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT) : buttonParams);
+			this.removeView(captureButtonView);
+			captureButtonView = generateCaptureButton(getContext()).getView(getContext());
+			captureButtonView.setOnClickListener(this);
+			this.addView(captureButtonView, maximise ? new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT) : buttonParams);
 			
 			// Remember maximisation:
 			captureButtonMaximised = maximise;
+		}
+
+		@Override
+		public void onClick(View v)
+		{
+			if(v == captureButtonView) // check just in case
+				collectorUI.clickView(v, captureButtonAction, unblockUIAfterCaptureClick);
 		}
 		
 	}
@@ -485,60 +491,96 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * 
 	 * @author benelliott, mstevens
 	 */
-	private class ReviewView extends LinearLayout
+	private class ReviewView extends LinearLayout implements OnItemClickListener
 	{
 
-		private File toReview; // file used to populate review UI
+		private final LinearLayout.LayoutParams contentParams;
+		private final Runnable approveAction;
+		private final Runnable discardAction;
 
-		private ReviewView(Context context, File toReview)
+		private File toReview;
+		
+		private ReviewView(Context context)
 		{
 			super(context);
-			this.toReview = toReview;
 			
 			// Layout:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
 			this.setWeightSum(1.0f);
-
-			// Add content:
-			View contentView = getReviewContent(context, toReview);
-			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+			
+			// Content layoutparams:
+			contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
 			contentParams.weight = 1.0f;
 			contentParams.gravity = Gravity.CENTER;
-			addView(contentView, contentParams);
-
-			// Add delete button:
-			Runnable deleteButtonAction = new Runnable()
+		
+			// Button container:
+			ItemPickerView reviewButtons = new ItemPickerView(context, true);
+			reviewButtons.setNumColumns(2);
+			reviewButtons.setBackgroundColor(Color.BLACK);
+			reviewButtons.setHorizontalSpacing(collectorUI.getSpacingPx());
+			reviewButtons.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getControlHeightPx());
+			reviewButtons.setOnItemClickListener(this);
+			addView(reviewButtons, buttonParams);
+			
+			// Approve button:
+			approveAction = makeButtonAction(false);
+			reviewButtons.getAdapter().addItem(generateApproveButton(context));
+			
+			// Discard button:
+			discardAction = makeButtonAction(true);
+			reviewButtons.getAdapter().addItem(generateDiscardButton(context));
+		}
+		
+		public void setReviewFile(File toReview)
+		{
+			if(this.toReview != null)
+				removeViewAt(0);
+			addView(getReviewContent(getContext(), toReview), 0, contentParams);
+			this.toReview = toReview;
+		}
+		
+		@Override
+		public void onItemClick(final AdapterView<?> parent, final View view, final int position, final long id)
+		{
+			collectorUI.clickView(view, position == 0 ? approveAction : discardAction);
+		}
+		
+		private Runnable makeButtonAction(final boolean discarding)
+		{
+			return new Runnable()
 			{
 				@Override
 				public void run()
 				{
-					// only one button: discard
-					onDiscard();
+					onLeaveReview();
 					
-					// Delete attachment:
-					removeMedia(ReviewView.this.toReview);
+					controller.addLogLine("CLICK_MEDIA_" + (discarding ? "DISCARD" : "APPROVE"));
 					
-					// An item has been deleted, so we want the gallery to be refreshed:
-					mediaItemsChanged = true;
+					if(discarding)
+					{
+						// Delete attachment:
+						removeMedia(ReviewView.this.toReview);
+						
+						// If there is a gallery cache (meaning we have opened the gallery before) then delete the corresponding cached item:
+						if(galleryView != null)
+							galleryView.cache.remove(ReviewView.this.toReview);
+						
+						// An item has been deleted, so we want the gallery to be refreshed:
+						mediaItemsChanged = true;
+					}
 					
-					// If there is a gallery cache (meaning we have opened the gallery before) then delete the corresponding cached item:
-					if(galleryCache != null)
-						galleryCache.remove(ReviewView.this.toReview);
-
 					// Remove the filepath from the field's arguments to avoid that we re-enter single-item review unintentionally:
-					controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);	
+					controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
 					
-					// either go back to capture (when the 1 and only item was deleted), or go back to gallery:
-					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-					
-					// allow clicks now we have finished
-					controller.unblockUI();
+					if(discarding || getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
+						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); // will go back to capture (when the 1 and only item was deleted), or back to gallery
+					else // single item approval:
+						controller.goForward(true);
 				}
 			};
-			addView(buttonFromItem(context, generateDiscardButton(context), deleteButtonAction), buttonParams);
 		}
-		
+
 	}
 	
 	/**
@@ -546,12 +588,18 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * 
 	 * @author benelliott, mstevens
 	 */
-	private class GalleryView extends LinearLayout
+	private class GalleryView extends LinearLayout implements OnItemClickListener, OnClickListener
 	{
 
-		private ItemPickerView pickerView;
+		private final ItemPickerView pickerView;
+		
+		/**
+		 * Map used to cache gallery items so that every attachment doesn't have to be reloaded when a change is made
+		 */
+		private final Map<File, Item<?>> cache;
+		
 		private View addButtonView;
-		private Runnable addButtonAction;
+		private final Runnable addButtonAction;
 
 		private static final int NUM_COLUMNS = 3; // TODO make configurable?
 		private static final int NUM_ROWS = 3;
@@ -559,6 +607,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private GalleryView(Context context)
 		{
 			super(context);
+			
+			// Init cache:
+			cache = new HashMap<File, Item<?>>();
 			
 			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
@@ -579,31 +630,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			pickerView.setHorizontalSpacing(spacingPx);
 			pickerView.setVerticalSpacing(spacingPx);
 			// When a gallery item is clicked, present it in full screen for review/deletion:
-			pickerView.setOnItemClickListener(new OnItemClickListener()
-			{
-				@Override
-				public void onItemClick(AdapterView<?> parent, View view, final int position, long id)
-				{
-					collectorUI.clickView(view, new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							controller.getCurrentFieldArguments().put(
-								REVIEW_FILE_PATH_KEY,
-								field.getAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord(), position).getAbsolutePath());
-							controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-						}
-					});
-				}
-			});
+			pickerView.setOnItemClickListener(this);
 			
 			// Add button:
 			addButtonAction = new Runnable()
 			{
 				@Override
 				public void run()
-				{	// "capture more" button clicked, return to capture interface...
+				{
+					// "capture more" button clicked, return to capture interface...
 					if(!field.isMaxReached(controller.getCurrentRecord()))
 					{
 						// add the "go to capture" argument to the field:
@@ -616,7 +651,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				}
 			};
 		}
-
+		
 		/**
 		 * Refreshes the contents of the gallery and the "capture" button.
 		 */
@@ -634,11 +669,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				for(File file : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
 				{
 					// See if it can be found in the gallery cache:
-					Item<?> toAdd = galleryCache.get(file);
+					Item<?> toAdd = cache.get(file);
 					if(toAdd == null)
 					{	// If not, create a new item and put it in the cache:
 						toAdd = getItemForAttachment(f++, file);
-						galleryCache.put(file, toAdd);
+						cache.put(file, toAdd);
 					}
 					// Set padding and add item to adapter:
 					toAdd.setPaddingDip(CollectorView.PADDING_DIP);
@@ -647,16 +682,17 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				
 				// Refresh capture button in case it is now (un-)greyed out:
 				this.removeView(addButtonView);
-				addButtonView = buttonFromItem(getContext(), createCaptureMoreButton(), addButtonAction);
+				addButtonView = createCaptureMoreButton().getView(getContext());
+				addButtonView.setOnClickListener(this);
 				this.addView(addButtonView, buttonParams);
 			}
 			// Force the picker to update its views (do this regardless of mediaItemsChanged else there will be UI glitches)
 			pickerView.setAdapter(adapter);
 			mediaItemsChanged = false; // !!!
 		}
-
+		
 		/**
-		 * Creates a "capture more" button to be used in the picker, but makes it appear greyed out
+		 * Creates a "capture more" button to be used in the picker, but makes it appear grayed out
 		 * if the field's maximum number of attachments has been reached.
 		 * 
 		 * @return the "capture more" button to be added to the UI.
@@ -681,6 +717,28 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			layeredItem.addLayer(grayOutOverlay);
 
 			return layeredItem;
+		}
+		
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, final int position, long id)
+		{
+			collectorUI.clickView(view, new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					controller.getCurrentFieldArguments().put(	REVIEW_FILE_PATH_KEY,
+																field.getAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord(), position).getAbsolutePath());
+					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+				}
+			});
+		}
+
+		@Override
+		public void onClick(View v)
+		{
+			if(v == addButtonView) // check just in case
+				collectorUI.clickView(v, addButtonAction);
 		}
 		
 	}

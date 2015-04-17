@@ -71,7 +71,40 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 
 	public AndroidAudioUI(AudioField field, CollectorController controller, CollectorView collectorUI)
 	{
-		super(field, controller, collectorUI);
+		super(	field,
+				controller,
+				collectorUI,
+				false, // there is no nothing to show in the capture view before recording is started
+				true); // unblock UI after capture button click to allow other click events (so recording can be stopped)
+	}
+
+	/**
+	 * If not already recording, start recording. Else stop recording and attach the media file 
+	 * to the field.
+	 */
+	@Override
+	protected void onCapture()
+	{
+		if(!recording)
+		{
+			// start recording
+			minimiseCaptureButton(); // show volume levels while recording
+			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+			startRecording();
+			recording = true;
+		}
+		else
+		{
+			// stop recording
+			stopRecording();
+			// a capture has been made so show it for review:
+			attachMedia(captureFile);
+			recording = false;
+			if(field.isShowReview())
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+			else
+				controller.goForward(true);
+		}
 	}
 
 	/**
@@ -127,40 +160,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 			audioRecorder = null;
 		}
 	}
-
-	/**
-	 * If not already recording, start recording. Else stop recording and attach the media file 
-	 * to the field.
-	 */
+	
 	@Override
-	protected boolean onCapture()
-	{
-		if(!recording)
-		{
-			// start recording
-			minimiseCaptureButton(); // show volume levels while recording
-			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-			startRecording();
-			recording = true;
-		}
-		else
-		{
-			// stop recording
-			stopRecording();
-			// a capture has been made so show it for review:
-			attachMedia(captureFile);
-			recording = false;
-			if(field.isShowReview())
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-			else
-				controller.goForward(true);
-		}
-		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		return true;
-	}
-
-	@Override
-	protected void onDiscard()
+	protected void onLeaveReview()
 	{
 		if(audioReviewView != null)
 			audioReviewView.finalise();
@@ -175,25 +177,11 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	{
 		ImageItem<?> captureButton = null;
 		if(!recording)
-		{
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
-			if(FileHelpers.isReadableFile(captureImgFile))
-				// use a custom audio capture image if available
-				captureButton = new FileImageItem(captureImgFile);
-			else
-				// otherwise just use the default resource
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_audio_capture_svg);
-		}
+			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_audio_capture_svg);
 		else
-		{
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(),  field.getStopRecImageRelativePath());
-			if(FileHelpers.isReadableFile(stopImgFile))
-				captureButton = new FileImageItem(stopImgFile);
-			else
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg);
-		}
+			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
 	}
@@ -217,15 +205,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	{
 		audioReviewView = new AudioReviewView(context, mediaFile);
 		return audioReviewView;
-	}
-
-	/**
-	 * Requests that the capture button be maximised when the capture UI is entered.
-	 */
-	@Override
-	protected boolean isMaximiseCaptureButton()
-	{
-		return true;
 	}
 
 	@Override

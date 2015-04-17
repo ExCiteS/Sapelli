@@ -28,12 +28,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -77,7 +74,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	public AndroidVideoUI(VideoField field, CollectorController controller, CollectorView collectorUI)
 	{
-		super(field, controller, collectorUI);
+		super(	field,
+				controller,
+				collectorUI,
+				true,	// showing few finder before capture
+				false);	// do not allow clicks as the capture process (see onCapture()) is asynchronous and returns immediately
 	}
 
 	@Override
@@ -119,7 +120,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	protected boolean onCapture()
+	protected void onCapture()
 	{
 		if(!recording)
 		{
@@ -140,15 +141,13 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			else
 				controller.goForward(true);
 		}
-
-		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		return true;
 	}
 
 	@Override
-	protected void onDiscard()
+	protected void onLeaveReview()
 	{
-		// nothing to do
+		if(playbackView != null)
+			playbackView.stopPlayback();
 	}
 
 	@Override
@@ -169,7 +168,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		playbackView.setVideoURI(Uri.fromFile(mediaFile));
 		// don't show the video view straight away - only once the thumbnail is clicked:
 		playbackView.setVisibility(View.GONE);
-
+		
 		// layout params for the thumbnail and the video view are the same:
 		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
 		reviewLayout.addView(thumbnailView, params);
@@ -239,25 +238,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	{
 		ImageItem<?> captureButton = null;
 		if(!recording)
-		{
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
-			if(FileHelpers.isReadableFile(captureImgFile))
-				// use a custom video capture image if available
-				captureButton = new FileImageItem(captureImgFile);
-			else
-				// otherwise just use the default resource
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_video_capture_svg);
-		}
+			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg);
 		else
-		{
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
-			if(FileHelpers.isReadableFile(stopImgFile))
-				captureButton = new FileImageItem(stopImgFile);
-			else
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg);
-		}
+			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
 	}

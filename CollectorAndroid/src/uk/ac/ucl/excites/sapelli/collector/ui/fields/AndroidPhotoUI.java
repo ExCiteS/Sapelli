@@ -31,9 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.hardware.Camera;
@@ -70,12 +68,14 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
 	{
-		super(field, controller, collectorUI);
+		super(	field,
+				controller,
+				collectorUI,
+				true,	// showing few finder before capture
+				false);	// do not allow clicks as the capture process (see onCapture()) is asynchronous and returns immediately
 	}
 
-	@SuppressWarnings("deprecation")
-	@Override
-	protected View getCaptureContent(Context context)
+	private void initCameraController()
 	{
 		if(cameraController == null)
 		{
@@ -90,14 +90,20 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 					attachMedia(null);
 					if(isValid(controller.getCurrentRecord()))
 						controller.goForward(false);
-					else
-						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
-					return null;
+					//TODO else
+						//collectorUI.activity.showErrorDialog(messageId, finish);
 				}
 			}
 			// Set flash mode:
 			cameraController.setFlashMode(field.getFlashMode());
 		}
+	}
+	
+	@SuppressWarnings("deprecation")
+	@Override
+	protected View getCaptureContent(Context context)
+	{
+
 		// Create the surface for previewing the camera:
 		captureSurface = new SurfaceView(context);
 
@@ -125,29 +131,21 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	protected boolean onCapture()
+	protected void onCapture()
 	{
-		cameraController.takePicture(this);
-		// do not allow clicks yet as the above call is asynchronous and returns immediately
-		return false;
+		cameraController.takePicture(this); // asynchronous !!!
 	}
 	
 	@Override
-	protected void onDiscard()
+	protected void onLeaveReview()
 	{
 		// nothing to do
 	}
+	
 	@Override
 	protected ImageItem<?> generateCaptureButton(Context context)
 	{
-		ImageItem<?> captureButton = null;
-		File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(captureImgFile))
-			// return a custom photo capture button if it exists
-			captureButton = new FileImageItem(captureImgFile);
-		else
-			// otherwise just use the default resource
-			captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_photo_svg);
+		ImageItem<?> captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
 	}
@@ -170,7 +168,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		super.cancel();
 		if(cameraController != null)
 			cameraController.close();
-		cameraController = null;
 	}
 	
 	@Override

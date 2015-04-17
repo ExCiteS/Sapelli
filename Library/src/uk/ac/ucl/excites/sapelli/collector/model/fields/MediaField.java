@@ -62,6 +62,7 @@ public abstract class MediaField extends Field
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
 	
 	// DYNAMIC ------------------------------------------------------
+	protected String approveButtonImageRelativePath;
 	protected String discardButtonImageRelativePath;
 	
 	//protected int min;
@@ -160,6 +161,22 @@ public abstract class MediaField extends Field
 	public void setShowReview(boolean showReview)
 	{
 		this.showReview = showReview;
+	}
+
+	/**
+	 * @return the approveButtonImageRelativePath
+	 */
+	public String getApproveButtonImageRelativePath()
+	{
+		return approveButtonImageRelativePath;
+	}
+
+	/**
+	 * @param approveButtonImageRelativePath the approveButtonImageRelativePath to set
+	 */
+	public void setApproveButtonImageRelativePath(String approveButtonImageRelativePath)
+	{
+		this.approveButtonImageRelativePath = approveButtonImageRelativePath;
 	}
 
 	/**
@@ -266,7 +283,12 @@ public abstract class MediaField extends Field
 		if(offsets != null)
 		{
 			if(offsets.remove(creationTimeOffset))
-				getColumn().storeValue(record, offsets);
+			{
+				if(offsets.isEmpty())
+					getColumn().clearValue(record); // reset value in column to null
+				else
+					getColumn().storeValue(record, offsets);
+			}
 			else
 				System.err.println("Specified attachment could not be found for deletion.");
 		}
