@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import java.io.File;
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
@@ -52,7 +53,11 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidVideoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -282,7 +287,19 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * @param clickView
 	 * @param action
 	 */
-	public void clickView(View clickedView, final Runnable action)
+	public void clickView(final View clickedView, final Runnable action)
+	{
+		clickView(clickedView, action, true); // unblock UI after action by default
+	}
+	
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 * @param unblock whether to unblock the UI after executing the action 
+	 */
+	public void clickView(final View clickedView, final Runnable action, final boolean unblock)
 	{
 		// Block the UI so other events are ignored until we are done:
 		controller.blockUI();
@@ -292,22 +309,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			// Execute animation and the action afterwards:
 			ViewAnimator.Click(	clickedView,
 								null,
-								new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										if(action != null)
-											action.run();
-										controller.unblockUI(); // !!!
-									}
-								});
+								unblock ? 	new Runnable()
+											{
+												@Override
+												public void run()
+												{
+													action.run();
+													controller.unblockUI(); // !!!
+												}
+											} :
+											action);
 		else
 		{
 			// Block the UI before running the action and unblock it afterwards
 			if(action != null)
 				action.run();
-			controller.unblockUI();
+			if(unblock)
+				controller.unblockUI();
 		}
 	}
 
@@ -506,6 +524,22 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public int getFieldUIPartHeightPx(int availableHeight, int numRows)
 	{
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
+	}
+	
+	public int getControlHeightPx()
+	{
+		return ScreenMetrics.ConvertDipToPx(activity, AndroidControlsUI.CONTROL_HEIGHT_DIP);
+	}
+	
+	public ImageItem<?> getImageItemFromProjectFileOrResource(String imgRelativePath, int drawableResourceId)
+	{
+		File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
+		if(FileHelpers.isReadableFile(imgFile))
+			// use image file from project if available:
+			return new FileImageItem(imgFile);
+		else
+			// use built-in image resource:
+			return new ResourceImageItem(getContext().getResources(), drawableResourceId);
 	}
 
 	/**

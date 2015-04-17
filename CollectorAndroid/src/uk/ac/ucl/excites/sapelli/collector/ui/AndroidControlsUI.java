@@ -36,7 +36,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
@@ -54,7 +53,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 	// Statics-------------------------------------------------------
 	static public final float CONTROL_HEIGHT_DIP = 60.0f;
-	static public final float PADDING_DIP = 6.0f;
+	static public final float CONTROL_PADDING_DIP = 6.0f;
 	static public final int FOREGROUND_COLOR = Color.BLACK;
 	static private final int SEMI_TRANSPARENT_WHITE = Color.parseColor("#80FFFFFF");
 	
@@ -85,7 +84,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			view.setPadding(0, 0, 0, collectorUI.getSpacingPx()); // Bottom padding (to put spacing between buttons and view underneath)
 			
 			// ControlItem size:
-			view.setItemDimensionsPx(LayoutParams.MATCH_PARENT, getControlHeightPx());
+			view.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getControlHeightPx());
 			
 			// Listen for clicks:
 			view.setOnItemClickListener(this);
@@ -202,12 +201,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	@Override
 	public int getCurrentHeightPx()
 	{
-		return view == null ? 0 : (view.getAdapter().isEmpty() ? 0 : (getControlHeightPx() + collectorUI.getSpacingPx()));
-	}
-	
-	private int getControlHeightPx()
-	{
-		return ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), CONTROL_HEIGHT_DIP);
+		return view == null ? 0 : (view.getAdapter().isEmpty() ? 0 : (collectorUI.getControlHeightPx() + collectorUI.getSpacingPx()));
 	}
 	
 	/**
@@ -256,7 +250,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			/* Unused -- replaced by Drawable buttons (arrow & cross)
 			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
-			button.setPaddingDip(PADDING_DIP);
+			button.setPaddingDip(CONTROL_PADDING_DIP);
 			button.setBackgroundColor(Color.TRANSPARENT); // button itself should not have a background so we can see the one of the containing ControlItem/LayeredItem
 			
 			// Show button image size:
