@@ -426,10 +426,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			LayeredItem layeredItem = new LayeredItem().addLayer(item, Color.TRANSPARENT, 0.0f); // make inner item background transparent and remove its padding
 			// Crossing:
 			if(choice.isCrossed())
-				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
+				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS)), Color.TRANSPARENT, 0.0f); // later we may expose thickness in the XML as well
 			// Graying-out:
 			if(grayedOut)
-				// Add grayed-out layer on top (also the layer stack background will a opaque gra; see bgValue above):
+				// Add grayed-out layer on top (also the layer stack background will a opaque gray; see bgValue above):
 				layeredItem.addLayer(new EmptyItem(), CollectorView.COLOR_SEMI_TRANSPARENT_GRAY, 0.0f);
 			// Item becomes layered:
 			item = layeredItem;
