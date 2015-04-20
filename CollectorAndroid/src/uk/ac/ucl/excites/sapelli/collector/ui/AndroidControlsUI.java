@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 import android.widget.AbsListView.LayoutParams;
 import android.widget.AdapterView;
@@ -245,6 +246,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 						button = new DrawableItem(new HorizontalArrow(FOREGROUND_COLOR, false));
 						break;
 					default : 
+						Log.e(getClass().getCanonicalName(), "Unknown control type: " + control.type.name());
 						button = new DrawableItem(new EmptyDrawable());
 				}
 			/* Unused -- replaced by Drawable buttons (arrow & cross)
