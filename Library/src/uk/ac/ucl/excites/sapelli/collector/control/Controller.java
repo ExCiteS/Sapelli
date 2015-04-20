@@ -311,14 +311,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected void advance(boolean requestedByUser, boolean allowJump)
 	{
 		if(handlingUserGoBackRequest && !requestedByUser)
-		{
-			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
-			return;
+		{	// We are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
+			goBack(false);
 		}
-		if(currFormSession.atField())
-			goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
 		else
-			openFormSession(currFormSession); // this shouldn't happen really...
+		{	// Normal going forward:
+			if(currFormSession.atField())
+				goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
+			else
+				openFormSession(currFormSession); // this shouldn't happen really...
+		}
 	}
 
 	/**
@@ -345,11 +347,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	}
 	
 	/**
-	 * Return whether the controller is moving backwards or forwards
+	 * Return whether the controller is moving backwards (or forwards), by user request.
 	 * 
 	 * @return true if going back and false otherwise
 	 */
-	public boolean isGoBack()
+	public boolean isGoingBack()
 	{
 		return handlingUserGoBackRequest;
 	}

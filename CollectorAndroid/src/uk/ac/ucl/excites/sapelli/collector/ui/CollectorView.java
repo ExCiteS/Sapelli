@@ -192,7 +192,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 				{
 					case HORIZONTAL:
 						// Check whether it is a backwards or forwards direction and create Right or Left animation:
-						if(controller.isGoBack())
+						if(controller.isGoingBack())
 							// Right:
 							ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 						else
@@ -201,7 +201,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 						break;
 					case VERTICAL:
 						// Check whether it is a backwards or forwards direction and create Up or Down animation:
-						if(controller.isGoBack())
+						if(controller.isGoingBack())
 							// Down:
 							ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 						else

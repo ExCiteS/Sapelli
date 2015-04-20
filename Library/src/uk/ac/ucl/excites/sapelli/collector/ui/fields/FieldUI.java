@@ -53,6 +53,8 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected final UI collectorUI;
 	private int state = STATE_HIDDEN;
 	
+	private boolean wasUserGoingBack = false;
+	
 	private Record lastKnownRecord = null;
 	
 	public FieldUI(F field, Controller<UI> controller, UI collectorUI)
@@ -85,6 +87,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		
 		// Mark the fieldUI as currently shown:
 		this.state = onPage ? STATE_SHOWN_ON_PAGE : STATE_SHOWN_ALONE;
+		
+		// Remember whether this field was reached by means of a user-initiated back-press:
+		this.wasUserGoingBack = controller.isGoingBack();
 		
 		return getPlatformView(onPage, controller.isFieldEnabled(field), record, newRecord);
 	}
@@ -180,6 +185,14 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		return state != STATE_HIDDEN;
 	}
 	
+	/**
+	 * @return the wasGoingBack whether or not the currently displayed field was reached by means of a user-initiated back-press
+	 */
+	public boolean wasUserGoingBack()
+	{
+		return wasUserGoingBack;
+	}
+
 	/**
 	 * When called the fieldUI is given the change to take the screen focus.
 	 * If it does, it should return {@code true}, if it does not it should
