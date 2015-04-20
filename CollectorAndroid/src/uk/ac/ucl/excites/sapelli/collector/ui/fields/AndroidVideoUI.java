@@ -23,8 +23,8 @@ import java.io.File;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -42,8 +42,6 @@ import android.net.Uri;
 import android.provider.MediaStore;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
@@ -60,16 +58,13 @@ import android.widget.VideoView;
  * 
  * @author mstevens, Michalis Vitos, benelliott
  */
-public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnCompletionListener
+public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCompletionListener
 {
 	
 	static protected final String TAG = "AndroidVideoUI";
 
-	// Camera & image data:
-	private CameraController cameraController;
-	private SurfaceView captureSurface;
 	private VideoView playbackView;
-	private boolean recording = false;
+	private volatile boolean recording = false;
 	private int playbackPosition = 0;
 
 	public AndroidVideoUI(VideoField field, CollectorController controller, CollectorView collectorUI)
@@ -82,41 +77,26 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	protected View getCaptureContent(Context context)
 	{
-		if(cameraController == null)
-		{
-			// Set up cameraController:
-			// Camera controller & camera selection:
-			cameraController = new CameraController(field.isUseFrontFacingCamera(), true);
-			if(!cameraController.foundCamera())
-			{ // no camera found, try the other one:
-				cameraController.findCamera(!field.isUseFrontFacingCamera());
-				if(!cameraController.foundCamera())
-				{ // still no camera, this device does not seem to have one:
-					attachMedia(null);
-					if(isValid(controller.getCurrentRecord()))
-						controller.goForward(false);
-					else
-						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
-					return null;
-				}
-			}
-		}
-		// Create the surface for previewing the camera:
-		captureSurface = new SurfaceView(context);
-
-		// Set-up surface holder:
-		SurfaceHolder holder = captureSurface.getHolder();
-		holder.addCallback(cameraController);
-		holder.setKeepScreenOn(true);
-		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
-		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
-		cameraController.startPreview();
-
-		return captureSurface;
+		return getCaptureContent(context, field.isUseFrontFacingCamera(), FlashMode.OFF); // TODO expose flash mode inb XML for <Video>?
+	}
+	
+	/**
+	 * If not currently recording, will return a "start recording" button. If currently recording, will return a "stop recording" button.
+	 */
+	@Override
+	protected ImageItem<?> generateCaptureButton(Context context)
+	{
+		ImageItem<?> captureButton = null;
+		if(!recording)
+			// recording hasn't started yet, so present "record" button
+			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg);
+		else
+			// recording started, so present "stop" button instead
+			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
+		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		return captureButton;
 	}
 
 	@Override
@@ -142,14 +122,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				controller.goForward(true);
 		}
 	}
-
-	@Override
-	protected void onLeaveReview()
-	{
-		if(playbackView != null)
-			playbackView.stopPlayback();
-	}
-
+	
 	@Override
 	protected View getReviewContent(Context context, File mediaFile)
 	{
@@ -224,27 +197,10 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	public void onCompletion(MediaPlayer mp)
+	protected void onLeaveReview()
 	{
-		// playback has finished so go back to start
-		playbackPosition = 0;
-	}
-
-	/**
-	 * If not currently recording, will return a "start recording" button. If currently recording, will return a "stop recording" button.
-	 */
-	@Override
-	protected ImageItem<?> generateCaptureButton(Context context)
-	{
-		ImageItem<?> captureButton = null;
-		if(!recording)
-			// recording hasn't started yet, so present "record" button
-			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg);
-		else
-			// recording started, so present "stop" button instead
-			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
+		if(playbackView != null)
+			playbackView.stopPlayback();
 	}
 
 	@Override
@@ -254,17 +210,25 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
 		return new DrawableItem(index, new BitmapDrawable(collectorUI.getResources(), thumbnail));
 	}
+	
+	@Override
+	public void onCompletion(MediaPlayer mp)
+	{
+		// playback has finished so go back to start
+		playbackPosition = 0;
+	}
 
+	@Override
+	protected int getCameraErrorStringId(boolean fatal)
+	{
+		return fatal ? R.string.videoCameraErrorFatal : R.string.videoCameraErrorSkip;
+	}
+	
 	@Override
 	protected void cancel()
 	{
-		super.cancel();
-		
+		super.cancel();		
 		recording = false;
-		if(cameraController != null)
-			cameraController.close();
-		
-		cameraController = null;
 		playbackView = null;
 	}
 	

@@ -66,6 +66,11 @@
     <string name="downloading">Downloading&#8230;</string>
     <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
     
+    <string name="photoCameraErrorFatal">Cannot detect camera to take mandatory picture; cancelling record and exiting project&#8230;</string>
+    <string name="videoCameraErrorFatal">Cannot detect camera to record mandatory video; cancelling record and exiting project&#8230;</string>
+    <string name="photoCameraErrorSkip">Cannot detect camera to take picture; skipping field \"%1$s\"&#8230;</string>
+    <string name="videoCameraErrorSkip">Cannot detect camera to record video; skipping field \"%1$s\"&#8230;</string>
+    
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>
     <string name="useAlternativeStorage">Try another&#8230;</string>

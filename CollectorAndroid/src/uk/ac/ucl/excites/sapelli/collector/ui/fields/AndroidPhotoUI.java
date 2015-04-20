@@ -24,7 +24,6 @@ import java.io.FileOutputStream;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -39,8 +38,6 @@ import android.hardware.Camera.PictureCallback;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -49,22 +46,16 @@ import android.widget.ImageView.ScaleType;
  * A subclass of AndroidMediaUI which allows for the capture and review of images from the device's camera.
  * 
  * NOTE: Samsung decided not to bother to enable portrait photo/video capture in the xCover 1 kernel, so captures may display incorrectly on that model.
- * -- See http://stackoverflow.com/questions/19176038/
- * 
- * TODO added photo/no photo buttons before entering actual camera mode OR going to naive camera app (which is no longer called from the controller!)
+ * -- See http://stackoverflow.com/questions/19176038
  * 
  * TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time (on Android v2.x only?)
  * 
  * @author mstevens, Michalis Vitos, benelliott
  */
-public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback
+public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements PictureCallback
 {
 	
 	static protected final String TAG = "AndroidPhotoUI";
-
-	// Camera & image data:
-	private CameraController cameraController;
-	private SurfaceView captureSurface;
 
 	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
 	{
@@ -74,49 +65,26 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				true,	// showing few finder before capture
 				false);	// do not allow clicks as the capture process (see onCapture()) is asynchronous and returns immediately
 	}
-
-	private void initCameraController()
-	{
-		if(cameraController == null)
-		{
-			// Set up cameraController:
-			// Camera controller & camera selection:
-			cameraController = new CameraController(field.isUseFrontFacingCamera());
-			if(!cameraController.foundCamera())
-			{ 	// No camera found, try the other one:
-				cameraController.findCamera(!field.isUseFrontFacingCamera());
-				if(!cameraController.foundCamera())
-				{	// Still no camera, this device does not seem to have one:
-					attachMedia(null);
-					if(isValid(controller.getCurrentRecord()))
-						controller.goForward(false);
-					//TODO else
-						//collectorUI.activity.showErrorDialog(messageId, finish);
-				}
-			}
-			// Set flash mode:
-			cameraController.setFlashMode(field.getFlashMode());
-		}
-	}
 	
-	@SuppressWarnings("deprecation")
 	@Override
 	protected View getCaptureContent(Context context)
 	{
+		return getCaptureContent(context, field.isUseFrontFacingCamera(), field.getFlashMode());
+	}
+	
+	@Override
+	protected ImageItem<?> generateCaptureButton(Context context)
+	{
+		ImageItem<?> captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
+		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		return captureButton;
+	}
 
-		// Create the surface for previewing the camera:
-		captureSurface = new SurfaceView(context);
-
-		// Set-up surface holder:
-		SurfaceHolder holder = captureSurface.getHolder();
-		holder.addCallback(cameraController);
-		holder.setKeepScreenOn(true);
-		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
-		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
-		cameraController.startPreview();
-
-		return captureSurface;
+	@Override
+	protected void onCapture()
+	{
+		if(cameraController != null)
+			cameraController.takePicture(this); // asynchronous !!!
 	}
 	
 	@Override
@@ -129,25 +97,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		reviewView.setImageURI(Uri.fromFile(mediaFile));
 		return reviewView;
 	}
-
-	@Override
-	protected void onCapture()
-	{
-		cameraController.takePicture(this); // asynchronous !!!
-	}
 	
 	@Override
 	protected void onLeaveReview()
 	{
 		// nothing to do
-	}
-	
-	@Override
-	protected ImageItem<?> generateCaptureButton(Context context)
-	{
-		ImageItem<?> captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
 	}
 
 	@Override
@@ -161,13 +115,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		
 		return new FileImageItem(index, photoFile); // will use BitmapUtils for memory-safe scaling
 	}
-
+	
 	@Override
-	protected void cancel()
+	protected int getCameraErrorStringId(boolean fatal)
 	{
-		super.cancel();
-		if(cameraController != null)
-			cameraController.close();
+		return fatal ? R.string.photoCameraErrorFatal : R.string.photoCameraErrorSkip;
 	}
 	
 	@Override

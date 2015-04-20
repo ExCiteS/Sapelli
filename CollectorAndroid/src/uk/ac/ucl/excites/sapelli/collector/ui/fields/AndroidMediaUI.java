@@ -193,7 +193,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	/**
 	 * @return the current display state based on the field's arguments and properties.
 	 */
-	private DisplayState getCurrentDisplayState()
+	protected DisplayState getCurrentDisplayState()
 	{
 		if(controller.getCurrentFieldArguments().getBoolean(GO_TO_CAPTURE_KEY, false))
 			// we have been explicitly told to go to capture state (by means of the "add more" button in the gallery):
@@ -215,6 +215,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		return DisplayState.GALLERY;
 	}
 
+	protected boolean isInCaptureMode()
+	{
+		DisplayState state = getCurrentDisplayState();
+		return state == DisplayState.CAPTURE || state == DisplayState.CAPTURE_FROM_GALLERY;
+	}
+	
 	/**
 	 * Ensures that the media file reference is nullified after a capture is made so that it is not deleted
 	 * from the {@link AndroidMediaUI#cancel()} method.

@@ -61,9 +61,9 @@ import android.widget.LinearLayout;
 public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 {
 
-	private boolean recording = false;
-
 	private static final String TAG = "AndroidAudioUI";
+	
+	private volatile boolean recording = false;
 
 	private AudioRecorder audioRecorder;
 	private AudioReviewView audioReviewView;
