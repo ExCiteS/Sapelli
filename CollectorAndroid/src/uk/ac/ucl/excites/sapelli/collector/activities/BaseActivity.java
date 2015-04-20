@@ -221,7 +221,7 @@ public abstract class BaseActivity extends Activity
 			}
 		} : null);
 		// set negative button:
-		if(negativeButtonId != -1)
+		if(negativeButtonId != HIDE_BUTTON)
 			bldr.setNegativeButton(negativeButtonId, finishOnNegative ? new DialogInterface.OnClickListener()
 			{
 				public void onClick(DialogInterface dialog, int whichButton)
@@ -229,6 +229,8 @@ public abstract class BaseActivity extends Activity
 					finish();
 				}
 			} : null);
+		// set cancelable (only true if there no effects):
+		bldr.setCancelable(!finishOnPositive && positiveTask == null && (negativeButtonId == HIDE_BUTTON || !finishOnNegative));
 		// create & show
 		bldr.create().show();
 	}
