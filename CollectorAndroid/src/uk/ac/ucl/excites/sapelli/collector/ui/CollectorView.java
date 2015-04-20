@@ -187,28 +187,26 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			{
 				switch(screenTransition)
 				{
-				case HORIZONTAL:
-					// Check whether it is a backwards or forwards direction and create Right or Left animation:
-					if(controller.isGoBack())
-						// Right:
-						ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Left:
-						ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				case VERTICAL:
-					// Check whether it is a backwards or forwards direction and create Up or Down animation:
-					if(controller.isGoBack())
-						// Down:
-						ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Up:
-						ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				default:
-					break;
+					case HORIZONTAL:
+						// Check whether it is a backwards or forwards direction and create Right or Left animation:
+						if(controller.isGoingBack())
+							// Right:
+							ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Left:
+							ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					case VERTICAL:
+						// Check whether it is a backwards or forwards direction and create Up or Down animation:
+						if(controller.isGoingBack())
+							// Down:
+							ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Up:
+							ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					default:
+						break;
 				}
 			}
 
