@@ -232,12 +232,23 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 *  Returns whether or not the maximum number of attachments has been added to this
-	 *  field in the provided record.
+	 * Checks whether or not there is at least 1 attachment corresponding to to this field in the provided record.
+	 * 
 	 * @param record
-	 * @return
+	 * @return at least 1 attachment
 	 */
-	public boolean isMaxReached(Record record)
+	public boolean hasAttachements(Record record)
+	{
+		return (getAttachmentCount(record) > 0);
+	}
+	
+	/**
+	 * Checks whether or not the maximum number of attachments corresponding to to this field has been reached in the provided record.
+	 * 
+	 * @param record
+	 * @return max attachments reached
+	 */
+	public boolean isMaxAttachmentsReached(Record record)
 	{
 		return (getAttachmentCount(record) >= max);
 	}
@@ -253,7 +264,7 @@ public abstract class MediaField extends Field
 	public void addAttachmentToRecord(File attachment, Record record)
 	{
 		// check if adding would exceed max no attachments for this field
-		if(isMaxReached(record))
+		if(isMaxAttachmentsReached(record))
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);

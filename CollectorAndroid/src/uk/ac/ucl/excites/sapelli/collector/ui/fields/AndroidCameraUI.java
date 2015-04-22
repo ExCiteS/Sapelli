@@ -97,9 +97,9 @@ public abstract class AndroidCameraUI<MF extends MediaField> extends AndroidMedi
 		}
 		else
 		{
-			DrawableItem cross = new DrawableItem(new SaltireCross(Color.parseColor(ChoiceField.DEFAULT_CROSS_COLOR), AndroidChoiceUI.CROSS_THICKNESS));
-			cross.setBackgroundColor(Color.TRANSPARENT);
-			return cross.getView(context);
+			return	new DrawableItem(new SaltireCross(Color.parseColor(ChoiceField.DEFAULT_CROSS_COLOR), AndroidChoiceUI.CROSS_THICKNESS))
+					.setBackgroundColor(Color.TRANSPARENT)
+					.getView(context);
 		}
 	}
 	

@@ -24,13 +24,11 @@ import java.io.FileOutputStream;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.hardware.Camera;
@@ -75,9 +73,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 	@Override
 	protected ImageItem<?> generateCaptureButton(Context context)
 	{
-		ImageItem<?> captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
+		return collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
 	}
 
 	@Override
@@ -93,19 +89,14 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		// add an ImageView to the review UI:
 		ImageView reviewView = new ImageView(context);
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
+		reviewView.setBackgroundColor(fieldBackgroundColor);
 		// set the ImageView to the provided photo file:
 		reviewView.setImageURI(Uri.fromFile(mediaFile));
 		return reviewView;
 	}
-	
-	@Override
-	protected void onLeaveReview()
-	{
-		// nothing to do
-	}
 
 	@Override
-	protected Item<?> getItemForAttachment(int index, File photoFile)
+	protected Item<?> getGalleryItem(int index, File photoFile)
 	{
 		// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
 		/*// Old example code to rotate bitmap (would have to be integrated in (File)ImageItem):

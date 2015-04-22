@@ -23,14 +23,12 @@ import java.io.File;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -88,15 +86,12 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 	@Override
 	protected ImageItem<?> generateCaptureButton(Context context)
 	{
-		ImageItem<?> captureButton = null;
 		if(!recording)
 			// recording hasn't started yet, so present "record" button
-			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg);
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg);
 		else
 			// recording started, so present "stop" button instead
-			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
 	}
 
 	@Override
@@ -197,14 +192,7 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 	}
 
 	@Override
-	protected void onLeaveReview()
-	{
-		if(playbackView != null)
-			playbackView.stopPlayback();
-	}
-
-	@Override
-	protected Item<?> getItemForAttachment(int index, File videoFile)
+	protected Item<?> getGalleryItem(int index, File videoFile)
 	{
 		// Create thumbnail from video file:
 		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
@@ -229,6 +217,11 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 	{
 		super.cancel();		
 		recording = false;
+		
+		if(playbackView != null)
+			playbackView.stopPlayback();
+		
+		// TODO recycle views?
 		playbackView = null;
 	}
 	

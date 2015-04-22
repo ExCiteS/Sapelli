@@ -27,15 +27,11 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -78,6 +74,21 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 				true); // unblock UI after capture button click to allow other click events (so recording can be stopped)
 	}
 
+	/**
+	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
+	 * "stop recording" button.
+	 */
+	@Override
+	protected ImageItem<?> generateCaptureButton(Context context)
+	{
+		if(!recording)
+			// recording hasn't started yet, so present "record" button
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_audio_capture_svg);
+		else
+			// recording started, so present "stop" button instead
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
+	}
+	
 	/**
 	 * If not already recording, start recording. Else stop recording and attach the media file 
 	 * to the field.
@@ -160,34 +171,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 			audioRecorder = null;
 		}
 	}
-	
-	@Override
-	protected void onLeaveReview()
-	{
-		if(audioReviewView != null)
-			audioReviewView.finalise();
-	}
-
-	/**
-	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
-	 * "stop recording" button.
-	 */
-	@Override
-	protected ImageItem<?> generateCaptureButton(Context context)
-	{
-		ImageItem<?> captureButton = null;
-		if(!recording)
-			// recording hasn't started yet, so present "record" button
-			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_audio_capture_svg);
-		else
-			// recording started, so present "stop" button instead
-			captureButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
-	}
 
 	@Override
-	protected Item<?> getItemForAttachment(int index, File attachement)
+	protected Item<?> getGalleryItem(int index, File attachement)
 	{
 		// TODO allow for custom icon
 		return new ResourceImageItem(index, collectorUI.getResources(), R.drawable.audio_item_svg);
@@ -203,6 +189,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	@Override
 	protected View getReviewContent(Context context, File mediaFile)
 	{
+		// TODO reuse object?
 		audioReviewView = new AudioReviewView(context, mediaFile);
 		return audioReviewView;
 	}
@@ -213,11 +200,12 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		super.cancel();
 		if(audioRecorder != null)
 			stopRecording();
-
 		recording = false;
+		
 		if(audioReviewView != null)
 			audioReviewView.finalise();
 
+		// TODO recycle views?
 		audioReviewView = null;
 		volumeDisplay = null;
 	}
@@ -250,21 +238,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 				Log.e(TAG, "Could not play audio file.");
 				e.printStackTrace();
 			}
-			File playImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getPlayAudioImageRelativePath());
-			if(FileHelpers.isReadableFile(playImgFile))
-				playButton = new FileImageItem(playImgFile).getView(context);
-			else
-				playButton = new ResourceImageItem(context.getResources(), R.drawable.button_play_audio_svg).getView(context);
-			// playAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			playButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
-
-			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopAudioImageRelativePath());
-			if(FileHelpers.isReadableFile(stopImgFile))
-				stopButton = new FileImageItem(stopImgFile).getView(context);
-			else
-				stopButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg).getView(context);
-			// stopAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			stopButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+			
+			// Buttons:
+			LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+			playButton = collectorUI.getImageItemFromProjectFileOrResource(field.getPlayAudioImageRelativePath(), R.drawable.button_play_audio_svg).setBackgroundColor(fieldBackgroundColor).getView(context);
+			playButton.setLayoutParams(buttonParams);
+			stopButton = collectorUI.getImageItemFromProjectFileOrResource(field.getStopAudioImageRelativePath(), R.drawable.button_stop_audio_svg).setBackgroundColor(fieldBackgroundColor).getView(context);
+			stopButton.setLayoutParams(buttonParams);
 
 			buttonAction = new Runnable()
 			{
@@ -296,6 +276,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 				}
 
 			});
+			
 			// show play button first
 			this.addView(playButton);
 
