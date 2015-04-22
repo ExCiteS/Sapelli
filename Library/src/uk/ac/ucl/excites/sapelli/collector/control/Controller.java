@@ -981,11 +981,13 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		return fileStorageProvider;
 	}
 	
-	public void addAttachment(File file) {
+	public void addAttachment(File file)
+	{
 		currFormSession.addAttachment(file);
 	}
 	
-	public void discardAttachment(File file) {
+	public void discardAttachment(File file)
+	{
 		currFormSession.discardAttachment(file);
 	}
 
