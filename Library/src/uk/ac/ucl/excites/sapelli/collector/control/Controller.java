@@ -373,14 +373,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		goTo(currFormSession.getCurrent(), leaveRule);
 	}
 	
-	/**
-	 * Re-enter current field with new arguments
-	 */
-	public void goToCurrent(FieldParameters arguments, LeaveRule leaveRule)
-	{
-		goTo(new FieldWithArguments(currFormSession.getCurrentField(), arguments), leaveRule);
-	}
-	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
 		goTo(nextFieldAndArguments, LeaveRule.CONDITIONAL); // only leave upon successful validation (& value storage)
