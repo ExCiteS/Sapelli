@@ -83,6 +83,8 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	
 	public int getScreenHeightPx();
 	
+	public ControlsUI<V, UI> getControlsUI();
+	
 	public AudioFeedbackController<V> getAudioFeebackController();
 	
 	/**

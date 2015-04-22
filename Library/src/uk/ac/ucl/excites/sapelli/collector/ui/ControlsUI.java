@@ -64,12 +64,18 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	 */
 	protected abstract V getPlatformView();
 	
+	/**
+	 * Updates the controls (showing/hiding/appearance/etc.) for using with the given fieldUI
+	 * Note that this fieldUI is expected to match the current field of the Controller.
+	 * 
+	 * @param fieldUI
+	 */
 	public void update(FieldUI<?, V, UI> fieldUI)
 	{
 		// Form change?
-		if(fieldUI.getField().form != currentForm)
+		if(fieldUI.field.form != currentForm)
 		{
-			currentForm = fieldUI.getField().form;
+			currentForm = fieldUI.field.form;
 			updateForm(currentForm);
 		}
 		

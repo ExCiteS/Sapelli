@@ -133,7 +133,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 			for(FieldUI<?, View, CollectorView> fUI : fieldUIs)
 			{
 				LinearLayout currentWrappedView = (LinearLayout) container.getChildAt(fIndex); // may be null
-				View newView = fUI.showField(true, record); // the actual view object returned may be recycled but its state will be updated to reflect current record
+				View newView = fUI.showField(); // the actual view object returned may be recycled but its state will be updated to reflect current record
 				
 				// Replace current (wrapped) view:
 				if(newView != unwrapView(currentWrappedView)) // Note: unwrapView(null) will return null
