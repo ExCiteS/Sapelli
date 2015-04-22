@@ -468,14 +468,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	{
 		String location = txtProjectPathOrURL.getText().toString().trim();
 		if(location.isEmpty())
-			// Download Sapelli file if path is a URL
-			showErrorDialog(R.string.pleaseSelect);
+		{
+			//showErrorDialog(R.string.pleaseSelect);
+			browse(null);
+		}
 		else
 		{
 			// Extract & parse a local Sapelli file
 			txtProjectPathOrURL.setText("");
 
-			// Add project
+			// Download Sapelli file if path is a URL
 			if(Patterns.WEB_URL.matcher(location).matches())
 				// Location is a (remote) URL: download Sapelli file:
 				AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
