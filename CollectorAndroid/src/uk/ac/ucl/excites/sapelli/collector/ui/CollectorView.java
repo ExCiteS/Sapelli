@@ -88,7 +88,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float PADDING_DIP = 2.0f;
 
 	// Colors:
-	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// ScreenTransition duration
@@ -176,7 +175,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.update(fieldUI);
 
 		// Get the actual (updated) View instance:
-		View newFieldUIView = fieldUI.showField(false, controller.getCurrentRecord());
+		View newFieldUIView = fieldUI.showField();
 
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)
@@ -572,6 +571,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	/**
 	 * @return the controlsUI
 	 */
+	@Override
 	public AndroidControlsUI getControlsUI()
 	{
 		return controlsUI;

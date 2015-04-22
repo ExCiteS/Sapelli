@@ -964,6 +964,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		return currFormSession.getCurrentField();
 	}
 	
+	/**
+	 * @return the current FieldArguments
+	 */
+	public FieldParameters getCurrentFieldArguments()
+	{
+		return currFormSession.getCurrentFieldArguments();
+	}
+	
 	public void addLogLine(String... fields)
 	{
 		if(logger != null)
