@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 /**
  * Abstract class to represent the UI of a Field
  * 
- * @author mstevens, Ben
+ * @author mstevens, benelliott
  *
  * @param <F>
  * @param <V>
@@ -355,9 +355,8 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public boolean handleControlEvent(Control.Type control)
 	{
-		// by default, do not consume events:
-	    return false;
-    }
+		return false; // by default, do not consume events
+	}
 
 	/**
 	 * Tells whether this FieldUI needs to have its onDisplay() method called when it appears on the screen.
