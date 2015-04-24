@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 /**
  * Abstract class to represent the UI of a Field
  * 
- * @author mstevens
+ * @author mstevens, benelliott
  *
  * @param <F>
  * @param <V>
@@ -334,6 +334,23 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected abstract boolean isShowForward();
 
 	/**
+<<<<<<< HEAD
+=======
+	 * Allows subclasses to handle control events (i.e. pressing back/exit/forward)
+	 * in ways specific to their UI.
+	 * 
+	 * @param control - the control that was pressed
+	 * @return {@code true} if the control event was consumed and the default behaviour should not be
+	 * enacted, {@code false} if the control event was not consumed and the default behaviour should
+	 * be enacted.
+	 */
+	public boolean handleControlEvent(Control.Type control)
+	{
+		return false; // by default, do not consume events
+	}
+
+	/**
+>>>>>>> be59fc0... Misc
 	 * Tells whether this FieldUI needs to have its onDisplay() method called when it appears on the screen.
 	 * 
 	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
