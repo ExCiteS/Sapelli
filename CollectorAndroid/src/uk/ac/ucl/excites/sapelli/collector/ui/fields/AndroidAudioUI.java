@@ -21,6 +21,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 import java.io.IOException;
 
+import android.content.Context;
+import android.graphics.Color;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
@@ -28,17 +33,11 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import android.content.Context;
-import android.graphics.Color;
-import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
 
 /**
  * @author Julia, Michalis, mstevens
@@ -152,9 +151,9 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			Item<?> startButton = null;
 			File startRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(startRecImageFile))
-				startButton = new FileImageItem(startRecImageFile);
+				startButton = new ImageItem(startRecImageFile);
 			else
-				startButton = new ResourceImageItem(getContext().getResources(), R.drawable.start_audio_rec);
+				startButton = new ImageItem(getContext().getResources(), R.drawable.start_audio_rec);
 			startButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 			addButton(startButton); // add start button
 
@@ -162,9 +161,9 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			Item<?> stopButton = null;
 			File stopRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopRecImageFile))
-				stopButton = new FileImageItem(stopRecImageFile);
+				stopButton = new ImageItem(stopRecImageFile);
 			else
-				stopButton = new ResourceImageItem(getContext().getResources(), R.drawable.stop_audio_rec);
+				stopButton = new ImageItem(getContext().getResources(), R.drawable.stop_audio_rec);
 			stopButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 			addButton(stopButton); // add stop button
 
