@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
-import java.io.File;
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
@@ -53,11 +52,9 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidVideoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -89,7 +86,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float SPACING_DIP = 8.0f;
 	static public final float PADDING_DIP = 2.0f;
 
-	// Colors:
+	// Colours:
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// ScreenTransition duration
@@ -529,15 +526,16 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return ScreenMetrics.ConvertDipToPx(activity, AndroidControlsUI.CONTROL_HEIGHT_DIP);
 	}
 	
-	public ImageItem<?> getImageItemFromProjectFileOrResource(String imgRelativePath, int drawableResourceId)
+	/**
+	 * Returns an ImageItem using the given file path, or if no such file is available the given drawable resource.
+	 * 
+	 * @param imgRelativePath
+	 * @param drawableResourceId
+	 * @return
+	 */
+	public ImageItem getImageItemFromProjectFileOrResource(String imgRelativePath, int drawableResourceId)
 	{
-		File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
-		if(FileHelpers.isReadableFile(imgFile))
-			// use image file from project if available:
-			return new FileImageItem(imgFile);
-		else
-			// use built-in image resource:
-			return new ResourceImageItem(getContext().getResources(), drawableResourceId);
+		return ImageItem.New(controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath), getContext().getResources(), drawableResourceId);
 	}
 
 	/**

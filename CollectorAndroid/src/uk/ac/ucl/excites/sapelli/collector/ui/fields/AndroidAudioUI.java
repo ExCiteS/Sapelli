@@ -31,7 +31,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -79,7 +78,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	 * "stop recording" button.
 	 */
 	@Override
-	protected ImageItem<?> generateCaptureButton(Context context)
+	protected ImageItem generateCaptureButton(Context context)
 	{
 		if(!recording)
 			// recording hasn't started yet, so present "record" button
@@ -176,7 +175,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	protected Item<?> getGalleryItem(int index, File attachement)
 	{
 		// TODO allow for custom icon
-		return new ResourceImageItem(index, collectorUI.getResources(), R.drawable.audio_item_svg);
+		return new ImageItem(index, collectorUI.getResources(), R.drawable.audio_item_svg);
 	}
 
 	@Override
@@ -417,7 +416,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 
 			for(int i = 0; i < NUM_LEVELS; i++)
 			{
-
 				if(i == levelsToIlluminate)
 					paint.setColor(COLOR_INACTIVE_LEVEL);
 

@@ -84,7 +84,7 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 	 * If not currently recording, will return a "start recording" button. If currently recording, will return a "stop recording" button.
 	 */
 	@Override
-	protected ImageItem<?> generateCaptureButton(Context context)
+	protected ImageItem generateCaptureButton(Context context)
 	{
 		if(!recording)
 			// recording hasn't started yet, so present "record" button

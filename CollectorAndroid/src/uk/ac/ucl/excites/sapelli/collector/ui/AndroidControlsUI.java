@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
@@ -231,7 +231,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), control.getImageRelativePath());
 			if(FileHelpers.isReadableFile(imgFile))
 				// Use XML specified image:
-				button = new FileImageItem(imgFile);
+				button = new ImageItem(imgFile);
 			else
 				// Use default drawable for control type:
 				switch(control.type)

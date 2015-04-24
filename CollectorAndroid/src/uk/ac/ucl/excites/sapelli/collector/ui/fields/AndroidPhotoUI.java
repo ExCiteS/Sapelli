@@ -26,7 +26,6 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import android.app.ProgressDialog;
@@ -71,7 +70,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 	}
 	
 	@Override
-	protected ImageItem<?> generateCaptureButton(Context context)
+	protected ImageItem generateCaptureButton(Context context)
 	{
 		return collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
 	}
@@ -104,7 +103,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		bitmapMatrix.postRotate(90);
 		bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), bitmapMatrix, false);*/
 		
-		return new FileImageItem(index, photoFile); // will use BitmapUtils for memory-safe scaling
+		return new ImageItem(index, photoFile); // will use BitmapUtils for memory-safe scaling
 	}
 	
 	@Override
@@ -157,7 +156,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 			}
 			catch(Exception e)
 			{
-				Log.e("Handle image", "Image capture failed", e);
+				Log.e(TAG + ".HandleImage", "Image capture failed", e);
 			}
 			return null;
 		}
