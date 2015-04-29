@@ -47,20 +47,24 @@ public abstract class AndroidCameraUI<MF extends MediaField> extends AndroidMedi
 	protected CameraController cameraController;
 	private SurfaceView captureSurface;
 	
-	public AndroidCameraUI(MF field, CollectorController controller, CollectorView collectorUI, boolean hasPreCaptureView, boolean unblockUIAfterCaptureClick)
+	/**
+	 * @see AndroidMediaUI#AndroidMediaUI(MediaField, CollectorController, CollectorView, boolean)
+	 */
+	public AndroidCameraUI(MF field, CollectorController controller, CollectorView collectorUI, boolean unblockUIAfterCaptureClick)
 	{
-		super(field, controller, collectorUI, hasPreCaptureView, unblockUIAfterCaptureClick);
+		super(field, controller, collectorUI, unblockUIAfterCaptureClick);
 	}
 	
-	protected void initCameraController(boolean frontFacing, FlashMode flashMode)
+	protected void initCameraController(boolean forVideoRecording, boolean frontFacing, FlashMode flashMode)
 	{
 		if(cameraController == null)
 		{
 			// Set up camera controller & camera selection:
-			cameraController = new CameraController(frontFacing);
+			cameraController = new CameraController(forVideoRecording);
+			cameraController.setCamera(frontFacing);
 			if(!cameraController.foundCamera())
 			{ 	// No camera found, try the other one:
-				cameraController.findCamera(!frontFacing);
+				cameraController.setCamera(!frontFacing);
 				if(!cameraController.foundCamera())
 				{	// Still no camera, this device does not seem to have one:
 					cameraController = null; // make cameraController null!
@@ -74,10 +78,10 @@ public abstract class AndroidCameraUI<MF extends MediaField> extends AndroidMedi
 	}
 	
 	@SuppressWarnings("deprecation")
-	protected View getCaptureContent(Context context, boolean frontFacing, FlashMode flashMode)
+	protected View getCaptureContent(Context context, boolean forVideoRecording, boolean frontFacing, FlashMode flashMode)
 	{
 		// Initialise camera:
-		initCameraController(frontFacing, flashMode);
+		initCameraController(forVideoRecording, frontFacing, flashMode);
 		
 		if(cameraController != null)
 		{
@@ -104,6 +108,20 @@ public abstract class AndroidCameraUI<MF extends MediaField> extends AndroidMedi
 	}
 	
 	@Override
+	protected void onCapture()
+	{
+		if(cameraController == null)
+			handleCaptureError(new IllegalStateException("No camera set/found"));
+		else
+			doCapture();
+	}
+	
+	/**
+	 * When this method is called the cameraController can be assumed to be non-null and having found a camera
+	 */
+	protected abstract void doCapture();
+	
+	@Override
 	protected void cancel()
 	{
 		super.cancel();
@@ -123,7 +141,9 @@ public abstract class AndroidCameraUI<MF extends MediaField> extends AndroidMedi
 			return super.informOnDisplayNonAudioFeedback(withPage);
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * Used for error handling: detect cases whether cameraController could not be initialised.
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#onDisplayNonAudioFeedback(boolean)
 	 */
 	@Override

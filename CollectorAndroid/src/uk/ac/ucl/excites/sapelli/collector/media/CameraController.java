@@ -19,10 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.media;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 import android.annotation.SuppressLint;
@@ -35,7 +34,6 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.util.Log;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 
 /**
@@ -64,71 +62,151 @@ public class CameraController implements SurfaceHolder.Callback
 	static private final int VIDEO_CAPTURE_QUALITY = CamcorderProfile.QUALITY_HIGH; // TODO decide which quality
 	
 	// DYNAMIC ------------------------------------------------------
-	private Camera camera;
 	private int cameraID = NO_CAMERA_FOUND;
+	private Camera camera;
 	private PhotoField.FlashMode flashMode = PhotoField.DEFAULT_FLASH_MODE;
 	private boolean inPreview = false;
-	private boolean cameraConfigured = false;
+	
 	private MediaRecorder videoRecorder;
-	private Surface previewSurface; // keep a reference to this for video
 	private FileOutputStream videoFos;
 	private boolean recordingHint; // if set to true, reduces time to start video recording
+	
+	private volatile boolean recording;
 
 	/**
-	 * Generic camera use, using default/backward-facing camera, not optimised for video
+	 * Generic camera use, not optimised for video
 	 */
 	public CameraController()
 	{
 		this(false);
 	}
-
-	/**
-	 * Generic camera use, not optimised for video
-	 * 
-	 * @param frontFacing whether or not to use the front-facing camera
-	 */
-	public CameraController(boolean frontFacing)
-	{
-		this(frontFacing, false);
-	}
 	
 	/**
 	 * Specific camera use
 	 * 
-	 * @param frontFacing whether or not to use the front-facing camera
 	 * @param recordingHint pass true when video recording will happen
 	 */
-	public CameraController(boolean frontFacing, boolean recordingHint)
+	public CameraController(boolean recordingHint)
 	{
-		this.cameraID = findCamera(frontFacing);
 		this.recordingHint = recordingHint;
 	}
 
-	public int findCamera(boolean frontFacing)
+	/**
+	 * @param frontFacing whether or not to use the front-facing camera
+	 * @return camera index
+	 */
+	public int setCamera(boolean frontFacing)
 	{
 		for(int c = 0; c < Camera.getNumberOfCameras(); c++)
 		{
 			CameraInfo info = new CameraInfo();
 			Camera.getCameraInfo(c, info);
 			if(info.facing == (frontFacing ? CameraInfo.CAMERA_FACING_FRONT : CameraInfo.CAMERA_FACING_BACK))
-				return c;
+				return cameraID = c;
 		}
 		return NO_CAMERA_FOUND;
+	}
+
+	public boolean foundCamera()
+	{
+		return cameraID != NO_CAMERA_FOUND;
 	}
 
 	public void setFlashMode(FlashMode flashMode)
 	{
 		this.flashMode = flashMode;
 	}
-
-	public boolean foundCamera()
+	
+	private void open()
 	{
-		return(cameraID != NO_CAMERA_FOUND);
+		try
+		{
+			if(!foundCamera())
+				throw new IllegalStateException("No camera set/found");
+			camera = Camera.open(cameraID);
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Could not open camera.", e);
+		}
 	}
+	
+	public void close()
+	{
+		stopPreview();
+		stopVideoCapture();
+		if(camera != null)
+		{
+			camera.release();
+			camera = null;
+		}
+		if(videoRecorder != null)
+		{
+			videoRecorder.release();
+			videoRecorder = null;
+		}
+	}
+	
+	private void configure(Camera.Size previewSize) throws Exception
+	{
+		if(camera == null) // just in case
+			return;
+		
+		// Configure camera (parameters):
+		Camera.Parameters parameters = camera.getParameters();
+		
+		// Preview size:
+		if(previewSize != null)
+			parameters.setPreviewSize(previewSize.width, previewSize.height);
+		
+		// 	Preview orientation:
+		camera.setDisplayOrientation(ROTATION); // TODO optionally make this change with device orientation?
+		
+		//	IMAGE orientation (as opposed to preview):
+		parameters.setRotation(ROTATION); // should match preview
+		
+		//	Set recording hint (if supported):
+		setVideoRecordingHint(parameters);
 
+		//	Set scene mode:
+		List<String> sceneModes = parameters.getSupportedSceneModes();
+		if(sceneModes != null && sceneModes.contains(Camera.Parameters.SCENE_MODE_AUTO))
+			parameters.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+
+		//	Set white balance:
+		List<String> whiteBalanceModes = parameters.getSupportedWhiteBalance();
+		if(whiteBalanceModes != null && whiteBalanceModes.contains(Camera.Parameters.WHITE_BALANCE_AUTO))
+			parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
+
+		//	Set focus mode:
+		if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO))
+			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+
+		//	Flash mode:
+		try
+		{
+			parameters.setFlashMode(getAppropriateFlashMode(parameters));
+		}
+		catch(NullPointerException e)
+		{
+			Log.e(TAG, "Exception in setFlashMode()", e);
+		}
+		
+		//Resulting file:
+		//	Format:
+		parameters.setPictureFormat(ImageFormat.JPEG);
+		parameters.set("jpeg-quality", 100);
+		//	Size:
+		Camera.Size pictureSize = getLargestPictureSize(parameters);
+		if(pictureSize != null)
+			parameters.setPictureSize(pictureSize.width, pictureSize.height);
+
+		camera.setParameters(parameters);
+	}
+	
 	public void startPreview()
 	{
-		if(!inPreview && cameraConfigured && camera != null)
+		if(!inPreview && camera != null)
 		{
 			camera.startPreview();
 			inPreview = true;
@@ -142,117 +220,125 @@ public class CameraController implements SurfaceHolder.Callback
 		inPreview = false;
 	}
 
-	public void takePicture(final PictureCallback callback)
+	public void takePicture(final PictureCallback callback) throws Exception
 	{
-		if(camera != null )
+		if(camera == null)
+			throw new IllegalStateException("Camera unavailable!");
+		
+		// TODO lock camera here?
+			
+		// Use auto focus if the camera supports it
+		String focusMode = camera.getParameters().getFocusMode();
+		if(focusMode.equals(Camera.Parameters.FOCUS_MODE_AUTO) || focusMode.equals(Camera.Parameters.FOCUS_MODE_MACRO))
 		{
-			try
+			camera.autoFocus(new AutoFocusCallback()
 			{
-				// TODO lock camera here?
-				
-				// Use auto focus if the camera supports it
-				String focusMode = camera.getParameters().getFocusMode();
-				if(focusMode.equals(Camera.Parameters.FOCUS_MODE_AUTO) || focusMode.equals(Camera.Parameters.FOCUS_MODE_MACRO))
+				@Override
+				public void onAutoFocus(boolean success, Camera camera)
 				{
-					camera.autoFocus(new AutoFocusCallback()
-					{
-						@Override
-						public void onAutoFocus(boolean success, Camera camera)
-						{
-							camera.takePicture(null, null, callback);
-						}
-					});
-				}
-				else
 					camera.takePicture(null, null, callback);
-			}
-			catch (RuntimeException e)
-			{
-				Log.e(TAG,"Camera in use by another process.", e);
-			}
+				}
+			});
 		}
+		else
+			camera.takePicture(null, null, callback);
 	}
 	
-	public void startVideoCapture(File outputFile)
+	public void startVideoCapture(File outputFile) throws Exception
 	{
-		try
-		{
-			if(camera != null)
-			{
-				// set up a FileOutputStream for the output file:
-				videoFos = new FileOutputStream(outputFile);
+		if(camera == null)
+			throw new IllegalStateException("Camera unavailable!");
+		
+		// set up a FileOutputStream for the output file:
+		videoFos = new FileOutputStream(outputFile);
 
-				// unlock the camera for use by MediaRecorder:
-				camera.unlock(); // TODO explain?
+		// unlock the camera for use by MediaRecorder:
+		camera.unlock(); // TODO explain?
 
-				// configure MediaRecorder (MUST call in this order):
-				if(videoRecorder == null)
-				{
-					videoRecorder = new MediaRecorder();
-					videoRecorder.setCamera(camera);
-					videoRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-					videoRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-					videoRecorder.setProfile(CamcorderProfile.get(cameraID, VIDEO_CAPTURE_QUALITY));
-					// TODO enforce mp4?
-					videoRecorder.setOrientationHint(ROTATION);
-				}
-				videoRecorder.setOutputFile(videoFos.getFD());
-				videoRecorder.setPreviewDisplay(previewSurface);
-				// prepare MediaRecorder:
-				videoRecorder.prepare();
-				// start MediaRecorder (and start recording video):
-				videoRecorder.start();
-			}
-		}
-		catch(FileNotFoundException e)
-		{
-			Log.e(TAG, "Could not open stream to output file.", e);
-		}
-		catch(IOException e)
-		{
-			Log.e(TAG, "Error when trying to record video.", e);
-		}
+		// Get/reset videoRecorder:
+		if(videoRecorder == null)
+			videoRecorder = new MediaRecorder();
+		else
+			videoRecorder.reset();
+		
+		// configure MediaRecorder (MUST call in this order):
+		videoRecorder.setCamera(camera);
+		videoRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+		videoRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+		videoRecorder.setProfile(CamcorderProfile.get(cameraID, VIDEO_CAPTURE_QUALITY));
+		// TODO enforce mp4?
+		videoRecorder.setOrientationHint(ROTATION);
+		videoRecorder.setOutputFile(videoFos.getFD());
+		// Note: no need to call videoRecorder.setPreviewDisplay(previewSurface); because the surface has already been set on the camera
+		
+		// prepare MediaRecorder:
+		videoRecorder.prepare();
+		// start MediaRecorder (and start recording video):
+		videoRecorder.start();
+		
+		// If no execptions thrown above...
+		recording = true;
 	}
 	
 	public void stopVideoCapture()
 	{
-		videoRecorder.stop();
-		videoRecorder.reset();
-		camera.lock(); // TODO explain?
-	}
-
-	public void close()
-	{
-		if(camera != null)
-		{
-			stopPreview();
-			camera.release();
-			camera = null;
-			cameraConfigured = false;
-		}
+		recording = false;
 		if(videoRecorder != null)
 		{
-			videoRecorder.release();
-			videoRecorder = null;
+			try
+			{
+				videoRecorder.stop();
+				videoFos.close();
+			}
+			catch(Exception ignore) {}
+			videoFos = null;
 		}
+		if(camera != null)
+			camera.lock(); // TODO explain?
+	}
+	
+	/**
+	 * @return the recording
+	 */
+	public boolean isRecording()
+	{
+		return videoRecorder != null && recording;
 	}
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder)
 	{
-		if(foundCamera())
+		open(); // open camera
+	}
+
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
+	{
+		if(camera != null && holder.getSurface() != null)
 		{
 			try
 			{
-				camera = Camera.open(cameraID);
+				// Register preview surface:
+				camera.setPreviewDisplay(holder);
+				
+				// (Re)configure camera:
+				configure(getBestPreviewSize(width, height));
 			}
-			catch(Exception e)
+			catch(Throwable t)
 			{
-				Log.e(TAG, "Could not open camera.", e);
+				Log.e(TAG, "Exception in setPreviewDisplay()", t);
+				return;
 			}
 		}
+		startPreview();
 	}
-	
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder)
+	{
+		close(); // stop preview & close camera
+	}
+
 	/**
 	 * Set recording hint (not supported below API level 14)
 	 * 
@@ -264,85 +350,7 @@ public class CameraController implements SurfaceHolder.Callback
 		if(Build.VERSION.SDK_INT >= 14)
 			parameters.setRecordingHint(recordingHint);
 	}
-
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
-	{
-		if(camera != null && holder.getSurface() != null)
-		{
-			try
-			{
-				camera.setPreviewDisplay(holder);
-				previewSurface = holder.getSurface();
-			}
-			catch(Throwable t)
-			{
-				Log.e(TAG, "Exception in setPreviewDisplay()", t);
-				return;
-			}
-			if(!cameraConfigured)
-			{			
-				// Preview orientation:
-				camera.setDisplayOrientation(ROTATION); // TODO optionally make this change with device orientation?
-				Camera.Parameters parameters = camera.getParameters();
-
-				// IMAGE orientation (as opposed to preview):
-				parameters.setRotation(ROTATION); // should match preview
-				
-				// Set recording hint (if supported):
-				setVideoRecordingHint(parameters);
-				
-				// Preview size:
-				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);
-				if(previewSize != null)
-					parameters.setPreviewSize(previewSize.width, previewSize.height);
-
-				// Set scene mode:
-				List<String> sceneModes = parameters.getSupportedSceneModes();
-				if(sceneModes != null && sceneModes.contains(Camera.Parameters.SCENE_MODE_AUTO))
-					parameters.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
-
-				// Set white balance:
-				List<String> whiteBalanceModes = parameters.getSupportedWhiteBalance();
-				if(whiteBalanceModes != null && whiteBalanceModes.contains(Camera.Parameters.WHITE_BALANCE_AUTO))
-					parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
-
-				// Set focus mode:
-				if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO))
-					parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-
-				// Flash mode:
-				try
-				{
-					parameters.setFlashMode(getAppropriateFlashMode(parameters));
-				}
-				catch(NullPointerException e)
-				{
-					Log.e(TAG, "Exception in setFlashMode()", e);
-				}
-
-				//Resulting file:
-				//	Format:
-				parameters.setPictureFormat(ImageFormat.JPEG);
-				parameters.set("jpeg-quality", 100);
-				//	Size:
-				Camera.Size pictureSize = getLargestPictureSize(parameters);
-				if(pictureSize != null)
-					parameters.setPictureSize(pictureSize.width, pictureSize.height);
-
-				camera.setParameters(parameters);
-				cameraConfigured = true;
-			}
-		}
-		startPreview();
-	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder)
-	{
-		close();
-	}
-
+	
 	private String getAppropriateFlashMode(Camera.Parameters parameters)
 	{
 		List<String> availableModes = parameters.getSupportedFlashModes();
@@ -364,10 +372,12 @@ public class CameraController implements SurfaceHolder.Callback
 		return parameters.getFlashMode(); //leave as is
 	}
 	
-	private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters)
+	private Camera.Size getBestPreviewSize(int width, int height)
 	{
+		if(camera == null) // check if there is a camera
+			return null;
 		Camera.Size result = null;
-		for(Camera.Size size : parameters.getSupportedPreviewSizes())
+		for(Camera.Size size : camera.getParameters().getSupportedPreviewSizes())
 		{
 			if(size.width <= width && size.height <= height)
 			{

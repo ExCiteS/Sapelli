@@ -22,7 +22,6 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -52,32 +51,29 @@ import android.widget.VideoView;
  * A subclass of AndroidMediaUI which allows for the capture and review of videos from the device's camera.
  * 
  * NOTE: Samsung decided not to bother to enable portrait photo/video capture in the xCover 1 kernel, so captures may display incorrectly on that model.
- * -- See http://stackoverflow.com/questions/19176038/
+ * -- See http://stackoverflow.com/questions/19176038
  * 
  * @author mstevens, Michalis Vitos, benelliott
  */
-public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCompletionListener
+public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 {
 	
 	static protected final String TAG = "AndroidVideoUI";
-
-	private VideoView playbackView;
-	private volatile boolean recording = false;
-	private int playbackPosition = 0;
+	
+	private ReviewView reviewView;
 
 	public AndroidVideoUI(VideoField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(	field,
 				controller,
 				collectorUI,
-				true,	// showing few finder before capture
-				false);	// do not allow clicks as the capture process (see onCapture()) is asynchronous and returns immediately
+				true);	// unblock UI after capture button click to allow other click events (so recording can be stopped)
 	}
 
 	@Override
-	protected View getCaptureContent(Context context)
+	protected View createCaptureContent(Context context)
 	{
-		return getCaptureContent(context, field.isUseFrontFacingCamera(), FlashMode.OFF); // TODO expose flash mode inb XML for <Video>?
+		return getCaptureContent(context, true, field.isUseFrontFacingCamera(), FlashMode.OFF); // TODO expose flash mode in XML for <Video>?
 	}
 	
 	/**
@@ -86,109 +82,46 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 	@Override
 	protected ImageItem generateCaptureButton(Context context)
 	{
-		if(!recording)
+		if(!cameraController.isRecording())
 			// recording hasn't started yet, so present "record" button
-			return collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture_svg);
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture);
 		else
 			// recording started, so present "stop" button instead
-			return collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_stop_audio_svg);
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_media_stop);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCameraUI#doCapture()
+	 */
 	@Override
-	protected void onCapture()
+	protected void doCapture()
 	{
-		if(!recording)
-		{
-			// start recording
-			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-			cameraController.startVideoCapture(captureFile);
-			recording = true;
+		if(!cameraController.isRecording())
+		{	// start recording
+			try
+			{
+				cameraController.startVideoCapture(getNewCaptureFile());
+			}
+			catch(Exception e)
+			{
+				handleCaptureError(e);
+			}
 		}
 		else
-		{
-			// stop recording
+		{	// stop recording
 			cameraController.stopVideoCapture();
 			// a capture has been made so show it for review:
-			attachMedia(captureFile);
-			recording = false;
-			if(field.isShowReview())
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-			else
-				controller.goForward(true);
+			handleCaptureSuccess();
 		}
 	}
 	
 	@Override
 	protected View getReviewContent(Context context, File mediaFile)
 	{
-		LinearLayout reviewLayout = new LinearLayout(context);
-		reviewLayout.setGravity(Gravity.CENTER);
-		// instantiate the thumbnail that is shown before the video is started:
-		final ImageView thumbnailView = new ImageView(context);
-		// create thumbnail from video file:
-		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(), MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
-		thumbnailView.setScaleType(ScaleType.FIT_CENTER);
-		thumbnailView.setImageBitmap(thumbnail);
-
-		// instantiate the video view that plays the captured video:
-		playbackView = new VideoView(context);
-		playbackView.setOnCompletionListener(this);
-		playbackView.setVideoURI(Uri.fromFile(mediaFile));
-		// don't show the video view straight away - only once the thumbnail is clicked:
-		playbackView.setVisibility(View.GONE);
-		
-		// layout params for the thumbnail and the video view are the same:
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
-		reviewLayout.addView(thumbnailView, params);
-		reviewLayout.addView(playbackView, params);
-
-		// Set the video view to play or pause the video when it is touched:
-		playbackView.setOnTouchListener(new OnTouchListener()
-		{
-			@Override
-			@SuppressLint("ClickableViewAccessibility")
-			public boolean onTouch(View v, MotionEvent ev)
-			{
-				controller.blockUI();
-				if(ev.getAction() == MotionEvent.ACTION_UP)
-				{
-					// only perform action when finger is lifted off screen
-					if(playbackView.isPlaying())
-					{
-						// if playing, pause
-						// Log.d(TAG, "Pausing video...");
-						playbackPosition = playbackView.getCurrentPosition();
-						playbackView.pause();
-					}
-
-					else
-					{
-						// if not playing, play
-						// Log.d(TAG, "Playing video...");
-						playbackView.seekTo(playbackPosition);
-						playbackView.start();
-					}
-				}
-				controller.unblockUI();
-				return true;
-			}
-		});
-
-		// replace the thumbnail with the video when the thumbnail is clicked:
-		thumbnailView.setOnClickListener(new OnClickListener()
-		{
-			@Override
-			public void onClick(View v)
-			{
-				controller.blockUI();
-				thumbnailView.setVisibility(View.GONE);
-				playbackView.setVisibility(View.VISIBLE);
-				playbackView.start();
-				controller.unblockUI();
-			}
-		});
-
-		return reviewLayout;
+		if(reviewView == null)
+			reviewView = new ReviewView(context);
+		reviewView.update(mediaFile);
+		return reviewView;
 	}
 
 	@Override
@@ -197,13 +130,6 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 		// Create thumbnail from video file:
 		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
 		return new DrawableItem(index, new BitmapDrawable(collectorUI.getResources(), thumbnail));
-	}
-	
-	@Override
-	public void onCompletion(MediaPlayer mp)
-	{
-		// playback has finished so go back to start
-		playbackPosition = 0;
 	}
 
 	@Override
@@ -216,13 +142,103 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField> implements OnCom
 	protected void cancel()
 	{
 		super.cancel();		
-		recording = false;
+		if(isInSingleItemReviewMode() && reviewView != null)
+			reviewView.playbackView.stopPlayback();
+	}
+	
+	/**
+	 * TODO display a "Play triangle" over the thumbnail
+	 * 
+	 * @author benelliott, mstevens
+	 */
+	private class ReviewView extends LinearLayout implements OnCompletionListener, OnTouchListener, OnClickListener
+	{
 		
-		if(playbackView != null)
-			playbackView.stopPlayback();
+		final ImageView thumbnailView;
+		final VideoView playbackView;
 		
-		// TODO recycle views?
-		playbackView = null;
+		public ReviewView(Context context)
+		{
+			super(context);
+			
+			setGravity(Gravity.CENTER);
+			
+			// LayoutParams for child views:
+			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
+			
+			// ImageView that displays a thumbnail of the video before playback is started:
+			thumbnailView = new ImageView(context);
+			thumbnailView.setScaleType(ScaleType.FIT_CENTER);
+			thumbnailView.setOnClickListener(this);
+			addView(thumbnailView, params);
+			
+			// VideoView that plays the captured video:
+			playbackView = new VideoView(context);
+			playbackView.setOnCompletionListener(this);
+			playbackView.setOnTouchListener(this);
+			addView(playbackView, params);
+		}
+		
+		public void update(File videoFile)
+		{
+			// create thumbnail from video file:
+			thumbnailView.setImageBitmap(ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.FULL_SCREEN_KIND));
+			thumbnailView.setVisibility(View.VISIBLE);
+			
+			playbackView.setVideoURI(Uri.fromFile(videoFile));
+			playbackView.setVisibility(View.GONE); // don't show the video view straight away - only once the thumbnail is clicked
+		}
+		
+		/**
+		 * Makes the video view to play or pause the video when it is touched
+		 * 
+		 * @see android.view.View.OnTouchListener#onTouch(android.view.View, android.view.MotionEvent)
+		 */
+		@SuppressLint("ClickableViewAccessibility")
+		public boolean onTouch(View v, MotionEvent ev)
+		{
+			if(v != playbackView)
+				return false; // just in case			
+			if(ev.getAction() == MotionEvent.ACTION_UP) // only perform action when finger is lifted off screen
+			{
+				controller.blockUI();
+				//Log.d(TAG, "Video playing: " + playbackView.isPlaying());
+				if(playbackView.isPlaying())
+				{	// if playing, pause
+					playbackView.pause();
+				}
+				else
+				{	// if not playing, play (will resume if paused)
+					playbackView.start();
+				}
+				controller.unblockUI();
+			}
+			return true;
+		}
+		
+		/**
+		 * Replace the thumbnail with the video when the thumbnail is clicked
+		 * 
+		 * @see android.view.View.OnClickListener#onClick(android.view.View)
+		 */
+		@Override
+		public void onClick(View v)
+		{
+			if(v != thumbnailView)
+				return; // just in case
+			controller.blockUI();
+			thumbnailView.setVisibility(View.GONE);
+			playbackView.setVisibility(View.VISIBLE);
+			playbackView.start();
+			controller.unblockUI();
+		}
+		
+		@Override
+		public void onCompletion(MediaPlayer mp)
+		{
+			//playbackPosition = 0; // playback has finished so go back to start
+		}
+		
 	}
 	
 }

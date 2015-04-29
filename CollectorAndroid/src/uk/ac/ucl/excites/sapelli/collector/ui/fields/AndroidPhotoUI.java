@@ -23,7 +23,6 @@ import java.io.FileOutputStream;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
@@ -34,7 +33,6 @@ import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -59,27 +57,35 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		super(	field,
 				controller,
 				collectorUI,
-				true,	// showing few finder before capture
 				false);	// do not allow clicks as the capture process (see onCapture()) is asynchronous and returns immediately
 	}
-	
+		
 	@Override
-	protected View getCaptureContent(Context context)
+	protected View createCaptureContent(Context context)
 	{
-		return getCaptureContent(context, field.isUseFrontFacingCamera(), field.getFlashMode());
+		return getCaptureContent(context, false, field.isUseFrontFacingCamera(), field.getFlashMode());
 	}
 	
 	@Override
 	protected ImageItem generateCaptureButton(Context context)
 	{
-		return collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_svg);
+		return collectorUI.getImageItemFromProjectFileOrResource(field.getCaptureButtonImageRelativePath(), R.drawable.button_photo_capture);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCameraUI#doCapture()
+	 */
 	@Override
-	protected void onCapture()
+	protected void doCapture()
 	{
-		if(cameraController != null)
-			cameraController.takePicture(this); // asynchronous !!!
+		try
+		{
+			cameraController.takePicture(this); // handling of imaghe is asynchronous !!!
+		}
+		catch(Exception e)
+		{
+			handleCaptureError(e);
+		}
 	}
 	
 	@Override
@@ -115,25 +121,20 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 	@Override
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
-		new HandleImage(data).execute();
+		new HandleImage().execute(data);
 	}
 
 	/**
 	 * AsyncTask to handle the Captured Images
 	 * 
-	 * @author Michalis Vitos, benelliott
+	 * @author Michalis Vitos, benelliott, mstevens
 	 * 
 	 */
-	public class HandleImage extends AsyncTask<Void, Void, Void>
+	public class HandleImage extends AsyncTask<byte[], Void, File>
 	{
 		
 		private ProgressDialog dialog;
-		private byte[] data;
-
-		public HandleImage(byte[] data)
-		{
-			this.data = data;
-		}
+		private Exception error;
 
 		@Override
 		protected void onPreExecute()
@@ -144,35 +145,36 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		}
 
 		@Override
-		protected Void doInBackground(Void... params)
+		protected File doInBackground(byte[]... data)
 		{
+			File photoFile = getNewCaptureFile();
 			try
 			{
-				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider() ,controller.getCurrentRecord());
-				FileOutputStream fos = new FileOutputStream(captureFile);
-				fos.write(data);
+				FileOutputStream fos = new FileOutputStream(photoFile);
+				fos.write(data[0]);
 				fos.close();
-				attachMedia(captureFile);
 			}
 			catch(Exception e)
 			{
-				Log.e(TAG + ".HandleImage", "Image capture failed", e);
+				error = e;
+				return null; // !!!
 			}
-			return null;
+			return photoFile;
 		}
 
 		@Override
-		protected void onPostExecute(Void result)
+		protected void onPostExecute(File photoFile)
 		{
 			cameraController.stopPreview();
 			
 			// Close the dialog:
 			dialog.cancel();
 			
-			if(field.isShowReview())
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+			// Continue...
+			if(photoFile != null)
+				handleCaptureSuccess(); // attach photo (not need to pass reference, super class has remembered the captureFile)
 			else
-				controller.goForward(true);
+				handleCaptureError(error); // report failure
 			
 			// Allow clicks now we have finished
 			controller.unblockUI(); // !!!

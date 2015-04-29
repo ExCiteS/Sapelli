@@ -140,7 +140,6 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
 			// mark it to be added when the user saves their session
 			controller.addAttachment(mediaAttachment);
-			// goto next/jump field
 		}
 		else
 		{

@@ -42,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -70,11 +71,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
+	/**
+	 * PAdding to put around the built-in play/stop/pause SVGs when displaying them in the review content
+	 */
+	protected static final float PLAYBACK_BUTTON_PADDING_DIP = 60.0f;
+	
 	// DYNAMIC ------------------------------------------------------
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
-	protected File captureFile; // file used to store media while it is being captured
+	private File captureFile; // file used to store media while it is being captured
 
-	protected final boolean hasPreCaptureView;
 	protected final boolean unblockUIAfterCaptureClick;
 	
 	protected final int fieldBackgroundColor;
@@ -92,17 +97,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param field
 	 * @param controller
 	 * @param collectorUI
-	 * @param hasPreCaptureView whether or not the capture button should be maximised when the capture UI is first entered
 	 * @param unblockUIAfterCaptureClick indicates whether or not to immediately allow new user interactions (i.e. clicks) after the capture button is clicked
 	 * after this method has returned.
 	 */
-	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI, boolean hasPreCaptureView, boolean unblockUIAfterCaptureClick)
+	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI, boolean unblockUIAfterCaptureClick)
 	{
 		super(field, controller, collectorUI);
 		
-		this.hasPreCaptureView = hasPreCaptureView;
 		this.unblockUIAfterCaptureClick = unblockUIAfterCaptureClick;
-		
 		this.fieldBackgroundColor = ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
 		
 		// Initialise buttonParams:
@@ -147,19 +149,21 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		//Log.d(TAG,"Current state: " + currentState.name());
 
 		// Decide which UI must be shown and return the corresponding view:
+		Context context = collectorUI.getContext();
 		switch(getMode())
 		{
 			case CAPTURE:
 			case CAPTURE_FROM_GALLERY:
 				if(captureView == null)
-					captureView = new CaptureView(collectorUI.getContext());
-				captureView.refreshCaptureButton();
+					captureView = new CaptureView(context);
+				else
+					captureView.refresh();
 				return captureView;
 	
 			case SINGLE_ITEM_REVIEW:
 			case SINGLE_ITEM_REVIEW_FROM_GALLERY:
 				if(reviewView == null)
-					reviewView = new ReviewView(collectorUI.getContext());				
+					reviewView = new ReviewView(context);				
 				// Set file to review:
 				reviewView.setReviewFile(getFileToReview());
 				// Return view:
@@ -168,7 +172,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			case GALLERY:
 			default:
 				if(galleryView == null)
-					galleryView = new GalleryView(collectorUI.getContext());
+					galleryView = new GalleryView(context);
 				else if(newRecord) // wipe the cache whenever newRecord is true
 					galleryView.cache.clear();
 				// Force the gallery to update its contents and its button:
@@ -178,33 +182,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 	}
 	
-	/**
-	 * Ensures that the media file reference is nullified after a capture is made so that it is not deleted
-	 * from the {@link AndroidMediaUI#cancel()} method.
-	 */
-	@Override
-	public void attachMedia(File mediaAttachment)
-	{
-		super.attachMedia(mediaAttachment);
-		captureFile = null; // !!!
-	}
-
-	/**
-	 * When this field is cancelled, delete any half-captured media.
-	 * It means the last or on-going capture has been implicitly discarded (e.g. when pressing 'back' during video recording).
-	 * 
-	 */
-	@Override
-	protected void cancel()
-	{
-		//Log.d(TAG, "cancel()");
-		
-		/*if(captureFile != null)
-			Log.d(TAG, "Deleting discarded file...");*/
-		FileUtils.deleteQuietly(captureFile);
-		captureFile = null;
-	}
-
 	/**
 	 * Custom rules for showing of back button
 	 * 
@@ -268,17 +245,58 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		// Do not change control behaviour in any other case (other than removing the capture request)
 		return false;
 	}
-
-	protected void minimiseCaptureButton()
+	
+	/**
+	 * @return a new file to save capture result to
+	 */
+	protected File getNewCaptureFile()
 	{
-		if(captureView != null)
-			captureView.refreshCaptureButton(false);
+		this.captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord()); // remember the file!
+		return captureFile;
 	}
-
-	protected void maximiseCaptureButton()
+	
+	protected void handleCaptureError(Exception exception)
 	{
-		if(captureView != null)
-			captureView.refreshCaptureButton(true);
+		Log.e(TAG, "Media capture failed in field \"" + field.id + "\"", exception);
+		attachMedia(null);
+		captureFile = null;
+		if(isValid(controller.getCurrentRecord()))
+			controller.goForward(false);
+		else
+			controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
+	}
+	
+	/**
+	 * Handles a freshly captured media file (i.e. by attaching it to the current record) and takes the user to the next screen/field.
+	 */
+	public void handleCaptureSuccess()
+	{
+		// Register attachment:
+		attachMedia(captureFile);
+		
+		// forget about the captureFile so it is not deleted upon cancel():
+		captureFile = null; // !!!
+		
+		// Where to go next?:
+		if(field.isShowReview() || !isValid(controller.getCurrentRecord()))
+			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); // stay at field if review is enabled, or if the record is somehow not valid (e.g. due to non-existing mediaAttachement)
+		else
+			controller.goForward(true); // Continue...
+	}
+	
+	/**
+	 * When this field is cancelled, delete any half-captured media.
+	 * It means the last or on-going capture has been implicitly discarded (e.g. when pressing 'back' during video recording).
+	 * 
+	 */
+	@Override
+	protected void cancel()
+	{
+		//Log.d(TAG, "cancel()");
+		if(captureFile != null)
+			controller.addLogLine("DELETE_TEMP_FILE", field.id, captureFile.getAbsolutePath());
+		FileUtils.deleteQuietly(captureFile); // does nothing when null
+		captureFile = null;
 	}
 	
 	/**
@@ -339,7 +357,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	public Item<?> getApproveButton(Context context)
 	{
-		return applyButtonSpecs(collectorUI.getImageItemFromProjectFileOrResource(field.getApproveButtonImageRelativePath(), R.drawable.button_tick_svg));
+		return applyButtonSpecs(collectorUI.getImageItemFromProjectFileOrResource(field.getApproveButtonImageRelativePath(), R.drawable.button_tick));
 	}
 	
 	/**
@@ -353,18 +371,22 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	public Item<?> getDiscardButton(Context context)
 	{
-		return applyButtonSpecs(collectorUI.getImageItemFromProjectFileOrResource(field.getDiscardButtonImageRelativePath(), R.drawable.button_trash_svg));
+		return applyButtonSpecs(collectorUI.getImageItemFromProjectFileOrResource(field.getDiscardButtonImageRelativePath(), R.drawable.button_trash));
 	}
 	
 	/**
 	 * Creates the main content for the capture UI.
+	 * Is only called once (upon CaptureView constructor).
+	 * 
 	 * @param context
 	 * @return a {@code View} containing the content for capture mode.
 	 */
-	protected abstract View getCaptureContent(Context context);
+	protected abstract View createCaptureContent(Context context);
 
 	/**
 	 * Creates the main content for the review UI.
+	 * Is called again every time we go into single item review.
+	 * 
 	 * @param context
 	 * @param mediaFile - the file to be reviewed.
 	 * @return a {@code View} containing the content for review mode.
@@ -383,9 +405,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private final Runnable captureButtonAction; // capture button action
 		
 		private View captureButtonView; // capture button
-		private boolean captureButtonMaximised = false;
 
-		private CaptureView(Context context)
+		public CaptureView(Context context)
 		{
 			super(context);
 
@@ -397,7 +418,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			this.setWeightSum(1.0f);
 
 			// add content:
-			this.contentView = getCaptureContent(context);
+			this.contentView = createCaptureContent(context);
 			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
 			contentParams.gravity = Gravity.CENTER_HORIZONTAL;
 			contentParams.weight = 1.0f;
@@ -420,31 +441,26 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					refreshCaptureButton();
 				}
 			};
+			
+			// Init button:
+			refreshCaptureButton();
+		}
+		
+		public void refresh()
+		{
+			contentView.invalidate(); // force update of the content view
+			refreshCaptureButton();
 		}
 		
 		/**
-		 * Recreate the capture button, without changing maximisation state
+		 * (Re)create the capture button
 		 */
 		protected void refreshCaptureButton()
 		{
-			refreshCaptureButton(captureButtonMaximised);
-		}
-		
-		/**
-		 * Recreate and maximise the capture button
-		 */
-		protected void refreshCaptureButton(boolean maximise)
-		{
-			// Hide captureView when maximised:
-			contentView.setVisibility(maximise ? View.GONE : View.VISIBLE);
-			
 			this.removeView(captureButtonView);
 			captureButtonView = getCaptureButton(getContext()).getView(getContext());
 			captureButtonView.setOnClickListener(this);
-			this.addView(captureButtonView, maximise ? new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT) : buttonParams);
-			
-			// Remember maximisation:
-			captureButtonMaximised = maximise;
+			this.addView(captureButtonView, buttonParams);
 		}
 
 		@Override
