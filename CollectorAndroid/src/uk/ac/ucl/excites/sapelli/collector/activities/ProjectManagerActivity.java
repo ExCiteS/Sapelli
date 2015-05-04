@@ -91,7 +91,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	static private final String DEMO_PROJECT = "demo.excites";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
-	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
+	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
+	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 3;
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
@@ -392,7 +393,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
 		try
 		{
-			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
+			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
+			startActivityForResult(intent, view != null ? RETURN_BROWSE_FOR_PROJECT_LOAD : RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD); 
 		}
 		catch(ActivityNotFoundException e){}
 	}
@@ -545,7 +547,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 			{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
-
+			case RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD:
 				uri = data.getData();
 
 				// Get the File path from the Uri
@@ -557,13 +559,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 					txtProjectPathOrURL.setText(path);
 					// Move the cursor to the end
 					txtProjectPathOrURL.setSelection(path.length());
+					// Load immediately if the user has clicked "Load" already:
+					if(requestCode == RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD)
+						loadProject(null);
 				}
-
 				break;
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-
 				uri = data.getData();
 
 				// Get the File path from the Uri
