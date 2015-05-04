@@ -83,11 +83,11 @@ public class Backup
 	{
 		switch(folder)
 		{
+			case Attachments:
 			case Crashes:
 			case Export:
 			case Logs:
 				return true;
-			case Attachments:
 			case Projects:
 				return false;
 			// Not back-upable:
