@@ -177,7 +177,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 	{
 		super.onResume();
 
-		// All storage operations should happen in onResume, otherwise the storage will be unassesible
+		// All storage operations should happen in onResume, otherwise the storage will be unaccessible
 
 		// Export path:
 		exportFolder = fileStorageProvider.getExportFolder(true);
