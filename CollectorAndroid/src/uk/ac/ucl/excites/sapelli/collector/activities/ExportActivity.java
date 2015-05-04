@@ -79,6 +79,8 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 	static private final int DT_RANGE_IDX_TO = 1;
 	static private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm");
 	
+	static private final Format DEFAULT_FORMAT = Format.CSV;
+	
 	// Dynamics--------------------------------------------
 	private DateTime[] dateRange = new DateTime[2];
 	private File exportFolder;
@@ -134,6 +136,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		final ArrayAdapter<Format> formatAdapter = new ArrayAdapter<Format>(this, android.R.layout.simple_spinner_item, Format.values());
 		formatAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		spinOutputFormat.setAdapter(formatAdapter);
+		spinOutputFormat.setSelection(formatAdapter.getPosition(DEFAULT_FORMAT));
 		final LinearLayout xmlOptions = (LinearLayout) findViewById(R.id.layoutXMLOptions);
 		final LinearLayout csvOptions = (LinearLayout) findViewById(R.id.layoutCSVOptions);
 		spinOutputFormat.setOnItemSelectedListener(new OnItemSelectedListener()
