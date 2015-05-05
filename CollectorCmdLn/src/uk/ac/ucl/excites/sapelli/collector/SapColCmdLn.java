@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,6 +32,13 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Simple command-line interface to load/verify (and in the future store) Sapelli Collector projects
@@ -55,7 +63,7 @@ public class SapColCmdLn
 	public static void main(String[] args) throws Exception
 	{
 		File workingDir = new File(System.getProperty("user.dir"));
-		
+
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd = null;
 		try
@@ -94,7 +102,7 @@ public class SapColCmdLn
 			File sapFile = new File(cmd.getOptionValue("load"));
 			if(!sapFile.exists())
 				sapFile = new File(workingDir, cmd.getOptionValue("load"));
-			
+
 			ProjectLoader loader = new ProjectLoader(fsp);
 			Project project = null;
 			try
@@ -111,32 +119,68 @@ public class SapColCmdLn
 				System.exit(2);
 			}
 		}
+		
+		System.exit(0);
 	}
-	
+
 	static public void printProjectInfo(File sapFile, Project project)
 	{
 		System.out.println("Project info:");
-		System.out.println(" - loaded from: " + sapFile.getAbsolutePath());
+		System.out.println(" - source: " + sapFile.getAbsolutePath());
 		System.out.println(" - id: " + project.getID());
 		System.out.println(" - fingerprint: " + project.getFingerPrint());
 		System.out.println(" - name: " + project.getName());
 		System.out.println(" - variant: " + project.getVariant());
 		System.out.println(" - version: " + project.getVersion());
-		System.out.println(" - Model id: " + project.getModel().id);
+		System.out.println(" - display name: " + project.toString(false));
+		System.out.println(" - model id: " + project.getModel().id);
 		System.out.println(" - Forms:");
 		int f = 0;
 		for(Form frm : project.getForms())
 		{
 			System.out.println("    * Form " + ++f + " info:");
-			System.out.println("       - id/name: " + frm.id);
+			System.out.println("       - id: " + frm.id);
 			System.out.println("       - producesData: " + frm.isProducesRecords());
-			System.out.println("       - Model schema number: " + (frm.isProducesRecords() ? frm.getSchema().getModelSchemaNumber() : "N/A"));
+			System.out.println("       - model schema number: " + (frm.isProducesRecords() ? frm.getSchema().getModelSchemaNumber() : "n/a"));
 		}
 	}
-	
-	static public void printProjectInfoJSON(File sapFile, Project project)
+
+	static public void printProjectInfoJSON(File sapFile, Project project) throws IOException
 	{
-		// TODO ...
+		// Create the node factory that gives us nodes.
+		JsonNodeFactory factory = new JsonNodeFactory(false);
+
+		// create a json factory to write the treenode as json. for the example
+		// we just write to console
+		JsonFactory jsonFactory = new JsonFactory();
+		JsonGenerator generator = jsonFactory.createGenerator(System.out);
+		ObjectMapper mapper = new ObjectMapper();
+
+		// the root node
+		ObjectNode projectJSON = factory.objectNode();
+		
+		// describe project:
+		projectJSON.put("source", sapFile.getAbsolutePath());
+		projectJSON.put("id", project.getID());
+		projectJSON.put("fingerprint", project.getFingerPrint());
+		projectJSON.put("name", project.getName());
+		projectJSON.put("variant", project.getVariant());
+		projectJSON.put("version", project.getVersion());
+		projectJSON.put("display-name", project.toString(false));
+		projectJSON.put("model-id", project.getModel().id);
+		ArrayNode formsJSON = factory.arrayNode();
+		for(Form frm : project.getForms())
+		{
+			ObjectNode formJSON = factory.objectNode();
+			formJSON.put("id", frm.id);
+			formJSON.put("produces-data", frm.isProducesRecords());
+			formJSON.put("model-schema-number", (frm.isProducesRecords() ? frm.getSchema().getModelSchemaNumber() : null));
+			formsJSON.add(formJSON);
+		}
+		projectJSON.set("forms", formsJSON);
+		
+		// Serialise:
+		mapper.writeTree(generator, projectJSON);
 	}
 
 }
