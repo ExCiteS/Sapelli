@@ -48,6 +48,9 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 {
 	
 	// STATICS-------------------------------------------------------
+	/**
+	 * Version used in all Sapelli Collector v2.0 pre-releases up to and including Beta 14:
+	 */
 	static public final int COLLECTOR_RECORDSTORE_V2 = 2;
 	
 	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;

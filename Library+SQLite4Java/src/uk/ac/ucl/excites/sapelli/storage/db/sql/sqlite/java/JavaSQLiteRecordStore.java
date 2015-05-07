@@ -67,8 +67,8 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		
 		boolean newDB = !doesTableExist(Model.MODEL_SCHEMA);
 		
-		// Get current user_version from SQLite file and change it if needed:
-		int dbVersion = getVersion();
+		// Get current user_version from SQLite file and change/set it if needed:
+		int dbVersion = newDB ? version : getVersion();
 		if(newDB || dbVersion < version)
 			setVersion(version);
 		
