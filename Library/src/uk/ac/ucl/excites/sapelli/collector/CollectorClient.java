@@ -53,7 +53,13 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	static public final int COLLECTOR_RECORDSTORE_V2 = 2;
 	
-	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;
+	/**
+	 * Version used from Beta XX:
+	 * 	- New: MediaFields now backed by an IntegerListColumn instead of an IntegerColumn  
+	 */
+	static public final int COLLECTOR_RECORDSTORE_V3 = 3;
+	
+	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V3;
 	
 	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
 	
