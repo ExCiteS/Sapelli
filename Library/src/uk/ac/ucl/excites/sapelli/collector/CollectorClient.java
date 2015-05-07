@@ -48,6 +48,10 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 {
 	
 	// STATICS-------------------------------------------------------
+	static public final int COLLECTOR_RECORDSTORE_V2 = 2;
+	
+	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;
+	
 	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
 	
 	//static public final Source ALL_COLLECTOR_RECORDS = Source.NotFrom(Transmission.)
