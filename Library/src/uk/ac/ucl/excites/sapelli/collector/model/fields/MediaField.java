@@ -61,6 +61,8 @@ public abstract class MediaField extends Field
 	
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
 	
+	static public final int V1X_ATTACHMENT_OFFSET = 0;
+	
 	// DYNAMIC ------------------------------------------------------
 	protected String approveButtonImageRelativePath;
 	protected String discardButtonImageRelativePath;
@@ -206,7 +208,7 @@ public abstract class MediaField extends Field
 	public IntegerColumn createV1XColumn()
 	{
 		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
-		return new IntegerColumn(getColumn().getName() + "-v1x", colOptional, (colOptional ? 0 : 1), max);
+		return new IntegerColumn(getColumn().name, colOptional, (colOptional ? 0 : 1), max);
 	}
 	
 	@Override
