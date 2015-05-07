@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -291,7 +292,7 @@ public class CollectorApp extends Application
 		@Override
 		protected RecordStore createRecordStore() throws DBException
 		{
-			return new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			return new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorRecordStoreUpgrader(this));
 			//return new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 		}
 

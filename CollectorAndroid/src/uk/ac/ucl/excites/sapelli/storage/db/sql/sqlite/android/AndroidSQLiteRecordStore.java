@@ -23,6 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.Upgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import android.annotation.TargetApi;
@@ -49,39 +50,23 @@ import android.util.Log;
 public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
 
-	// Statics----------------------------------------------	
-	static public final int DATABASE_VERSION = 2;
-
 	// Dynamics---------------------------------------------
 	private SQLiteDatabase db;
-	private boolean newDB = false;
 	
 	/**
 	 * @param client
+	 * @param upgrader
 	 * @param context
 	 * @param databaseFolder
 	 * @param baseName
 	 * @throws DBException
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName) throws DBException
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName, int version, Upgrader upgrader) throws DBException
 	{
-		super(client);
+		super(client, version);
 		
 		// Helper:
-		SQLiteOpenHelper helper = new SQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), DATABASE_VERSION)
-		{
-			@Override
-			public void onCreate(SQLiteDatabase db)
-			{
-				newDB = true;
-			}
-			
-			@Override
-			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
-			{
-				// TODO onUpgrade(): what to do here?
-			}
-		};
+		CustomSQLiteOpenHelper helper = new CustomSQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), version);
 		
 		// Open writable database:
 		try
@@ -94,8 +79,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		}
 		Log.d("SQLite", "Opened SQLite database: " + db.getPath()); // TODO remove debug logging
 		
-		// Initialise:
-		initialise(newDB);
+		// Initialise, and run upgrader if needed:
+		initialise(helper.newDB, helper.dbVersion, upgrader); // will initialise modelsTable & schemataTable, but will old CREATE the corresponding db tables if newDB = true
 	}
 	
 	@Override
@@ -295,6 +280,32 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory, DatabaseErrorHandler errorHandler)
 		{
 			return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name).getAbsolutePath(), factory, errorHandler);
+		}
+		
+	}
+	
+	static private class CustomSQLiteOpenHelper extends SQLiteOpenHelper
+	{
+		
+		private boolean newDB = false;
+		private int dbVersion;
+		
+		public CustomSQLiteOpenHelper(Context context, String name, CursorFactory factory, int targetVersion)
+		{
+			super(context, name, factory, targetVersion);
+			dbVersion = targetVersion;
+		}
+		
+		@Override
+		public void onCreate(SQLiteDatabase db)
+		{
+			newDB = true;
+		}
+		
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+		{
+			this.dbVersion = oldVersion;
 		}
 		
 	}
