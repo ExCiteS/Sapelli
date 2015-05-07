@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -53,7 +54,7 @@ public class JavaCollectorClient extends CollectorClient
 	@Override
 	protected RecordStore createRecordStore() throws DBException
 	{
-		return new JavaSQLiteRecordStore(this, fileStorageProvider.getDBFolder(true), DATABASE_BASENAME);
+		return new JavaSQLiteRecordStore(this, fileStorageProvider.getDBFolder(true), DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorRecordStoreUpgrader(this));
 	}
 
 	/* (non-Javadoc)
