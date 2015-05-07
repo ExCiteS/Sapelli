@@ -327,7 +327,7 @@ public class RecordsPayload extends Payload
 		try
 		{
 			out = new BitArrayOutputStream();
-			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField();
+			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField(schemataInT.length);
 			
 			// Encode records per schema...
 			for(Schema schema : schemataInT)
@@ -438,7 +438,7 @@ public class RecordsPayload extends Payload
 		try
 		{
 			in = new BitArrayInputStream(recordsBits);
-			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField(); // TODO divide by zero ArithmeticException here!
+			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField(schemataInT.size());
 			// Per schema...
 			for(Schema schema : schemataInT)
 			{
@@ -535,9 +535,9 @@ public class RecordsPayload extends Payload
 	 * 
 	 * @return the field
 	 */
-	private IntegerRangeMapping getNumberOfRecordsPerSchemaField()
+	private IntegerRangeMapping getNumberOfRecordsPerSchemaField(int numberOfSchemata)
 	{
-		return new IntegerRangeMapping(1, getMaxUncompressedRecordsBits() * 2 / recordsBySchema.size());
+		return new IntegerRangeMapping(1, getMaxUncompressedRecordsBits() * 2 / numberOfSchemata);
 	}
 
 	@Override

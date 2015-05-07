@@ -126,17 +126,17 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	
 	// Record-sending schedule Schema
 	static final public Schema SEND_RECORDS_SCHEDULE_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "SendRecordsSchedule");
-	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_ID = new IntegerColumn("ID", false, SendRecordsSchedule.RECEIVER_ID_FIELD);
-	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID = new ForeignKeyColumn("ProjectID", ProjectRecordStore.PROJECT_SCHEMA, false);
-	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID = new ForeignKeyColumn("ReceiverID", TransmissionStore.RECEIVER_SCHEMA, false);
+	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_ID = new IntegerColumn("ID", false);
+	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_PROJECT = new ForeignKeyColumn("Project", ProjectRecordStore.PROJECT_SCHEMA, false);
+	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER = new ForeignKeyColumn("Receiver", TransmissionStore.RECEIVER_SCHEMA, false);
 	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL = new IntegerColumn("RetransmitInterval", false, false, SendRecordsSchedule.RETRANSMIT_INTERVAL_SIZE_BITS);
 	static final public BooleanColumn SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT = new BooleanColumn("Encrypt", false);
 	//	Add columns to Receiver Schema & seal it:
 	static
 	{
 		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_ID);
-		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID);
-		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID);
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT);
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER);
 		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL);
 		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT);
 		SEND_RECORDS_SCHEDULE_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", SEND_RECORDS_SCHEDULE_COLUMN_ID));
@@ -484,8 +484,8 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	private Record getSendScheduleRecord(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
 	{
 		Record record = SEND_RECORDS_SCHEDULE_SCHEMA.createRecord();
-		SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID.storeValue(record, getProjectRecordReference(schedule.getProject()));
-		SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID.storeValue(record, transmissionStore.getCorrespondentRecord(schedule.getReceiver()).getReference());
+		SEND_RECORDS_SCHEDULE_COLUMN_PROJECT.storeValue(record, getProjectRecordReference(schedule.getProject()));
+		SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.storeValue(record, transmissionStore.getCorrespondentRecord(schedule.getReceiver()).getReference());
 		SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(record, schedule.getRetransmitIntervalMillis());
 		SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.storeValue(record, schedule.isEncrypt());
 		return record;
@@ -508,7 +508,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
 	{
 		return getSendScheduleFromRecord(project, transmissionStore, recordStore.retrieveRecord(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, 
-				new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID, getProjectRecordReference(project)))));
+				new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT, getProjectRecordReference(project)))));
 	}
 	
 	@Override
@@ -516,7 +516,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		try
 		{
-			recordStore.delete(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID, schedule.getProject().getID())));
+			recordStore.delete(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT, schedule.getProject().getID())));
 		}
 		catch (DBException e)
 		{
@@ -531,7 +531,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		
 		
 		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(new FirstRecordQuery(TransmissionStore.RECEIVER_SCHEMA,
-				SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID.retrieveValue(sendScheduleRecord).getRecordQueryConstraint())); // TODO check
+				SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQueryConstraint())); // TODO check
 		
 		if (receiver == null)
 			return null;

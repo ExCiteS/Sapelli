@@ -128,6 +128,8 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 			return "Project_FormSchemaInfo";
 		if(schema == ProjectRecordStore.HFK_SCHEMA)
 			return "Relationship_HFKs";
+		if(schema == ProjectRecordStore.SEND_RECORDS_SCHEDULE_SCHEMA)
+			return "Project_TransmissionSchedule";
 		return super.getTableName(schema);
 	}
 	

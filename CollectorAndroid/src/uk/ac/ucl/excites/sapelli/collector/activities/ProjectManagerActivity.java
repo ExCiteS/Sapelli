@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
@@ -42,6 +43,10 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiserService;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -311,6 +316,12 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	@SuppressLint("InflateParams")
 	public boolean openAboutDialog(MenuItem item)
 	{
+		// START HACK HACK
+		Log.d(TAG, "Starting alarm scheduler...");
+		Intent alarmScheduler = new Intent(this, SendAlarmInitialiserService.class);
+		startService(alarmScheduler);
+		/// END HACK HACK
+		
 		// Set-up UI:
 		View view = LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
 		TextView infoLbl = (TextView) view.findViewById(R.id.aboutInfo);
@@ -698,6 +709,22 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		// Update project list:
 		populateProjectList();
 		selectProjectInList(project); // select the new project
+		
+		// TODO ---------------- delete below
+		try
+		{
+			// once project loading done, store a dummy schedule:
+			Correspondent receiver = new SMSCorrespondent("Matthias", "+447445950985", false);
+			TransmissionStore sentTxStore = ((CollectorApp)this.getApplication()).collectorClient.sentTransmissionStoreHandle.getStore(this);
+			sentTxStore.store(receiver);
+			SendRecordsSchedule schedule = new SendRecordsSchedule(project, receiver, 60 * 1000, false);
+			projectStore.storeSendSchedule(schedule, sentTxStore);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		// TODO ---------------- delete above
 
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project

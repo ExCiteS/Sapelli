@@ -88,6 +88,10 @@ public abstract class TransmissionClient extends StorageClient
 			return "Received_Transmissions";
 		if(schema == TransmissionStore.RECEIVED_TRANSMISSION_PART_SCHEMA)
 			return "Received_Transmission_Parts";
+		if(schema == TransmissionStore.SENDER_SCHEMA)
+			return "Senders";
+		if(schema == TransmissionStore.RECEIVER_SCHEMA)
+			return "Receivers";
 		return super.getTableName(schema);
 	}
 	

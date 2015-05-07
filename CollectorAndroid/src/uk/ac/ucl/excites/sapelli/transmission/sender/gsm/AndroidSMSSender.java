@@ -75,6 +75,7 @@ public class AndroidSMSSender implements SMSSender
 		//Try sending:
 		try
 		{
+			Log.d(TAG, "Try sending Text SMS with length of " + textSMS.getContent().length() + " chars, and content: " + textSMS.getContent());
 			if(textSMS.isMultiPart())
 			{	// Send multiple SMSs:
 				ArrayList<String> parts = smsManager.divideMessage(textSMS.getContent());

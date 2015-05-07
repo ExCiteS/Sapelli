@@ -309,6 +309,8 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			// Set foreign key for Correspondent record (possibly first storing/updating it):
 			getCorrespondentColumn().storeValue(generator.tRec, doStoreCorrespondent(transmission.getCorrespondent()));
 			
+			//System.out.println("TREC: " + generator.tRec.toString());
+			
 			// Store transmission record:
 			doStoreTransmission(transmission, generator.tRec); // after this the localID should always be known
 			

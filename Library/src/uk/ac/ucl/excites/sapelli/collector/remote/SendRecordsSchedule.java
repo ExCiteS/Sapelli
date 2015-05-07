@@ -29,8 +29,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
  */
 public class SendRecordsSchedule
 {
-	static public final int RECEIVER_ID_SIZE = 24; // bits
-	static public final IntegerRangeMapping RECEIVER_ID_FIELD = IntegerRangeMapping.ForSize(0, RECEIVER_ID_SIZE); // unsigned(!) 24 bit integer
 	
 	static public final int RETRANSMIT_INTERVAL_SIZE_BITS = 32;
 	private Project project;
