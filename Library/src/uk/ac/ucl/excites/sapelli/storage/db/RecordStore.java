@@ -324,12 +324,15 @@ public abstract class RecordStore extends Store
 		// Inform client:
 		r = 0;
 		for(Record record : records)
-			if(insert[r++] == null)
+		{
+			if(insert[r] == null)
 				return; // record was unchanged
 			else if(insert[r])
 				client.recordInserted(record);
 			else
 				client.recordUpdated(record);
+			r++;
+		}
 	}
 	
 	/**

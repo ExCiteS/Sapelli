@@ -637,7 +637,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			sqlColumns.put(sourceCP, sqlColumn);
 			
 			// Deal with AutoIncr...
-			if(sourceCP.getColumn().equals(autoIncrementKeySapColumn, true, true))
+			if(sourceCP.getColumn() == autoIncrementKeySapColumn)
 				this.autoIncrementKeySQLColumn = sqlColumn;
 			
 			// Deal with composites...
@@ -1407,13 +1407,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// Columns:
-			int c = 0;
 			for(SColumn sqlCol : table.sqlColumns.values())
 			{
 				bldr.openTransaction(SPACE);
 				bldr.append(sqlCol.name);
 				bldr.append(sqlCol.type);
-				bldr.append(colConstraints.get(c++));
+				bldr.append(colConstraints.get(sqlCol));
 				bldr.commitTransaction();
 			}
 			// Table constraints:
@@ -1978,6 +1977,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			Order order = recordsQuery.getOrder();
 			if(order.isDefined())
 			{
+				bldr.append("ORDER BY");
 				bldr.append(table.getSQLColumn(order.getBy()).name);
 				bldr.append(order.isAsc() ? "ASC" : "DESC");
 			}
