@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import java.io.File;
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
@@ -50,7 +51,11 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -83,7 +88,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float PADDING_DIP = 2.0f;
 
 	// Colors:
-	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// ScreenTransition duration
@@ -171,7 +175,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.update(fieldUI);
 
 		// Get the actual (updated) View instance:
-		View newFieldUIView = fieldUI.showField(false, controller.getCurrentRecord());
+		View newFieldUIView = fieldUI.showField();
 
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)
@@ -182,28 +186,26 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			{
 				switch(screenTransition)
 				{
-				case HORIZONTAL:
-					// Check whether it is a backwards or forwards direction and create Right or Left animation:
-					if(controller.isGoBack())
-						// Right:
-						ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Left:
-						ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				case VERTICAL:
-					// Check whether it is a backwards or forwards direction and create Up or Down animation:
-					if(controller.isGoBack())
-						// Down:
-						ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Up:
-						ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				default:
-					break;
+					case HORIZONTAL:
+						// Check whether it is a backwards or forwards direction and create Right or Left animation:
+						if(controller.isGoingBack())
+							// Right:
+							ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Left:
+							ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					case VERTICAL:
+						// Check whether it is a backwards or forwards direction and create Up or Down animation:
+						if(controller.isGoingBack())
+							// Down:
+							ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Up:
+							ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					default:
+						break;
 				}
 			}
 
@@ -281,7 +283,19 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * @param clickView
 	 * @param action
 	 */
-	public void clickView(View clickedView, final Runnable action)
+	public void clickView(final View clickedView, final Runnable action)
+	{
+		clickView(clickedView, action, true); // unblock UI after action by default
+	}
+	
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 * @param unblock whether to unblock the UI after executing the action 
+	 */
+	public void clickView(final View clickedView, final Runnable action, final boolean unblock)
 	{
 		// Block the UI so other events are ignored until we are done:
 		controller.blockUI();
@@ -291,22 +305,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			// Execute animation and the action afterwards:
 			ViewAnimator.Click(	clickedView,
 								null,
-								new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										if(action != null)
-											action.run();
-										controller.unblockUI(); // !!!
-									}
-								});
+								unblock ? 	new Runnable()
+											{
+												@Override
+												public void run()
+												{
+													action.run();
+													controller.unblockUI(); // !!!
+												}
+											} :
+											action);
 		else
 		{
 			// Block the UI before running the action and unblock it afterwards
 			if(action != null)
 				action.run();
-			controller.unblockUI();
+			if(unblock)
+				controller.unblockUI();
 		}
 	}
 
@@ -500,6 +515,22 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	{
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
+	
+	public int getControlHeightPx()
+	{
+		return ScreenMetrics.ConvertDipToPx(activity, AndroidControlsUI.CONTROL_HEIGHT_DIP);
+	}
+	
+	public ImageItem<?> getImageItemFromProjectFileOrResource(String imgRelativePath, int drawableResourceId)
+	{
+		File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
+		if(FileHelpers.isReadableFile(imgFile))
+			// use image file from project if available:
+			return new FileImageItem(imgFile);
+		else
+			// use built-in image resource:
+			return new ResourceImageItem(getContext().getResources(), drawableResourceId);
+	}
 
 	/**
 	 * Show software keyboard for input on the given view.
@@ -540,6 +571,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	/**
 	 * @return the controlsUI
 	 */
+	@Override
 	public AndroidControlsUI getControlsUI()
 	{
 		return controlsUI;

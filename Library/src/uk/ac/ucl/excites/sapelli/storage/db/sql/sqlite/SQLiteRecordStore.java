@@ -97,10 +97,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	/**
 	 * @param client
+	 * @param version
 	 */
-	public SQLiteRecordStore(StorageClient client)
+	public SQLiteRecordStore(StorageClient client, int version)
 	{
-		super(client, PARAM_PLACEHOLDER);
+		super(client, version, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
 	}
 

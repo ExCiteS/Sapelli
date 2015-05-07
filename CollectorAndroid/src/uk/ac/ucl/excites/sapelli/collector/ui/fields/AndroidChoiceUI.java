@@ -35,9 +35,9 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ItemHelpers;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.SplitItem;
@@ -420,17 +420,13 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			item = createCaptionItem(choice, !choice.isRoot(), textOnlyCoordinator, measureCoordinator); // regardless of the actual captionHeight the caption will take up the fill available height
 		}
 
-		// Crossing & graying out:
-		if(choice.isCrossed() || grayedOut)
+		// Crossing:
+		if(choice.isCrossed())
 		{
+			// Make LayedItem and add item as bottom layer:
 			LayeredItem layeredItem = new LayeredItem().addLayer(item, Color.TRANSPARENT, 0.0f); // make inner item background transparent and remove its padding
-			// Crossing:
-			if(choice.isCrossed())
-				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
-			// Graying-out:
-			if(grayedOut)
-				// Add grayed-out layer on top (also the layer stack background will a opaque gra; see bgValue above):
-				layeredItem.addLayer(new EmptyItem(), CollectorView.COLOR_SEMI_TRANSPARENT_GRAY, 0.0f);
+			// Add cross on top:
+			layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS)), Color.TRANSPARENT, 0.0f); // later we may expose thickness in the XML as well
 			// Item becomes layered:
 			item = layeredItem;
 		}
@@ -440,6 +436,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		
 		// Set padding:
 		item.setPaddingDip(itemPaddingDip);
+		
+		// Graying-out (best to do this after item bgColour & padding have been set):
+		if(grayedOut)
+			item = ItemHelpers.GrayOut(item);
 		
 		// Set the answer description used for accessibility support
 		item.setDescription(getAnswerDescriptionText(choice)); // has fall-backs & returns null for roots

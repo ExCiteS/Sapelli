@@ -125,5 +125,6 @@
 		<module>CollectorAndroid</module>
 		<module>Library+DB4O</module>
 		<module>Library+SQLite4Java</module>
+		<module>CollectorCmdLn</module>
 	</modules>
 </project>

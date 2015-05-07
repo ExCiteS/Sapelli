@@ -91,7 +91,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	static private final String DEMO_PROJECT = "demo.excites";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
-	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
+	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
+	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 3;
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
@@ -202,6 +203,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		}
 		catch(Exception e)
 		{
+			Log.e(TAG, getString(R.string.projectStorageAccessFail), e);
 			showErrorDialog(getString(R.string.projectStorageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
 			return;
 		}
@@ -392,7 +394,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
 		try
 		{
-			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
+			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
+			startActivityForResult(intent, view != null ? RETURN_BROWSE_FOR_PROJECT_LOAD : RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD); 
 		}
 		catch(ActivityNotFoundException e){}
 	}
@@ -468,14 +471,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	{
 		String location = txtProjectPathOrURL.getText().toString().trim();
 		if(location.isEmpty())
-			// Download Sapelli file if path is a URL
-			showErrorDialog(R.string.pleaseSelect);
+		{
+			//showErrorDialog(R.string.pleaseSelect);
+			browse(null);
+		}
 		else
 		{
 			// Extract & parse a local Sapelli file
 			txtProjectPathOrURL.setText("");
 
-			// Add project
+			// Download Sapelli file if path is a URL
 			if(Patterns.WEB_URL.matcher(location).matches())
 				// Location is a (remote) URL: download Sapelli file:
 				AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
@@ -543,7 +548,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 			{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
-
+			case RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD:
 				uri = data.getData();
 
 				// Get the File path from the Uri
@@ -555,13 +560,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 					txtProjectPathOrURL.setText(path);
 					// Move the cursor to the end
 					txtProjectPathOrURL.setSelection(path.length());
+					// Load immediately if the user has clicked "Load" already:
+					if(requestCode == RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD)
+						loadProject(null);
 				}
-
 				break;
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-
 				uri = data.getData();
 
 				// Get the File path from the Uri

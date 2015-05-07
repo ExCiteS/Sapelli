@@ -33,11 +33,11 @@ import android.view.View;
 public abstract class Item<I extends Item<I>>
 {
 	
-	// Static (defaults):
+	// STATIC -----------------------------------------------------------------
 	static public final float DEFAULT_PADDING_DIP = 3.0f;
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
-	// Dynamics:
+	// DYNAMIC ----------------------------------------------------------------
 	protected final Integer id;
 	protected float paddingDip = DEFAULT_PADDING_DIP;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
