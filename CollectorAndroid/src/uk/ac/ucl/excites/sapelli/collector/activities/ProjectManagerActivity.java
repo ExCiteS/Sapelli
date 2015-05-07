@@ -203,6 +203,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		}
 		catch(Exception e)
 		{
+			Log.e(TAG, getString(R.string.projectStorageAccessFail), e);
 			showErrorDialog(getString(R.string.projectStorageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
 			return;
 		}

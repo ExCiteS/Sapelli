@@ -29,6 +29,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 
+/**
+ * @author mstevens
+ *
+ */
 public abstract class Upgrader
 {
 	
@@ -53,23 +57,23 @@ public abstract class Upgrader
 	}
 	
 	/**
-	 * @param newSchema must already contain the newColumn
-	 * @param oldColumn must be top-level
-	 * @param newColumn must be top-level
-	 * @param converter
+	 * @param recordStore
+	 * @param newSchema must already contain the new Columns
+	 * @param replacers
 	 * @return the converted records, which are yet to be inserted!
 	 * @throws DBException
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected <OT, NT> List<Record> replace(SQLRecordStore<?, ?, ?> recordStore, Schema newSchema, Column<OT> oldColumn, Column<NT> newColumn, ValueConverter<OT, NT> converter) throws DBException
+	protected List<Record> replace(SQLRecordStore<?, ?, ?> recordStore, Schema newSchema, List<ColumnReplacer<?, ?>> replacers) throws DBException
 	{
 		if(!recordStore.doesTableExist(newSchema)) // only based on schema name (no STable object is instantiated)
 			return Collections.<Record> emptyList();
 		
 		// get Schema object as currently stored
 		Schema oldSchema = recordStore.getStoredVersion(newSchema);
-		if(oldSchema == null || !oldSchema.containsEquivalentColumn(oldColumn))
+		if(oldSchema == null /*|| !oldSchema.containsEquivalentColumn(oldColumn)*/)
 			throw new DBException("TODO");
+		
 		// get STable for oldSchema:
 		SQLTable oldTable = recordStore.getTableFactory().generateTable(oldSchema);
 		// get STable for newSchema:
@@ -90,11 +94,14 @@ public abstract class Upgrader
 		for(Record oldRec : oldRecords)
 		{
 			Record newRec = newSchema.createRecord();
-			for(Column<?> oldCol : oldSchema.getColumns(false))
-				if(oldCol.equals(oldColumn))
-					newColumn.storeValue(newRec, converter.convert(oldColumn.retrieveValue(oldRec)));
-				else
-					newSchema.getEquivalentColumn(oldCol).storeObject(newRec, oldCol.retrieveValue(oldRec));
+			cols : for(Column<?> oldCol : oldSchema.getColumns(false))
+			{
+				for(ColumnReplacer<?, ?> replacer : replacers) // loop over replacers to see if one of them deals with the current oldCol
+					if(replacer.replace(oldCol, newRec, oldRec))
+						continue cols; // value was converted or skipped
+				//else (oldCol is not replaced or deleted):
+				newSchema.getEquivalentColumn(oldCol).storeObject(newRec, oldCol.retrieveValue(oldRec));
+			}
 			//newTable.insert(newRec);
 			newRecords.add(newRec);
 		}
@@ -102,11 +109,57 @@ public abstract class Upgrader
 		return newRecords;
 	}
 	
-	protected interface ValueConverter<OT, NT>
+	/**
+	 * @author mstevens
+	 *
+	 * @param <OT>
+	 * @param <NT>
+	 */
+	public abstract class ColumnReplacer<OT, NT>
 	{
 		
-		public NT convert(OT originalValue);
+		final Column<OT> oldColumn;
+		
+		final Column<NT> newColumn;
+		
+		/**
+		 * @param oldColumn must be top-level
+		 * @param newColumn must be top-level, may be null if oldColumn is being deleted instead of replaced
+		 */
+		public ColumnReplacer(Column<OT> oldColumn, Column<NT> newColumn)
+		{
+			this.oldColumn = oldColumn;
+			this.newColumn = newColumn;
+		}
+		
+		public boolean replace(Column<?> oldCol, Record newRec, Record oldRec)
+		{
+			if(oldCol.equals(oldColumn))
+			{
+				if(newColumn != null) // if newColumn == null the oldColumn has been deleted without a replacement
+					newColumn.storeValue(newRec, convert(oldColumn.retrieveValue(oldRec)));
+				return true; // value was replaces (or skipped)
+			}
+			return false;
+		}
+		
+		public abstract NT convert(OT originalValue);
 		
 	}
 
+	/**
+	 * @author mstevens
+	 *
+	 * @param <OT>
+	 */
+	public abstract class ColumnDeleter<OT> extends ColumnReplacer<OT, Void>
+	{
+
+		public ColumnDeleter(Column<OT> oldColumn)
+		{
+			super(oldColumn, null);
+		}
+		
+	}
+	
 }
