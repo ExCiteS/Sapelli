@@ -86,7 +86,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		Log.d("SQLite", "Raw execute: " + sql); // TODO remove debug logging
+		Log.d("SQLite", "Raw SQLite execute: " + sql); // TODO remove debug logging
 		try
 		{
 			db.execSQL(sql);
@@ -174,8 +174,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		}
 		catch(SQLException e)
 		{
-			Log.e("SQLite_Error", "Failed to execute raw query (" + sql + ").", e);
-			throw new DBException("Failed to execute selection query: " + sql, e);
+			Log.d("SQLite_Error", "Failed to execute raw SQLite query (" + sql + ").", e);
+			throw new DBException("Failed to execute SQLite selection query: " + sql, e);
 		}
 	}
 	
@@ -196,7 +196,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
-			Log.d("SQLite", "Compile statement: " + sql); // TODO remove debug logging
+			Log.d("SQLite", "Compile SQLite statement: " + sql); // TODO remove debug logging
 			return new AndroidSQLiteStatement(this, db.compileStatement(sql), paramCols);
 		}
 		catch(SQLException sqlE)
