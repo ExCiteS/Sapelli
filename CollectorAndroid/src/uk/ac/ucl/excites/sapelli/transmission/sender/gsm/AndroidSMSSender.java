@@ -22,6 +22,7 @@ import java.util.ArrayList;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
@@ -36,7 +37,7 @@ import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-public class AndroidSMSSender implements SMSSender
+public class AndroidSMSSender extends SMSSender
 {
 	
 	private static final String TAG = "SMSSender";
@@ -61,8 +62,9 @@ public class AndroidSMSSender implements SMSSender
 	private Context context;
 	private SmsManager smsManager;
 	
-	public AndroidSMSSender(Context context)
+	public AndroidSMSSender(AndroidTransmissionController controller, Context context)
 	{
+		super(controller);
 		this.context = context;
 		this.smsManager = SmsManager.getDefault();
 	}
@@ -164,10 +166,7 @@ public class AndroidSMSSender implements SMSSender
 				{
 					case Activity.RESULT_OK:
 						msg.sentCallback(); //!!!
-						
-						// TODO update stored transmission ! (only update not insert?)
-						//dao.store(msg.getTransmission()); //!!! update the transmission
-						
+						controller.updateSentTransmission(msg.getTransmission()); // Update stored transmission
 						Log.i(TAG, "Sending " + msgDescription + ": success.");
 						break;
 					case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -217,8 +216,7 @@ public class AndroidSMSSender implements SMSSender
 				{
 					case Activity.RESULT_OK:
 						msg.deliveryCallback(); //!!!
-						// TODO update stored transmission!
-						//dao.store(msg.getTransmission()); //!!! update the transmission
+						controller.updateSentTransmission(msg.getTransmission()); // Update stored transmission
 						Log.i(TAG, "Delivery " + msgDescription + ": success.");
 						break;
 					case Activity.RESULT_CANCELED:

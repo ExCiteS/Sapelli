@@ -411,7 +411,7 @@ public abstract class Transmission<C extends Correspondent>
 		send(sender);
 	}
 
-	protected abstract void doSend(TransmissionController transmissionSender);
+	protected abstract void doSend(TransmissionController transmissionController);
 	
 	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{

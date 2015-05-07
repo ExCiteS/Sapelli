@@ -52,8 +52,8 @@ public class AndroidTransmissionController extends TransmissionController
 	@Override
 	public SMSSender getSMSService()
 	{
-		if (smsSender == null)
-			smsSender = new AndroidSMSSender(context);
+		if(smsSender == null)
+			smsSender = new AndroidSMSSender(this, context);
 		return smsSender;
 	}
 

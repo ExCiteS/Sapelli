@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.collector.remote;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**

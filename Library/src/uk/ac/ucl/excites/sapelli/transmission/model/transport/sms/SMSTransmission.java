@@ -179,7 +179,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#doSend(uk.ac.ucl.excites.sapelli.transmission.TransmissionSender)
 	 */
 	@Override
-	protected void doSend(TransmissionController transmissionSender)
+	protected void doSend(TransmissionController transmissionController)
 	{
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to send.");
@@ -187,7 +187,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 		//Send unsent messages one by one:
 		for(Message m : parts)
 			if(!m.isSent())
-				m.send(transmissionSender.getSMSService());
+				m.send(transmissionController.getSMSService());
 	}
 
 	/**

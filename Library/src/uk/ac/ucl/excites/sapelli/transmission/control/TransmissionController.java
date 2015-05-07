@@ -152,6 +152,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				logger.addLine("Records that weren't added: "+recsToSend.size()+"; payload says it has "+payload.getNumberOfRecords());
 			//send transmission:
 			storeAndSend(transmission);
+			
+			// TODO FOR NOW WE DELETE RECORDS TO AVOID RESEND:
+			recordStore.delete(recsToSend); // TODO this fails, why?
+			
 			// TODO mark records as "sent" (do here rather than ACK? depends on resend timeout vs. send new records timeout; semantics of resending transmission vs. records)
 		}
 	}
@@ -188,13 +192,27 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	private void storeAndSend(Transmission<?> transmission) throws Exception
 	{
-		if (logger != null)
+		if(logger != null)
 			logger.addLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: "+transmission.getPayload().getType(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
 		// store in "in-flight transmissions" schema to get local ID:
-		transmission.computePayloadHash();
+		transmission.computePayloadHash(); // TODO should this be called from here? Perhaps rename it to "prepare()"?
+		// TODO payload type is not set at this point, why???
 		sentTStore.store(transmission); // update record now that payload hash has been computed
 		// actually send the transmission:
 		transmission.send(this);
+	}
+	
+	public void updateSentTransmission(Transmission<?> transmission)
+	{
+		try
+		{
+			sentTStore.store(transmission); // TODO only update not insert?
+		}
+		catch(Exception e)
+		{
+			logger.addLine("Failed to update sent transmission");
+			e.printStackTrace();
+		}
 	}
 	
 	// TODO send custom payload?

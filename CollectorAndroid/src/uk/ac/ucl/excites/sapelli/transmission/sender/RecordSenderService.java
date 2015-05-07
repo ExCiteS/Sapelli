@@ -74,6 +74,8 @@ public class RecordSenderService extends IntentService implements StoreUser
 			return;
 		}
 		
+		// TODO detect network reception/connectivity...
+		
 		try
 		{
 			// do not get the app in the constructor(!):
@@ -95,7 +97,7 @@ public class RecordSenderService extends IntentService implements StoreUser
 			SendRecordsSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTxStore);
 			
 			if (sendSchedule == null)
-				throw new Exception("Could not find receiver for project with ID "+projectID+" and fingerprint "+projectFingerprint+".");
+				throw new Exception("Could not find receiver for project with ID "+projectID+" and fingerprint "+projectFingerprint+"."); // TODO why?
 			
 			if (transmissionController == null)
 				// Use application context or SMS callbacks will be invalidated when this service terminates:
