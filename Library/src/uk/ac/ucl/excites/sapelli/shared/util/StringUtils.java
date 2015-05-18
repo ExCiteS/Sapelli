@@ -95,18 +95,18 @@ public final class StringUtils
 		return join(Arrays.asList(parts), separator);
 	}
 	
-	static public String join(List<String> parts, String separator)
+	static public String join(List<?> parts, String separator)
 	{
 		if(parts == null)
 			return null;
 		if(parts.isEmpty())
 			return "";
-		Iterator<String> i = parts.iterator();
-		StringBuffer bff = new StringBuffer(i.next());
+		Iterator<?> i = parts.iterator();
+		StringBuffer bff = new StringBuffer(i.next().toString());
 		while(i.hasNext())
 		{
 			bff.append(separator);
-			bff.append(i.next());
+			bff.append(i.next().toString());
 		}
 		return bff.toString();
 	}
