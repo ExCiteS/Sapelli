@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
 
 /**
  * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}

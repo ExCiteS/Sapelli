@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.sender;
+package uk.ac.ucl.excites.sapelli.collector.services;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -25,7 +25,6 @@ import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmManager;
 import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
@@ -42,73 +41,89 @@ import android.util.Log;
  * Hence all the checks to see if we already have resources such as Stores and Controllers or whether we need to (re-)initialise them. This could be an argument for explicitly managing the queue ourselves, but remember that
  * the chances of a high number of send-record alarms going off at roughly the same time are quite low (would require very short intervals or synchronised intervals and a lot of actively sending projects).
  * 
- * @author Michalis Vitos, benelliott
+ * @author Michalis Vitos, benelliott, mstevens
  */
-public class RecordSenderService extends IntentService implements StoreUser
+public class DataSendingService extends IntentService implements StoreUser
 {
-	private static final String TAG = RecordSenderService.class.getName();
+	
+	private static final String TAG = DataSendingService.class.getSimpleName();
+	
+	public static final String INTENT_KEY_PROJECT_ID = "projectId";
+	public static final String INTENT_KEY_PROJECT_FINGERPRINT = "fingerPrint";
+	
 	private CollectorApp app;
-	private ProjectStore projectStore;
-	private TransmissionStore sentTxStore;
 	private AndroidTransmissionController transmissionController;
 	
-	public RecordSenderService()
+	public DataSendingService()
 	{
-		super("Sapelli Record Sender");
+		super(DataSendingService.class.getSimpleName());
 	}
-	
 
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{	
 		Log.d(TAG, "Woken by alarm");
 		// alarm has just woken up the service with a project ID and fingerprint
-		int projectID = intent.getIntExtra(SendAlarmManager.INTENT_KEY_PROJECT_ID, -1);
-
-		int projectFingerprint = intent.getIntExtra(SendAlarmManager.INTENT_KEY_PROJECT_FINGERPRINT, -1);
 		
-		if (projectID == -1 || projectFingerprint == -1)
-		{
-			// data missing from intent!
+		// Read intent data:
+		if(!intent.hasExtra(INTENT_KEY_PROJECT_ID) || !intent.hasExtra(INTENT_KEY_PROJECT_FINGERPRINT))
+		{	// data missing from intent!
 			Log.e(TAG,"Sender service woken by alarm but project data was missing from the Intent.");
 			return;
 		}
+		int projectID = intent.getIntExtra(INTENT_KEY_PROJECT_ID, -1);
+		int projectFingerPrint = intent.getIntExtra(INTENT_KEY_PROJECT_FINGERPRINT, -1);
 		
-		// TODO detect network reception/connectivity...
-		
+		ProjectStore projectStore;
+		TransmissionStore sentTStore;
 		try
 		{
 			// do not get the app in the constructor(!):
 			app = ((CollectorApp) getApplication());
-
+			
+			// Get transmission controller:
+			transmissionController = new AndroidTransmissionController(app);
+			
 			// Get ProjectStore instance:
-			if(projectStore == null || projectStore.isClosed())
-				projectStore = app.collectorClient.projectStoreHandle.getStore(this);
+			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			
 			// Get SentTransmissionStore instance:
-			if(sentTxStore == null || sentTxStore.isClosed())
-				sentTxStore = app.collectorClient.sentTransmissionStoreHandle.getStore(this);
+			sentTStore = app.collectorClient.sentTransmissionStoreHandle.getStore(this);
 			
-			Project project = projectStore.retrieveProject(projectID, projectFingerprint);
+			// Get Project:
+			Project project = projectStore.retrieveProject(projectID, projectFingerPrint);
+			if(project == null)
+			{
+				transmissionController.addLogLine(TAG, "Data sending canceled, project (ID: " + projectID + "; fingerprint: " + projectFingerPrint + ") not found.");
+				DataSendingSchedulingService.Cancel(app, projectID, projectFingerPrint); // cancel future alarms for this project
+				return;
+			}
 			
-			if (project == null)
-				throw new Exception("Project with ID "+projectID+" and fingerprint "+projectFingerprint+" was not found in project store");
+			// Get Schedule/Receiver:
+			SendRecordsSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
+			if(sendSchedule == null)
+			{
+				transmissionController.addLogLine(TAG, "Data sending canceled, no schedule/receiver found for project " + project.toString(true));
+				DataSendingSchedulingService.Cancel(app, project); // cancel future alarms for this project
+				return;
+			}
 			
-			SendRecordsSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTxStore);
-			
-			if (sendSchedule == null)
-				throw new Exception("Could not find receiver for project with ID "+projectID+" and fingerprint "+projectFingerprint+"."); // TODO why?
-			
-			if (transmissionController == null)
-				// Use application context or SMS callbacks will be invalidated when this service terminates:
-				transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), getApplicationContext());
-			
+			// TODO detect network reception/connectivity...
+	
+			// Send records:
 			transmissionController.sendRecords(project.getModel(), sendSchedule.getReceiver());
 			
+			// TOOD send files?
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Sender service woken by alarm but some necessary data was not successfully retreived from the database", e);
+			Log.e(TAG, "Error upon trying to send data for project with ID " + projectID + " and finger print " + projectFingerPrint, e);
+		}
+		finally
+		{
+			app.collectorClient.projectStoreHandle.doneUsing(this);
+			app.collectorClient.sentTransmissionStoreHandle.doneUsing(this);
+			transmissionController.discard();
 		}
 	}
 }

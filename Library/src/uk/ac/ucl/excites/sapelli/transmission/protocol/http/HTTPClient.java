@@ -16,28 +16,13 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
-
-import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.http;
 
 /**
  * @author mstevens
  *
  */
-public abstract class SMSSender
+public interface HTTPClient
 {
-	
-	protected final TransmissionController controller;
-	
-	public SMSSender(TransmissionController controller)
-	{
-		this.controller = controller;
-	}
 
-	public abstract boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS);
-	
-	public abstract boolean send(SMSCorrespondent receiver, TextMessage textSMS);
-	
 }

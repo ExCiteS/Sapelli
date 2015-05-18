@@ -131,7 +131,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
 			
 			// Upgrade if necessary:
-			if(dbVersion < version)
+			if(dbVersion < version && upgrader != null)
 				upgrader.upgrade(this, dbVersion, version);
 		}
 		catch(DBException e)

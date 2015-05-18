@@ -22,16 +22,15 @@ import java.io.IOException;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
-import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
-import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.AndroidSMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.AndroidSMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
 import uk.ac.ucl.excites.sapelli.util.AndroidLogger;
-import android.content.Context;
 
 /**
  * 
@@ -40,20 +39,21 @@ import android.content.Context;
 public class AndroidTransmissionController extends TransmissionController
 {
 
-	private Context context;
+	private final CollectorApp app;
 	private AndroidSMSSender smsSender;
 	
-	public AndroidTransmissionController(TransmissionClient transmissionClient, FileStorageProvider fileStorageProvider, Context context) throws DBException
+	public AndroidTransmissionController(CollectorApp app) throws DBException
 	{
-		super(transmissionClient, fileStorageProvider);
-		this.context = context;
+		super(app.collectorClient, app.getFileStorageProvider());
+		this.app = app;
+		initialise();
 	}
 
 	@Override
 	public SMSSender getSMSService()
 	{
 		if(smsSender == null)
-			smsSender = new AndroidSMSSender(this, context);
+			smsSender = new AndroidSMSSender(this, app);
 		return smsSender;
 	}
 
@@ -69,4 +69,11 @@ public class AndroidTransmissionController extends TransmissionController
 	{
 		return new AndroidLogger(fileStorageProvider.getLogsFolder(true).getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), false, true);
 	}
+	
+	@Override
+	protected String getApplicationInfo()
+	{
+		return app.getBuildInfo().getNameAndVersion() + " [" + app.getBuildInfo().getExtraVersionInfo() + "]";
+	}
+	
 }

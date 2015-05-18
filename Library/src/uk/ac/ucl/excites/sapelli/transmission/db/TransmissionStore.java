@@ -349,7 +349,10 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	
 	public Transmission<?> retrieveTransmissionFor(int localID, int payloadHash) throws Exception
 	{
-		return retrieveTransmissionByQuery(new FirstRecordQuery(getTransmissionSchema(), getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(), new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
+		return retrieveTransmissionByQuery(
+			new FirstRecordQuery(	getTransmissionSchema(),
+									getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(),
+									new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
 	
 	
@@ -382,6 +385,9 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
 		
+		System.out.println("TREC: " + tRec.toString());
+		System.out.println("TREC type: " + type.name());
+		
 		// Query for correspondent record:
 		Record cRec = recordStore.retrieveRecord(getCorrespondentColumn().retrieveValue(tRec).getRecordQuery());
 		
@@ -392,10 +398,10 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		{
 			case BINARY_SMS:
 				// create a new SMSTransmission object:
-				BinarySMSTransmission binarySMS =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
+				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
 				// add each part we got from the query:
 				for(Record partRecord : tPartRecs)
-					binarySMS.receivePart(new BinaryMessage(binarySMS,
+					binarySMST.receivePart(new BinaryMessage(binarySMST,
 															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
 															totalParts,
 															sentAt,
@@ -403,20 +409,20 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 															receivedAt,
 															BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord),
 																				TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(partRecord).intValue())));
-				return binarySMS;
+				return binarySMST;
 			case TEXTUAL_SMS:
 				// create a new SMSTransmission object:
-				TextSMSTransmission textSMS = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
+				TextSMSTransmission textSMST = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
 				// add each part we got from the query:
 				for(Record partRecord : tPartRecs)
-					textSMS.receivePart(new TextMessage(textSMS,
+					textSMST.receivePart(new TextMessage(textSMST,
 														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
 														totalParts,
 														sentAt,
 														TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord),
 														receivedAt,
 														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
-				return textSMS;
+				return textSMST;
 			case HTTP:
 				return null; // TODO !!!
 				//return new HTTPTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
@@ -608,7 +614,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			// Set values of all columns will be set except for Correspondent & NumberOfParts:
 			if(transmission.isLocalIDSet())
 				TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());	
-			if (transmission.isRemoteIDSet())
+			if(transmission.isRemoteIDSet())
 				TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
 			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage

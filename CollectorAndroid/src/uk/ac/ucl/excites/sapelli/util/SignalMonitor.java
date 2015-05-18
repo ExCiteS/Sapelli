@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.sender.gsm;
+package uk.ac.ucl.excites.sapelli.util;
 
 import android.content.Context;
 import android.telephony.PhoneStateListener;
@@ -24,8 +24,13 @@ import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 
+/**
+ * @author mstevens, Michalis Vitos
+ *
+ */
 public class SignalMonitor extends PhoneStateListener
 {
+	
 	static protected final String TAG = "SignalMonitor";
 
 	private TelephonyManager telephonyManager;
@@ -91,4 +96,5 @@ public class SignalMonitor extends PhoneStateListener
 	{
 		telephonyManager.listen(this, PhoneStateListener.LISTEN_NONE);
 	}
+	
 }

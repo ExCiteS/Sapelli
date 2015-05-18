@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.receiver;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
@@ -37,13 +37,16 @@ import android.widget.Toast;
  * IntentService which handles SMS messages that have been passed to it from SMSBroadcastReceiver,
  * converting them into SMSTransmission objects and passing them on to a ReceiveController.
  * 
- * @author benelliott
+ * @author benelliott, mstevens
  */
 public class SMSReceiverService extends IntentService
 {
-	private static final String TAG = "SMSReceiverService";
+	
+	private static final String TAG = SMSReceiverService.class.getSimpleName();
+
 	public static final String PDU_BYTES_EXTRA_NAME = "pdu"; // intent key for passing the PDU bytes
 	public static final String BINARY_FLAG_EXTRA_NAME = "binary"; // intent key for passing whether or not the message is binary (data message)
+	
 	private AndroidTransmissionController transmissionController;
 	private Handler mainHandler; // only used in order to display Toasts
 
@@ -60,7 +63,7 @@ public class SMSReceiverService extends IntentService
 		try
 		{
 			// Use application context or SMS callbacks will be invalidated when this service terminates:
-			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), getApplicationContext());
+			transmissionController = new AndroidTransmissionController((CollectorApp) getApplication());
 		}
 		catch(Exception e)
 		{

@@ -286,7 +286,7 @@ public abstract class Transmission<C extends Correspondent>
 	{
 		return remoteID != null;
 	}
-		
+	
 	/**
 	 * @return the remoteID
 	 */
@@ -295,6 +295,14 @@ public abstract class Transmission<C extends Correspondent>
 		if(remoteID == null)
 			throw new IllegalStateException("RemoteID has not been set yet");
 		return remoteID;
+	}
+
+	/**
+	 * @param remoteID the remoteID to set
+	 */
+	public void setRemoteID(int remoteID)
+	{
+		this.remoteID = remoteID;
 	}
 
 	public boolean isPayloadSet()

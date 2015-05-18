@@ -129,27 +129,27 @@
         </activity>
 
         <service
-            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.RecordSenderService"
+            android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingService"
             android:icon="@drawable/ic_sapelli_logo"
             android:label="@string/service_name" >
         </service>
 
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.SendAlarmBootListener"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.DataSendingSchedulingService$BootListener"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         
-        <service android:name="uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiserService" >
+        <service android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService" >
         </service>
 
-        <service android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSReceiverService" >
+        <service android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService" >
         </service>
 
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSBroadcastReceiver$Text"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Text"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>
@@ -157,7 +157,7 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSBroadcastReceiver$Binary"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Binary"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>

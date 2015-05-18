@@ -37,7 +37,9 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  */
 public class AckPayload extends ResponsePayload
 {
+	
 	private TimeStamp subjectReceivedAt;
+	
 	/**
 	 * To be called from receiving side
 	 * 

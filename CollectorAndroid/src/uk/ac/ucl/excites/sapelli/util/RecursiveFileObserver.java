@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission.sender.util;
+package uk.ac.ucl.excites.sapelli.util;
 
 import java.io.File;
 import java.util.ArrayList;

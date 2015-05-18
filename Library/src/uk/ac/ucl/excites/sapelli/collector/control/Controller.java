@@ -205,8 +205,12 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			{
 				logger = createLogger();
 
+				// Log software version:
+				logger.addLine("Application", getApplicationInfo());
+				logger.addBlankLine();
+				
 				// Log the DeviceID
-				logger.addLine("DeviceID (CRC32)", String.valueOf(getDeviceID()));
+				logger.addLine("Device ID (CRC32)", String.valueOf(getDeviceID()));
 				logger.addBlankLine();
 	
 				// Log the start of the project
@@ -1018,6 +1022,8 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected abstract void exitApp();
 	
 	protected abstract long getDeviceID();
+	
+	protected abstract String getApplicationInfo();
 	
 	/**
 	 * Returns the number of milliseconds since system boot.<br/>

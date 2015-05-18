@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission.sender.util;
+package uk.ac.ucl.excites.sapelli.util;
 
 import android.content.Context;
 import android.net.ConnectivityManager;

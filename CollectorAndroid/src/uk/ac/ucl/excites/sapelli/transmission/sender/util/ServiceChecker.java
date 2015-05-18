@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 
-import uk.ac.ucl.excites.sapelli.transmission.sender.RecordSenderService;
+import uk.ac.ucl.excites.sapelli.collector.services.DataSendingService;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -16,7 +16,7 @@ import android.content.Intent;
 public class ServiceChecker
 {
 
-	public static final String DATA_SENDER_SERVICE = RecordSenderService.class.getName();
+	public static final String DATA_SENDER_SERVICE = DataSendingService.class.getName();
 
 	/**
 	 * Check if a Service is Running
@@ -46,7 +46,7 @@ public class ServiceChecker
 		if(DATA_SENDER_SERVICE != null && isMyServiceRunning(context.getApplicationContext(), DATA_SENDER_SERVICE))
 		{
 			// Call the Service
-			Intent intent = new Intent(context, RecordSenderService.class);
+			Intent intent = new Intent(context, DataSendingService.class);
 			context.startService(intent);
 		}
 	}
@@ -59,7 +59,7 @@ public class ServiceChecker
 		if(DATA_SENDER_SERVICE != null && !isMyServiceRunning(context.getApplicationContext(), DATA_SENDER_SERVICE))
 		{
 			// Call the Service
-			Intent intent = new Intent(context, RecordSenderService.class);
+			Intent intent = new Intent(context, DataSendingService.class);
 			context.startService(intent);
 		}
 	}
@@ -74,7 +74,7 @@ public class ServiceChecker
 		while(isMyServiceRunning(context, DATA_SENDER_SERVICE))
 		{
 			// Terminate the service
-			Intent intent = new Intent(context, RecordSenderService.class);
+			Intent intent = new Intent(context, DataSendingService.class);
 			if(context.stopService(intent))
 				Debug.d("Service Stoped");
 			else

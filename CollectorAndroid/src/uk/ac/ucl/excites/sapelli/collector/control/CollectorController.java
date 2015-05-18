@@ -319,6 +319,13 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 		return deviceIDHash;
 	}
 
+	@Override
+	protected String getApplicationInfo()
+	{
+		CollectorApp app = (CollectorApp) activity.getApplication();
+		return app.getBuildInfo().getNameAndVersion() + " [" + app.getBuildInfo().getExtraVersionInfo() + "]";
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 

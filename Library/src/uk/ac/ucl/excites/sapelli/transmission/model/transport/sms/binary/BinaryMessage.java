@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
 
 /**
  * Binary SMS message

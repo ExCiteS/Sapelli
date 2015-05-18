@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
@@ -46,7 +47,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiserService;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -175,22 +175,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 				return false;
 			}
 		});
-
-/*		// TODO Re-enable the service at same point
-		// Check the Preferences
-		if(DataSenderPreferences.getTimeSchedule(this) == 1)
-		{
-			DataSenderPreferences.printPreferences(this);
-			Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
-			
-			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
-			startActivity(settingsActivity);
-		}
-		
-		// Start the DataSenderService
-		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
-			ServiceChecker.startService(this);
-*/
 	}
 
 	@Override
@@ -316,11 +300,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	@SuppressLint("InflateParams")
 	public boolean openAboutDialog(MenuItem item)
 	{
-		// START HACK HACK
+		// TODO START HACK HACK
 		Log.d(TAG, "Starting alarm scheduler...");
-		Intent alarmScheduler = new Intent(this, SendAlarmInitialiserService.class);
-		startService(alarmScheduler);
-		/// END HACK HACK
+		DataSendingSchedulingService.ScheduleAll(getApplicationContext());
+		/// TODO END HACK HACK
 		
 		// Set-up UI:
 		View view = LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
@@ -472,10 +455,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		
 		// Refresh list:
 		populateProjectList();
-
-		// TODO Re-enable the service at same point
-		// Restart the DataSenderService to stop monitoring the deleted project
-		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void loadProject(View view)
@@ -714,7 +693,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		try
 		{
 			// once project loading done, store a dummy schedule:
-			Correspondent receiver = new SMSCorrespondent("Matthias", "+447445950985", false);
+			Correspondent receiver = new SMSCorrespondent("Matthias Belgium", "+32486170492", false);
 			TransmissionStore sentTxStore = ((CollectorApp)this.getApplication()).collectorClient.sentTransmissionStoreHandle.getStore(this);
 			sentTxStore.store(receiver);
 			SendRecordsSchedule schedule = new SendRecordsSchedule(project, receiver, 60 * 1000, false);
@@ -725,10 +704,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 			e.printStackTrace();
 		}
 		// TODO ---------------- delete above
-
-		// TODO Re-enable the service at same point
-		// Restart the DataSenderService to start monitoring the new project
-		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	@Override

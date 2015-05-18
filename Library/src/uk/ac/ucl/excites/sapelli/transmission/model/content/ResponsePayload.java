@@ -38,6 +38,7 @@ public abstract class ResponsePayload extends Payload
 {
 	
 	protected int subjectSenderSideID;
+	protected int subjectReceiverSideID;
 	protected int subjectPayloadHash;
 	
 	public ResponsePayload()
@@ -48,6 +49,7 @@ public abstract class ResponsePayload extends Payload
 	public ResponsePayload(Transmission<?> subject)
 	{
 		this.subjectSenderSideID = subject.getRemoteID();
+		this.subjectReceiverSideID = subject.getLocalID();
 		this.subjectPayloadHash = subject.getPayloadHash();
 	}
 
@@ -55,6 +57,7 @@ public abstract class ResponsePayload extends Payload
 	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
+		Transmission.TRANSMISSION_ID_FIELD.write(subjectReceiverSideID, bitstream);
 		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
 	}
 
@@ -62,6 +65,7 @@ public abstract class ResponsePayload extends Payload
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
 	{
 		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
+		subjectReceiverSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
 		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
 	}
 	
@@ -74,10 +78,19 @@ public abstract class ResponsePayload extends Payload
 	}
 
 	/**
+	 * @return the subjectReceiverSideID
+	 */
+	public int getSubjectReceiverSideID()
+	{
+		return subjectReceiverSideID;
+	}
+
+	/**
 	 * @return the subjectPayloadHash
 	 */
 	public int getSubjectPayloadHash()
 	{
 		return subjectPayloadHash;
 	}
+	
 }

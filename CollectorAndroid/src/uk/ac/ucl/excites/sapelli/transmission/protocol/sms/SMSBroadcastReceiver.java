@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.receiver;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -35,7 +35,6 @@ import android.content.Intent;
  */
 public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 {
-	// private static final String TAG = "SMSBroadcastReceiver";
 	
 	/**
 	 * Called when the BroadcastReceiver hears a broadcast it is interested in (i.e. received SMS).
@@ -45,8 +44,7 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 	public void onReceive(Context context, Intent intent)
 	{
 		// get PDU byte arrays from received SMS intent:
-		Object[] pdus = (Object[])intent.getExtras().get("pdus");
-
+		Object[] pdus = (Object[]) intent.getExtras().get("pdus");
 		if(pdus == null)
 			return;
 
@@ -71,7 +69,8 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 	}
 	
 	/**
-	 * To be overriden by subclasses that listen for different Intents (either Data SMS or Textual SMS Intents).
+	 * To be overridden by subclasses that listen for different Intents (either Data SMS or Textual SMS Intents).
+	 * 
 	 * @return whether or not the SMS PDU passed by this BroadcastReceiver represents a binary (data) SMS as opposed to a textual one.
 	 */
 	protected abstract boolean isBinary();

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.sender.gsm;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
 import java.util.ArrayList;
 
@@ -25,7 +25,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import android.app.Activity;

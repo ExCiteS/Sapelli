@@ -18,8 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.sender;
 
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.transmission.sender.util.Constants;
 import uk.ac.ucl.excites.sapelli.transmission.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.AlertDialog;
@@ -65,7 +65,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 		sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
 		// Debug the Preferences
-		if(Constants.DEBUG_LOG)
+		if(BuildConfig.DEBUG)
 			printPreferences(getApplicationContext());
 	}
 
@@ -158,7 +158,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	{
 		Context context = getApplicationContext();
 
-		if(Constants.DEBUG_LOG)
+		if(BuildConfig.DEBUG)
 		{
 			Debug.d("key: " + key);
 			printPreferences(context);

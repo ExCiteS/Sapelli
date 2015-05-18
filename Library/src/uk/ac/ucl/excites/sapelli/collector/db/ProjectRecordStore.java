@@ -529,7 +529,6 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		if (sendScheduleRecord == null)
 			return null;
 		
-		
 		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(new FirstRecordQuery(TransmissionStore.RECEIVER_SCHEMA,
 				SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQueryConstraint())); // TODO check
 		
