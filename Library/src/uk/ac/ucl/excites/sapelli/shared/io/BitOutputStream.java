@@ -56,10 +56,11 @@ public abstract class BitOutputStream extends OutputStream
 	 * Writes an individual bit (a boolean) to the output
 	 * 
 	 * @param bit bit (true = 1; false = 0) to be written
+	 * @return the written bit
 	 * @throws IOException if an I/O error occurs
 	 * @throws CapacityReachedException when the output is "full"
 	 */
-	public void write(boolean bit) throws IOException, CapacityReachedException
+	public boolean write(boolean bit) throws IOException, CapacityReachedException
 	{
 		if(closed)
 			throw new IOException("This stream is closed");
@@ -67,6 +68,7 @@ public abstract class BitOutputStream extends OutputStream
 			throw new CapacityReachedException();
 		writeBit(bit);
 		numberOfBitsWritten++;
+		return bit;
 	}
 	
 	/**
