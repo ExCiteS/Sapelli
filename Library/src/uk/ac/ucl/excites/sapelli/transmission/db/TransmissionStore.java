@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -171,6 +172,11 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			schema.addColumn(COLUMN_RECEIVED_AT);
 			schema.addColumn(TRANSMISSION_PART_COLUMN_BODY);
 			schema.addColumn(TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH);
+			schema.setPrimaryKey(PrimaryKey.WithColumnNames(
+				(schema == SENT_TRANSMISSION_PART_SCHEMA ?
+					TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION :
+					TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION),
+				TRANSMISSION_PART_COLUMN_NUMBER));
 			schema.seal();
 		}
 	}
