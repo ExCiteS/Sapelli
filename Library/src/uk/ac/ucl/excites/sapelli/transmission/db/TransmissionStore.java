@@ -125,7 +125,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT = new IntegerColumn("SentResendRequests", false, Integer.SIZE); // only used on receiving side
 	static final public TimeStampColumn TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT = TimeStampColumn.JavaMSTime("LastResendReqSentAt", true, false); // only used on receiving side
-	//	Columns shared with TransmisionPart:
+	//	Columns shared with Transmision Part schema:
 	static final public TimeStampColumn COLUMN_SENT_AT = TimeStampColumn.JavaMSTime("SentAt", true, false);
 	static final public TimeStampColumn COLUMN_RECEIVED_AT = TimeStampColumn.JavaMSTime("ReceivedAt", true, false);
 	//	Add columns and index to Transmission schemas & seal them:
@@ -143,13 +143,13 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			else
 				schema.addColumn(RECEIVED_TRANSMISSION_COLUMN_SENDER);
 			schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
+			schema.addColumn(COLUMN_SENT_AT);
+			schema.addColumn(COLUMN_RECEIVED_AT);
 			if(schema == RECEIVED_TRANSMISSION_SCHEMA)
 			{
 				schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT);
 				schema.addColumn(TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT);
 			}
-			schema.addColumn(COLUMN_SENT_AT);
-			schema.addColumn(COLUMN_RECEIVED_AT);
 			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", TRANSMISSION_COLUMN_ID));
 			schema.seal();
 		}
@@ -411,28 +411,28 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 				// create a new SMSTransmission object:
 				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
-				for(Record partRecord : tPartRecs)
+				for(Record tPartRec : tPartRecs)
 					binarySMST.receivePart(new BinaryMessage(binarySMST,
-															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
+															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
 															totalParts,
-															sentAt,
-															TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord),
-															receivedAt,
-															BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord),
-																				TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(partRecord).intValue())));
+															COLUMN_SENT_AT.retrieveValue(tPartRec),
+															TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(tPartRec),
+															COLUMN_RECEIVED_AT.retrieveValue(tPartRec),
+															BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec),
+																				TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(tPartRec).intValue())));
 				return binarySMST;
 			case TEXTUAL_SMS:
 				// create a new SMSTransmission object:
 				TextSMSTransmission textSMST = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
-				for(Record partRecord : tPartRecs)
+				for(Record tPartRec : tPartRecs)
 					textSMST.receivePart(new TextMessage(textSMST,
-														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
+														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
 														totalParts,
-														sentAt,
-														TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord),
-														receivedAt,
-														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
+														COLUMN_SENT_AT.retrieveValue(tPartRec),
+														TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(tPartRec),
+														COLUMN_RECEIVED_AT.retrieveValue(tPartRec),
+														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec))));
 				return textSMST;
 			case HTTP:
 				return null; // TODO !!!
