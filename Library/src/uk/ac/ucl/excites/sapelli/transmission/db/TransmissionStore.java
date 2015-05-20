@@ -144,7 +144,10 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 				schema.addColumn(RECEIVED_TRANSMISSION_COLUMN_SENDER);
 			schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
 			if(schema == RECEIVED_TRANSMISSION_SCHEMA)
+			{
 				schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT);
+				schema.addColumn(TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT);
+			}
 			schema.addColumn(COLUMN_SENT_AT);
 			schema.addColumn(COLUMN_RECEIVED_AT);
 			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", TRANSMISSION_COLUMN_ID));
