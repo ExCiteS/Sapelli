@@ -123,9 +123,19 @@ public class DataSendingService extends IntentService implements StoreUser
 		{
 			app.collectorClient.projectStoreHandle.doneUsing(this);
 			app.collectorClient.sentTransmissionStoreHandle.doneUsing(this);
-			transmissionController.discard();
 		}
 	}
+	
+	/* (non-Javadoc)
+	 * @see android.app.IntentService#onDestroy()
+	 */
+	@Override
+	public void onDestroy()
+	{
+		if(transmissionController != null)
+			transmissionController.discard();
+	}
+	
 }
 //
 //
@@ -194,33 +204,6 @@ public class DataSendingService extends IntentService implements StoreUser
 //		return null;
 //	}
 //
-//	private class TempProject
-//	{
-//		int id;
-//		int fingerprint;
-//
-//		TempProject(int id, int fingerprint)
-//		{
-//			this.id = id;
-//			this.fingerprint = fingerprint;
-//		}
-//
-//		/**
-//		 * @return the id
-//		 */
-//		public int getId()
-//		{
-//			return id;
-//		}
-//
-//		/**
-//		 * @return the fingerprint
-//		 */
-//		public int getFingerprint()
-//		{
-//			return fingerprint;
-//		}
-//	}
 //
 //	/**
 //	 * Transmitting the data for a project

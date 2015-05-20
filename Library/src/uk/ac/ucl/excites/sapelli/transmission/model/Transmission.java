@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
@@ -30,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
@@ -253,6 +255,18 @@ public abstract class Transmission<C extends Correspondent>
 		
 		// Construct payloadBitsLengthField:
 		payloadBitsLengthField = new IntegerRangeMapping(0, b);
+	}
+	
+	/**
+	 * Only used on the sending side.
+	 * 
+	 * Can be overridden by subclasses.
+	 * 
+	 * @return a SentCallback object that can be used to register the successful sending of this transmission, its parts and its payload
+	 */
+	public SentCallback getSentCallback()
+	{
+		return new SentCallback();
 	}
 	
 	/**
@@ -567,5 +581,53 @@ public abstract class Transmission<C extends Correspondent>
 	 * @param handler
 	 */
 	public abstract void handle(Handler handler);
+	
+	/**
+	 * Class responsible for implementing what needs to happen when the Transmission (or parts of it) have been sent.
+	 * 
+	 * @author mstevens
+	 */
+	public class SentCallback implements StoreUser
+	{
+
+		private SentTransmissionStore sentTStore;
+		
+		protected void store()
+		{
+			try
+			{
+				if(sentTStore == null || sentTStore.isClosed())
+					sentTStore = client.sentTransmissionStoreHandle.getStore(this);
+				sentTStore.store(Transmission.this);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+			}
+		}
+		
+		public void onSent()
+		{
+			onSent(TimeStamp.now());
+		}
+		
+		public void onSent(TimeStamp sentAt)
+		{
+			setSentAt(sentAt);
+			
+			// Run payload callback if there is one:
+			if(payload.getCallback() != null)
+				payload.getCallback().onSent(sentAt);
+			
+			// Store updated transmission:
+			store();
+		}
+		
+		public void finalise()
+		{
+			client.sentTransmissionStoreHandle.doneUsing(this);
+		}
+		
+	}
 	
 }

@@ -27,8 +27,10 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.AndroidSMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
 import uk.ac.ucl.excites.sapelli.util.AndroidLogger;
 
@@ -53,7 +55,7 @@ public class AndroidTransmissionController extends TransmissionController
 	public SMSSender getSMSService()
 	{
 		if(smsSender == null)
-			smsSender = new AndroidSMSSender(this, app);
+			smsSender = new AndroidSMSSender(app);
 		return smsSender;
 	}
 
@@ -74,6 +76,23 @@ public class AndroidTransmissionController extends TransmissionController
 	protected String getApplicationInfo()
 	{
 		return app.getBuildInfo().getNameAndVersion() + " [" + app.getBuildInfo().getExtraVersionInfo() + "]";
+	}
+
+	/**
+	 * @param localID local ID of an incomplete SMSTransmission
+	 * @param time at which to send the request, or null (in which case no request will be scheduled)
+	 */
+	public void scheduleSMSResendRequest(int localID, TimeStamp time)
+	{
+		SMSReceiverService.ScheduleResendRequest(app, localID, time.toDateTime());
+	}
+	
+	/**
+	 * @param localID local ID of an incomplete SMSTransmission
+	 */
+	protected void cancelSMSResendRequest(int localID)
+	{
+		SMSReceiverService.CancelResendRequest(app, localID);
 	}
 	
 }

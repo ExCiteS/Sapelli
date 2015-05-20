@@ -159,10 +159,9 @@ public abstract class Message implements Comparable<Message>
 		return sentAt;
 	}
 	
-	public void sentCallback()
+	protected void setSentAt(TimeStamp sentAt)
 	{
-		sentAt = new TimeStamp(); //= now
-		transmission.partSent(this);
+		this.sentAt = sentAt;
 	}
 	
 	public boolean isReceived()
@@ -185,10 +184,9 @@ public abstract class Message implements Comparable<Message>
 		return deliveredAt;
 	}
 
-	public void deliveryCallback()
+	protected void setDeliveredAt(TimeStamp deliveredAt)
 	{
-		deliveredAt = new TimeStamp();
-		transmission.partDelivered(this);
+		this.deliveredAt = deliveredAt;
 	}
 	
 	public SMSCorrespondent getSender()

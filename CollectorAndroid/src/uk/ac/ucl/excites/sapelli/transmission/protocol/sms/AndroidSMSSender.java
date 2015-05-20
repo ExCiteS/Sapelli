@@ -19,10 +19,10 @@
 package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
-import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
@@ -36,7 +36,7 @@ import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-public class AndroidSMSSender extends SMSSender
+public class AndroidSMSSender implements SMSSender
 {
 	
 	private static final String TAG = "SMSSender";
@@ -56,14 +56,16 @@ public class AndroidSMSSender extends SMSSender
 	 */
 	public static final short SMS_PORT = 2013;
 	
-	private static int MESSAGE_ID = 0;
+	/**
+	 * Start at random Message ID:
+	 */
+	private static int MESSAGE_ID = new Random().nextInt();
 	
 	private Context context;
 	private SmsManager smsManager;
 	
-	public AndroidSMSSender(AndroidTransmissionController controller, Context context)
+	public AndroidSMSSender(Context context)
 	{
-		super(controller);
 		this.context = context;
 		this.smsManager = SmsManager.getDefault();
 	}
@@ -147,43 +149,46 @@ public class AndroidSMSSender extends SMSSender
 	{
 		// Generate intentAction (to be used by both the PendingIntent and the Receiver):
 		String intentAction = SMS_SENT + "_" + messageID + (numParts > 1 ? ("_" + part + "/" + numParts) : "");
+		
 		// Set-up receiver:
-		context.registerReceiver(new BroadcastReceiver()
-		{
-			@Override
-			public void onReceive(Context context, Intent intent)
+		context.registerReceiver(
+			new BroadcastReceiver()
 			{
-				// Unregister receiver (to avoid it being triggered more than once):
-				context.unregisterReceiver(this);
-				// Prepare log message:
-				String msgDescription = "[SMS-ID: " + messageID +
-										(numParts > 1 ? ("; SMS-PART:" + part + "/" + numParts) : "") +
-										"; TRANSMISSION-ID: " + msg.getTransmission().getLocalID() +
-										"; TRANSMISSION-PART: " + msg.getPartNumber() + "/" + msg.getTotalParts() + "]";
-				// Handle result:
-				switch(getResultCode())
+				@Override
+				public void onReceive(Context context, Intent intent)
 				{
-					case Activity.RESULT_OK:
-						msg.sentCallback(); //!!!
-						controller.updateSentTransmission(msg.getTransmission()); // Update stored transmission
-						Log.i(TAG, "Sending " + msgDescription + ": success.");
-						break;
-					case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-						Log.i(TAG, "Sending " + msgDescription + ": generic failure.");
-						break;
-					case SmsManager.RESULT_ERROR_NO_SERVICE:
-						Log.i(TAG, "Sending " + msgDescription + ": no service error.");
-						break;
-					case SmsManager.RESULT_ERROR_NULL_PDU:
-						Log.i(TAG, "Sending " + msgDescription + ": null PDU error.");
-						break;
-					case SmsManager.RESULT_ERROR_RADIO_OFF:
-						Log.i(TAG, "Sending " + msgDescription + ": radio off error.");
-						break;
+					// Unregister receiver (to avoid it being triggered more than once):
+					context.unregisterReceiver(this);
+					// Prepare log message:
+					String msgDescription = "[SMS-ID: " + messageID +
+											(numParts > 1 ? ("; SMS-PART:" + part + "/" + numParts) : "") +
+											"; TRANSMISSION-ID: " + msg.getTransmission().getLocalID() +
+											"; TRANSMISSION-PART: " + msg.getPartNumber() + "/" + msg.getTotalParts() + "]";
+					// Handle result:
+					switch(getResultCode())
+					{
+						case Activity.RESULT_OK:
+							// Use call back to register send time of the message, and possibly that of the whole transmission, and save the msg/transmission to the TransmissionStore:
+							msg.getTransmission().getSentCallback().onSent(msg);
+							Log.i(TAG, "Sending " + msgDescription + ": success.");
+							break;
+						case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+							Log.i(TAG, "Sending " + msgDescription + ": generic failure.");
+							break;
+						case SmsManager.RESULT_ERROR_NO_SERVICE:
+							Log.i(TAG, "Sending " + msgDescription + ": no service error.");
+							break;
+						case SmsManager.RESULT_ERROR_NULL_PDU:
+							Log.i(TAG, "Sending " + msgDescription + ": null PDU error.");
+							break;
+						case SmsManager.RESULT_ERROR_RADIO_OFF:
+							Log.i(TAG, "Sending " + msgDescription + ": radio off error.");
+							break;
+					}
 				}
-			}
-		},
-		new IntentFilter(intentAction));
+			},
+			new IntentFilter(intentAction));
+		
 		//Return pending intent:
 		return PendingIntent.getBroadcast(context, 0, new Intent(intentAction), PendingIntent.FLAG_ONE_SHOT);
 	}
@@ -214,8 +219,8 @@ public class AndroidSMSSender extends SMSSender
 				switch(getResultCode())
 				{
 					case Activity.RESULT_OK:
-						msg.deliveryCallback(); //!!!
-						controller.updateSentTransmission(msg.getTransmission()); // Update stored transmission
+						// Use call back to register delivery time of the message, and possibly that of the whole transmission, and save the msg/transmission to the TransmissionStore:
+						msg.getTransmission().getSentCallback().onDelivered(msg);
 						Log.i(TAG, "Delivery " + msgDescription + ": success.");
 						break;
 					case Activity.RESULT_CANCELED:

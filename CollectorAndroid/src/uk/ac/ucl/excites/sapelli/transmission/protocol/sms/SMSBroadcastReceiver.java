@@ -49,16 +49,8 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 			return;
 
 		for(Object pdu : pdus)
-		{
 			// for each message, create a new intent to launch the SMSReceiverService (effectively queues the messages):
-			Intent launchReceiverService = new Intent(context, SMSReceiverService.class);
-			// attach the PDU to the intent:
-			launchReceiverService.putExtra(SMSReceiverService.PDU_BYTES_EXTRA_NAME, (byte[]) pdu);
-			// also include whether or not the PDU represents a binary/data SMS:
-			launchReceiverService.putExtra(SMSReceiverService.BINARY_FLAG_EXTRA_NAME, this.isBinary()); // subclass will decide whether or not message is binary since they are registered to different intents
-			// launch the service using the intent:
-			context.startService(launchReceiverService);
-		}
+			SMSReceiverService.ReceiveMessage(context, (byte[]) pdu, this.isBinary()); // subclass will decide whether or not message is binary since they are registered to different intents
 		
 		/*
 		 * On pre-KitKat devices (API 19) calling abortBroadcast on an SMS message will prevent lower-priority receivers from "hearing" the broadcast.

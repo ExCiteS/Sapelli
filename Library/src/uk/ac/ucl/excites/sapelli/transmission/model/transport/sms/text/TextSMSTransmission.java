@@ -255,10 +255,12 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
 	 * @param parts - list of {@link TextMessage}s
-	 */	
-	public TextSMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt) 
+	 * @param numberOfSentResentRequests
+	 * @param lastResendReqSentAt - may be null
+	 */
+	public TextSMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, int numberOfSentResentRequests, TimeStamp lastResendReqSentAt) 
 	{
-		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt);
+		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResentRequests, lastResendReqSentAt);
 	}
 	
 	private int minNumberOfCharactersNeededFor(int bits)

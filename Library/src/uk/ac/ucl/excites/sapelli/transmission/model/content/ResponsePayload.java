@@ -38,35 +38,44 @@ public abstract class ResponsePayload extends Payload
 {
 	
 	protected int subjectSenderSideID;
-	protected int subjectReceiverSideID;
 	protected int subjectPayloadHash;
+	protected Integer subjectReceiverSideID;
 	
+	/**
+	 * To be called from receiving side
+	 */
 	public ResponsePayload()
 	{
 		super();
 	}
 	
+	/**
+	 * To be called from sending side (the side sending the response, = the receiver of the subject)
+	 * 
+	 */
 	public ResponsePayload(Transmission<?> subject)
 	{
+		super();
 		this.subjectSenderSideID = subject.getRemoteID();
-		this.subjectReceiverSideID = subject.getLocalID();
 		this.subjectPayloadHash = subject.getPayloadHash();
+		this.subjectReceiverSideID = subject.isLocalIDSet() ? subject.getLocalID() : null;
 	}
 
 	@Override
 	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
-		Transmission.TRANSMISSION_ID_FIELD.write(subjectReceiverSideID, bitstream);
 		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
+		if(bitstream.write(subjectReceiverSideID != null)) // write presence bit for subjectReceiverSideID
+			Transmission.TRANSMISSION_ID_FIELD.write(subjectReceiverSideID, bitstream);
 	}
 
 	@Override
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
 	{
 		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
-		subjectReceiverSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
 		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
+		subjectReceiverSideID = bitstream.readBit() ? Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream) : null; // read presence bit, and value if presence = 1/true
 	}
 	
 	/**
@@ -78,19 +87,19 @@ public abstract class ResponsePayload extends Payload
 	}
 
 	/**
-	 * @return the subjectReceiverSideID
-	 */
-	public int getSubjectReceiverSideID()
-	{
-		return subjectReceiverSideID;
-	}
-
-	/**
 	 * @return the subjectPayloadHash
 	 */
 	public int getSubjectPayloadHash()
 	{
 		return subjectPayloadHash;
+	}
+
+	/**
+	 * @return the subjectReceiverSideID
+	 */
+	public Integer getSubjectReceiverSideID()
+	{
+		return subjectReceiverSideID;
 	}
 	
 }

@@ -66,4 +66,10 @@ public class SentTransmissionStore extends TransmissionStore
 		return RECEIVER_SCHEMA;
 	}
 
+	@Override
+	protected boolean isReceivingSide()
+	{
+		return false;
+	}
+
 }

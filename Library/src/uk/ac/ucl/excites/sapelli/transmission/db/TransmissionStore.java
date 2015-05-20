@@ -123,6 +123,8 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	static final public ForeignKeyColumn SENT_TRANSMISSION_COLUMN_RECEIVER = new ForeignKeyColumn("Receiver", RECEIVER_SCHEMA, false);
 	static final public ForeignKeyColumn RECEIVED_TRANSMISSION_COLUMN_SENDER = new ForeignKeyColumn("Sender", SENDER_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
+	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT = new IntegerColumn("SentResendRequests", false, Integer.SIZE); // only used on receiving side
+	static final public TimeStampColumn TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT = TimeStampColumn.JavaMSTime("LastResendReqSentAt", true, false); // only used on receiving side
 	//	Columns shared with TransmisionPart:
 	static final public TimeStampColumn COLUMN_SENT_AT = TimeStampColumn.JavaMSTime("SentAt", true, false);
 	static final public TimeStampColumn COLUMN_RECEIVED_AT = TimeStampColumn.JavaMSTime("ReceivedAt", true, false);
@@ -141,6 +143,8 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			else
 				schema.addColumn(RECEIVED_TRANSMISSION_COLUMN_SENDER);
 			schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
+			if(schema == RECEIVED_TRANSMISSION_SCHEMA)
+				schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT);
 			schema.addColumn(COLUMN_SENT_AT);
 			schema.addColumn(COLUMN_RECEIVED_AT);
 			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", TRANSMISSION_COLUMN_ID));
@@ -384,7 +388,11 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
+		// columns only occurs on receiving side:
+		int numberOfSentResendRequests = isReceivingSide() ? TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.retrieveValue(tRec).intValue() : 0;
+		TimeStamp lastResendReqSentAt =	isReceivingSide() ?	TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
 		
+		// TODO remove debug sysos:
 		System.out.println("TREC: " + tRec.toString());
 		System.out.println("TREC type: " + type.name());
 		
@@ -398,7 +406,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		{
 			case BINARY_SMS:
 				// create a new SMSTransmission object:
-				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
+				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record partRecord : tPartRecs)
 					binarySMST.receivePart(new BinaryMessage(binarySMST,
@@ -412,7 +420,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 				return binarySMST;
 			case TEXTUAL_SMS:
 				// create a new SMSTransmission object:
-				TextSMSTransmission textSMST = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
+				TextSMSTransmission textSMST = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record partRecord : tPartRecs)
 					textSMST.receivePart(new TextMessage(textSMST,
@@ -640,7 +648,11 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		{
 			// Set SMS-specific values:
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, smsT.getTotalNumberOfParts());
-
+			if(isReceivingSide())
+			{	// columns only occurs on receiving side:
+				TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.storeValue(tRec, smsT.getNumberOfSentResendRequests());
+				TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.storeValue(tRec, smsT.getLastResendRequestSentAt());
+			}
 			// Make records for the parts...
 			for(Message msg : smsT.getParts())
 			{
@@ -683,8 +695,14 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		@Override
 		public void handle(HTTPTransmission httpT)
 		{
-			// Set receiver (= serverURL) and number of parts (always = 1):
+			// Set number of parts (always = 1):
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
+			if(isReceivingSide()) // columns only occurs on receiving side
+			{
+				// Set number of resend requests (always = 0):
+				TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.storeValue(tRec, 0);
+				// TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT remains null
+			}
 			
 			// Create a single transmission part (only used to store the body):
 			Record tPartRec = newPartRecord(); // adds to the list as well
@@ -708,5 +726,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		}
 		
 	}
+	
+	protected abstract boolean isReceivingSide();
 	
 }

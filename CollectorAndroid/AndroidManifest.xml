@@ -127,26 +127,38 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" />
         </activity>
-
-        <service
-            android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingService"
-            android:icon="@drawable/ic_sapelli_logo"
-            android:label="@string/service_name" >
+		
+		<service android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService"
+		    android:icon="@drawable/ic_sapelli_logo"
+            android:label="@string/datasendingschedulingservice_name" >
         </service>
-
+        
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.DataSendingSchedulingService$BootListener"
+            android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService$BootListener"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         
-        <service android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService" >
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="@string/datasendingservice_name" >
         </service>
-
-        <service android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService" >
+        
+        <service android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService"
+		    android:icon="@drawable/ic_sapelli_logo"
+            android:label="@string/smsreceiverservice_name" >
         </service>
+        
+		<receiver
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService$BootListener"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Text"
@@ -156,6 +168,7 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
+        
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Binary"
             android:exported="true"
@@ -169,6 +182,7 @@
         <meta-data
             android:name="com.crashlytics.ApiKey"
             android:value="d4cd414cf1f34965f9373c71749e234360eaa421" />
+        
     </application>
 
 </manifest>

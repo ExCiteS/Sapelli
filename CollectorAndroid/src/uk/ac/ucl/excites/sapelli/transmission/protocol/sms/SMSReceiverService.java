@@ -18,6 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
+import org.joda.time.DateTime;
+
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
@@ -25,8 +28,14 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import android.app.AlarmManager;
 import android.app.IntentService;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.telephony.SmsMessage;
@@ -34,19 +43,132 @@ import android.util.Log;
 import android.widget.Toast;
 
 /**
- * IntentService which handles SMS messages that have been passed to it from SMSBroadcastReceiver,
- * converting them into SMSTransmission objects and passing them on to a ReceiveController.
+ * IntentService which handles the reception of SMS messages (passed to it from SMSBroadcastReceiver)
+ * and the sending of resend requests for incomplete transmissions.
  * 
  * @author benelliott, mstevens
  */
 public class SMSReceiverService extends IntentService
 {
 	
+	// STATIC -------------------------------------------------------
 	private static final String TAG = SMSReceiverService.class.getSimpleName();
 
-	public static final String PDU_BYTES_EXTRA_NAME = "pdu"; // intent key for passing the PDU bytes
-	public static final String BINARY_FLAG_EXTRA_NAME = "binary"; // intent key for passing whether or not the message is binary (data message)
+	public static final int TASK_RECEIVE_MESSAGE = 0;
+	public static final int TASK_REQUEST_RESEND = 1;
+	public static final int TASK_SCHEDULE_RESEND_REQUESTS = 2;
 	
+	/**
+	 * Intent extra key for specifying task
+	 */
+	public static final String EXTRA_TASK = "task";
+	
+	/**
+	 * Intent extra key for passing the PDU bytes,
+	 * used when receiving a message (task = {@link #TASK_RECEIVE_MESSAGE})
+	 */
+	public static final String EXTRA_PDU_BYTES = "pdu";
+	
+	/**
+	 * Intent extra key for passing whether or not the message is binary (data message),
+	 * used when receiving a message (task = {@link #TASK_RECEIVE_MESSAGE})
+	 */
+	public static final String EXTRA_BINARY_FLAG = "binary";
+	
+	/**
+	 * Intent extra key for passing local ID of the SMSTransmission to request a resend for,
+	 * used when receiving a message (task = {@link #TASK_REQUEST_RESEND})
+	 */
+	public static final String EXTRA_TRANSMISSION_ID = "localID";
+	
+	/**
+	 * Starts the SMSReceiverService to receive an SMS message *now*.
+	 * 
+	 * @param context
+	 * @param pdu
+	 * @param binaryMsg
+	 */
+	public static void ReceiveMessage(Context context, byte[] pdu, boolean binaryMsg)
+	{
+		Intent serviceIntent = new Intent(context, SMSReceiverService.class);
+		// set task for service:
+		serviceIntent.putExtra(EXTRA_TASK, TASK_RECEIVE_MESSAGE);
+		// attach the PDU to the intent:
+		serviceIntent.putExtra(EXTRA_PDU_BYTES, pdu);
+		// also include whether or not the PDU represents a binary/data SMS:
+		serviceIntent.putExtra(EXTRA_BINARY_FLAG, binaryMsg);
+		// launch the service using the intent:
+		context.startService(serviceIntent);
+	}
+	
+	/**
+	 * @param context
+	 * @param localID local ID of an incomplete SMSTransmission
+	 * @param time at which to send the request, or null (in which case no request will be scheduled and existing will be cancelled)
+	 */
+	public static void ScheduleResendRequest(Context context, int localID, DateTime time)
+	{
+		SetOrCancelResendRequestAlarm(context, localID, time);
+	}
+	
+	/**
+	 * @param context
+	 * @param localID local ID of an SMSTransmission
+	 */
+	public static void CancelResendRequest(Context context, int localID)
+	{
+		SetOrCancelResendRequestAlarm(context, localID, null);
+	}
+	
+	private static void SetOrCancelResendRequestAlarm(Context context, int localID, DateTime alarmTime)
+	{
+		AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+		
+		Intent serviceIntent = new Intent(context, SMSReceiverService.class);
+		serviceIntent.putExtra(EXTRA_TASK, TASK_REQUEST_RESEND);
+		serviceIntent.putExtra(EXTRA_TRANSMISSION_ID, localID);
+		PendingIntent pi = PendingIntent.getService(context, localID, serviceIntent, 0);
+	
+		// Cancel any previously scheduled alarm for the same transmission (i.e. if cancel=false we will effectively postpone the running of a previously set alarm)
+		am.cancel(pi);
+		
+		// Set alarm, unless we are only cancelling (indicated by null alarmTime):
+		if(alarmTime != null)
+		{
+			am.set(AlarmManager.RTC, alarmTime.getMillis(), pi);
+			// make sure alarm is scheduled again after device reboot:
+			SetupBootReceiver(context, true);
+		}
+	}
+	
+	/**
+	 * Starts the SMSReceiverService to schedule resend requests.
+	 * Called from BootListener.
+	 * 
+	 * @param context
+	 */
+	public static void ScheduleAllResendRequests(Context context)
+	{
+		Intent serviceIntent = new Intent(context, SMSReceiverService.class);
+		// set task for service:
+		serviceIntent.putExtra(EXTRA_TASK, TASK_SCHEDULE_RESEND_REQUESTS);
+		// launch the service using the intent:
+		context.startService(serviceIntent);
+	}
+	
+	/**
+	 * @param enabled
+	 */
+	private static void SetupBootReceiver(Context context, boolean enabled)
+	{
+		ComponentName receiver = new ComponentName(context, BootListener.class);
+		int newState = (enabled) ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+		context.getPackageManager().setComponentEnabledSetting(receiver, newState, PackageManager.DONT_KILL_APP);
+		Log.d(TAG, (enabled ? "En" : "Dis") + "abled " + BootListener.class.getSimpleName());
+	}
+	
+	// DYNAMIC ------------------------------------------------------
+	private CollectorApp app;
 	private AndroidTransmissionController transmissionController;
 	private Handler mainHandler; // only used in order to display Toasts
 
@@ -63,13 +185,13 @@ public class SMSReceiverService extends IntentService
 		try
 		{
 			// Use application context or SMS callbacks will be invalidated when this service terminates:
-			transmissionController = new AndroidTransmissionController((CollectorApp) getApplication());
+			app = (CollectorApp) getApplication();
+			transmissionController = new AndroidTransmissionController(app);
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err);
+			Log.e(TAG, "Exception upon creation of in transmission controller.", e);
 		}
-		
 	}
 
 	/**
@@ -78,33 +200,50 @@ public class SMSReceiverService extends IntentService
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{
-		Log.d(TAG, "SMS received by Sapelli SMSReceiverService");
+		if(!intent.hasExtra(EXTRA_TASK))
+			Log.e(TAG, "No service task specified!");
+		// Decide which task to execute:
+		switch(intent.getIntExtra(EXTRA_TASK, -1))
+		{
+			case TASK_RECEIVE_MESSAGE : receiveMessage(intent); break;
+			case TASK_REQUEST_RESEND : requestResend(intent); break;
+			case TASK_SCHEDULE_RESEND_REQUESTS : scheduleAllResendRequests(); break;
+		}
+	}
 	
-		if(transmissionController == null)
-			throw new NullPointerException("Could not get TransmissionController instance");
+	private void receiveMessage(Intent intent)
+	{		
+		if(!intent.hasExtra(EXTRA_PDU_BYTES) || !intent.hasExtra(EXTRA_BINARY_FLAG))
+		{	// should never happen
+			Log.e(TAG, "Missing extras!");
+			return;
+		}
+		
+		Log.d(TAG, "SMS received by Sapelli SMSReceiverService");
 		
 		// get PDU from intent:
-		byte[] pdu = intent.getByteArrayExtra(PDU_BYTES_EXTRA_NAME);
-		boolean binary = intent.getBooleanExtra(BINARY_FLAG_EXTRA_NAME, false);
+		byte[] pdu = intent.getByteArrayExtra(EXTRA_PDU_BYTES);
+		boolean binary = intent.getBooleanExtra(EXTRA_BINARY_FLAG, false);
 		
-		if(pdu == null) // should never happen
-			return;
+		// Treat incoming message:
 		try
 		{
-			// try to create a (Sapelli) Message object from the PDU:
+			// Create a (Sapelli) Message object from the PDU:
 			final Message message = messageFromPDU(pdu, binary);
 
 			// Receive/decode:
 			transmissionController.receiveSMS(message);
 			
-			mainHandler.post(new Runnable()
-			{
-				@Override
-				public void run()
+			// Show toast when in debug mode:
+			if(BuildConfig.DEBUG)
+				mainHandler.post(new Runnable()
 				{
-					Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumber(), Toast.LENGTH_SHORT).show();
-				}
-			});
+					@Override
+					public void run()
+					{
+						Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumber(), Toast.LENGTH_SHORT).show();
+					}
+				});
 		}
 		catch(InvalidMessageException e)
 		{
@@ -126,18 +265,55 @@ public class SMSReceiverService extends IntentService
 	private Message messageFromPDU(byte[] pdu, boolean binary) throws InvalidMessageException, Exception
 	{
 		// Get Android SMS msg representation for pdu:
-		SmsMessage androidMsg = SmsMessage.createFromPdu(pdu);		
+		SmsMessage androidMsg = SmsMessage.createFromPdu(pdu);
 		if(androidMsg == null)
 			throw new Exception("Android could not parse the SMS message from its PDU.");
 		
 		// Get correspondent:
 		SMSCorrespondent sender = transmissionController.getSendingCorrespondentFor(androidMsg.getOriginatingAddress(), binary);
-		Log.d(TAG,"MESSAGE BODY: "+androidMsg.getMessageBody());
+		Log.d(TAG,"MESSAGE BODY: " + androidMsg.getMessageBody());
 		// Return Sapelli Message:
 		if(binary)
 			return new BinaryMessage(sender, androidMsg.getUserData());
 		else
 			return new TextMessage(sender, androidMsg.getMessageBody());
+	}
+	
+	private void requestResend(Intent intent)
+	{
+		if(!intent.hasExtra(EXTRA_TRANSMISSION_ID))
+		{	// should never happen
+			Log.e(TAG, "Missing extras!");
+			return;
+		}
+		
+		int localID = intent.getIntExtra(EXTRA_TRANSMISSION_ID, -1);
+		Log.d(TAG, "Woken by alarm for sending resend request for transmission with local ID: " + localID);
+		try
+		{
+			// TODO check GSM signal!
+			// TODO reschedule later (when?) if no signal?
+			
+			// Send out resend request for any incomplete SMS transmissions:
+			transmissionController.sendSMSResendRequest(localID);
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error upon trying to send resend request(s).", e);
+		}
+	}
+	
+	private void scheduleAllResendRequests()
+	{
+		try
+		{
+			boolean requestsScheduled = transmissionController.scheduleSMSResendRequests();
+			SetupBootReceiver(app, requestsScheduled); // dis/enable bootlistener based on outcome (if no requests were scheduled bootlistener doesn't need to run next time, unless it is re-enabled)
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error upon trying to schedule resend requests.", e);
+		}
 	}
 
 	/* (non-Javadoc)
@@ -148,6 +324,21 @@ public class SMSReceiverService extends IntentService
 	{
 		if(transmissionController != null)
 			transmissionController.discard();
+	}
+	
+	/**
+	 * BroadcastReceiver that listens for device boot events and when one is received, schedules resend requests for any incomplete SMSTransmissions.
+	 */
+	public class BootListener extends BroadcastReceiver
+	{
+
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			Log.d(getClass().getSimpleName(), "Boot event received, starting " + SMSReceiverService.class.getSimpleName() + " to schedule resend requests...");
+			ScheduleAllResendRequests(context);
+		}
+
 	}
 
 }

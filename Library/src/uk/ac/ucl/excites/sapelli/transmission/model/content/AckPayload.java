@@ -39,16 +39,15 @@ public class AckPayload extends ResponsePayload
 {
 	
 	private TimeStamp subjectReceivedAt;
-	
+
 	/**
 	 * To be called from receiving side
-	 * 
 	 */
 	public AckPayload()
 	{
 		super();
 	}
-
+	
 	/**
 	 * To be called from sending side (= which received the subject)
 	 * 
@@ -58,6 +57,7 @@ public class AckPayload extends ResponsePayload
 	{
 		super(subject);
 		this.subjectReceivedAt = subject.getReceivedAt();
+		// no need for a callback
 	}
 	
 	/* (non-Javadoc)

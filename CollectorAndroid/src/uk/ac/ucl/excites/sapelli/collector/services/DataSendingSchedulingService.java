@@ -194,7 +194,7 @@ public class DataSendingSchedulingService extends IntentService implements Store
 		cancelSending(project);
 
 		// Setup the alarm to be triggered every intervalMillis
-		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis, getDataSendingIntent(project));
+		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis, getDataSendingIntent(project)); // TODO should we really be waking up the device for this?
 		Log.d(TAG, "Set sending alarm for project \"" + project.toString(false) + "\" to expire every " + intervalMillis + "ms after a delay of " + triggerDelay + "ms.");
 	}
 

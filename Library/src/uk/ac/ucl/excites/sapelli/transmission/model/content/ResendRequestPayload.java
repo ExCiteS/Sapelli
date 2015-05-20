@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
+import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
@@ -29,16 +33,30 @@ public class ResendRequestPayload extends ResponsePayload
 	private boolean[] requestedParts;
 	
 	/**
-	 * 
-	 * @param subject the SMSTransmission whose parts we are requesting
+	 * To be called from receiving side
 	 */
-	public ResendRequestPayload(SMSTransmission<?> subject)
+	public ResendRequestPayload()
+	{
+		super();
+	}
+	
+	/**
+	 * To be called from sending side (= which received the subject)
+	 * 
+	 * @param subject the incomplete SMSTransmission whose parts we are requesting
+	 * @param controller
+	 */
+	public ResendRequestPayload(SMSTransmission<?> subject, TransmissionController controller)
 	{
 		super(subject);
+		
 		subjectTotalParts = subject.getTotalNumberOfParts();
 		requestedParts = new boolean[subjectTotalParts];
 		for(int p = 0; p < subjectTotalParts; p++)
 			requestedParts[p] = subject.hasPart(p + 1); // (part numbers start from 1)
+		
+		// Set-up SentCallback:
+		setCallback(new ResentRequestSentCallback(subject, controller));
 	}
 
 	@Override
@@ -89,6 +107,52 @@ public class ResendRequestPayload extends ResponsePayload
 	public void handle(Handler handler) throws Exception
 	{
 		handler.handle(this);
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	private class ResentRequestSentCallback extends SentCallback implements StoreUser
+	{
+		
+		private final SMSTransmission<?> incompleteT;
+		private final TransmissionController controller;
+		
+		/**
+		 * @param incompleteTransmission
+		 */
+		public ResentRequestSentCallback(SMSTransmission<?> incompleteTransmission, TransmissionController controller)
+		{
+			this.incompleteT = incompleteTransmission;
+			this.controller = controller;
+		}
+
+		@Override
+		public void onSent(TimeStamp sentAt)
+		{
+			// Remember the resent request was sent:
+			incompleteT.setNumberOfSentResendRequests(incompleteT.getNumberOfSentResendRequests() + 1);
+			incompleteT.setLastResendRequestSentAt(sentAt);
+			
+			// Store updated transmission:
+			TransmissionClient client = incompleteT.getClient();
+			try
+			{
+				client.receivedTransmissionStoreHandle.getStore(this).store(incompleteT);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+			}
+			finally
+			{
+				client.receivedTransmissionStoreHandle.doneUsing(this);
+			}
+			
+			// Schedule next request (won't do anything if max reached):
+			controller.scheduleSMSResendRequest(incompleteT.getLocalID(), incompleteT.getNextResendRequestSendingTime());
+		}
+		
 	}
 	
 }

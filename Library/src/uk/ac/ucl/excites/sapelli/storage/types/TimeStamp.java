@@ -82,6 +82,26 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	{
 		return new TimeStamp();
 	}
+	
+	static public TimeStamp Latest(TimeStamp t1, TimeStamp t2)
+	{
+		if(t1 == null)
+			return t2;
+		if(t2 == null)
+			return t1;
+		else
+			return t1.msSinceEpoch >= t2.msSinceEpoch ? t1 : t2;
+	}
+	
+	static public TimeStamp Earliest(TimeStamp t1, TimeStamp t2)
+	{
+		if(t1 == null)
+			return t2;
+		if(t2 == null)
+			return t1;
+		else
+			return t1.msSinceEpoch <= t2.msSinceEpoch ? t1 : t2;
+	}
 
 	// DYNAMICS------------------------------------------------------
 	private final long msSinceEpoch;
@@ -131,7 +151,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	{
 		this(new DateTime(msSinceEpoch, dateTimeZone));
 	}
-	
+
 	/**
 	 * Copy constructor
 	 * 
@@ -219,6 +239,11 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	public boolean isAfter(TimeStamp another)
 	{
 		return another.msSinceEpoch < this.msSinceEpoch;
+	}
+	
+	public TimeStamp shift(long ms)
+	{
+		return new TimeStamp(this.msSinceEpoch + ms, this.quarterHourOffsetWrtUTC);
 	}
 	
 	@Override

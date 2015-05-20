@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
-import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
@@ -27,18 +26,11 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessa
  * @author mstevens
  *
  */
-public abstract class SMSSender
+public interface SMSSender
 {
-	
-	protected final TransmissionController controller;
-	
-	public SMSSender(TransmissionController controller)
-	{
-		this.controller = controller;
-	}
 
-	public abstract boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS);
+	public boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS);
 	
-	public abstract boolean send(SMSCorrespondent receiver, TextMessage textSMS);
+	public boolean send(SMSCorrespondent receiver, TextMessage textSMS);
 	
 }

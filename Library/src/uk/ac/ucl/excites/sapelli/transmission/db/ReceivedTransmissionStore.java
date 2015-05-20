@@ -27,10 +27,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 
 /**
@@ -77,34 +75,28 @@ public class ReceivedTransmissionStore extends TransmissionStore
 	}
 	
 	/**
-	 * Returns a list of incomplete SMSTransmissions whose constituent parts are all at least {@code minAgeMillis} old.
-	 * @param minAgeMillis the minimum age for all parts in a transmission in order for that transmission to be returned (e.g. only return transmissions where all parts are at least 3000 milliseconds old)
+	 * Returns a list of incomplete SMSTransmissions.
+	 * 
+	 * Note: this only deals with SMSTransmissions as an HTTPTransmission cannot (yet) be incomplete.
+	 * 
 	 * @return a list of incomplete SMSTransmissions
 	 */
-	public List<SMSTransmission<?>> getIncompleteSMSTransmissions(long minAgeMillis)
+	public List<SMSTransmission<?>> getIncompleteSMSTransmissions()
 	{
+		List<SMSTransmission<?>> incompleteSMSTs = new ArrayList<SMSTransmission<?>>();
+		
 		// query DB for transmissions which are incomplete (have "null" as their receivedAt value):
-		List<Transmission<?>> incompleteTransmissions = retrieveTransmissions(
-				new RecordsQuery(Source.From(getTransmissionSchema()), EqualityConstraint.IsNull(COLUMN_RECEIVED_AT)));
+		for(Transmission<?> t : retrieveTransmissions(new RecordsQuery(Source.From(getTransmissionSchema()), EqualityConstraint.IsNull(COLUMN_RECEIVED_AT))))
+			if(t instanceof SMSTransmission)
+				incompleteSMSTs.add((SMSTransmission<?>) t); // cast these transmissions as SMSTransmissions
 		
-		// cast these transmissions as SMSTransmissions (an HTTPTransmission cannot yet be incomplete) and check if they are old enough for a resend request:
-		List<SMSTransmission<?>> sufficientlyOldTransmissions = new ArrayList<SMSTransmission<?>>();
+		 return incompleteSMSTs;
+	}
 
-		// if a single part is too young then we will not send a resend request yet:
-		TimeStamp minAge = new TimeStamp(System.currentTimeMillis() - minAgeMillis);
-		
-		outer: for (Transmission<?> transmission : incompleteTransmissions)
-		{ // for each incomplete transaction...
-			for (Message message : ((SMSTransmission<?>) transmission).getParts())
-				// for each message, check that it is old enough:
-				if (message.getReceivedAt().isAfter(minAge))
-					// if not then stop checking this transmission:
-					continue outer;
-			// if all of the messages in the transmission were old enough then add it to the list:
-			sufficientlyOldTransmissions.add(((SMSTransmission<?>)transmission));
-		}
-
-		return sufficientlyOldTransmissions;
+	@Override
+	protected boolean isReceivingSide()
+	{
+		return true;
 	}
 	
 }

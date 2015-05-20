@@ -49,8 +49,9 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
+ * TODO implemtent SentCallback mark records as sent!
+ * 
  * @author mstevens
- *
  */
 public class RecordsPayload extends Payload
 {

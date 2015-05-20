@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
@@ -71,9 +72,11 @@ public abstract class Payload
 				return new RecordsPayload();
 			case Ack:
 				return new AckPayload();
+			case ResendRequest:
+				return new ResendRequestPayload();
 			case Files:
 			default:
-				throw new IllegalArgumentException("Unsupport Payload type: " + type.name());
+				throw new IllegalArgumentException("Unsupported/Unimplemented Payload type: " + type.name());
 		}
 	}
 	
@@ -137,9 +140,14 @@ public abstract class Payload
 	
 	// DYNAMICS------------------------------------------------------
 	protected Transmission<?> transmission;
-
+	
 	public abstract int getType();
 
+	/**
+	 * Only used on sending side, and even there if can be null for certain payloads
+	 */
+	private SentCallback callback;
+	
 	/**
 	 * @return the transmission
 	 */
@@ -155,6 +163,22 @@ public abstract class Payload
 		this.transmission = transmission;
 	}
 	
+	/**
+	 * @return the callback
+	 */
+	public SentCallback getCallback()
+	{
+		return callback;
+	}
+
+	/**
+	 * @param callback the callback to set
+	 */
+	protected void setCallback(SentCallback callback)
+	{
+		this.callback = callback;
+	}
+
 	public boolean isTansmissionSet()
 	{
 		return transmission != null;
@@ -208,6 +232,19 @@ public abstract class Payload
 	public void handle(Handler handler) throws Exception
 	{
 		handler.handle(this, getType()); // use generic handler method
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	protected class SentCallback
+	{
+		
+		public void onSent(TimeStamp sentAt)
+		{
+			// does nothing by default
+		}
+		
 	}
 	
 }
