@@ -55,10 +55,10 @@ public abstract class Correspondent
 	 */
 	public Correspondent(String name, Transmission.Type transmissionType)
 	{
-		if(name.length() > CORRESPONDENT_NAME_MAX_LENGTH_BYTES)
-			throw new IllegalArgumentException("Correspondent name is too long");
 		if(name == null || name.isEmpty())
 			throw new IllegalArgumentException("Please provide a non-empty name String");
+		if(name.length() > CORRESPONDENT_NAME_MAX_LENGTH_BYTES)
+			throw new IllegalArgumentException("Correspondent name is too long");
 		this.name = name;
 		this.transmissionType = transmissionType;
 	}

@@ -84,9 +84,9 @@ public class TextMessage extends Message
 	 * @param totalParts a value from [1, TextSMSTransmission.MAX_TRANSMISSION_PARTS]
 	 * @param body
 	 */
-	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, String body, boolean checkingCapacity)
+	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, String body)
 	{
-		super(transmission, partNumber, totalParts, checkingCapacity);
+		super(transmission, partNumber, totalParts);
 		if(body == null)
 			throw new NullPointerException("Payload cannot be null!");
 		if(body.length() > MAX_BODY_CHARS)
@@ -236,7 +236,7 @@ public class TextMessage extends Message
 	}
 
 	@Override
-	public void send(SMSSender smsService)
+	protected void doSend(SMSSender smsService)
 	{
 		smsService.send(transmission.getCorrespondent(), this);
 	}

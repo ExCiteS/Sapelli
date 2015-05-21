@@ -269,7 +269,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	}
 	
 	@Override
-	protected void wrap(BitArray bodyBits, boolean checkingCapacity) throws TransmissionCapacityExceededException, IOException
+	protected void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException
 	{
 		// Clear previously generated messages
 		parts.clear(); //!!!
@@ -327,7 +327,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		String transmissionBodyStr = bld.toString();
 		int partsTotal = (transmissionBodyStr.length() + TextMessage.MAX_BODY_CHARS - 1) / TextMessage.MAX_BODY_CHARS;
 		for(int p = 0; p < partsTotal; p++)
-			parts.add(new TextMessage(this, p + 1, partsTotal, transmissionBodyStr.substring(p * TextMessage.MAX_BODY_CHARS, Math.min((p + 1) * TextMessage.MAX_BODY_CHARS, transmissionBodyStr.length())), checkingCapacity));
+			parts.add(new TextMessage(this, p + 1, partsTotal, transmissionBodyStr.substring(p * TextMessage.MAX_BODY_CHARS, Math.min((p + 1) * TextMessage.MAX_BODY_CHARS, transmissionBodyStr.length()))));
 	}
 
 	@Override

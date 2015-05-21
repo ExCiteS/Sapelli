@@ -66,7 +66,7 @@ public class ResendRequestPayload extends ResponsePayload
 	}
 
 	@Override
-	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
 		super.write(bitstream);
 		TOTAL_PARTS_FIELD.write(subjectTotalParts, bitstream);

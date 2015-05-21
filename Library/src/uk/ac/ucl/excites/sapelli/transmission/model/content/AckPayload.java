@@ -64,7 +64,7 @@ public class AckPayload extends ResponsePayload
 	 * @see uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload#write(uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream)
 	 */
 	@Override
-	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
 		super.write(bitstream);
 		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream);

@@ -18,10 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}
@@ -42,15 +44,37 @@ public abstract class Message implements Comparable<Message>
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	protected int sendingSideTransmissionID;
 	protected SMSTransmission<?> transmission;
-	protected int payloadHash;
 	
-	protected TimeStamp sentAt;		 //only on sending side
-	protected TimeStamp deliveredAt; //only on sending side
-	protected TimeStamp receivedAt;	 //only on receiving side
+	/**
+	 * Only used on sending side.
+	 */
+	protected TimeStamp sentAt;
 	
+	/**
+	 * Only used on sending side.
+	 */
+	protected TimeStamp deliveredAt;
+	
+	/**
+	 * Only used on receiving side. 
+	 */
+	protected TimeStamp receivedAt;
+	
+	/**
+	 * Only used on receiving side. 
+	 */
 	protected SMSCorrespondent sender;
+	
+	/**
+	 * Only used on receiving side. 
+	 */
+	protected Integer sendingSideTransmissionID;
+	
+	/**
+	 * Only used on receiving side. 
+	 */
+	protected Integer payloadHash;
 	
 	/**
 	 * a value from [1, totalParts]
@@ -67,20 +91,16 @@ public abstract class Message implements Comparable<Message>
 	 * @param partNumber a value from [1, totalParts]
 	 * @param totalParts
 	 */
-	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts, boolean checkingCapacity)
+	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts)
 	{
 		// Some checks:
-		if(!transmission.isLocalIDSet() && !checkingCapacity)
-			throw new IllegalStateException("Cannot create Messages for sending until local transmission ID is set by means of persistent storage.");
+		if(transmission == null)
+			throw new NullPointerException("Transmission cannot be null when creating new Message on sending side or upon database retrieval.");
 		if(partNumber < 1 || totalParts < 1 || partNumber > totalParts)
 			throw new IllegalArgumentException("Invalid part number (" + partNumber + ") of total number of parts (" + totalParts + ").");
 		
 		// Transmission:
 		this.transmission = transmission;
-		if (!checkingCapacity)
-			this.sendingSideTransmissionID = transmission.getLocalID();
-		if (!checkingCapacity)
-			this.payloadHash = transmission.getPayloadHash();
 		
 		// Part numbers:
 		this.partNumber  = partNumber;
@@ -110,28 +130,36 @@ public abstract class Message implements Comparable<Message>
 	 */
 	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt)
 	{
-		this(transmission, partNumber, totalParts, false);
+		this(transmission, partNumber, totalParts);
 		this.sentAt = sentAt;
 		this.deliveredAt = deliveredAt;
 		this.receivedAt = receivedAt;
+		if(!isSent() && isReceived()) // if on receiving side:
+		{
+			this.sender = transmission.getCorrespondent();
+			this.sendingSideTransmissionID = transmission.getRemoteID();
+			this.payloadHash = transmission.getPayloadHash();
+		}
 	}
 	
-	public abstract void send(SMSSender smsService);
-	
-	protected void setTransmission(SMSTransmission<?> transmission)
+	public void send(SMSSender smsService) throws TransmissionSendingException
 	{
-		if(this.transmission != null && this.transmission != transmission)
-			throw new IllegalStateException("Cannot change transmission.");
-		this.transmission = transmission;
+		// Set values required for message header:
+		try
+		{
+			this.sendingSideTransmissionID = transmission.getLocalID();
+			this.payloadHash = transmission.getPayloadHash();
+		}
+		catch(Exception e)
+		{
+			throw new TransmissionSendingException("Cannot send Message until header values are set.", e);
+		}
+		
+		// Send the message:
+		doSend(smsService);
 	}
 	
-	/**
-	 * @return the payloadHash
-	 */
-	public int getPayloadHash()
-	{
-		return payloadHash;
-	}
+	protected abstract void doSend(SMSSender smsService) throws TransmissionSendingException;
 
 	/**
 	 * @return the partNumber
@@ -189,6 +217,9 @@ public abstract class Message implements Comparable<Message>
 		this.deliveredAt = deliveredAt;
 	}
 	
+	/**
+	 * @return the SMSCorrespondent which this message originates from (on receiving side), or null (on sending side)
+	 */
 	public SMSCorrespondent getSender()
 	{
 		return sender;
@@ -196,15 +227,45 @@ public abstract class Message implements Comparable<Message>
 	
 	/**
 	 * @return the sendingSideTransmissionID
+	 * @throws IllegalArgumentException when no sendingSideTransmissionID has been set
 	 */
-	public int getSendingSideTransmissionID()
+	public int getSendingSideTransmissionID() throws IllegalArgumentException
 	{
+		if(sendingSideTransmissionID == null)
+			throw new IllegalStateException("sendingSideTransmissionID has not been set yet");
 		return sendingSideTransmissionID;
 	}
+	
+	/**
+	 * @return
+	 * @throws IllegalArgumentException when no payloadHash has been set
+	 */
+	public int getPayloadHash() throws IllegalArgumentException
+	{
+		if(payloadHash == null)
+			throw new IllegalStateException("Payload hash has not been set yet");
+		return payloadHash;
+	}
 
+	/**
+	 * @return the transmission this Message belongs to, or null if no Transmission has been set yet (can only happen on receiving side)
+	 */
 	public SMSTransmission<?> getTransmission()
 	{
 		return transmission;
+	}
+	
+	/**
+	 * Only used on receiving side.
+	 * Should only ever be called from {@link SMSTransmission#receivePart(Message)}.
+	 * 
+	 * @param transmission
+	 */
+	protected void setTransmission(SMSTransmission<?> transmission)
+	{
+		if(this.transmission != null && this.transmission != transmission)
+			throw new IllegalStateException("Cannot change transmission.");
+		this.transmission = transmission;
 	}
 		
 	@Override
@@ -225,9 +286,9 @@ public abstract class Message implements Comparable<Message>
 	public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + (sender == null ? 0 : sender.hashCode());
-		hash = 31 * hash + sendingSideTransmissionID;
-		hash = 31 * hash + payloadHash;
+		hash = 31 * hash + Objects.hashCode(sender);
+		hash = 31 * hash + Objects.hashCode(sendingSideTransmissionID);
+		hash = 31 * hash + Objects.hashCode(payloadHash);
 		hash = 31 * hash + partNumber;
 		hash = 31 * hash + totalParts;
 		hash = 31 * hash + getBodyHashCode();
@@ -247,13 +308,13 @@ public abstract class Message implements Comparable<Message>
 			return true;
 		if(obj instanceof Message)
 		{
-			Message another = (Message) obj;
-			return	(this.sender == null ? another.sender == null : this.sender.equals(another.sender)) &&
-					this.sendingSideTransmissionID == another.sendingSideTransmissionID &&
-					this.payloadHash == another.payloadHash &&
-					this.partNumber == another.partNumber &&
-					this.totalParts == another.totalParts &&
-					equalBody(another);			
+			Message that = (Message) obj;
+			return	Objects.equals(this.sender, that.sender) &&
+					Objects.equals(this.sendingSideTransmissionID, that.sendingSideTransmissionID) &&
+					Objects.equals(this.payloadHash, that.payloadHash) &&
+					this.partNumber == that.partNumber &&
+					this.totalParts == that.totalParts &&
+					equalBody(that);			
 		}
 		return false;
 	}

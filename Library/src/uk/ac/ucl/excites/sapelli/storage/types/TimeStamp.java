@@ -231,16 +231,28 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 			return 1;
 	}
 	
+	/**
+	 * @param another - should not be null
+	 * @return whether or not this TimeStamp indicates a time (strictly) before the one indicated by the given TimeStamp
+	 */
 	public boolean isBefore(TimeStamp another)
 	{
 		return this.msSinceEpoch < another.msSinceEpoch;
 	}
 	
+	/**
+	 * @param another - should not be null
+	 * @return whether or not this TimeStamp indicates a time (strictly) after the one indicated by the given TimeStamp
+	 */
 	public boolean isAfter(TimeStamp another)
 	{
 		return another.msSinceEpoch < this.msSinceEpoch;
 	}
 	
+	/**
+	 * @param ms
+	 * @return a new TimeStamp instance which indicates a time that differs from this TimeStamp by the given amount of milliseconds (+/-)
+	 */
 	public TimeStamp shift(long ms)
 	{
 		return new TimeStamp(this.msSinceEpoch + ms, this.quarterHourOffsetWrtUTC);

@@ -164,7 +164,7 @@ public abstract class Payload
 	}
 	
 	/**
-	 * @return the callback
+	 * @return the callback- may be null
 	 */
 	public SentCallback getCallback()
 	{
@@ -184,7 +184,7 @@ public abstract class Payload
 		return transmission != null;
 	}
 	
-	public BitArray serialise() throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	public BitArray serialise() throws IOException, TransmissionCapacityExceededException
 	{
 		if(this.transmission == null)
 			throw new IllegalStateException("Cannot serialise before transmission has been set!");
@@ -199,7 +199,7 @@ public abstract class Payload
 		return bitstream.toBitArray();
 	}
 	
-	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException;
+	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException;
 	
 	public void deserialise(BitArray payloadBits) throws IllegalStateException, IOException, PayloadDecodeException, UnknownModelException
 	{

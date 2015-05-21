@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 
 /**
@@ -121,7 +122,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	}
 
 	/**
-	 * To be called on receiving side.
+	 * To be called on receiving side, or upon database retrieval on both the sending and the receiving side.
 	 * 
 	 * @param msg
 	 */
@@ -238,7 +239,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#doSend(uk.ac.ucl.excites.sapelli.transmission.TransmissionSender)
 	 */
 	@Override
-	protected void doSend(TransmissionController transmissionController)
+	protected void doSend(TransmissionController transmissionController) throws TransmissionSendingException
 	{
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to send.");
@@ -254,8 +255,9 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	 * 
 	 * @param transmissionSender
 	 * @param partNumber
+	 * @throws TransmissionSendingException
 	 */
-	public void resend(TransmissionController transmissionSender, int partNumber)
+	public void resend(TransmissionController transmissionSender, int partNumber) throws TransmissionSendingException
 	{
 		int i = 1; // partNumbers start from 1!
 		for(Message m : parts)

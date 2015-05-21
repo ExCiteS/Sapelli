@@ -89,7 +89,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	}
 	
 	@Override
-	protected void wrap(BitArray bodyBits, boolean checkingCapacity) throws TransmissionCapacityExceededException, IOException
+	protected void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException
 	{
 		// Clear previously generated messages (!!!)
 		parts.clear();
@@ -102,7 +102,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 		int numberOfParts = (bodyBits.length() + (BinaryMessage.MAX_BODY_SIZE_BITS - 1)) / BinaryMessage.MAX_BODY_SIZE_BITS;
 		BitArrayInputStream stream = new BitArrayInputStream(bodyBits);
 		for(int p = 0; p < numberOfParts; p++)
-			parts.add(new BinaryMessage(this, p + 1, numberOfParts, stream.readBitArray(Math.min(BinaryMessage.MAX_BODY_SIZE_BITS, stream.bitsAvailable())), checkingCapacity));		
+			parts.add(new BinaryMessage(this, p + 1, numberOfParts, stream.readBitArray(Math.min(BinaryMessage.MAX_BODY_SIZE_BITS, stream.bitsAvailable()))));		
 		stream.close();
 	}
 

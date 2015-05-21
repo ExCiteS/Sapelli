@@ -62,7 +62,7 @@ public abstract class ResponsePayload extends Payload
 	}
 
 	@Override
-	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
 		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
 		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);

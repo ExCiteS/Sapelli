@@ -163,8 +163,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			//send transmission:
 			storeAndSend(transmission);
 			
-			// TODO FOR NOW WE DELETE RECORDS TO AVOID RESEND:
-			recordStore.delete(recsToSend); // TODO this fails, why?
 			
 			// TODO mark records as "sent" (do here rather than ACK? depends on resend timeout vs. send new records timeout; semantics of resending transmission vs. records)
 		}
@@ -189,10 +187,13 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	private void storeAndSend(Transmission<?> transmission) throws Exception
 	{
 		addLogLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: " + transmission.getPayload().getType(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
-		// store in "in-flight transmissions" schema to get local ID:
-		transmission.computePayloadHash(); // TODO should this be called from here? Perhaps rename it to "prepare()"?
-		// TODO payload type is not set at this point, why???
+		
+		// Prepare transmission for storage & sending:
+		transmission.prepare();
+		
+		// Store "in-flight transmissions" to get local ID:
 		sentTStore.store(transmission); // update record now that payload hash has been computed
+		
 		// actually send the transmission:
 		transmission.send(this);
 	}
@@ -223,7 +224,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	protected boolean doReceive(Transmission<?> transmission) throws Exception
 	{	
 		addLogLine(	"INCOMING", "Transmission", transmission.getType().toString(),
-					"From: " + transmission.getCorrespondent().getName() + " (" + transmission.getCorrespondent().getAddress() + ")");
+					"From: " + transmission.getCorrespondent());
 
 		// Receive (i.e. decode) the transmission:
 		try
@@ -231,8 +232,21 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			// "Receive" the transmission (merge parts, decode, verify):
 			transmission.receive();
 		
-			// Handle payload (including ACK, since this is payload-dependent):
-			payloadReceiver.receive(transmission, transmission.getPayload());
+			// Handle/receive the payload:
+			payloadReceiver.receive(transmission, transmission.getPayload()); // TODO call payload.deserialise() from here instad of transmission.receive()??
+			
+			// Acknowledge reception if needed
+			if(transmission.getPayload().acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)
+			{
+				try
+				{	// TODO this won't work for http? an http response is not quite like a sending a transmission, right?
+					storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
+				}
+				catch(Exception e)
+				{
+					throw new Exception("Error upon sending ACK", e);
+				}
+			}
 			
 			// Delete transmission (and parts) from store:
 			if(deleteTransmissionUponDecoding())
@@ -242,12 +256,12 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 		catch(UnknownModelException e)
 		{
-			// TODO send model request payload
+			// TODO send model request payload, would make more sense to do this in the payload receiver but the exception is thrown from transmission.receive()
 			return false;
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Exception when trying to receive supposedly complete transmission", e);
+			throw new Exception("Exception when trying to receive/decode transmission", e);
 		}
 	}
 	
@@ -317,7 +331,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 		catch(Exception e)
 		{
-			addLogLine("EXCEPTION", ExceptionHelpers.getMessageAndCause(e));
+			addLogLine("EXCEPTION", "Upon SMS message reception", ExceptionHelpers.getMessageAndCause(e));
 			throw e;
 		}
 	}
@@ -455,13 +469,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		public void receive(Transmission<?> transmission, Payload payload) throws Exception
 		{
 			payload.handle(this);
-			
-			// Acknowledge reception if needed
-			if(payload.acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)
-			{
-				// TODO this won't work for http? an http response is not quite like a sending a transmission, right?
-				storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
-			}
 		}
 		
 		@Override

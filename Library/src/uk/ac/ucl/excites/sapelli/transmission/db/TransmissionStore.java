@@ -401,6 +401,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		
 		// Query for correspondent record:
 		Record cRec = recordStore.retrieveRecord(getCorrespondentColumn().retrieveValue(tRec).getRecordQuery());
+		SMSCorrespondent corr = (SMSCorrespondent) correspondentFromRecord(cRec);
 		
 		// Query for part records:		
 		List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(Source.From(getTransmissionPartSchema()), Order.AscendingBy(TRANSMISSION_PART_COLUMN_NUMBER), tRec.getRecordQueryConstraint()));
@@ -409,7 +410,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		{
 			case BINARY_SMS:
 				// create a new SMSTransmission object:
-				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
+				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, corr, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
 					binarySMST.receivePart(new BinaryMessage(binarySMST,
@@ -423,7 +424,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 				return binarySMST;
 			case TEXTUAL_SMS:
 				// create a new SMSTransmission object:
-				TextSMSTransmission textSMST = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
+				TextSMSTransmission textSMST = new TextSMSTransmission(client, corr, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
 					textSMST.receivePart(new TextMessage(textSMST,

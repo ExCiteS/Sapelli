@@ -50,7 +50,7 @@ public class ModelPayload extends Payload
 	}
 
 	@Override
-	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
 		// TODO
 

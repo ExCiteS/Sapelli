@@ -106,14 +106,16 @@ public class RecordsPayload extends Payload
 	/**
 	 * To be called from the sending side. This method will remove records from the list that were successfully added to the Payload.
 	 * 
+	 * TODO OPTIMISE THIS
+	 * 
 	 * @param records to try adding
-=	 * @throws Exception
+	 * @throws Exception
 	 */
 	public void addRecords(List<Record> records) throws Exception
 	{
 		if(!isTansmissionSet())
 			throw new IllegalStateException("No transmission set!");
-				
+		
 		for(Iterator<Record> iterator = records.iterator(); iterator.hasNext();) // use an iterator so we can remove elements during for loop
 		{
 			Record record = iterator.next();
@@ -125,15 +127,23 @@ public class RecordsPayload extends Payload
 			
 			// Model:
 			if(recordsBySchema.isEmpty())
-				// set model ID:
+				// set model:
 				model = schema.getModel();
-			//	Check model ID:
+			//	Check model:
 			else if(model != schema.getModel())
 				throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
-	
-
+			
+			// Add the record to the list of attached records for this schema:
+			List<Record> recordsOfSchema = recordsBySchema.get(schema);
+			if(recordsOfSchema == null)
+			{
+				recordsOfSchema = new ArrayList<Record>();
+				recordsBySchema.put(schema, recordsOfSchema);
+			}
+			recordsOfSchema.add(record);
+			
 			// Try serialising and check capacity:
-			if (getNumberOfRecords() > 0) // only bother checking if we have already added a record
+			if(getNumberOfRecords() > 0) // only bother checking if we have already added a record
 			{
 				try
 				{
@@ -145,15 +155,6 @@ public class RecordsPayload extends Payload
 				}
 			}
 			// If we succeeded...
-			
-			// Add the record to the list of attached records for this schema:
-			List<Record> recordsOfSchema = recordsBySchema.get(schema);
-			if(recordsOfSchema == null)
-			{
-				recordsOfSchema = new ArrayList<Record>();
-				recordsBySchema.put(schema, recordsOfSchema);
-			}
-			recordsOfSchema.add(record);
 			
 			// Remove the record from the list of remaining records:
 			iterator.remove(); // (removes the last element returned by the iterator)
@@ -218,7 +219,7 @@ public class RecordsPayload extends Payload
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#doSerialise(uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream)
 	 */
 	@Override
-	protected void write(BitOutputStream out) throws IllegalStateException, IOException, TransmissionCapacityExceededException, UnknownModelException
+	protected void write(BitOutputStream out) throws IllegalStateException, IOException, TransmissionCapacityExceededException
 	{
 		if(recordsBySchema.isEmpty())
 			throw new IllegalStateException("Payload contains no records. Add at least 1 record before serialising.");
@@ -530,10 +531,11 @@ public class RecordsPayload extends Payload
 	 * contained in the payload. We do not attempt to compute the actual maximum number of records
 	 * that can be fitted because doing so is inherently inaccurate because the use of compression
 	 * could increase this number in unpredictable ways. Instead the field size is based on the
-	 * maximum payload size of the transmission (decreased by the space taken up by the header)
+	 * maximum payload size of the transmission (decreased by the space taken up by the header(s))
 	 * and the number of different schemata in the payload. This field is generously sized because
 	 * we want to avoid limiting the number of records we can fit before compression is applied.
 	 * 
+	 * @param numberOfSchemata
 	 * @return the field
 	 */
 	private IntegerRangeMapping getNumberOfRecordsPerSchemaField(int numberOfSchemata)

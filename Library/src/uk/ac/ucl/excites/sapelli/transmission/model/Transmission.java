@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTr
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * Abstract superclass for all Transmissions
@@ -161,6 +162,16 @@ public abstract class Transmission<C extends Correspondent>
 	 * used on receiving side, and on sending side if an acknowledgement was received
 	 */
 	private TimeStamp receivedAt;
+	
+	/**
+	 * used only on sending side
+	 */
+	private transient BitArray preparedBodyBits = null;
+	
+	/**
+	 * used only on sending side
+	 */
+	private transient boolean wrapped;
 	
 	/**
 	 * To be called from the sending side
@@ -289,7 +300,11 @@ public abstract class Transmission<C extends Correspondent>
 		return localID != null;
 	}
 	
-	public int getLocalID()
+	/**
+	 * @return
+	 * @throws IllegalStateException when no local ID has been set
+	 */
+	public int getLocalID() throws IllegalStateException
 	{
 		if(localID == null)
 			throw new IllegalStateException("LocalID has not been set yet");
@@ -302,9 +317,10 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * @return the remoteID
+	 * @return
+	 * @throws IllegalStateException when no remote ID has been set
 	 */
-	public int getRemoteID()
+	public int getRemoteID() throws IllegalStateException
 	{
 		if(remoteID == null)
 			throw new IllegalStateException("RemoteID has not been set yet");
@@ -329,101 +345,143 @@ public abstract class Transmission<C extends Correspondent>
 		return payload;
 	}
 	
-	public int getPayloadHash()
+	public boolean isPayloadHashSet()
+	{
+		return payloadHash != null;
+	}
+	
+	/**
+	 * @return
+	 * @throws IllegalStateException when no payload hash has been set
+	 */
+	public int getPayloadHash() throws IllegalStateException
 	{	
 		if(payloadHash == null)
 			throw new IllegalStateException("Payload hash has not been set yet"); // Note: on the receiving side the hash is set before the actual payload
 		return payloadHash;
 	}
 	
-	public void send(TransmissionController transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	/**
+	 * Prepares the transmission for storage and/or sending
+	 * 
+	 * @throws IOException
+	 * @throws TransmissionCapacityExceededException
+	 */
+	public void prepare() throws IOException, TransmissionCapacityExceededException
 	{
-		if(transmissionSender == null)
-			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
-		prepareAndSend(transmissionSender);
-	}
-	
-	public void checkCapacity() throws IOException, TransmissionCapacityExceededException, UnknownModelException
-	{
-		prepareAndSend(null);
-	}
-	
-	public void computePayloadHash() throws TransmissionCapacityExceededException, UnknownModelException, IOException
-	{
-		// Get serialised payload bits:
-		BitArray payloadBits = payload.serialise();
-		
-		// Capacity check:
-		if(payloadBits.length() > getMaxPayloadBits())
-			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
-	
-		
-		// Compute & store payload hash:
-		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!	
+		prepare(false);
 	}
 	
 	/**
-	 * @param transmissionSender pass null for capacity check
+	 * @param transmissionSender
 	 * @throws IOException
 	 * @throws TransmissionCapacityExceededException
-	 * @throws UnknownModelException
+	 * @throws TransmissionSendingException 
 	 */
-	private void prepareAndSend(TransmissionController transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	public void send(TransmissionController transmissionSender) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
 	{
-		//Some checks:
-		if(payload == null)
-			throw new NullPointerException("Cannot send transmission without payload");
+		// Some checks:
+		if(transmissionSender == null)
+			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
 		if(isSent())
 		{
 			System.out.println("This transmission has already been sent.");
 			return;
 		}
 		
-		// Open input stream:
-		BitArrayOutputStream bitstream = new BitArrayOutputStream();
-		
-		//  Format version (2 bits):
-		FORMAT_VERSION_FIELD.write(DEFAULT_FORMAT, bitstream);
-		
-		// TODO anonymous / user-cred (maybe only for next transmission format version?)
-		// TODO encrypted flag + encryption-related fields (maybe only for next transmission format version?)
-		
-		// Write payload type:
-		Payload.PAYLOAD_TYPE_FIELD.write(payload.getType(), bitstream);
-		
-		// Get serialised payload bits:
-		BitArray payloadBits = payload.serialise();
-		
-		// Capacity check:
-		if(payloadBits.length() > getMaxPayloadBits())
-			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
-		
-		// Abort capacity check if possible:
-		if(transmissionSender == null && !canWrapIncreaseSize())
-			return;
-		
-		// Compute & store payload hash:
-		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!	
-		
-		// Write payload bits length:
-		payloadBitsLengthField.write(payloadBits.length(), bitstream);
-		
-		// Write the actual payload bits:
-		bitstream.write(payloadBits);
-		
-		// Flush, close & get body bits:
-		bitstream.flush();
-		bitstream.close();
-		BitArray bodyBits = bitstream.toBitArray();
-		
-		// Wrap body for transmission:
-		wrap(bodyBits, transmissionSender == null); // note: payloadHash must be set before this call
+		// Prepare for sending:
+		prepare(false); // (won't repeat steps that have already been performed)
 		
 		// Do the actual sending:
-		if (transmissionSender != null)
-			doSend(transmissionSender);
+		doSend(transmissionSender);
 	}
-
+	
+	/**
+	 * @throws IOException
+	 * @throws TransmissionCapacityExceededException
+	 */
+	public void checkCapacity() throws IOException, TransmissionCapacityExceededException
+	{
+		// Clear previous preparations (necessary because payload contents have likely changed):
+		clearPreparation();
+		// Prepare for simulation/
+		try
+		{
+			prepare(true);
+		}
+		catch(IOException | TransmissionCapacityExceededException e) // TODO requires Java7
+		{
+			clearPreparation();
+			throw e;
+		}
+	}
+	
+	/**
+	 * Prepares the transmission for sending, storage or capacity checking
+	 * 
+	 * @param simulation whether or not the is a simulation (for capacity checking) or a full preparation (for storage/sending)
+	 * @throws IOException
+	 * @throws TransmissionCapacityExceededException
+	 */
+	private void prepare(boolean simulation) throws IOException, TransmissionCapacityExceededException
+	{
+		//Some checks:
+		if(payload == null)
+			throw new NullPointerException("Cannot prepare/store/send transmission without payload");
+		
+		// Prepare body bits if needed (includes Payload serialisation):
+		if(preparedBodyBits == null || payloadHash == null)
+		{
+			// Open input stream:
+			BitArrayOutputStream bitstream = new BitArrayOutputStream();
+			
+			//  Format version (2 bits):
+			FORMAT_VERSION_FIELD.write(DEFAULT_FORMAT, bitstream);
+			
+			// TODO anonymous / user-cred (maybe only for next transmission format version?)
+			// TODO encrypted flag + encryption-related fields (maybe only for next transmission format version?)
+			
+			// Write payload type:
+			Payload.PAYLOAD_TYPE_FIELD.write(payload.getType(), bitstream);
+			
+			// Get serialised payload bits:
+			BitArray payloadBits = payload.serialise();
+			
+			// Capacity check:
+			if(payloadBits.length() > getMaxPayloadBits())
+				throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
+			
+			// Compute & store payload hash:
+			this.payloadHash = computePayloadHash(payloadBits);
+			
+			// Write payload bits length:
+			payloadBitsLengthField.write(payloadBits.length(), bitstream);
+			
+			// Write the actual payload bits:
+			bitstream.write(payloadBits);
+			
+			// Flush, close & get body bits:
+			bitstream.flush();
+			bitstream.close();
+			preparedBodyBits = bitstream.toBitArray();
+		}
+		
+		// Wrap if needed:
+		if(!wrapped && (!simulation || canWrapIncreaseSize()))
+		{
+			wrap(preparedBodyBits);
+			wrapped = true;
+			preparedBodyBits = null; // no need to keep this, so wipe to reduce memory usage
+		}
+	}
+	
+	public void clearPreparation()
+	{
+		payloadHash = null;
+		preparedBodyBits = null;
+		wrapped = true;
+	}
+	
 	public void resend(TransmissionController sender) throws Exception
 	{
 		// Clear early sentAt value (otherwise send() won't work):
@@ -433,7 +491,7 @@ public abstract class Transmission<C extends Correspondent>
 		send(sender);
 	}
 
-	protected abstract void doSend(TransmissionController transmissionController);
+	protected abstract void doSend(TransmissionController transmissionController) throws TransmissionSendingException;
 	
 	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{
@@ -487,8 +545,6 @@ public abstract class Transmission<C extends Correspondent>
 		
 		// Deserialise payload:
 		payload.deserialise(payloadBits);
-		
-		// TODO set receivedAT?
 	}
 	
 	/**
@@ -515,7 +571,7 @@ public abstract class Transmission<C extends Correspondent>
 	 * @throws TransmissionCapacityExceededException
 	 * @throws IOException
 	 */
-	protected abstract void wrap(BitArray bodyBits, boolean checkingCapacity) throws TransmissionCapacityExceededException, IOException;
+	protected abstract void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException;
 	
 	/**
 	 * Unwraps/decoded/joins the payload bits

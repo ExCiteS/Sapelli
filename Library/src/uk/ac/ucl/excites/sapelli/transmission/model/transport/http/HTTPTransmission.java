@@ -96,7 +96,7 @@ public class HTTPTransmission extends Transmission<HTTPServer>
 	}
 
 	@Override
-	protected void wrap(BitArray payloadBits, boolean checkingCapacity) throws TransmissionCapacityExceededException
+	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException
 	{
 		byte[] payloadBytes = payloadBits.toByteArray();
  		//String serialisedData = Base64.encodeBase64String(payloadBytes);

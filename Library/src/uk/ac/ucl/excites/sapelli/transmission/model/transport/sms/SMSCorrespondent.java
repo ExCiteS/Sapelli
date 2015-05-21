@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
-
 /**
  * @author julia, mstevens
  *

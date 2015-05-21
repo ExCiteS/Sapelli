@@ -42,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -276,8 +277,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	    		return openSenderSettings(item);
 	    	case R.id.export_records_menuitem :
 	    		return exportRecords(item);
-	    	//case R.id.import_records_menuitem :
-	    		//return importRecords(item);
+	    	case R.id.import_records_menuitem :
+	    		return importRecords(item);
 	    	case R.id.create_shortcut :
 	    		return createShortcut(item);
 	    	case R.id.remove_shortcut :
@@ -363,8 +364,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		{
 			startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
 		}
-		catch(ActivityNotFoundException e){}
-
+		catch(ActivityNotFoundException e)
+		{
+			Log.e(TAG, "Could not open file choose for import file selection.", e);
+		}
 		return true;
 	}
 	
@@ -587,16 +590,20 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
 						exporter.export(records);*/
 	
-						//Store the records:
-						//for(Record r : records)
-						//	dao.store(r); //TODO avoid duplicates!
+						// Store the records:
+						RecordStore recordStore = app.collectorClient.recordStoreHandle.getStore(this);
+						recordStore.store(records);
 						
-						//User feedback:
+						// User feedback:
 						showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
 					}
 					catch(Exception e)
 					{
 						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
+					}
+					finally
+					{
+						app.collectorClient.recordStoreHandle.doneUsing(this);
 					}
 				}
 
