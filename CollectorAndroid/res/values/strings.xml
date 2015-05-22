@@ -20,6 +20,7 @@
 
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="done">Done</string>
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
@@ -134,6 +135,11 @@
     <string name="folderLogs">Log files</string>
     <string name="folderAttachments">Attachments</string>
     <string name="folderProjects">Project files</string>
+    <string name="preBackupExportTitle">Export for back-up</string>
+    <string name="preBackupExportMsg">You have chosen to back-up the folder with exported data. Do you which to include a new export of all project data, or only previous exports?</string>
+    <string name="preBackupExportFormatMsg">Found %d records to export.\nPlease specify the export format:</string>
+    <string name="preBackupExportYes">Yes, include new export</string>
+    <string name="backup_continue">Back-up process will continue&#8230;</string>
     <string name="backup_progress_init">Preparing for back-up&#8230;</string>
     <string name="backup_progress_db">Backing-up database(s)&#8230;</string>
     <string name="backup_progress_zipping">Creating back-up package&#8230;</string>

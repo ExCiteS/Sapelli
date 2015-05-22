@@ -99,67 +99,17 @@
             <Button
                 android:id="@+id/btnDestination"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:gravity="left|center_vertical" />
 
         </LinearLayout>
         
-        <LinearLayout
+        <fragment
+            android:id="@+id/frgFormat"
+            android:name="uk.ac.ucl.excites.sapelli.collector.fragments.ExportFormatFragment"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="10dp" >
-
-            <TextView
-                android:id="@+id/lblExportFormat"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/exportFormat" />
-
-            <Spinner
-                android:id="@+id/spinExportFormat"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-            <LinearLayout
-                android:id="@+id/layoutXMLOptions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="10dp"
-                android:visibility="gone" >
-
-                <TextView
-                    android:id="@+id/lblXMLMode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/exportXMLMode" />
-
-                <Spinner
-                    android:id="@+id/spinXMLMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/layoutCSVOptions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="10dp"
-                android:visibility="gone" >
-
-                <TextView
-                    android:id="@+id/lblCSVMode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/exportCSVSeparator" />
-
-                <Spinner
-                    android:id="@+id/spinCSVSeparator"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-        </LinearLayout>
+    		android:layout_height="wrap_content" />
 
         <!-- stretching frame layout, using layout_weight -->
 
@@ -172,7 +122,8 @@
             android:id="@+id/layoutExportOKCancel"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal"
+			android:paddingTop="10dp" >
 
             <Button
                 android:id="@+id/btnExportOK"

@@ -31,6 +31,7 @@ import android.os.AsyncTask;
 public abstract class AsyncTaskWithWaitingDialog<Params, Result> extends AsyncTask<Params, String, Result>
 {
 
+	protected final Context context; 
 	private final ProgressDialog dialog;
 	
 	/**
@@ -47,6 +48,7 @@ public abstract class AsyncTaskWithWaitingDialog<Params, Result> extends AsyncTa
 	 */
 	public AsyncTaskWithWaitingDialog(Context context, String waitingMsg)
 	{
+		this.context = context;
 		dialog = new ProgressDialog(context);
 		if(waitingMsg != null)
 			dialog.setMessage(waitingMsg);
