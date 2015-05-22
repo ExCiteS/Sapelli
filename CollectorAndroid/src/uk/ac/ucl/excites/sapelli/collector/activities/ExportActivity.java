@@ -28,17 +28,12 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFormatFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
-import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
-import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
@@ -53,17 +48,11 @@ import android.app.AlertDialog.Builder;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
-import android.widget.Spinner;
 import android.widget.TimePicker;
 
 /**
@@ -71,15 +60,13 @@ import android.widget.TimePicker;
  * 
  * @author mstevens, Michalis Vitos
  */
-public class ExportActivity extends ProjectActivity implements OnClickListener
+public class ExportActivity extends ProjectActivity implements OnClickListener, RecordsTasks.QueryCallback, RecordsTasks.ExportCallback, RecordsTasks.DeleteCallback
 {
 	
 	// Statics---------------------------------------------
 	static private final int DT_RANGE_IDX_FROM = 0;
 	static private final int DT_RANGE_IDX_TO = 1;
 	static private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm");
-	
-	static private final Format DEFAULT_FORMAT = Format.CSV;
 	
 	// Dynamics--------------------------------------------
 	private DateTime[] dateRange = new DateTime[2];
@@ -93,9 +80,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 	private Button btnTo;
 	private Button btnDestination;
 	
-	private Spinner spinOutputFormat;
-	private Spinner spinXMLMode;
-	private Spinner spinCSVSeparator;
+	private ExportFormatFragment frgFormat;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -131,41 +116,8 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		btnDestination = (Button) findViewById(R.id.btnDestination);
 		btnDestination.setEnabled(false); // TODO make export path configurable (for now it is not)
 		
-		// Output formats:
-		spinOutputFormat = (Spinner) findViewById(R.id.spinExportFormat);
-		final ArrayAdapter<Format> formatAdapter = new ArrayAdapter<Format>(this, android.R.layout.simple_spinner_item, Format.values());
-		formatAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinOutputFormat.setAdapter(formatAdapter);
-		spinOutputFormat.setSelection(formatAdapter.getPosition(DEFAULT_FORMAT));
-		final LinearLayout xmlOptions = (LinearLayout) findViewById(R.id.layoutXMLOptions);
-		final LinearLayout csvOptions = (LinearLayout) findViewById(R.id.layoutCSVOptions);
-		spinOutputFormat.setOnItemSelectedListener(new OnItemSelectedListener()
-		{
-			@Override
-			public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
-			{
-				boolean xml = formatAdapter.getItem(position) == Format.XML; //while there are only 2 formats we don't need a switch/case 
-				xmlOptions.setVisibility(xml ? View.VISIBLE : View.GONE);
-				csvOptions.setVisibility(xml ? View.GONE : View.VISIBLE);
-			}
-
-			@Override
-			public void onNothingSelected(AdapterView<?> parent) { /* ignore */ }
-		});
-		
-		// XML options:
-		spinXMLMode = (Spinner) findViewById(R.id.spinXMLMode);
-		ArrayAdapter<CompositeMode> xmlModeAdapter = new ArrayAdapter<CompositeMode>(this, android.R.layout.simple_spinner_item, CompositeMode.values());
-		xmlModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinXMLMode.setAdapter(xmlModeAdapter);
-		spinXMLMode.setSelection(xmlModeAdapter.getPosition(XMLRecordsExporter.DEFAULT_COMPOSITE_MODE));
-		
-		// CSV options:
-		spinCSVSeparator = (Spinner) findViewById(R.id.spinCSVSeparator);
-		ArrayAdapter<Separator> csvModeAdapter = new ArrayAdapter<Separator>(this, android.R.layout.simple_spinner_item, Separator.values());
-		csvModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinCSVSeparator.setAdapter(csvModeAdapter);
-		spinCSVSeparator.setSelection(csvModeAdapter.getPosition(CSVRecordsExporter.DEFAULT_SEPARATOR));
+		// Export format fragment:
+		frgFormat = (ExportFormatFragment) getSupportFragmentManager().findFragmentById(R.id.frgFormat);
 		
 		//	OK & Cancel buttons:
 		((Button) findViewById(R.id.btnExportOK)).setOnClickListener(this);
@@ -198,13 +150,14 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 				setDateRange(DT_RANGE_IDX_TO);
 				break;
 			case R.id.btnExportOK :
-				new QueryTask().execute();
+				buildAndRunQuery();
 				break;
 			case R.id.btnExportCancel :
 				this.finish();
 				break;
 		}
 	}
+	
 	
 	@SuppressLint("InflateParams")
 	private void setDateRange(final int dtRangeIdx)
@@ -287,40 +240,47 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 								dateRange[dtRangeIdx] == null ? getString(R.string.exportDateRangeAnytime) : dateTimeFormatter.print(dateRange[dtRangeIdx])));
 	}
 	
-	private void queryCallback(List<Record> result)
+	private void buildAndRunQuery()
+	{
+		// Schemas (when list stays empty all records of any schema/project/form will be fetched):
+		Set<Schema> schemata = new HashSet<Schema>();
+		if(project != null && radioSelectedProject.isChecked())
+			schemata.addAll(project.getModel().getSchemata());
+		// Date range:
+		AndConstraint constraints = new AndConstraint();
+		if(dateRange[DT_RANGE_IDX_FROM] != null)
+			constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
+		if(dateRange[DT_RANGE_IDX_TO] != null)
+			constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
+		// TODO Exclude previously exported:
+		// TODO Exclude collector-internal schemas!!!
+		// Retrieve by query:
+		new RecordsTasks.QueryTask(this, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
+	}
+	
+	@Override
+	public void querySuccess(List<Record> result)
 	{
 		if(result == null || result.isEmpty())
-			showOKDialog(getString(R.string.title_activity_export), getString(R.string.exportNoRecordsFound));
+			showOKDialog(R.string.title_activity_export, R.string.exportNoRecordsFound);
 		else
 		{
-			// Get Exporter:
-			Exporter exporter = null;
-			switch((Format) spinOutputFormat.getSelectedItem())
-			{
-				case CSV:
-					exporter = new CSVRecordsExporter(exportFolder, (Separator) spinCSVSeparator.getSelectedItem());
-					break;
-				case XML:
-					exporter = new XMLRecordsExporter(exportFolder, (CompositeMode) spinXMLMode.getSelectedItem());
-					break;
-				default:
-					throw new IllegalStateException("Unknown export format: " + ((Format) spinOutputFormat.getSelectedItem()).toString());
-			}
-			
 			// TODO Generate selection description String:
 			String selectionDesc = "TODO";
 			
-			// Export!:
-			new ExportTask(result, exporter, selectionDesc).execute();
+			// Run the right export task:
+			frgFormat.runExportTask(result, this, exportFolder, selectionDesc, this);
 		}
 	}
 	
-	private void queryCallback(Exception queryFailure)
+	@Override
+	public void queryFailure(Exception reason)
 	{
-		showErrorDialog(getString(R.string.exportQueryFailed, ExceptionHelpers.getMessageAndCause(queryFailure)), true);
+		showErrorDialog(getString(R.string.exportQueryFailed, ExceptionHelpers.getMessageAndCause(reason)), true);
 	}
 	
-	private void exportCallback(final ExportResult result)
+	@Override
+	public void exportDone(final ExportResult result)
 	{
 		if(result == null)
 			return; // just in case (shouldn't happen)
@@ -328,10 +288,11 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		// Runnable to delete exported records:
 		Runnable deleteTask = new Runnable()
 		{
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run()
 			{
-				new DeleteTask(result.getExportedRecords()).execute();
+				new RecordsTasks.Delete(ExportActivity.this, ExportActivity.this).execute(result.getExportedRecords());
 			}
 		};
 		
@@ -367,131 +328,15 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 	}
 	
 	/**
-	 * @param failure exception that caused record deletion to fail (may be null)
+	 * @param reason exception that caused record deletion to fail (may be null)
 	 */
-	private void deleteCallback(Exception failure)
+	@Override
+	public void deleteFailure(Exception reason)
 	{
-		if(failure != null)
-			showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(failure)), true);
+		if(reason != null)
+			showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(reason)), true);
 		else
 			this.finish();
-	}
-	
-	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, List<Record>>
-	{
-
-		private Exception failure = null;
-		
-		public QueryTask()
-		{
-			super(ExportActivity.this, getString(R.string.exportFetching));
-		}
-
-		@Override
-		protected List<Record> doInBackground(Void... params)
-		{
-			try
-			{
-				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-				Set<Schema> schemata = new HashSet<Schema>();
-				if(project != null && radioSelectedProject.isChecked())
-					schemata.addAll(project.getModel().getSchemata());
-				// Date range:
-				AndConstraint constraints = new AndConstraint();
-				if(dateRange[DT_RANGE_IDX_FROM] != null)
-					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
-				if(dateRange[DT_RANGE_IDX_TO] != null)
-					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
-				// TODO Exclude previously exported:
-				// Retrieve by query:
-				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				Log.d("QueryTask", ExceptionHelpers.getMessageAndCause(e));
-				failure = e;
-				return null;
-			}
-		}
-		
-		@Override
-		protected void onPostExecute(List<Record> result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			if(failure != null)
-				queryCallback(failure);
-			else
-				queryCallback(result);
-		}
-		
-	}
-	
-	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, ExportResult>
-	{
-
-		private List<Record> records;
-		private Exporter exporter;
-		private String selectionDescr;
-		
-		public ExportTask(List<Record> records, Exporter exporter, String selectionDescr)
-		{
-			super(ExportActivity.this, getString(R.string.exportXRecords, records.size()));
-			this.records = records;
-			this.exporter = exporter;
-			this.selectionDescr = selectionDescr;
-		}
-
-		@Override
-		protected ExportResult doInBackground(Void... params)
-		{
-			return exporter.export(records, selectionDescr);
-		}
-		
-		@Override
-		protected void onPostExecute(ExportResult result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			exportCallback(result);
-		}
-		
-	}
-	
-	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void>
-	{
-
-		private List<Record> records;
-		private Exception failure = null;
-		
-		public DeleteTask(List<Record> recordsToDelete)
-		{
-			super(ExportActivity.this, getString(R.string.exportDeletingX, recordsToDelete.size()));
-			this.records = recordsToDelete;
-		}
-
-		@Override
-		protected Void doInBackground(Void... params)
-		{
-			try
-			{
-				recordStore.delete(records);
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
-				failure = e;
-			}
-			return null;
-		}
-		
-		@Override
-		protected void onPostExecute(Void result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			deleteCallback(failure);
-		}
-		
-	}
+	}	
 
 }

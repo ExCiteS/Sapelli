@@ -46,10 +46,4 @@
         <item name="android:textSize">12sp</item>
     </style>
 
-    <style name="ExportDialog" parent="@android:style/Theme.Dialog">
-        <item name="@android:windowBackground">@color/white</item>
-        <item name="@android:background">@color/white</item>
-        <item name="@android:textColor">@color/black</item>
-    </style>
-
 </resources>
