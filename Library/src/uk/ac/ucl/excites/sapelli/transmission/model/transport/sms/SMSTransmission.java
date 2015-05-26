@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -26,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 
@@ -235,39 +238,46 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 		return (parts.first().getTotalParts() == parts.size());
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#doSend(uk.ac.ucl.excites.sapelli.transmission.TransmissionSender)
-	 */
 	@Override
-	protected void doSend(TransmissionController transmissionController) throws TransmissionSendingException
+	protected void doSend(TransmissionController controller) throws TransmissionSendingException
 	{
 		if(parts.isEmpty())
-			throw new IllegalStateException("No messages to send.");
+			throw new TransmissionSendingException("No messages to send.");
 		
-		//Send unsent messages one by one:
+		// Send unsent messages one by one:
 		for(Message m : parts)
 			if(!m.isSent())
-				m.send(transmissionController.getSMSService());
+				m.send(controller.getSMSClient());
 	}
-
+	
+	@Override
+	public void resend(TransmissionController controller) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
+	{
+		// Clear sentAt of messages (otherwise they can't be resent):
+		for(Message m : parts)
+			m.setSentAt(null);
+		
+		// Do re-send:
+		super.resend(controller); // will clear sentAt time of transmission and then call send()
+	}
+	
 	/**
-	 * Resends a specific part (single message)
+	 * Resends one or more specific parts
 	 * 
-	 * @param transmissionSender
-	 * @param partNumber
+	 * @param controller
+	 * @param partNumbers
 	 * @throws TransmissionSendingException
 	 */
-	public void resend(TransmissionController transmissionSender, int partNumber) throws TransmissionSendingException
+	public void resend(TransmissionController controller, List<Integer> partNumbers) throws TransmissionSendingException
 	{
-		int i = 1; // partNumbers start from 1!
 		for(Message m : parts)
-			if(i == partNumber)
+			if(partNumbers.contains(Integer.valueOf(m.getPartNumber())))
 			{
-				m.send(transmissionSender.getSMSService());
-				return;
+				// Clear sentAt of message (otherwise we cannot re-send it):
+				m.setSentAt(null);
+				// Re-send:
+				m.send(controller.getSMSClient());
 			}
-			else
-				i++;
 	}
 	
 	public TimeStamp getDeliveredAt()

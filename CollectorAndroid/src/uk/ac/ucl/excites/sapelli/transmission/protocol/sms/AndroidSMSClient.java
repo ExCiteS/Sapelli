@@ -36,7 +36,7 @@ import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-public class AndroidSMSSender implements SMSSender
+public class AndroidSMSClient implements SMSClient
 {
 	
 	private static final String TAG = "SMSSender";
@@ -64,7 +64,7 @@ public class AndroidSMSSender implements SMSSender
 	private Context context;
 	private SmsManager smsManager;
 	
-	public AndroidSMSSender(Context context)
+	public AndroidSMSClient(Context context)
 	{
 		this.context = context;
 		this.smsManager = SmsManager.getDefault();

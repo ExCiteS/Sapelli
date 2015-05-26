@@ -22,7 +22,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
@@ -142,7 +142,7 @@ public abstract class Message implements Comparable<Message>
 		}
 	}
 	
-	public void send(SMSSender smsService) throws TransmissionSendingException
+	public void send(SMSClient smsClient) throws TransmissionSendingException
 	{
 		// Set values required for message header:
 		try
@@ -156,10 +156,10 @@ public abstract class Message implements Comparable<Message>
 		}
 		
 		// Send the message:
-		doSend(smsService);
+		doSend(smsClient);
 	}
 	
-	protected abstract void doSend(SMSSender smsService) throws TransmissionSendingException;
+	protected abstract void doSend(SMSClient smsClient) throws TransmissionSendingException;
 
 	/**
 	 * @return the partNumber

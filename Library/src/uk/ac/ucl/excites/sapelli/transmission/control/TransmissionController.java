@@ -59,7 +59,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryS
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
  * @author mstevens, benelliott
@@ -136,7 +136,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		return false;
 	}
 	
-	public abstract SMSSender getSMSService();
+	public abstract SMSClient getSMSClient();
 	
 	public abstract HTTPClient getHTTPClient();
 	
@@ -508,8 +508,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			{	
 				if(!subject.isReceived()) // ... and we haven't received a ACK yet (check just in case):
 					// Resend requested parts:
-					for(Integer partNumber : resendReq.getRequestedPartNumbers())
-						subject.resend(TransmissionController.this, partNumber);
+					subject.resend(TransmissionController.this, resendReq.getRequestedPartNumbers());
 			}
 			else
 				System.err.println("No matching transmission (ID " + resendReq.getSubjectSenderSideID() + "; payload hash: " + resendReq.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + resendReq.getTransmission().getCorrespondent());			

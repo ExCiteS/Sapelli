@@ -36,8 +36,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmiss
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
-import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionReceivingException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
@@ -89,7 +89,7 @@ public abstract class Transmission<C extends Correspondent>
 	static private final int MIN_BODY_LENGTH_BITS = Payload.PAYLOAD_TYPE_SIZE + 1 + 1; // bits
 	
 	/**
-	 * Transmission format V2, which was introduced in Sapelli v2.0.
+	 * Transmission format V2, which was introduced in Sapelli v2.0 betaX.
 	 * This not in compatible with the format used in v1.x, which is no longer supported in Sapelli v2.0.
 	 * V2 is currently the only support format but in the future variations/extension could be introduced.
 	 */
@@ -373,28 +373,44 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * @param transmissionSender
+	 * @param controller
 	 * @throws IOException
 	 * @throws TransmissionCapacityExceededException
 	 * @throws TransmissionSendingException 
 	 */
-	public void send(TransmissionController transmissionSender) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
+	public void send(TransmissionController controller) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
 	{
 		// Some checks:
-		if(transmissionSender == null)
-			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
+		if(controller == null)
+			throw new NullPointerException("Please provide a non-null TransmissionController instance.");
 		if(isSent())
-		{
-			System.out.println("This transmission has already been sent.");
-			return;
-		}
+			throw new TransmissionSendingException("This transmission has already been sent.");
 		
 		// Prepare for sending:
 		prepare(false); // (won't repeat steps that have already been performed)
 		
 		// Do the actual sending:
-		doSend(transmissionSender);
+		doSend(controller);
 	}
+	
+	/**
+	 * @param controller
+	 * @throws Exception
+	 */
+	public void resend(TransmissionController controller) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
+	{
+		// Clear earlier sentAt value (otherwise send() won't work):
+		sentAt = null;
+		
+		// Resend:
+		send(controller);
+	}
+	
+	/**
+	 * @param transmissionController
+	 * @throws TransmissionSendingException
+	 */
+	protected abstract void doSend(TransmissionController controller) throws TransmissionSendingException;
 	
 	/**
 	 * @throws IOException
@@ -482,18 +498,7 @@ public abstract class Transmission<C extends Correspondent>
 		wrapped = true;
 	}
 	
-	public void resend(TransmissionController sender) throws Exception
-	{
-		// Clear early sentAt value (otherwise send() won't work):
-		sentAt = null;
-		
-		// Resend:
-		send(sender);
-	}
-
-	protected abstract void doSend(TransmissionController transmissionController) throws TransmissionSendingException;
-	
-	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException
+	public void receive() throws IOException, IllegalArgumentException, IllegalStateException, UnknownModelException, TransmissionReceivingException
 	{
 		// Some checks:
 		if(!isComplete())
@@ -516,7 +521,7 @@ public abstract class Transmission<C extends Correspondent>
 		
 		short format = FORMAT_VERSION_FIELD.readShort(bitstream);
 		if(format > HIGHEST_SUPPORTED_FORMAT)
-			throw new PayloadDecodeException(null, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ")."); // TODO null payload or new exception type?
+			throw new TransmissionReceivingException("Unsupported transmission format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
 		
 		// Read payload type & instantiate Payload object:
 		this.payload = Payload.New(client, Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream));
@@ -541,7 +546,7 @@ public abstract class Transmission<C extends Correspondent>
 		
 		// Verify payload hash:
 		if(payloadHash != computePayloadHash(payloadBits))
-			throw new IncompleteTransmissionException(this, "Payload hash mismatch!");
+			throw new TransmissionReceivingException("Payload hash mismatch!");
 		
 		// Deserialise payload:
 		payload.deserialise(payloadBits);

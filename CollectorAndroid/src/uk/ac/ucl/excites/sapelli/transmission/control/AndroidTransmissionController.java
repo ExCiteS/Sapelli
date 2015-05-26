@@ -29,9 +29,9 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.AndroidSMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.util.AndroidLogger;
 
 /**
@@ -42,7 +42,7 @@ public class AndroidTransmissionController extends TransmissionController
 {
 
 	private final CollectorApp app;
-	private AndroidSMSSender smsSender;
+	private AndroidSMSClient smsClient;
 	
 	public AndroidTransmissionController(CollectorApp app) throws DBException
 	{
@@ -52,11 +52,11 @@ public class AndroidTransmissionController extends TransmissionController
 	}
 
 	@Override
-	public SMSSender getSMSService()
+	public SMSClient getSMSClient()
 	{
-		if(smsSender == null)
-			smsSender = new AndroidSMSSender(app);
-		return smsSender;
+		if(smsClient == null)
+			smsClient = new AndroidSMSClient(app);
+		return smsClient;
 	}
 
 	@Override

@@ -26,7 +26,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessa
  * @author mstevens
  *
  */
-public interface SMSSender
+public interface SMSClient
 {
 
 	public boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS);

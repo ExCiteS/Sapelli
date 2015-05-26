@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmissio
  * @author mstevens
  *
  */
-public class IncompleteTransmissionException extends Exception
+public class IncompleteTransmissionException extends TransmissionReceivingException
 {
 
 	private static final long serialVersionUID = 1L;
