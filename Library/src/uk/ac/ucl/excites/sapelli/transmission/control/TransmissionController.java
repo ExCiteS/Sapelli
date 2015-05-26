@@ -446,7 +446,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			addLogLine(	"INCOMING", "SMS", binary ? "Binary" : "Text",
 						"SendingSideTransmissionID: " + msg.getSendingSideTransmissionID(),
 						"Part: " + msg.getPartNumber() + "/" + msg.getTotalParts(),
-						"From: "+ msg.getSender().getName() + " (" + msg.getSender().getAddress() + ")");
+						"From: "+ msg.getSender());
 		}
 		
 	}
@@ -486,7 +486,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				// Mark subject as received and update in database:
 				subject.setReceivedAt(ack.getSubjectReceivedAt());
 				if(ack.getSubjectReceiverSideID() != null)
-					subject.setRemoteID(ack.getSubjectReceiverSideID()); // mainly for debugging
+					subject.setRemoteID(ack.getSubjectReceiverSideID()); // remember remote ID (mainly for debugging)
 				sentTStore.store(subject);
 			}
 			else
@@ -497,18 +497,27 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		public void handle(ResendRequestPayload resendReq) throws Exception
 		{
 			// get Transmission object from store - will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
-			SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionFor(resendReq.getSubjectSenderSideID(), resendReq.getSubjectPayloadHash()));
+			SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionFor(resendReq.getSubjectSenderSideID(), resendReq.getSubjectPayloadHash(), resendReq.getSubjectTotalParts()));
 			
 			addLogLine(	"INCOMING", "Payload", "ResendReq",
 						"Subject local ID: " + resendReq.getSubjectSenderSideID(),
 						"Subject hash: " + resendReq.getSubjectPayloadHash(),
+						"Subject total parts: " + resendReq.getSubjectTotalParts(),
 						"Requested parts: " + StringUtils.join(resendReq.getRequestedPartNumbers(), ", "),
 						"Subject found: " + (subject != null));
 			if(subject != null) // subject is known ...
-			{	
+			{
 				if(!subject.isReceived()) // ... and we haven't received a ACK yet (check just in case):
+				{
+					// remember remote ID if we got it (mainly for debugging)
+					if(resendReq.getSubjectReceiverSideID() != null)
+					{
+						subject.setRemoteID(resendReq.getSubjectReceiverSideID());
+						sentTStore.store(subject);
+					}
 					// Resend requested parts:
 					subject.resend(TransmissionController.this, resendReq.getRequestedPartNumbers());
+				}
 			}
 			else
 				System.err.println("No matching transmission (ID " + resendReq.getSubjectSenderSideID() + "; payload hash: " + resendReq.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + resendReq.getTransmission().getCorrespondent());			

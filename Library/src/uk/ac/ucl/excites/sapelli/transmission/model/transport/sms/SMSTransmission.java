@@ -125,23 +125,38 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	}
 
 	/**
-	 * To be called on receiving side, or upon database retrieval on both the sending and the receiving side.
+	 * To be called on receiving side.
 	 * 
 	 * @param msg
 	 */
 	public void receivePart(M msg)
 	{
+		addPart(msg, true);
+	}
+
+	/**
+	 * To be called upon database retrieval on both the sending and the receiving side.
+	 * 
+	 * @param msg
+	 */
+	public void addPart(M msg)
+	{
+		addPart(msg, false);
+	}
+
+	private void addPart(M msg, boolean received)
+	{
 		if(!parts.isEmpty())
 		{	// Each message that's received after the first one must have a matching remote transmission id, payload hash, sender & total # of parts:
 			String error = null;
-			if(remoteID != msg.getSendingSideTransmissionID())
-				error = "remote ID mismatch";
+			if((received ? remoteID : localID) != msg.getSendingSideTransmissionID())
+				error = "sending-side ID mismatch";
 			else if(payloadHash != msg.getPayloadHash())
 				error = "Payload hash mismatch";
-			else if(!correspondent.equals(msg.getSender()))
+			else if(received && !correspondent.equals(msg.getSender()))
 				error = "sender mismatch";
 			else if(parts.first().getTotalParts() != msg.getTotalParts())
-				error = "different number of parts";
+				error = "different total number of parts";
 			if(error != null)
 				throw new IllegalArgumentException("This message does not belong to the same transmission (" + error + ")");
 		}

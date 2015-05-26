@@ -83,6 +83,14 @@ public class ResendRequestPayload extends ResponsePayload
 	}
 	
 	/**
+	 * @return the subjectTotalParts
+	 */
+	public int getSubjectTotalParts()
+	{
+		return subjectTotalParts;
+	}
+
+	/**
 	 * Returns a List containing the part numbers of the transmission parts that not received by the receiver (i.e. those requested for retransmission).
 	 * Note that part numbers start for 1, not 0.
 	 * 

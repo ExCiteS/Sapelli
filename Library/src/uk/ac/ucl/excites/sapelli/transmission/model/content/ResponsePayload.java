@@ -95,7 +95,10 @@ public abstract class ResponsePayload extends Payload
 	}
 
 	/**
-	 * @return the subjectReceiverSideID
+	 * This returns the "subjectReceiverSideID", which is the local ID from the p.o.v. of the receiver of the subject (= sender of the response),
+	 * or the remote ID from the p.o.v. of the sender of the subject (= receiver of the response).
+	 * 
+	 * @return the subjectReceiverSideID, may be null if the subject was not stored by the receiver before it sent this response 
 	 */
 	public Integer getSubjectReceiverSideID()
 	{

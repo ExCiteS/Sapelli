@@ -356,12 +356,19 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	
 	public Transmission<?> retrieveTransmissionFor(int localID, int payloadHash) throws Exception
 	{
-		return retrieveTransmissionByQuery(
-			new FirstRecordQuery(	getTransmissionSchema(),
-									getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(),
-									new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
+		return retrieveTransmissionFor(localID, payloadHash, null);
 	}
 	
+	public Transmission<?> retrieveTransmissionFor(int localID, int payloadHash, Integer numberOfParts) throws Exception
+	{
+		return retrieveTransmissionByQuery(
+				new FirstRecordQuery(	getTransmissionSchema(),
+										getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(),
+										new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash),
+										numberOfParts != null ?
+												new RuleConstraint(TRANSMISSION_COLUMN_NUMBER_OF_PARTS, Comparison.EQUAL, numberOfParts) :
+												null));
+	}
 	
 	protected Transmission<?> retrieveTransmissionByQuery(SingleRecordQuery recordQuery)
 	{
@@ -395,10 +402,6 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		int numberOfSentResendRequests = isReceivingSide() ? TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.retrieveValue(tRec).intValue() : 0;
 		TimeStamp lastResendReqSentAt =	isReceivingSide() ?	TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
 		
-		// TODO remove debug sysos:
-		System.out.println("TREC: " + tRec.toString());
-		System.out.println("TREC type: " + type.name());
-		
 		// Query for correspondent record:
 		Record cRec = recordStore.retrieveRecord(getCorrespondentColumn().retrieveValue(tRec).getRecordQuery());
 		SMSCorrespondent corr = (SMSCorrespondent) correspondentFromRecord(cRec);
@@ -413,7 +416,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, corr, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
-					binarySMST.receivePart(new BinaryMessage(binarySMST,
+					binarySMST.addPart(new BinaryMessage(	binarySMST,
 															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
 															totalParts,
 															COLUMN_SENT_AT.retrieveValue(tPartRec),
@@ -427,7 +430,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 				TextSMSTransmission textSMST = new TextSMSTransmission(client, corr, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
-					textSMST.receivePart(new TextMessage(textSMST,
+					textSMST.addPart(new TextMessage(	textSMST,
 														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
 														totalParts,
 														COLUMN_SENT_AT.retrieveValue(tPartRec),

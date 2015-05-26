@@ -362,17 +362,6 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * Prepares the transmission for storage and/or sending
-	 * 
-	 * @throws IOException
-	 * @throws TransmissionCapacityExceededException
-	 */
-	public void prepare() throws IOException, TransmissionCapacityExceededException
-	{
-		prepare(false);
-	}
-	
-	/**
 	 * @param controller
 	 * @throws IOException
 	 * @throws TransmissionCapacityExceededException
@@ -430,6 +419,17 @@ public abstract class Transmission<C extends Correspondent>
 			clearPreparation();
 			throw e;
 		}
+	}
+	
+	/**
+	 * Prepares the transmission for storage and/or sending
+	 * 
+	 * @throws IOException
+	 * @throws TransmissionCapacityExceededException
+	 */
+	public void prepare() throws IOException, TransmissionCapacityExceededException
+	{
+		prepare(false);
 	}
 	
 	/**
@@ -495,7 +495,7 @@ public abstract class Transmission<C extends Correspondent>
 	{
 		payloadHash = null;
 		preparedBodyBits = null;
-		wrapped = true;
+		wrapped = false;
 	}
 	
 	public void receive() throws IOException, IllegalArgumentException, IllegalStateException, UnknownModelException, TransmissionReceivingException
