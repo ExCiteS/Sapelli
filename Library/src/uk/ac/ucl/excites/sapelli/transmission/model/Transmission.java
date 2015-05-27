@@ -131,12 +131,12 @@ public abstract class Transmission<C extends Correspondent>
 	/**
 	 * ID by which this transmission is identified in the context of the local device/server
 	 */
-	protected Integer localID;
+	private Integer localID;
 	
 	/**
 	 * ID by which this transmission is identified in the context of the remote device/server
 	 */
-	protected Integer remoteID;
+	private Integer remoteID;
 	
 	/**
 	 * The remote correspondent.
@@ -153,12 +153,19 @@ public abstract class Transmission<C extends Correspondent>
 	/**
 	 * Contents of the transmission
 	 */
-	protected Payload payload;
+	private Payload payload;
 	
 	/**
-	 * Computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
+	 * The type of payload.
+	 * Kept separately in order to know payload type without having to reconstruct Payload instance (e.g. after database retrieval).
 	 */
-	protected Integer payloadHash;
+	private Integer payloadType;
+	
+	/**
+	 * Computed as a CRC16 hash over the transmission payload (unsigned 16 bit int).
+	 * Kept separately in order to know hash value without having to reconstruct Payload instance (e.g. after database retrieval).
+	 */
+	private Integer payloadHash;
 	
 	/**
 	 * used only on sending side
@@ -194,6 +201,7 @@ public abstract class Transmission<C extends Correspondent>
 		this.correspondent = receiver;
 		this.payload = payload;
 		this.payload.setTransmission(this); // !!!
+		this.payloadType = payload.getType();
 		initialise(); // !!!
 	}
 	
@@ -223,17 +231,19 @@ public abstract class Transmission<C extends Correspondent>
 	 * @param received
 	 * @param localID
 	 * @param remoteID - may be null
+	 * @param payloadType - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
 	 */
-	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
 	{
 		this.client = client;
 		this.correspondent = correspondent;
 		this.received = received;
 		this.localID = localID;
 		this.remoteID = remoteID; 
+		this.payloadType = payloadType;
 		this.payloadHash = payloadHash;
 		this.sentAt = sentAt;
 		this.receivedAt = receivedAt;
@@ -299,13 +309,6 @@ public abstract class Transmission<C extends Correspondent>
 		return correspondent;
 	}
 
-	public void setLocalID(int id)
-	{
-		if(localID != null && localID != id)
-			throw new IllegalStateException("LocalID has already been set!");
-		this.localID = id;
-	}
-	
 	public boolean isLocalIDSet()
 	{
 		return localID != null;
@@ -320,6 +323,16 @@ public abstract class Transmission<C extends Correspondent>
 		if(localID == null)
 			throw new IllegalStateException("LocalID has not been set yet");
 		return localID.intValue();
+	}
+	
+	/**
+	 * @param localID the localID to set
+	 */
+	public void setLocalID(int localID)
+	{
+		if(this.localID != null && this.localID.intValue() != localID)
+			throw new IllegalStateException("A different localID value has already been set (existing: " + this.localID + "; new: " + localID + ")!");
+		this.localID = localID;
 	}
 	
 	public boolean isRemoteIDSet()
@@ -343,6 +356,8 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public void setRemoteID(int remoteID)
 	{
+		if(this.remoteID != null && this.remoteID.intValue() != remoteID)
+			throw new IllegalStateException("A different remoteID value has already been set (existing: " + this.remoteID + "; new: " + remoteID + ")!");
 		this.remoteID = remoteID;
 	}
 
@@ -372,6 +387,24 @@ public abstract class Transmission<C extends Correspondent>
 		return payloadHash;
 	}
 	
+	public boolean isPayloadTypeSet()
+	{
+		return payload != null || payloadType != null;
+	}
+	
+	/**
+	 * @return the payloadType
+	 * @throws IllegalStateException when no payload or payloadType has been set
+	 */
+	public int getPayloadType()
+	{
+		if(payload != null)
+			return payload.getType();
+		if(payloadType != null)
+			return payloadType;
+		throw new IllegalStateException("Payload(type) has not been set yet");
+	}
+
 	/**
 	 * @param controller
 	 * @throws IOException
@@ -453,7 +486,7 @@ public abstract class Transmission<C extends Correspondent>
 	private void prepare(boolean simulation) throws IOException, TransmissionCapacityExceededException
 	{
 		//Some checks:
-		if(payload == null)
+		if(payload == null || payloadType == null)
 			throw new NullPointerException("Cannot prepare/store/send transmission without payload");
 		
 		// Prepare body bits if needed (includes Payload serialisation):
@@ -535,7 +568,8 @@ public abstract class Transmission<C extends Correspondent>
 			throw new TransmissionReceivingException("Unsupported transmission format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
 		
 		// Read payload type & instantiate Payload object:
-		this.payload = Payload.New(client, Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream));
+		this.payloadType = Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream);
+		this.payload = Payload.New(client, payloadType);
 		this.payload.setTransmission(this); // !!!
 		
 		// Read payload bits length:

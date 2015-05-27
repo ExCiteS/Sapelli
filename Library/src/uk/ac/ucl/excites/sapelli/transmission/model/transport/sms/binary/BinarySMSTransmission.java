@@ -77,6 +77,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * @param received
 	 * @param localID
 	 * @param remoteID - may be null
+	 * @param payloadType - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
@@ -84,9 +85,9 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * @param numberOfSentResentRequests
 	 * @param lastResendReqSentAt - may be null
 	 */
-	public BinarySMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, boolean received, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, int numberOfSentResentRequests, TimeStamp lastResendReqSentAt) 
+	public BinarySMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, int numberOfSentResentRequests, TimeStamp lastResendReqSentAt) 
 	{
-		super(client, correspondent, received, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResentRequests, lastResendReqSentAt);
+		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResentRequests, lastResendReqSentAt);
 	}
 	
 	@Override

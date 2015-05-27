@@ -81,13 +81,14 @@ public class HTTPTransmission extends Transmission<HTTPServer>
 	 * @param received
 	 * @param localID
 	 * @param remoteID - may be null
+	 * @param payloadType - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param body
 	 */
-	public HTTPTransmission(TransmissionClient client, HTTPServer correspondent, boolean received, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, byte[] body) 
+	public HTTPTransmission(TransmissionClient client, HTTPServer correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, byte[] body) 
 	{
-		super(client, correspondent, received, localID, remoteID, payloadHash, sentAt, receivedAt);
+		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt);
 		this.body = body;
 	}
 	

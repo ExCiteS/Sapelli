@@ -156,9 +156,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			addLogLine("Trying to add "+recsToSend.size()+" records to payload...");
 			payload.addRecords(recsToSend);
 			addLogLine("Records that weren't added: "+recsToSend.size()+"; payload says it has "+payload.getNumberOfRecords());
+			
 			//send transmission:
 			storeAndSend(transmission);
-			
 			
 			// TODO mark records as "sent" (do here rather than ACK? depends on resend timeout vs. send new records timeout; semantics of resending transmission vs. records)
 		}
@@ -188,7 +188,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		transmission.prepare();
 		
 		// Store "in-flight transmissions" to get local ID:
-		transmissionStore.store(transmission); // update record now that payload hash has been computed
+		transmissionStore.store(transmission); // update record now that it is prepared (payload hash has been computed, etc.)
 		
 		// actually send the transmission:
 		transmission.send(this);

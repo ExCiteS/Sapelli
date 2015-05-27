@@ -474,14 +474,15 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		boolean received = tRec.getSchema().equals(RECEIVED_TRANSMISSION_SCHEMA);
 		Integer localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
-		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null; 
+		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null;
+		Integer payloadType = TRANSMISSION_COLUMN_PAYLOAD_TYPE.isValueSet(tRec) ? TRANSMISSION_COLUMN_PAYLOAD_TYPE.retrieveValue(tRec).intValue() : null;
 		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
 		// columns only occurs on receiving side:
 		int numberOfSentResendRequests = received ? TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.retrieveValue(tRec).intValue() : 0;
-		TimeStamp lastResendReqSentAt =	received ?	TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
+		TimeStamp lastResendReqSentAt =	received ? TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
 		
 		// Query for correspondent record:
 		Record cRec = recordStore.retrieveRecord(TRANSMISSION_COLUMN_CORRESPONDENT.retrieveValue(tRec).getRecordQuery());
@@ -490,11 +491,12 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		// Query for part records:		
 		List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(Source.From(getTransmissionPartSchema(received)), Order.AscendingBy(TRANSMISSION_PART_COLUMN_NUMBER), tRec.getRecordQueryConstraint()));
 		
+		// Instantiate Transmissions & Messages:
 		switch(type)
 		{
 			case BINARY_SMS:
 				// create a new SMSTransmission object:
-				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, corr, received, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
+				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, corr, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
 					binarySMST.addPart(new BinaryMessage(	binarySMST,
@@ -508,7 +510,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 				return binarySMST;
 			case TEXTUAL_SMS:
 				// create a new SMSTransmission object:
-				TextSMSTransmission textSMST = new TextSMSTransmission(client, corr, received, localID, remoteID, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
+				TextSMSTransmission textSMST = new TextSMSTransmission(client, corr, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
 					textSMST.addPart(new TextMessage(	textSMST,
@@ -521,7 +523,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 				return textSMST;
 			case HTTP:
 				return null; // TODO !!!
-				//return new HTTPTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
+				//return new HTTPTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
 		}
@@ -703,8 +705,8 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 				TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
 			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage
-			if(transmission.isPayloadSet())
-				TRANSMISSION_COLUMN_PAYLOAD_TYPE.storeValue(tRec, transmission.getPayload().getType());
+			if(transmission.isPayloadTypeSet())
+				TRANSMISSION_COLUMN_PAYLOAD_TYPE.storeValue(tRec, transmission.getPayloadType());
 			if(transmission.isSent())
 				COLUMN_SENT_AT.storeValue(tRec, transmission.getSentAt());
 			if(transmission.isReceived())
