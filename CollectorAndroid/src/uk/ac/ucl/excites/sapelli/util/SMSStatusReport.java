@@ -34,6 +34,10 @@ import android.telephony.PhoneNumberUtils;
  * All licensed under the Apache License, Version 2.0.
  * The code is taken from Android v5.1.0_r1 (+ 1 line from v4.2_r1).
  * 
+ * Useful tools to test with:
+ *  - http://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/online-sms-pdu-decoder
+ *  - http://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/online-sms-status-report-pdu-decoder
+ * 
  * @author mstevens
  */
 public class SMSStatusReport
@@ -268,7 +272,6 @@ public class SMSStatusReport
         Object/*GsmSmsAddress*/ getAddress()
         {
             //GsmSmsAddress ret;
-
             // "The Address-Length field is an integer representation of
             // the number field, i.e. excludes any semi-octet containing only
             // fill bits."
@@ -341,7 +344,6 @@ public class SMSStatusReport
         public static int gsmBcdByteToInt(byte b)
         {
             int ret = 0;
-
             // treat out-of-range BCD values as 0
             if((b & 0xf0) <= 0x90)
                 ret = (b >> 4) & 0xf;
