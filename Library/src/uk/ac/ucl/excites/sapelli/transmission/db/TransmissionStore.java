@@ -219,8 +219,6 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	}
 	
 	/**
-	 * TODO explain
-	 * 
 	 * @param correspondent
 	 * @return
 	 * @throws Exception
@@ -294,7 +292,23 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 															Transmission.Type.TEXTUAL_SMS).ordinal())));
 	}
 	
-	// TODO delete correspondent?
+	/**
+	 * @param correspondent to delete
+	 */
+	public void deleteCorrespondent(Correspondent correspondent)
+	{
+		if(!correspondent.isLocalIDSet())
+			return; // the correspondent was never stored
+		try
+		{
+			// Get record reference:
+			RecordReference cRecRef = CORRESPONDENT_SCHEMA.createRecordReference(correspondent.getLocalID());
+				
+			// Delete transmission part records:
+			recordStore.delete(cRecRef);
+		}
+		catch(Exception ignore) {}
+	}
 	
 	/**
 	 * @param received if {@code true} we are dealing with transmissions that were received on the local device, if {@code false} we are dealing with transmissions created for sending from the local device to other ones
