@@ -23,10 +23,14 @@ import java.util.Random;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.util.DeviceControl;
+import uk.ac.ucl.excites.sapelli.util.SMSStatusReport;
+
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -219,8 +223,28 @@ public class AndroidSMSClient implements SMSClient
 				switch(getResultCode())
 				{
 					case Activity.RESULT_OK:
+						// Try to parse pdu to check delivery success & get delivery time ("discharge time"):
+						TimeStamp deliveredAt = TimeStamp.now(); // use current time as fall-back
+						if(intent.hasExtra("pdu") && DeviceControl.isGSM(context)) // SMSStatusReport only works on GSM/3GPP phones (not on CDMA/3GPP2)
+						{
+							try
+							{
+								SMSStatusReport statusReport = new SMSStatusReport((byte[]) intent.getExtras().get("pdu"));
+								//Log.d(TAG, "SMS-STATUS-REPORT: TP-SCTS=" + TimeUtils.getISOTimestamp(statusReport.getServiceCenterTimeStamp(), true) + "; TP-DT=" + TimeUtils.getISOTimestamp(statusReport.getDischargeTime(), true));
+								if(!statusReport.isReceived())
+								{	 // the report indicates the message was *not* received!
+									Log.i(TAG, "Delivery " + msgDescription + ": failed (pdu indicates non-successful).");
+									return;
+								}
+								deliveredAt = new TimeStamp(statusReport.getDischargeTime());
+							}
+							catch(Exception e)
+							{
+								Log.e(TAG, "Error parsing delivery report pdu", e);
+							}
+						}
 						// Use call back to register delivery time of the message, and possibly that of the whole transmission, and save the msg/transmission to the TransmissionStore:
-						msg.getTransmission().getSentCallback().onDelivered(msg);
+						msg.getTransmission().getSentCallback().onDelivered(msg, deliveredAt);
 						Log.i(TAG, "Delivery " + msgDescription + ": success.");
 						break;
 					case Activity.RESULT_CANCELED:

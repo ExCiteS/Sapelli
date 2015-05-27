@@ -219,11 +219,11 @@ public class SMSReceiverService extends IntentService
 			return;
 		}
 		
-		Log.d(TAG, "SMS received by Sapelli SMSReceiverService");
-		
 		// get PDU from intent:
 		byte[] pdu = intent.getByteArrayExtra(EXTRA_PDU_BYTES);
 		boolean binary = intent.getBooleanExtra(EXTRA_BINARY_FLAG, false);
+		
+		Log.d(TAG, (binary ? "Binary" : "Textual") + " SMS received by Sapelli " + getClass().getSimpleName());
 		
 		// Treat incoming message:
 		try

@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.transmission.model.content;
 
 import java.io.IOException;
 
+import org.joda.time.DateTimeZone;
+
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -77,7 +79,8 @@ public class AckPayload extends ResponsePayload
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
 	{
 		super.read(bitstream);
-		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream); 
+		subjectReceivedAt = new TimeStamp(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream).getMsSinceEpoch(), DateTimeZone.getDefault());
+		// the TimeStamp read by the column is in UTC so we convert to local timezone (of this device, i.e. the receiver) to match the other timestamps stored with transmissions 
 	}
 
 	/* (non-Javadoc)

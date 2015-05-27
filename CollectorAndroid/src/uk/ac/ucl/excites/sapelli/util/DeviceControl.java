@@ -32,6 +32,7 @@ import android.os.Build;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -63,10 +64,31 @@ public final class DeviceControl
 	 */
 	public static final int POST_AIRPLANE_MODE_WAITING_TIME = 30;
 
-	private DeviceControl() // class should not be instantiated
-	{
-	}
+	/**
+	 * class should not be instantiated
+	 */
+	private DeviceControl() {}
 
+	/**
+	 * @param context
+	 * @return one of the TelephoneManager#PHONE_TYPE_* values
+	 */
+	public static int getPhoneType(Context context)
+	{
+		TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+		return tm.getPhoneType();
+	}
+	
+	public static boolean isGSM(Context context)
+	{
+		return getPhoneType(context) == TelephonyManager.PHONE_TYPE_GSM;
+	}
+	
+	public static boolean isCDMA(Context context)
+	{
+		return getPhoneType(context) == TelephonyManager.PHONE_TYPE_CDMA;
+	}
+	
 	/**
 	 * Check to see if the phone is in AirplaneMode
 	 * 
