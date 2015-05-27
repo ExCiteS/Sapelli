@@ -146,7 +146,7 @@ public class ResendRequestPayload extends ResponsePayload
 			TransmissionClient client = incompleteT.getClient();
 			try
 			{
-				client.receivedTransmissionStoreHandle.getStore(this).store(incompleteT);
+				client.transmissionStoreHandle.getStore(this).store(incompleteT);
 			}
 			catch(Exception e)
 			{
@@ -154,7 +154,7 @@ public class ResendRequestPayload extends ResponsePayload
 			}
 			finally
 			{
-				client.receivedTransmissionStoreHandle.doneUsing(this);
+				client.transmissionStoreHandle.doneUsing(this);
 			}
 			
 			// Schedule next request (won't do anything if max reached):

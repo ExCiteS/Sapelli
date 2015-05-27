@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
@@ -129,7 +129,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_ID = new IntegerColumn("ID", false);
 	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_PROJECT = new ForeignKeyColumn("Project", ProjectRecordStore.PROJECT_SCHEMA, false);
 	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER = new ForeignKeyColumn("Receiver", TransmissionStore.RECEIVER_SCHEMA, false);
-	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL = new IntegerColumn("RetransmitInterval", false, false, SendRecordsSchedule.RETRANSMIT_INTERVAL_SIZE_BITS);
+	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL = new IntegerColumn("RetransmitInterval", false, false); // unsigned 32 bits
 	static final public BooleanColumn SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT = new BooleanColumn("Encrypt", false);
 	//	Add columns to Receiver Schema & seal it:
 	static
@@ -481,50 +481,50 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		}
 	}
 	
-	private Record getSendScheduleRecord(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	private Record getSendScheduleRecord(SendingSchedule schedule, TransmissionStore transmissionStore)
 	{
 		Record record = SEND_RECORDS_SCHEDULE_SCHEMA.createRecord();
 		SEND_RECORDS_SCHEDULE_COLUMN_PROJECT.storeValue(record, getProjectRecordReference(schedule.getProject()));
 		SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.storeValue(record, transmissionStore.getCorrespondentRecord(schedule.getReceiver()).getReference());
-		SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(record, schedule.getRetransmitIntervalMillis());
+		SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(record, schedule.getTransmitIntervalS());
 		SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.storeValue(record, schedule.isEncrypt());
 		return record;
 	}
 	
 	@Override
-	public void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore)
 	{
 		try
 		{
 			recordStore.store(getSendScheduleRecord(schedule, transmissionStore));
 		}
-		catch(Exception e)
+		catch(DBException e)
 		{
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	public SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
 	{
 		return getSendScheduleFromRecord(project, transmissionStore, recordStore.retrieveRecord(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, 
 				new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT, getProjectRecordReference(project)))));
 	}
 	
 	@Override
-	public void deleteSendSchedule(SendRecordsSchedule schedule)
+	public void deleteSendSchedule(SendingSchedule schedule)
 	{
 		try
 		{
 			recordStore.delete(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT, schedule.getProject().getID())));
 		}
-		catch (DBException e)
+		catch(DBException e)
 		{
 			e.printStackTrace();
 		}
 	}
 	
-	private SendRecordsSchedule getSendScheduleFromRecord(Project project, TransmissionStore transmissionStore, Record sendScheduleRecord)
+	private SendingSchedule getSendScheduleFromRecord(Project project, TransmissionStore transmissionStore, Record sendScheduleRecord)
 	{
 		if (sendScheduleRecord == null)
 			return null;
@@ -538,7 +538,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		Integer retransmitIntervalMillis = SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.retrieveValue(sendScheduleRecord).intValue();
 		Boolean encrypt = SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.retrieveValue(sendScheduleRecord);
 
-		return new SendRecordsSchedule(project, receiver, retransmitIntervalMillis, encrypt);
+		return new SendingSchedule(project, receiver, retransmitIntervalMillis, encrypt);
 	}
 	
 	/* (non-Javadoc)

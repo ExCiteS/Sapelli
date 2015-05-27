@@ -98,6 +98,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	 * 
 	 * @param client
 	 * @param correspondent
+	 * @param received
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
@@ -107,9 +108,9 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	 * @param numberOfSentResendRequests
 	 * @param lastResendReqSentAt - may be null
 	 */
-	protected SMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, int numberOfSentResendRequests, TimeStamp lastResendReqSentAt)
+	protected SMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, boolean received, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, int numberOfSentResendRequests, TimeStamp lastResendReqSentAt)
 	{
-		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt);
+		super(client, correspondent, received, localID, remoteID, payloadHash, sentAt, receivedAt);
 		this.numberOfSentResendRequests = numberOfSentResendRequests;
 		this.lastResendRequestSentAt = lastResendReqSentAt;
 		// add parts by calling receivePart (not by passing them through this constructor)

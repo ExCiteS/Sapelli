@@ -33,7 +33,7 @@ public class SMSCorrespondent extends Correspondent
 	public SMSCorrespondent(String name, String phoneNumber, boolean binarySMS)
 	{
 		super(name, binarySMS ? Transmission.Type.BINARY_SMS : Transmission.Type.TEXTUAL_SMS);
-		if(phoneNumber == null || phoneNumber.isEmpty())
+		if(phoneNumber == null || phoneNumber.isEmpty() || phoneNumber.length() > CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS)
 			throw new IllegalArgumentException("Invalid phone number.");
 		this.phoneNumber = phoneNumber;
 	}

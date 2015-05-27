@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.services;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -88,7 +88,7 @@ public class DataSendingService extends IntentService implements StoreUser
 			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			
 			// Get SentTransmissionStore instance:
-			sentTStore = app.collectorClient.sentTransmissionStoreHandle.getStore(this);
+			sentTStore = app.collectorClient.transmissionStoreHandle.getStore(this);
 			
 			// Get Project:
 			Project project = projectStore.retrieveProject(projectID, projectFingerPrint);
@@ -100,7 +100,7 @@ public class DataSendingService extends IntentService implements StoreUser
 			}
 			
 			// Get Schedule/Receiver:
-			SendRecordsSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
+			SendingSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
 			if(sendSchedule == null)
 			{
 				transmissionController.addLogLine(TAG, "Data sending canceled, no schedule/receiver found for project " + project.toString(true));
@@ -122,7 +122,7 @@ public class DataSendingService extends IntentService implements StoreUser
 		finally
 		{
 			app.collectorClient.projectStoreHandle.doneUsing(this);
-			app.collectorClient.sentTransmissionStoreHandle.doneUsing(this);
+			app.collectorClient.transmissionStoreHandle.doneUsing(this);
 		}
 	}
 	

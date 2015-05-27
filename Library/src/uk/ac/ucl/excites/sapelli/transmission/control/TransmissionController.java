@@ -40,8 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
@@ -68,7 +67,6 @@ import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 public abstract class TransmissionController implements StoreHandle.StoreUser
 {
 	
-	static public final String UNKNOWN_CORRESPONDENT_NAME = "anonymous";
 	static protected final String LOG_FILENAME_PREFIX = "Transmission_";
 
 	// Client:
@@ -76,8 +74,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	// Stores:
 	protected final RecordStore recordStore;
-	protected final SentTransmissionStore sentTStore;
-	protected final ReceivedTransmissionStore receivedTStore;
+	protected final TransmissionStore transmissionStore;
 	
 	// Handlers:
 	private final SMSReceiver smsReceiver = new SMSReceiver();
@@ -93,8 +90,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		
 		// Stores:
 		this.recordStore = client.recordStoreHandle.getStore(this);
-		this.sentTStore = client.sentTransmissionStoreHandle.getStore(this);
-		this.receivedTStore = client.receivedTransmissionStoreHandle.getStore(this);
+		this.transmissionStore = client.transmissionStoreHandle.getStore(this);
 
 		// Payload receiver:
 		PayloadReceiver customPayloadReceiver = client.getCustomPayloadReceiver();
@@ -192,17 +188,17 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		transmission.prepare();
 		
 		// Store "in-flight transmissions" to get local ID:
-		sentTStore.store(transmission); // update record now that payload hash has been computed
+		transmissionStore.store(transmission); // update record now that payload hash has been computed
 		
 		// actually send the transmission:
 		transmission.send(this);
 	}
 	
 	public void updateSentTransmission(Transmission<?> transmission)
-	{
+	{	// TODO is this ever used?
 		try
 		{
-			sentTStore.store(transmission); // TODO only update not insert?
+			transmissionStore.store(transmission); // TODO only update not insert?
 		}
 		catch(Exception e)
 		{
@@ -250,7 +246,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			
 			// Delete transmission (and parts) from store:
 			if(deleteTransmissionUponDecoding())
-				receivedTStore.deleteTransmission(transmission);
+				transmissionStore.deleteTransmission(transmission);
 			
 			return true;
 		}
@@ -269,14 +265,15 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 
 	public void receive(HTTPTransmission httpTransmission) throws Exception
 	{
-		HTTPTransmission existingTransmission = receivedTStore.retrieveHTTPTransmission(httpTransmission.getPayload().getType(), httpTransmission.getPayloadHash());
+		/*HTTPTransmission existingTransmission = transmissionStore.retrieveHTTPTransmission(httpTransmission.getPayload().getType(), httpTransmission.getPayloadHash());
 		if(existingTransmission == null)
 		{
 			// Store/Update transmission unless it was successfully received in its entirety: TODO HTTP transmissions will usually be received in entirety??
 			if(!doReceive(httpTransmission))
-				receivedTStore.store(httpTransmission);
+				transmissionStore.store(httpTransmission);
 		}
 		// else have already seen this transmission... TODO is this check necessary?
+		*/
 	}
 	
 	/**
@@ -288,15 +285,11 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	public SMSCorrespondent getSendingCorrespondentFor(String phoneNumber, boolean binarySMS) throws Exception
 	{
 		// Try to find sender:
-		SMSCorrespondent corr = receivedTStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
+		SMSCorrespondent corr = transmissionStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
 		if(corr == null)
-		{
-			// Try to find matching receiver:
-			corr = sentTStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
-			// Still nothing -> make new correspondent
-			if(corr == null)
-				corr = new SMSCorrespondent(UNKNOWN_CORRESPONDENT_NAME, phoneNumber, binarySMS);
-			receivedTStore.store(corr); // also store if using receiver, send/receive correspondents are in separate tables (TODO normalise?)
+		{	// make & store new correspondent
+			corr = new SMSCorrespondent(Correspondent.UNKNOWN_SENDER_NAME, phoneNumber, binarySMS);
+			transmissionStore.store(corr);
 		}
 		return corr;
 	}
@@ -313,7 +306,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			SMSTransmission<?> smsTrans = smsReceiver.transmission;
 			
 			// Store transmission:
-			receivedTStore.store(smsTrans);
+			transmissionStore.store(smsTrans);
 			
 			// Try receiving the transmission:
 			if(!smsTrans.isComplete())
@@ -337,14 +330,14 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	}
 
 	/**
-	 * @param localID local ID of an incomplete SMSTransmission
+	 * @param localID local ID of an incomplete SMSTransmission (i.e. the subject of the resend request)
 	 * @return whether or not future resend requests may needed for this transmission 
 	 * @throws Exception
 	 */
 	public void sendSMSResendRequest(int localID) throws Exception
 	{
-		// Query for the transmission:
-		Transmission<?> trans = receivedTStore.retrieveTransmissionForID(localID);
+		// Query for the subject transmission:
+		Transmission<?> trans = transmissionStore.retrieveTransmission(true, localID);
 		
 		// Check if it makes sense to send the request...
 		if(trans == null || !( trans instanceof SMSTransmission) || trans.isComplete())
@@ -374,7 +367,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	public boolean scheduleSMSResendRequests() throws Exception
 	{
 		// Query for incomplete SMSTransmissions:
-		List<SMSTransmission<?>> incompleteSMSTs = receivedTStore.getIncompleteSMSTransmissions();		
+		List<SMSTransmission<?>> incompleteSMSTs = transmissionStore.getIncompleteSMSTransmissions();		
 		addLogLine("Incomplete SMS transmissions found: " + incompleteSMSTs.size());
 		
 		boolean atLeast1 = false;
@@ -411,9 +404,16 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		
 		public SMSTransmission<?> transmission;
 		
-		public void receive(Message smsMsg) throws Exception
+		public void receive(Message smsMsg)
 		{
 			transmission = null; // wipe previous transmission !!!
+			try
+			{	// try finding an (incomplete) transmission this message belongs to (assuming this is not the first part):
+				transmission = (SMSTransmission<?>) transmissionStore.retrieveTransmission(true, smsMsg.getTransmissionType(), smsMsg.getSender(), smsMsg.getSendingSideTransmissionID(), smsMsg.getPayloadHash(), smsMsg.getTotalParts());
+			}
+			catch(Exception ignore) {}
+			
+			// Handle specific message type:
 			smsMsg.handle(this);
 		}
 		
@@ -421,24 +421,24 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		public void handle(BinaryMessage binSms)
 		{
 			log(binSms, true);
-			BinarySMSTransmission t = receivedTStore.retrieveBinarySMSTransmission(binSms.getSender(), binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
-			if(t == null) // we received the the first part
-				t = new BinarySMSTransmission(transmissionClient, binSms);
+			if(transmission == null)
+				// we received the first part
+				transmission = new BinarySMSTransmission(transmissionClient, binSms);
 			else
-				t.receivePart(binSms);
-			transmission = t;
+				// this is not the first part, add it to the existing transmission:
+				((BinarySMSTransmission) transmission).receivePart(binSms);
 		}
 
 		@Override
 		public void handle(TextMessage txtSms)
 		{
 			log(txtSms, false);
-			TextSMSTransmission t = receivedTStore.retrieveTextSMSTransmission(txtSms.getSender(), txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
-			if(t == null) // we received the the first part
-				t = new TextSMSTransmission(transmissionClient, txtSms);
+			if(transmission == null)
+				// we received the first part
+				transmission = new TextSMSTransmission(transmissionClient, txtSms);
 			else
-				t.receivePart(txtSms);
-			transmission = t;
+				// this is not the first part, add it to the existing transmission:
+				((TextSMSTransmission) transmission).receivePart(txtSms);
 		}
 		
 		private void log(Message msg, boolean binary)
@@ -474,8 +474,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(AckPayload ack) throws Exception
 		{
-			// find appropriate "in-flight" transmission and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
-			Transmission<?> subject = sentTStore.retrieveTransmissionFor(ack.getSubjectSenderSideID(), ack.getSubjectPayloadHash());
+			// find the appropriate sent transmission (i.e. the subject of the ACK) and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
+			Transmission<?> subject = transmissionStore.retrieveTransmission(false, ack.getSubjectSenderSideID(), ack.getSubjectPayloadHash());
 			
 			addLogLine(	"INCOMING", "Payload", "ACK",
 						"Subject local ID: " + ack.getSubjectSenderSideID(),
@@ -487,7 +487,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				subject.setReceivedAt(ack.getSubjectReceivedAt());
 				if(ack.getSubjectReceiverSideID() != null)
 					subject.setRemoteID(ack.getSubjectReceiverSideID()); // remember remote ID (mainly for debugging)
-				sentTStore.store(subject);
+				transmissionStore.store(subject);
 			}
 			else
 				System.err.println("No matching transmission (ID " + ack.getSubjectSenderSideID() + "; payload hash: " + ack.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + ack.getTransmission().getCorrespondent());
@@ -496,8 +496,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(ResendRequestPayload resendReq) throws Exception
 		{
-			// get Transmission object from store - will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
-			SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionFor(resendReq.getSubjectSenderSideID(), resendReq.getSubjectPayloadHash(), resendReq.getSubjectTotalParts()));
+			// get the appropriate sent transmission (i.e. the subject of the request) - it will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
+			SMSTransmission<?> subject = ((SMSTransmission<?>) transmissionStore.retrieveTransmission(false, resendReq.getSubjectSenderSideID(), resendReq.getSubjectPayloadHash(), resendReq.getSubjectTotalParts()));
 			
 			addLogLine(	"INCOMING", "Payload", "ResendReq",
 						"Subject local ID: " + resendReq.getSubjectSenderSideID(),
@@ -513,7 +513,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 					if(resendReq.getSubjectReceiverSideID() != null)
 					{
 						subject.setRemoteID(resendReq.getSubjectReceiverSideID());
-						sentTStore.store(subject);
+						transmissionStore.store(subject);
 					}
 					// Resend requested parts:
 					subject.resend(TransmissionController.this, resendReq.getRequestedPartNumbers());
@@ -602,8 +602,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	public void discard()
 	{
 		transmissionClient.recordStoreHandle.doneUsing(this);
-		transmissionClient.sentTransmissionStoreHandle.doneUsing(this);
-		transmissionClient.receivedTransmissionStoreHandle.doneUsing(this);
+		transmissionClient.transmissionStoreHandle.doneUsing(this);
 	}
 	
 }

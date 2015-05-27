@@ -24,7 +24,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -266,19 +266,19 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore)
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
 	}
 
 	@Override
-	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	public SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
 	}
 
 	@Override
-	public void deleteSendSchedule(SendRecordsSchedule schedule)
+	public void deleteSendSchedule(SendingSchedule schedule)
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
 	}

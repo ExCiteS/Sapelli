@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -40,11 +40,9 @@ import android.util.Log;
 /**
  * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
  * 
+ * @deprecated use ProjectRecordStore instead
+ * 
  * @author Michalis Vitos, mstevens
- */
-/**
- * @author mstevens
- *
  */
 public class PrefProjectStore extends ProjectStore
 {
@@ -341,21 +339,21 @@ public class PrefProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore)
 	{
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	public SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
 	{
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public void deleteSendSchedule(SendRecordsSchedule schedule)
+	public void deleteSendSchedule(SendingSchedule schedule)
 	{
 		// TODO Auto-generated method stub
 		

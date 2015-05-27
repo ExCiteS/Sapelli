@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
@@ -122,6 +122,13 @@ public abstract class Transmission<C extends Correspondent>
 	protected final TransmissionClient client;
 	
 	/**
+	 * If {@code false} this Transmission was created on the current device for sending to another device,
+	 * if {@code true} it was received on the current device by means of transmission from another one.
+	 * Or in other words, if {@code false} we are on the sending side, if {@code true} we are on the receiving side.
+	 */
+	public final boolean received;
+	
+	/**
 	 * ID by which this transmission is identified in the context of the local device/server
 	 */
 	protected Integer localID;
@@ -182,6 +189,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C receiver, Payload payload)
 	{
+		this.received = false;
 		this.client = client;
 		this.correspondent = receiver;
 		this.payload = payload;
@@ -199,6 +207,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C sender, int sendingSideID, int payloadHash)
 	{
+		this.received = true;
 		this.client = client;
 		this.correspondent = sender;
 		this.remoteID = sendingSideID;
@@ -211,16 +220,18 @@ public abstract class Transmission<C extends Correspondent>
 	 * 
 	 * @param client
 	 * @param correspondent
+	 * @param received
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
 	 */
-	protected Transmission(TransmissionClient client, C correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
 	{
 		this.client = client;
 		this.correspondent = correspondent;
+		this.received = received;
 		this.localID = localID;
 		this.remoteID = remoteID; 
 		this.payloadHash = payloadHash;
@@ -651,15 +662,15 @@ public abstract class Transmission<C extends Correspondent>
 	public class SentCallback implements StoreUser
 	{
 
-		private SentTransmissionStore sentTStore;
+		private TransmissionStore tStore;
 		
 		protected void store()
 		{
 			try
 			{
-				if(sentTStore == null || sentTStore.isClosed())
-					sentTStore = client.sentTransmissionStoreHandle.getStore(this);
-				sentTStore.store(Transmission.this);
+				if(tStore == null || tStore.isClosed())
+					tStore = client.transmissionStoreHandle.getStore(this);
+				tStore.store(Transmission.this);
 			}
 			catch(Exception e)
 			{
@@ -686,7 +697,7 @@ public abstract class Transmission<C extends Correspondent>
 		
 		public void finalise()
 		{
-			client.sentTransmissionStoreHandle.doneUsing(this);
+			client.transmissionStoreHandle.doneUsing(this);
 		}
 		
 	}

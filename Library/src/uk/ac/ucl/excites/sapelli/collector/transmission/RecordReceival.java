@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.remote;
+package uk.ac.ucl.excites.sapelli.collector.transmission;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
  * Class that embodies a record-receiving relationship for a particular Project, from a particular sending Correspondent.
+ * 
  * @author benelliott
  */
 public class RecordReceival

@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -271,6 +272,12 @@ public class BinaryMessage extends Message
 	public void handle(Handler handler)
 	{
 		handler.handle(this);
+	}
+
+	@Override
+	public Type getTransmissionType()
+	{
+		return Type.BINARY_SMS;
 	}
 
 }

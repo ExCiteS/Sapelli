@@ -26,7 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationCl
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -179,11 +179,11 @@ public abstract class ProjectStore extends Store
 	 */
 	public abstract void delete(Project project);
 	
-	public abstract void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore);
+	public abstract void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore);
 	
-	public abstract SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
+	public abstract SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
 	
-	public abstract void deleteSendSchedule(SendRecordsSchedule schedule);
+	public abstract void deleteSendSchedule(SendingSchedule schedule);
 	
 	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.remote;
+package uk.ac.ucl.excites.sapelli.collector.transmission;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
@@ -24,22 +24,26 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 /**
  * Class that holds information about a Record-sending relationship between a Project and some receiving Correspondent.
  * 
- * @author benelliott
+ * @author benelliott, mstevens
  */
-public class SendRecordsSchedule
+public class SendingSchedule
 {
 	
-	static public final int RETRANSMIT_INTERVAL_SIZE_BITS = 32;
 	private Project project;
 	private Correspondent receiver;
-	private int retransmitIntervalMillis;
+	
+	/**
+	 * Amount of seconds between transmission attempts
+	 */
+	private int transmitIntervalS;
+	
 	private boolean encrypt;
 	
-	public SendRecordsSchedule(Project project, Correspondent receiver, int retransmitIntervalMillis, boolean encrypt)
+	public SendingSchedule(Project project, Correspondent receiver, int retransmitIntervalMillis, boolean encrypt)
 	{
 		this.project = project;
 		this.receiver = receiver;
-		this.retransmitIntervalMillis = retransmitIntervalMillis;
+		this.transmitIntervalS = retransmitIntervalMillis;
 		this.encrypt = encrypt;
 	}
 
@@ -50,14 +54,6 @@ public class SendRecordsSchedule
 	{
 		return project;
 	}
-	
-	/**
-	 * @param project the project to set
-	 */
-	public void setProject(Project project)
-	{
-		this.project = project;
-	}
 
 	/**
 	 * @return the receiver
@@ -66,29 +62,21 @@ public class SendRecordsSchedule
 	{
 		return receiver;
 	}
-
-	/**
-	 * @param receiver the receiver to set
-	 */
-	public void setReceiver(Correspondent receiver)
-	{
-		this.receiver = receiver;
-	}
-
-	/**
-	 * @return the retransmitIntervalMillis
-	 */
-	public int getRetransmitIntervalMillis()
-	{
-		return retransmitIntervalMillis;
-	}
 	
 	/**
-	 * @param retransmitIntervalMillis the retransmitIntervalMillis to set
+	 * @return the transmitIntervalS
 	 */
-	public void setRetransmitIntervalMillis(int retransmitIntervalMillis)
+	public int getTransmitIntervalS()
 	{
-		this.retransmitIntervalMillis = retransmitIntervalMillis;
+		return transmitIntervalS;
+	}
+
+	/**
+	 * @param transmitIntervalS seconds between transmission attempts
+	 */
+	public void setTransmitIntervalS(int transmitIntervalS)
+	{
+		this.transmitIntervalS = transmitIntervalS;
 	}
 
 	/**

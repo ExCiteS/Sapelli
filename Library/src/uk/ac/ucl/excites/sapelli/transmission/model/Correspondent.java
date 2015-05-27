@@ -18,22 +18,20 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model;
 
-import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * 
- * @author benelliott
+ * @author benelliott, mstevens
  */
 public abstract class Correspondent
 {
 	
-	static public final int CORRESPONDENT_ID_SIZE = 24; // bits
-	static public final IntegerRangeMapping CORRESPONDENT_ID_FIELD = IntegerRangeMapping.ForSize(0, CORRESPONDENT_ID_SIZE); // unsigned(!) 24 bit integer
+	static public final String UNKNOWN_SENDER_NAME = "anonymous_sender";
 	
-	static public final int CORRESPONDENT_NAME_MAX_LENGTH_BYTES = 128;
-	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_BYTES = 512; // TODO 128 chars? UTF8?
-	static public final int CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES = 32; //TODO 256 bit?
+	static public final int CORRESPONDENT_NAME_MAX_LENGTH_CHARS = 128;
+	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS = 512;
+	static public final int CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES = 32;
 	
 	static public interface Handler
 	{
@@ -57,7 +55,7 @@ public abstract class Correspondent
 	{
 		if(name == null || name.isEmpty())
 			throw new IllegalArgumentException("Please provide a non-empty name String");
-		if(name.length() > CORRESPONDENT_NAME_MAX_LENGTH_BYTES)
+		if(name.length() > CORRESPONDENT_NAME_MAX_LENGTH_CHARS)
 			throw new IllegalArgumentException("Correspondent name is too long");
 		this.name = name;
 		this.transmissionType = transmissionType;

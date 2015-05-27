@@ -29,9 +29,9 @@ import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
@@ -701,10 +701,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		{
 			// once project loading done, store a dummy schedule:
 			Correspondent receiver = new SMSCorrespondent("Matthias Belgium", "+32486170492", false);
-			TransmissionStore sentTxStore = ((CollectorApp)this.getApplication()).collectorClient.sentTransmissionStoreHandle.getStore(this);
+			TransmissionStore sentTxStore = ((CollectorApp)this.getApplication()).collectorClient.transmissionStoreHandle.getStore(this);
 			sentTxStore.store(receiver);
-			SendRecordsSchedule schedule = new SendRecordsSchedule(project, receiver, 60 * 1000, false);
-			projectStore.storeSendSchedule(schedule, sentTxStore);
+			projectStore.storeSendSchedule(new SendingSchedule(project, receiver, 60 /*seconds*/, false), sentTxStore);
 		}
 		catch(Exception e)
 		{

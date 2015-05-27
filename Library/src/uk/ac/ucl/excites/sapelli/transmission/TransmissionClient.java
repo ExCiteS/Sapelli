@@ -29,8 +29,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 
@@ -45,21 +43,12 @@ public abstract class TransmissionClient extends StorageClient
 	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
 
 	// DYNAMICS------------------------------------------------------
-	public final StoreHandle<SentTransmissionStore> sentTransmissionStoreHandle = new StoreHandle<SentTransmissionStore>(new StoreCreator<SentTransmissionStore>()
+	public final StoreHandle<TransmissionStore> transmissionStoreHandle = new StoreHandle<TransmissionStore>(new StoreCreator<TransmissionStore>()
 	{
 		@Override
-		public SentTransmissionStore createStore() throws DBException
+		public TransmissionStore createStore() throws DBException
 		{
-			return new SentTransmissionStore(TransmissionClient.this);
-		}
-	});
-	
-	public final StoreHandle<ReceivedTransmissionStore> receivedTransmissionStoreHandle = new StoreHandle<ReceivedTransmissionStore>(new StoreCreator<ReceivedTransmissionStore>()
-	{
-		@Override
-		public ReceivedTransmissionStore createStore() throws DBException
-		{
-			return new ReceivedTransmissionStore(TransmissionClient.this);
+			return new TransmissionStore(TransmissionClient.this);
 		}
 	});
 	
@@ -88,10 +77,8 @@ public abstract class TransmissionClient extends StorageClient
 			return "Received_Transmissions";
 		if(schema == TransmissionStore.RECEIVED_TRANSMISSION_PART_SCHEMA)
 			return "Received_Transmission_Parts";
-		if(schema == TransmissionStore.SENDER_SCHEMA)
-			return "Senders";
-		if(schema == TransmissionStore.RECEIVER_SCHEMA)
-			return "Receivers";
+		if(schema == TransmissionStore.CORRESPONDENT_SCHEMA)
+			return "Correspondents";
 		return super.getTableName(schema);
 	}
 	

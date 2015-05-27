@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
@@ -82,6 +83,17 @@ public class RecordsQuery
 	public RecordsQuery(Source source, Order order)
 	{
 		this(source, order, NO_LIMIT, NO_CONSTRAINTS);
+	}
+	
+	/**
+	 * Query for given schema and constraints
+	 * 
+	 * @param schema
+	 * @param constraints
+	 */
+	public RecordsQuery(Schema schema, Constraint... constraints)
+	{
+		this(Source.From(schema), constraints);
 	}
 	
 	/**

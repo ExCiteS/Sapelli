@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
@@ -135,7 +136,7 @@ public abstract class Message implements Comparable<Message>
 		this.deliveredAt = deliveredAt;
 		this.receivedAt = receivedAt;
 		this.payloadHash = transmission.getPayloadHash();
-		if(!isSent() && isReceived())
+		if(transmission.received) //Alternative: if(!isSent() && isReceived())
 		{	// if on receiving side:
 			this.sender = transmission.getCorrespondent();
 			this.sendingSideTransmissionID = transmission.getRemoteID();
@@ -271,6 +272,11 @@ public abstract class Message implements Comparable<Message>
 			throw new IllegalStateException("Cannot change transmission.");
 		this.transmission = transmission;
 	}
+	
+	/**
+	 * @return
+	 */
+	public abstract Transmission.Type getTransmissionType();
 		
 	@Override
 	public int compareTo(Message another)

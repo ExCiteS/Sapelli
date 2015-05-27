@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.services;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import android.app.AlarmManager;
@@ -132,7 +132,7 @@ public class DataSendingSchedulingService extends IntentService implements Store
 			// Get ProjectStore instance:
 			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			// Get SentTransmissionStore instance:
-			sentTStore = app.collectorClient.sentTransmissionStoreHandle.getStore(this);
+			sentTStore = app.collectorClient.transmissionStoreHandle.getStore(this);
 
 			// Check if projects require data transmission and set up alarms for the DataSenderService
 			Log.d(TAG, "Scanning projects for alarms that need to be set");
@@ -141,10 +141,10 @@ public class DataSendingSchedulingService extends IntentService implements Store
 			boolean atLeastOne = false;
 			for(Project project : projectStore.retrieveProjects())
 			{
-				SendRecordsSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
+				SendingSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
 				if(sendSchedule != null)
 				{
-					scheduleSending(sendSchedule.getRetransmitIntervalMillis(), project);
+					scheduleSending(sendSchedule.getTransmitIntervalS() * 1000, project);
 					atLeastOne = true;
 				}
 				else
@@ -165,7 +165,7 @@ public class DataSendingSchedulingService extends IntentService implements Store
 		finally
 		{
 			app.collectorClient.projectStoreHandle.doneUsing(this);
-			app.collectorClient.sentTransmissionStoreHandle.doneUsing(this);
+			app.collectorClient.transmissionStoreHandle.doneUsing(this);
 		}
 	}
 
