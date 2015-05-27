@@ -69,7 +69,6 @@ public class Project
 	private String variant;
 	private String version;
 
-	private TransmissionSettings transmissionSettings;
 	private String defaultLanguage;
 	private boolean logging;
 	private Schema heartbeatSchema;
@@ -303,22 +302,6 @@ public class Project
 			return null;
 	}
 
-	/**
-	 * @return the transmissionSettings
-	 */
-	public TransmissionSettings getTransmissionSettings()
-	{
-		return transmissionSettings;
-	}
-
-	/**
-	 * @param transmissionSettings the transmissionSettings to set
-	 */
-	public void setTransmissionSettings(TransmissionSettings transmissionSettings)
-	{
-		this.transmissionSettings = transmissionSettings;
-	}
-	
 	@Override
 	public String toString()
 	{
@@ -430,7 +413,6 @@ public class Project
 					// no need to check the model here
 					equalSignature(that) && // checks name, variant & version
 					this.fingerPrint == that.fingerPrint &&
-					// TODO transmission settings?
 					(this.defaultLanguage != null ? this.defaultLanguage.equals(that.defaultLanguage) : that.defaultLanguage == null) &&
 					this.logging == that.logging &&
 					this.forms.equals(that.forms) &&
@@ -450,7 +432,6 @@ public class Project
 		hash = 31 * hash + (variant == null ? 0 : variant.hashCode());
 		hash = 31 * hash + version.hashCode();
 		hash = 31 * hash + fingerPrint;
-		// TODO include transmission settings?
 		hash = 31 * hash + (defaultLanguage == null ? 0 : defaultLanguage.hashCode());
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();
