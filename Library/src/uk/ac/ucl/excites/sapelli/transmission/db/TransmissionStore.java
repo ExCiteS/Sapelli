@@ -219,29 +219,40 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	}
 	
 	/**
+	 * Note: this method is public because it is called from ProjectRecordStore
+	 * 
+	 * @param correspondent
+	 * @return
+	 */
+	public Record getCorrespondentRecord(Correspondent correspondent)
+	{
+		return new CorrespondentRecordGenerator(correspondent).rec; 
+	}
+	
+	/**
 	 * @param correspondent
 	 * @return
 	 * @throws Exception
 	 */
 	private RecordReference doStoreCorrespondent(Correspondent correspondent) throws Exception
 	{
-		CorrespondentRecordGenerator generator = new CorrespondentRecordGenerator(correspondent);
+		Record rec = getCorrespondentRecord(correspondent);
 		
 		// Store the correspondent record:
-		recordStore.store(generator.rec);
+		recordStore.store(rec);
 		//	local ID should now be set in the record...
 		
 		// Check/set it on the object:
 		if(correspondent.isLocalIDSet()) // if the object already had a local transmissionID...
 		{	// then it should match the ID on the record, so let's verify:
-			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(generator.rec))
+			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(rec))
 				throw new IllegalStateException("Non-matching correspodent ID"); // this should never happen
 		}
 		else
 			// Set local transmissionID in object as on the record: 
-			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(generator.rec).intValue());
+			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(rec).intValue());
 		
-		return generator.rec.getReference();
+		return rec.getReference();
 	}
 	
 	private Correspondent correspondentFromRecord(Record cRec)
@@ -267,7 +278,13 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		}
 	}
 	
-	private Correspondent retrieveCorrespondentByQuery(SingleRecordQuery recordQuery)
+	/**
+	 * Note: this method is public because it is called from ProjectRecordStore
+	 * 
+	 * @param recordQuery
+	 * @return
+	 */
+	public Correspondent retrieveCorrespondentByQuery(SingleRecordQuery recordQuery)
 	{
 		// Query for record and convert to Correspondent object:
 		return correspondentFromRecord(recordStore.retrieveRecord(recordQuery));

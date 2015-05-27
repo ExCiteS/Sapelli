@@ -128,7 +128,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	static final public Schema SEND_RECORDS_SCHEDULE_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "SendRecordsSchedule");
 	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_ID = new IntegerColumn("ID", false);
 	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_PROJECT = new ForeignKeyColumn("Project", ProjectRecordStore.PROJECT_SCHEMA, false);
-	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER = new ForeignKeyColumn("Receiver", TransmissionStore.RECEIVER_SCHEMA, false);
+	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER = new ForeignKeyColumn("Receiver", TransmissionStore.CORRESPONDENT_SCHEMA, false);
 	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL = new IntegerColumn("RetransmitInterval", false, false); // unsigned 32 bits
 	static final public BooleanColumn SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT = new BooleanColumn("Encrypt", false);
 	//	Add columns to Receiver Schema & seal it:
@@ -529,8 +529,8 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		if (sendScheduleRecord == null)
 			return null;
 		
-		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(new FirstRecordQuery(TransmissionStore.RECEIVER_SCHEMA,
-				SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQueryConstraint())); // TODO check
+		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(new FirstRecordQuery(TransmissionStore.CORRESPONDENT_SCHEMA,
+				SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQueryConstraint()));
 		
 		if (receiver == null)
 			return null;
