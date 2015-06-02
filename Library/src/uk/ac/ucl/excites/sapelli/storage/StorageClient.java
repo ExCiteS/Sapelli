@@ -49,6 +49,11 @@ public abstract class StorageClient
 		}
 	});
 	
+	/**
+	 * @param modelID
+	 * @return
+	 * @throws UnknownModelException
+	 */
 	public Model getModel(long modelID) throws UnknownModelException
 	{
 		// First check reserved models:
@@ -57,6 +62,38 @@ public abstract class StorageClient
 				return model;
 		// Get client model:
 		return getClientModel(modelID);
+	}
+	
+	/**
+	 * @param modelID
+	 * @param schemaNumber
+	 * @return
+	 * @throws UnknownModelException when no model with the given {@code modelID} was found
+	 * @throws IndexOutOfBoundsException when the model with the given {@code modelID} does not have a schema with the given {@code schemaNumber}
+	 */
+	public Schema getSchema(long modelID, int schemaNumber) throws UnknownModelException, IndexOutOfBoundsException
+	{
+		return getSchema(modelID, schemaNumber, null);
+	}
+	
+	/**
+	 * @param modelID
+	 * @param schemaNumber
+	 * @param schemaName may be null; is not checked against returned Schema(!), only used to pass to UnknownModelException in case no model is found 
+	 * @return a matching Schema
+	 * @throws UnknownModelException when no model with the given {@code modelID} was found
+	 * @throws IndexOutOfBoundsException when the model with the given {@code modelID} does not have a schema with the given {@code schemaNumber}
+	 */
+	public Schema getSchema(long modelID, int schemaNumber, String schemaName) throws UnknownModelException, IndexOutOfBoundsException
+	{
+		try
+		{
+			return getModel(modelID).getSchema(schemaNumber);
+		}
+		catch(UnknownModelException ume)
+		{
+			throw new UnknownModelException(modelID, null, schemaNumber, schemaName); // throw UME with schema information instead of only modelID
+		}
 	}
 	
 	/**
