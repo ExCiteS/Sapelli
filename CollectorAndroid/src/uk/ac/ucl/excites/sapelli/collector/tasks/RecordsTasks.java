@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.tasks;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
@@ -26,13 +27,16 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -166,6 +170,74 @@ public final class RecordsTasks
 		
 	}
 	
+	static public class ImportTask extends AsyncTaskWithWaitingDialog<File, List<Record>>
+	{
+
+		private Importer importer;
+		private Exception failure;
+		private final ImportCallback callback;
+		
+		public ImportTask(BaseActivity owner, Importer importer, ImportCallback callback)
+		{
+			super(owner);
+			this.importer = importer;
+			this.callback = callback;
+		}
+
+		@Override
+		protected List<Record> doInBackground(File... files)
+		{
+			List<Record> result = new ArrayList<Record>();
+			try
+			{
+				for(File file : files)
+				{
+					onProgressUpdate(context.getString(R.string.importFromX, file.getAbsolutePath()));
+					CollectionUtils.addAllIgnoreNull(result, importer.importFrom(file));
+				}
+			}
+			catch(Exception e)
+			{
+				failure = e;
+				return null;
+			}
+			return result;
+		}
+		
+		@Override
+		protected void onPostExecute(List<Record> result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+			if(failure != null)
+				callback.importFailure(failure);
+			else
+				callback.importSuccess(result, importer.getWarnings());
+		}
+		
+	}
+	
+	static public class XMLImportTask extends ImportTask
+	{
+		
+		public XMLImportTask(BaseActivity owner, ImportCallback callback)
+		{
+			super(owner, new XMLRecordsImporter(owner.getCollectorApp().collectorClient), callback);
+		}
+		
+	}
+	
+	public interface ImportCallback
+	{
+		
+		public void importSuccess(List<Record> result, List<String> warnings);
+		
+		/**
+		 * @param reason see {@link Importer#importFrom(File)} for possible Exception types
+		 */
+		public void importFailure(Exception reason);
+		
+	}
+	
 	static public class Delete extends AsyncTaskWithWaitingDialog<List<Record>, Void> implements StoreUser
 	{
 
@@ -210,7 +282,8 @@ public final class RecordsTasks
 		protected void onPostExecute(Void result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			callback.deleteFailure(failure);
+			if(failure != null)
+				callback.deleteFailure(failure);
 		}
 		
 	}

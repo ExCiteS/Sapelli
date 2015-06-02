@@ -127,6 +127,7 @@
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records&#8230;</string>
     <string name="exporting_data">Exporting data&#8230;</string>
+    <string name="importFromX">Importing records from %s…</string>
 
     <string name="backup">Back-up</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>

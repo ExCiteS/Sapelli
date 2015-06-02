@@ -27,30 +27,66 @@ public class UnknownModelException extends Exception
 
 	private static final long serialVersionUID = 2L;
 
+	// For v2.0 Models and/or Schemata:
 	private Long modelID;
+	private String modelName;
+	private Integer modelSchemaNumber;
+	private String schemaName;
+	
+	// For v1.x Schemata:
 	private Integer schemaID;
 	private Integer schemaVersion;
 	
 	/**
+	 * To report about a whole Model (>= v2.x) being missing, without reference to a specific Schema.
+	 * For v2.x Models.
+	 * 
 	 * @param modelID
+	 * @param modelName - may be null
 	 */
-	public UnknownModelException(long modelID)
+	public UnknownModelException(long modelID, String modelName)
 	{
-		super(String.format("Unknown model (ID = %d).", modelID));
+		super(String.format("Unknown model (ID = %d; name = %s).", modelID, modelName != null ? modelName : "?"));
 		this.modelID = modelID;
+		this.modelName = modelName;
 	}
 	
 	/**
+	 * To report about a missing Schema and the Model it is part of.
+	 * For v2.x Models/Schemata.
+	 * 
+	 * @param modelID
+	 * @param modelName - may be null
+	 * @param schemaNumber
+	 * @param schemaName - may be null
+	 */
+	public UnknownModelException(long modelID, String modelName, int schemaNumber, String schemaName)
+	{
+		super(String.format("Unknown schema (modelID = %d; modelName = %s; schemaNumber = %d; schemaName = %s).", modelID, modelName != null ? modelName : "?", schemaNumber, schemaName != null ? schemaName : "?"));
+		this.modelID = modelID;
+		this.modelName = modelName;
+		this.modelSchemaNumber = schemaNumber;
+		this.schemaName = schemaName;
+	}
+	
+	/**
+	 * For v1.x Schemata.
+	 * 
 	 * @param schemaID
 	 * @param schemaVersion
 	 */
 	public UnknownModelException(int schemaID, int schemaVersion)
 	{
-		super(String.format("Unknown model/schema (schemaID = %d; schemaVersion = %d).", schemaID, schemaVersion));
+		super(String.format("Unknown v1.x schema (schemaID = %d; schemaVersion = %d).", schemaID, schemaVersion));
 		this.schemaID = schemaID;
 		this.schemaVersion = schemaVersion;
 	}
 
+	public boolean isV1xSchema()
+	{
+		return schemaID != null;
+	}
+	
 	/**
 	 * @return the modelID
 	 */
@@ -60,7 +96,31 @@ public class UnknownModelException extends Exception
 	}
 
 	/**
-	 * @return the schemaID
+	 * @return the modelName
+	 */
+	public String getModelName()
+	{
+		return modelName;
+	}
+
+	/**
+	 * @return the modelSchemaNumber
+	 */
+	public Integer getModelSchemaNumber()
+	{
+		return modelSchemaNumber;
+	}
+
+	/**
+	 * @return the schemaName
+	 */
+	public String getSchemaName()
+	{
+		return schemaName;
+	}
+	
+	/**
+	 * @return the schemaID (v1.x)
 	 */
 	public Integer getSchemaID()
 	{
@@ -68,11 +128,11 @@ public class UnknownModelException extends Exception
 	}
 
 	/**
-	 * @return the schemaVersion
+	 * @return the schemaVersion (v1.x)
 	 */
 	public Integer getSchemaVersion()
 	{
 		return schemaVersion;
 	}
-	
+
 }
