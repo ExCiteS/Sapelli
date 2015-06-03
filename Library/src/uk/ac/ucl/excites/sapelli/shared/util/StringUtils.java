@@ -116,6 +116,12 @@ public final class StringUtils
 		return str.replaceAll("\\s+", replacement);
 	}
 	
+	/**
+	 * @param subject
+	 * @param needle
+	 * @param values
+	 * @return
+	 */
 	static public String replaceWithValues(String subject, String needle, String[] values)
 	{
 		return replaceWithValues(subject, needle, Arrays.copyOf(values, values.length, Object[].class));
