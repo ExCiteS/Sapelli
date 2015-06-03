@@ -83,8 +83,10 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
+	// STATIC ------------------------------------------------------------
 	static protected final String SPACE = " ";
 	
+	// DYNAMIC -----------------------------------------------------------
 	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
@@ -130,7 +132,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
 			
 			// Upgrade if necessary:
-			if(dbVersion < version)
+			if(dbVersion < version && upgrader != null)
 				upgrader.upgrade(this, dbVersion, version);
 		}
 		catch(DBException e)

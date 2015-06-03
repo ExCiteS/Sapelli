@@ -68,7 +68,7 @@ public abstract class SapelliSQLiteStatement
 	 * @param arguments
 	 * @throws DBException
 	 */
-	public void bindAll(List<Object> arguments) throws DBException
+	public void bindAll(List<? extends Object> arguments) throws DBException
 	{
 		if(paramCols != null)
 		{
