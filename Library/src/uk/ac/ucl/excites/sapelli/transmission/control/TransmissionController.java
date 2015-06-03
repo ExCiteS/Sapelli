@@ -411,7 +411,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			{	// try finding an (incomplete) transmission this message belongs to (assuming this is not the first part):
 				transmission = (SMSTransmission<?>) transmissionStore.retrieveTransmission(true, smsMsg.getTransmissionType(), smsMsg.getSender(), smsMsg.getSendingSideTransmissionID(), smsMsg.getPayloadHash(), smsMsg.getTotalParts());
 			}
-			catch(Exception ignore) {}
+			catch(Exception e)
+			{
+				addLogLine("ERROR: " + ExceptionHelpers.getMessageAndCause(e));
+			}
 			
 			// Handle specific message type:
 			smsMsg.handle(this);

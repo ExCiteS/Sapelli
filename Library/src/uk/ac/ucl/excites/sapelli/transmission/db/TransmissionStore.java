@@ -448,7 +448,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	protected Transmission<?> retrieveTransmissionByQuery(RecordsQuery multiRecordQuery) throws IllegalStateException
 	{
 		List<Transmission<?>> results = retrieveTransmissions(multiRecordQuery);
-		if(results.size() > 0)
+		if(results.size() > 1)
 			throw new IllegalStateException("Found more than 1 matching transmission for query");
 		if(results.isEmpty())
 			return null;
