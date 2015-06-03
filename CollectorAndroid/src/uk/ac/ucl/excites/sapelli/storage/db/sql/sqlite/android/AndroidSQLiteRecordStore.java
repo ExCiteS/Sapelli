@@ -55,6 +55,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 
 	// STATIC----------------------------------------------
 	static private final String TAG = "SQLite";
+	static private final boolean LOG_QUALIFIED_QUERIES = false;
 	
 	// DYNAMIC---------------------------------------------
 	private SQLiteDatabase db;
@@ -166,6 +167,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#executeQuery(java.lang.String, java.util.List, java.util.List)
 	 */
+	@SuppressWarnings("unused")
 	@Override
 	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
@@ -184,7 +186,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			// Log query & arguments:
 			if(BuildConfig.DEBUG)
 			{
-				if(sql.indexOf(PARAM_PLACEHOLDER) != -1)
+				if(LOG_QUALIFIED_QUERIES && sql.indexOf(PARAM_PLACEHOLDER) != -1)
 				{
 					TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n - ");
 					bldr.append("Executing query...");
@@ -200,7 +202,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 					Log.d(TAG, bldr.toString());
 				}
 				else
-					Log.d(TAG, "Executing query: " + sql);
+					Log.d(TAG, "Executing query: " + sql + (sapArguments.isEmpty() ? "" : " [Arguments: " + StringUtils.join(quotedArgStrings, ", ") + "]"));
 			}
 			
 			// Execute:
