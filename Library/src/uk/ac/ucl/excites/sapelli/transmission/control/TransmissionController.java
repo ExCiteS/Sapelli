@@ -227,9 +227,12 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		{
 			// "Receive" the transmission (merge parts, decode, verify):
 			transmission.receive();
+			
+			// Store/update transmission now that the payload type is known:
+			transmissionStore.store(transmission);
 		
 			// Handle/receive the payload:
-			payloadReceiver.receive(transmission, transmission.getPayload()); // TODO call payload.deserialise() from here instad of transmission.receive()??
+			payloadReceiver.receive(transmission, transmission.getPayload()); // TODO call payload.deserialise() from here instead of transmission.receive()??
 			
 			// Acknowledge reception if needed
 			if(transmission.getPayload().acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)

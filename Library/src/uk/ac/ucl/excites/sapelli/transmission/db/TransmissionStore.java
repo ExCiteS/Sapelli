@@ -612,7 +612,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 			
 			// Get record reference:
 			RecordReference tRecRef = getTransmissionSchema(transmission.received).createRecordReference(transmission.getLocalID());
-				
+			
 			// Delete transmission part records:
 			recordStore.delete(new RecordsQuery(Source.From(getTransmissionPartSchema(transmission.received)), tRecRef.getRecordQueryConstraint()));
 			
