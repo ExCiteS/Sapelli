@@ -84,8 +84,10 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
+	// STATIC ------------------------------------------------------------
 	static protected final String SPACE = " ";
 	
+	// DYNAMIC -----------------------------------------------------------
 	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;

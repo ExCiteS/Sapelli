@@ -95,7 +95,7 @@ public final class StringUtils
 		return join(Arrays.asList(parts), separator);
 	}
 	
-	static public String join(List<?> parts, String separator)
+	static public String join(List<? extends Object> parts, String separator)
 	{
 		if(parts == null)
 			return null;
@@ -114,6 +114,24 @@ public final class StringUtils
 	static public String replaceWhitespace(String str, String replacement)
 	{
 		return str.replaceAll("\\s+", replacement);
+	}
+	
+	static public String replaceWithValues(String subject, String needle, String[] values)
+	{
+		return replaceWithValues(subject, needle, Arrays.copyOf(values, values.length, Object[].class));
+	}
+	
+	/**
+	 * @param subject
+	 * @param needle
+	 * @param values
+	 * @return
+	 * 
+	 * @see http://stackoverflow.com/a/16975971/1084488
+	 */
+	static public String replaceWithValues(String subject, String needle, Object[] values)
+	{
+		return String.format(subject.replace("%", "%%").replace(needle, "%s"), values);
 	}
 	
 	/**
