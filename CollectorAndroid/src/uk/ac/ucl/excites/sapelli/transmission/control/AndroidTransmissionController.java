@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.joda.time.DateTime;
 
+import android.telephony.PhoneNumberUtils;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -93,6 +94,11 @@ public class AndroidTransmissionController extends TransmissionController
 	protected void cancelSMSResendRequest(int localID)
 	{
 		SMSReceiverService.CancelResendRequest(app, localID);
+	}
+	
+	static public boolean isValidPhoneNumber(String number)
+	{
+		return PhoneNumberUtils.isWellFormedSmsAddress(number);
 	}
 	
 }

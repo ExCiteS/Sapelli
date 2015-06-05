@@ -21,6 +21,11 @@ package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
+
 /**
  * @author julia, mstevens
  *
@@ -28,14 +33,79 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 public class SMSCorrespondent extends Correspondent
 {
 	
-	private String phoneNumber;
+	// STATIC -------------------------------------------------------
+	/**
+	 * @param phoneNumber
+	 * @param defaultCountryISOCode the ISO 3166-1 two-letter region code that denotes the region that we are expecting the number to be from
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
+	static public PhoneNumber toPhoneNumber(String phoneNumber, String defaultCountryISOCode) throws IllegalArgumentException
+	{
+		try
+		{
+			return PhoneNumberUtil.getInstance().parse(phoneNumber, defaultCountryISOCode);
+		}
+		catch(NumberParseException e)
+		{
+			throw new IllegalArgumentException("Error parsing phone number", e);
+		}
+	}
 	
-	public SMSCorrespondent(String name, String phoneNumber, boolean binarySMS)
+	/**
+	 * @param phoneNumberInternational a phone number in international format
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
+	static public PhoneNumber toPhoneNumber(String phoneNumberInternational) throws IllegalArgumentException
+	{
+		try
+		{
+			return PhoneNumberUtil.getInstance().parse(phoneNumberInternational, null);
+		}
+		catch(NumberParseException e)
+		{
+			throw new IllegalArgumentException("Error parsing phone number", e);
+		}
+	}
+	
+	// DYNAMIC ------------------------------------------------------
+	private PhoneNumber phoneNumber;
+	
+	/**
+	 * @param name
+	 * @param phoneNumber
+	 * @param binarySMS
+	 */
+	private SMSCorrespondent(String name, PhoneNumber phoneNumber, boolean binarySMS)
 	{
 		super(name, binarySMS ? Transmission.Type.BINARY_SMS : Transmission.Type.TEXTUAL_SMS);
-		if(phoneNumber == null || phoneNumber.isEmpty() || phoneNumber.length() > CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS)
-			throw new IllegalArgumentException("Invalid phone number.");
+		if(phoneNumber == null)
+			throw new NullPointerException("Please provide a non-null PhoneNumber instance.");
 		this.phoneNumber = phoneNumber;
+	}
+	
+	/**
+	 * @param name
+	 * @param phoneNumber
+	 * @param defaultCountryCode the ISO 3166-1 two-letter region code that denotes the region that we are expecting the number to be from.
+	 * @param binarySMS
+	 * @throws IllegalArgumentException
+	 */
+	public SMSCorrespondent(String name, String phoneNumber, String defaultCountryCode, boolean binarySMS) throws IllegalArgumentException
+	{
+		this(name, toPhoneNumber(phoneNumber, defaultCountryCode), binarySMS);
+	}
+	
+	/**
+	 * @param name
+	 * @param phoneNumberInternational a phone number in international format
+	 * @param binarySMS
+	 * @throws Exception
+	 */
+	public SMSCorrespondent(String name, String phoneNumberInternational, boolean binarySMS) throws IllegalArgumentException
+	{
+		this(name, toPhoneNumber(phoneNumberInternational), binarySMS);
 	}
 
 	/**
@@ -43,25 +113,41 @@ public class SMSCorrespondent extends Correspondent
 	 * 
 	 * @param localID
 	 * @param name
-	 * @param address
+	 * @param phoneNumberInternational a phone number in international format
 	 * @param binarySMS
 	 */
-	public SMSCorrespondent(int localID, String name, String address, boolean binarySMS)
+	public SMSCorrespondent(int localID, String name, String phoneNumberInternational, boolean binarySMS) throws IllegalArgumentException
 	{
-		this(name, address, binarySMS); // address = phoneNumber
+		this(name, phoneNumberInternational, binarySMS);
 		setLocalID(localID);
+	}
+	
+	/**
+	 * @return the phone number as a String in international format
+	 */
+	public String getPhoneNumberInternational()
+	{
+		return PhoneNumberUtil.getInstance().format(getPhoneNumber(), PhoneNumberFormat.INTERNATIONAL);
+	}
+	
+	/**
+	 * @return the phone number as a String in E164 ("dialable") format (= international format but without spaces and formatting)
+	 */
+	public String getPhoneNumberDialable()
+	{
+		return PhoneNumberUtil.getInstance().format(getPhoneNumber(), PhoneNumberFormat.E164);
 	}
 	
 	@Override
 	public String getAddress()
 	{
-		return getPhoneNumber();
+		return getPhoneNumberInternational();
 	}
 	
 	/**
 	 * @return the phoneNumber
 	 */
-	public String getPhoneNumber()
+	public PhoneNumber getPhoneNumber()
 	{
 		return phoneNumber;
 	}

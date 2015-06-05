@@ -70,6 +70,11 @@
 			<artifactId>commons-compress</artifactId>
 			<version>[1.9,)</version>
 		</dependency>
+		<dependency>
+			<groupId>com.googlecode.libphonenumber</groupId>
+			<artifactId>libphonenumber</artifactId>
+			<version>7.0.5</version>
+		</dependency>
 		<!-- <dependency> <groupId>com.madgag.spongycastle</groupId> <artifactId>core</artifactId> 
 			<version>1.50.0.0</version> </dependency> -->
 		<!-- <dependency> <groupId>com.madgag</groupId> <artifactId>sc-light-jdk15on</artifactId> 

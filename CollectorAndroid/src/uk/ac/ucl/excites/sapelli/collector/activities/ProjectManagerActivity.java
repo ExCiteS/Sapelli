@@ -46,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -59,6 +60,7 @@ import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.telephony.PhoneNumberUtils;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
@@ -205,6 +207,11 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		else
 			populateProjectList(); 	// Update project list
 		// TODO remember & re-select last selected project
+		
+		
+		Log.d(TAG, "Valid SMS# +32486170492: " + AndroidTransmissionController.isValidPhoneNumber("+32486170492"));
+		Log.d(TAG, "Valid SMS# 0486170492: " + AndroidTransmissionController.isValidPhoneNumber("0486170492"));
+		Log.d(TAG, "Network +32486170492: " + PhoneNumberUtils.extractNetworkPortion("+32486170492"));
 	}
 	
 	@Override

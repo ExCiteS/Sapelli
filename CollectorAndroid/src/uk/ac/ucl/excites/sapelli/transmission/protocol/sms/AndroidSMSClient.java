@@ -52,7 +52,6 @@ public class AndroidSMSClient implements SMSClient
 	 * <br/>
 	 * The current value ({@value #SMS_PORT}) would require 16 bits, and therefore a 7-byte UDH, but it could be that Android always uses the 7 byte header, even for 8-bit ports.
 	 * <br/><br/>
-	 * <b>TODO</b> test with 8-bit port, possibly we would gain bytes of usable content in every {@link BinaryMessage}.
 	 * 
 	 * @see BinaryMessage#MAX_TOTAL_SIZE_BYTES
 	 * @see BinaryMessage
@@ -93,7 +92,7 @@ public class AndroidSMSClient implements SMSClient
 					sentIntents.add(setupSentCallback(textSMS, MESSAGE_ID, p, parts.size()));
 					deliveryIntents.add(setupDeliveredCallback(textSMS, MESSAGE_ID, p, parts.size()));
 				}
-				smsManager.sendMultipartTextMessage(receiver.getPhoneNumber(),
+				smsManager.sendMultipartTextMessage(receiver.getPhoneNumberDialable(),
 													null,
 													parts,
 													sentIntents,
@@ -101,7 +100,7 @@ public class AndroidSMSClient implements SMSClient
 			}
 			else
 			{	// Send single SMS:	
-				smsManager.sendTextMessage(	receiver.getPhoneNumber(),
+				smsManager.sendTextMessage(	receiver.getPhoneNumberDialable(),
 											null,
 											textSMS.getContent(),
 											setupSentCallback(textSMS, MESSAGE_ID),
@@ -110,7 +109,7 @@ public class AndroidSMSClient implements SMSClient
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error upon sending " + (textSMS.isMultiPart() ? "multipart " : "")  + "text SMS to " + receiver.getPhoneNumber());
+			Log.e(TAG, "Error upon sending " + (textSMS.isMultiPart() ? "multipart " : "")  + "text SMS to " + receiver.getPhoneNumberDialable());
 			// Failure:
 			return false;
 		}
@@ -127,7 +126,7 @@ public class AndroidSMSClient implements SMSClient
 		try
 		{
 			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(binarySMS.getBytes())));
-			smsManager.sendDataMessage(	receiver.getPhoneNumber(),
+			smsManager.sendDataMessage(	receiver.getPhoneNumberDialable(),
 										null,
 										SMS_PORT,
 										binarySMS.getBytes(),
@@ -136,7 +135,7 @@ public class AndroidSMSClient implements SMSClient
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error upon sending binary SMS to " + receiver.getPhoneNumber());
+			Log.e(TAG, "Error upon sending binary SMS to " + receiver.getPhoneNumberDialable());
 			// Failure:
 			return false;
 		}

@@ -89,6 +89,18 @@ public final class DeviceControl
 		return getPhoneType(context) == TelephonyManager.PHONE_TYPE_CDMA;
 	}
 	
+	public static String getSimCountryISOCode(Context context)
+	{
+		TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+		return tm.getSimCountryIso();
+	}
+	
+	public static String getNetworkCountryISOCode(Context context)
+	{
+		TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+		return tm.getNetworkCountryIso();
+	}
+    
 	/**
 	 * Check to see if the phone is in AirplaneMode
 	 * 
@@ -327,4 +339,5 @@ public final class DeviceControl
 
 		return newPaths;
 	}
+	
 }
