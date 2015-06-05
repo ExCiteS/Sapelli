@@ -18,9 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text;
 
+import java.io.IOException;
+
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
@@ -54,10 +57,10 @@ import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
  * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  * @see <a href="http://en.wikipedia.org/wiki/GSM_03.38">GSM 03.38 / 3GPP TS 23.038</a>
  */
-public class TextMessage extends Message
+public class TextMessage extends Message<TextMessage, String>
 {
 	
-	// STATICS-------------------------------------------------------
+	// STATIC -------------------------------------------------------
 	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using concatenated SMS would cause us to lose 7 chars per message (i.e. 153 instead of 160 chars) 
 	public static final int MAX_TOTAL_CHARS = 160;
 	
@@ -72,7 +75,7 @@ public class TextMessage extends Message
 	
 	public static final int MAX_BODY_CHARS = MAX_TOTAL_CHARS - HEADER_SIZE_CHARS;	
 
-	// DYNAMICS------------------------------------------------------
+	// DYNAMIC ------------------------------------------------------
 	/**
 	 * the body of the message, i.e. a part of the whole transmission body.
 	 */
@@ -80,6 +83,7 @@ public class TextMessage extends Message
 	
 	/**
 	 * To be called on the sending side.
+	 * 
 	 * Called by {@link TextSMSTransmission#wrap(uk.ac.ucl.excites.sapelli.shared.io.BitArray)}.
 	 * 
 	 * @param transmission
@@ -91,33 +95,33 @@ public class TextMessage extends Message
 	{
 		super(transmission, partNumber, totalParts);
 		if(body == null)
-			throw new NullPointerException("Payload cannot be null!");
+			throw new NullPointerException("Body cannot be null!");
 		if(body.length() > MAX_BODY_CHARS)
-			throw new IllegalArgumentException("Payload is too long (max: " + MAX_BODY_CHARS + " chars; got: " + body.length() + " chars).");
+			throw new IllegalArgumentException("Body is too long (max: " + MAX_BODY_CHARS + " chars; got: " + body.length() + " chars).");
 		this.body = body;
 	}
 
 	/**
-	 * To be called on the receiving side (msg received *now*)
+	 * To be called on the receiving side (msg received *now*).
 	 * 
 	 * @param sender
-	 * @param data
-	 * @throws Exception
+	 * @param content	= header + body
+	 * @throws InvalidMessageException
 	 */
-	public TextMessage(SMSCorrespondent sender, String text) throws Exception
+	public TextMessage(SMSCorrespondent sender, String content) throws InvalidMessageException
 	{
-		this(sender, text, TimeStamp.now() /*received NOW*/);
+		this(sender, content, TimeStamp.now() /*received NOW*/);
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
 	 * @param sender
-	 * @param content	= header + payload
+	 * @param content	= header + body
 	 * @param receivedAt
-	 * @throws Exception
+	 * @throws InvalidMessageException
 	 */
-	public TextMessage(SMSCorrespondent sender, String content, TimeStamp receivedAt) throws Exception
+	public TextMessage(SMSCorrespondent sender, String content, TimeStamp receivedAt) throws InvalidMessageException
 	{
 		super(sender, receivedAt);
 		
@@ -130,30 +134,37 @@ public class TextMessage extends Message
 			if(Decoding.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h)) == null)
 				throw new InvalidMessageException("Message content contains invalid characters.");
 		
-		// Read header:
-		//	Convert from chars to 6-bit integers:
-		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
 		try
 		{
-			for(int h = 0; h < HEADER_SIZE_CHARS; h++)
-				// Each header character represents 6 bits of meaningful information:
-				hdrFieldBitsOut.write(Decoding.HEADER_VALUE_REVERSE_MAPPING.get(content.charAt(h)), BITS_PER_HEADER_CHAR, false); // get() will throw NPE if char not found
+			// Read header:
+			//	Convert from chars to 6-bit integers:
+			BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
+			try
+			{
+				for(int h = 0; h < HEADER_SIZE_CHARS; h++)
+					// Each header character represents 6 bits of meaningful information:
+					hdrFieldBitsOut.write(Decoding.HEADER_VALUE_REVERSE_MAPPING.get(content.charAt(h)), BITS_PER_HEADER_CHAR, false); // get() will throw NPE if char not found
+			}
+			catch(NullPointerException npe)
+			{
+				throw new InvalidMessageException("Message content contains invalid characters in header.");
+			}
+			finally
+			{
+				hdrFieldBitsOut.close();
+			}
+			//	Read header fields:
+			BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
+			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(hdrFieldBitsIn);
+			payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(hdrFieldBitsIn);
+			partNumber = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
+			totalParts = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
+			hdrFieldBitsIn.close();
 		}
-		catch(NullPointerException npe)
+		catch(IOException ioe)
 		{
-			throw new InvalidMessageException("Message content contains invalid characters in header.");
+			throw new InvalidMessageException("Exception upon reading message header", ioe);
 		}
-		finally
-		{
-			hdrFieldBitsOut.close();
-		}
-		//	Read header fields:
-		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
-		sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(hdrFieldBitsIn);
-		payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(hdrFieldBitsIn);
-		partNumber = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
-		totalParts = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
-		hdrFieldBitsIn.close();
 		
 		// Part number check:
 		if(partNumber > totalParts)
@@ -191,27 +202,31 @@ public class TextMessage extends Message
 	}
 	
 	/**
-	 * Called by sender
+	 * Called on sending side.
 	 * 
-	 * @return the full message content (= header + payload)
-	 * @throws Exception
+	 * @return the full message content String (= header + body)
+	 * @throws InvalidMessageException
+	 *
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message#getContent()
 	 */
-	public String getContent() throws Exception
+	@Override
+	public String getContent() throws InvalidMessageException
 	{
 		StringBuilder blr = new StringBuilder();
 		
 		//Write header:
-		//	Write header fields:
 		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
-		Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
-		Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);					// Payload hash (= CRC16 hash): takes up the next 16 bits
-		PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
-		PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
-		hdrFieldBitsOut.close();
-		//	Split in groups of 6 bits and convert to chars:
-		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
+		BitArrayInputStream hdrFieldBitsIn = null;
 		try
-		{
+		{	//	Write header fields:
+			Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
+			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);					// Payload hash (= CRC16 hash): takes up the next 16 bits
+			PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
+			PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
+			hdrFieldBitsOut.close();
+			
+			//	Split in groups of 6 bits and convert to chars:
+			hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
 			while(hdrFieldBitsIn.bitsAvailable() >= BITS_PER_HEADER_CHAR)
 			{
 				// Map 6-bit int to an index of a character from the GSM_0338 alphabet which can be used in the header:
@@ -222,12 +237,26 @@ public class TextMessage extends Message
 				blr.append(Encoding.GSM_0338_CHAR_TABLE[c]);
 			}
 		}
+		catch(Exception e)
+		{
+			throw new InvalidMessageException("Error on assembling content String of TextMessage.", e);
+		}
 		finally
 		{
-			hdrFieldBitsIn.close();
+			try
+			{
+				hdrFieldBitsOut.close();
+			}
+			catch(IOException ignore) {}
+			try
+			{
+				if(hdrFieldBitsIn != null)
+					hdrFieldBitsIn.close();
+			}
+			catch(IOException ignore) {}
 		}
 		
-		//Write body:
+		// Write body:
 		blr.append(body);
 		
 		return blr.toString();
@@ -246,9 +275,9 @@ public class TextMessage extends Message
 	}
 	
 	@Override
-	protected boolean equalBody(Message another)
+	protected boolean equalBody(TextMessage that)
 	{
-		return another instanceof TextMessage && body.equals(((TextMessage) another).body);
+		return Objects.equals(this.body, that.body);
 	}
 	
 	public boolean isMultiPart()

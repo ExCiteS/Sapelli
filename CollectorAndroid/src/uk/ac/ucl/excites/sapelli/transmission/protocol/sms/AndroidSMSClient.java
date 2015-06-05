@@ -125,11 +125,11 @@ public class AndroidSMSClient implements SMSClient
 		//Try sending:
 		try
 		{
-			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(binarySMS.getBytes())));
+			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(binarySMS.getContent())));
 			smsManager.sendDataMessage(	receiver.getPhoneNumberDialable(),
 										null,
 										SMS_PORT,
-										binarySMS.getBytes(),
+										binarySMS.getContent(),
 										setupSentCallback(binarySMS, MESSAGE_ID),
 										setupDeliveredCallback(binarySMS, MESSAGE_ID));
 		}
@@ -143,12 +143,12 @@ public class AndroidSMSClient implements SMSClient
 		return true;
 	}
 	
-	private PendingIntent setupSentCallback(final Message msg, final int messageID)
+	private <M extends Message<M, C>, C> PendingIntent setupSentCallback(final M msg, final int messageID)
 	{
 		return setupSentCallback(msg, messageID, 1, 1);
 	}
 	
-	private PendingIntent setupSentCallback(final Message msg, final int messageID, final int part, final int numParts)
+	private <M extends Message<M, C>, C> PendingIntent setupSentCallback(final M msg, final int messageID, final int part, final int numParts)
 	{
 		// Generate intentAction (to be used by both the PendingIntent and the Receiver):
 		String intentAction = SMS_SENT + "_" + messageID + (numParts > 1 ? ("_" + part + "/" + numParts) : "");
@@ -196,12 +196,12 @@ public class AndroidSMSClient implements SMSClient
 		return PendingIntent.getBroadcast(context, 0, new Intent(intentAction), PendingIntent.FLAG_ONE_SHOT);
 	}
 	
-	private PendingIntent setupDeliveredCallback(final Message msg, final int messageID)
+	private <M extends Message<M, C>, C> PendingIntent setupDeliveredCallback(final M msg, final int messageID)
 	{
 		return setupDeliveredCallback(msg, messageID, 1, 1);
 	}
 	
-	private PendingIntent setupDeliveredCallback(final Message msg, final int messageID, final int part, final int numParts)
+	private <M extends Message<M, C>, C> PendingIntent setupDeliveredCallback(final M msg, final int messageID, final int part, final int numParts)
 	{
 		// Generate intentAction (to be used by both the PendingIntent and the Receiver):
 		String intentAction = SMS_DELIVERED + "_" + messageID + (numParts > 1 ? ("_" + part + "/" + numParts) : "");

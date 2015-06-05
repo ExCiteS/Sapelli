@@ -733,7 +733,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 				TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.storeValue(tRec, smsT.getLastResendRequestSentAt());
 			}
 			// Make records for the parts...
-			for(Message msg : smsT.getParts())
+			for(Message<?, ?> msg : smsT.getParts())
 			{
 				Record tPartRec = newPartRecord(smsT); // adds to the list as well
 				

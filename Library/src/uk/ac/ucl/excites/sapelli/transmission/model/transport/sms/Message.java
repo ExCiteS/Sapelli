@@ -29,9 +29,10 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 /**
  * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}
  * 
- * @author mstevens
+ *
+ * @param <C> content type
  */
-public abstract class Message implements Comparable<Message>
+public abstract class Message<M extends Message<M, C>, C> implements Comparable<Message<M, C>>
 {
 	
 	// STATIC -------------------------------------------------------
@@ -45,7 +46,7 @@ public abstract class Message implements Comparable<Message>
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	protected SMSTransmission<?> transmission;
+	protected SMSTransmission<M> transmission;
 	
 	/**
 	 * Only used on sending side.
@@ -92,7 +93,7 @@ public abstract class Message implements Comparable<Message>
 	 * @param partNumber a value from [1, totalParts]
 	 * @param totalParts
 	 */
-	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts)
+	public Message(SMSTransmission<M> transmission, int partNumber, int totalParts)
 	{
 		// Some checks:
 		if(transmission == null)
@@ -129,7 +130,7 @@ public abstract class Message implements Comparable<Message>
 	 * @param deliveredAt - may be null
 	 * @param receivedAt - may be null
 	 */
-	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt)
+	public Message(SMSTransmission<M> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt)
 	{
 		this(transmission, partNumber, totalParts);
 		this.sentAt = sentAt;
@@ -166,6 +167,14 @@ public abstract class Message implements Comparable<Message>
 	
 	protected abstract void doSend(SMSClient smsClient) throws TransmissionSendingException;
 
+	/**
+	 * Called on sending side.
+	 * 
+	 * @return the full message content (= header + body)
+	 * @throws InvalidMessageException
+	 */
+	public abstract C getContent() throws InvalidMessageException;
+	
 	/**
 	 * @return the partNumber
 	 */
@@ -255,7 +264,7 @@ public abstract class Message implements Comparable<Message>
 	/**
 	 * @return the transmission this Message belongs to, or null if no Transmission has been set yet (can only happen on receiving side)
 	 */
-	public SMSTransmission<?> getTransmission()
+	public SMSTransmission<M> getTransmission()
 	{
 		return transmission;
 	}
@@ -266,7 +275,7 @@ public abstract class Message implements Comparable<Message>
 	 * 
 	 * @param transmission
 	 */
-	protected void setTransmission(SMSTransmission<?> transmission)
+	protected void setTransmission(SMSTransmission<M> transmission)
 	{
 		if(this.transmission != null && this.transmission != transmission)
 			throw new IllegalStateException("Cannot change transmission.");
@@ -279,7 +288,7 @@ public abstract class Message implements Comparable<Message>
 	public abstract Transmission.Type getTransmissionType();
 		
 	@Override
-	public int compareTo(Message another)
+	public int compareTo(Message<M, C> another)
 	{
 		return this.getPartNumber() - another.getPartNumber();
 	}
@@ -311,6 +320,7 @@ public abstract class Message implements Comparable<Message>
 	 * 
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -318,18 +328,25 @@ public abstract class Message implements Comparable<Message>
 			return true;
 		if(obj instanceof Message)
 		{
-			Message that = (Message) obj;
-			return	Objects.equals(this.sender, that.sender) &&
-					Objects.equals(this.sendingSideTransmissionID, that.sendingSideTransmissionID) &&
-					Objects.equals(this.payloadHash, that.payloadHash) &&
-					this.partNumber == that.partNumber &&
-					this.totalParts == that.totalParts &&
-					equalBody(that);			
+			Message<?, ?> that = (Message<?, ?>) obj;
+			try
+			{
+				return	Objects.equals(this.sender, that.sender) &&
+						Objects.equals(this.sendingSideTransmissionID, that.sendingSideTransmissionID) &&
+						Objects.equals(this.payloadHash, that.payloadHash) &&
+						this.partNumber == that.partNumber &&
+						this.totalParts == that.totalParts &&
+						equalBody((M) that); // can throw CCE
+			}
+			catch(ClassCastException cce)
+			{
+				return false;
+			}
 		}
 		return false;
 	}
 	
-	protected abstract boolean equalBody(Message another);
+	protected abstract boolean equalBody(M that);
 	
 	/**
 	 * @param handler

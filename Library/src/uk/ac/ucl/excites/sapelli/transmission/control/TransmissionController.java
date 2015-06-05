@@ -300,7 +300,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	/**
 	 * @param msg
 	 */
-	public void receiveSMS(Message msg) throws Exception
+	public void receiveSMS(Message<?, ?> msg) throws Exception
 	{
 		try
 		{
@@ -407,7 +407,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		
 		public SMSTransmission<?> transmission;
 		
-		public void receive(Message smsMsg)
+		public void receive(Message<?, ?> smsMsg)
 		{
 			transmission = null; // wipe previous transmission !!!
 			try
@@ -447,7 +447,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				((TextSMSTransmission) transmission).receivePart(txtSms);
 		}
 		
-		private void log(Message msg, boolean binary)
+		private void log(Message<?, ?> msg, boolean binary)
 		{
 			addLogLine(	"INCOMING", "SMS", binary ? "Binary" : "Text",
 						"SendingSideTransmissionID: " + msg.getSendingSideTransmissionID(),

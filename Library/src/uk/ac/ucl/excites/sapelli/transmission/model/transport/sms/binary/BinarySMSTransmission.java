@@ -42,10 +42,12 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
 public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 {
 	
-	// Static
+	// STATIC -------------------------------------------------------
 	public static final int MAX_TRANSMISSION_PARTS = 16;
 	public static final int MAX_BODY_SIZE_BITS = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_BODY_SIZE_BITS;
 	
+	
+	// DYNAMIC ------------------------------------------------------
 	/**
 	 * To be called on the sending side.
 	 *

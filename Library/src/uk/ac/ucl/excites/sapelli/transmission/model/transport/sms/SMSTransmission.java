@@ -39,7 +39,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
  * 
  * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  */
-public abstract class SMSTransmission<M extends Message> extends Transmission<SMSCorrespondent>
+public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmission<SMSCorrespondent>
 {
 	
 	// STATIC -------------------------------------------------------
@@ -175,7 +175,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 		if(isComplete())
 		{
 			TimeStamp lastReceivedAt = null;
-			for(Message m : parts)
+			for(M m : parts)
 				if(lastReceivedAt == null || lastReceivedAt.isBefore(m.getReceivedAt()))
 					lastReceivedAt = m.getReceivedAt();
 			// the reception time of the most recently received part becomes the receivedAt time of the transmission as a whole:
@@ -265,7 +265,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 			throw new TransmissionSendingException("No messages to send.");
 		
 		// Send unsent messages one by one:
-		for(Message m : parts)
+		for(M m : parts)
 			if(!m.isSent())
 				m.send(controller.getSMSClient());
 	}
@@ -274,7 +274,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	public void resend(TransmissionController controller) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
 	{
 		// Clear sentAt of messages (otherwise they can't be resent):
-		for(Message m : parts)
+		for(M m : parts)
 			m.setSentAt(null);
 		
 		// Do re-send:
@@ -290,7 +290,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	 */
 	public void resend(TransmissionController controller, List<Integer> partNumbers) throws TransmissionSendingException
 	{
-		for(Message m : parts)
+		for(M m : parts)
 			if(partNumbers.contains(Integer.valueOf(m.getPartNumber())))
 			{
 				// Clear sentAt of message (otherwise we cannot re-send it):
@@ -369,12 +369,12 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	public class SentCallback extends Transmission<SMSCorrespondent>.SentCallback
 	{
 		
-		public void onSent(Message msg)
+		public void onSent(M msg)
 		{
 			onSent(msg, TimeStamp.now());
 		}
 		
-		public void onSent(Message msg, TimeStamp sentAt)
+		public void onSent(M msg, TimeStamp sentAt)
 		{
 			// Mark msg as sent:
 			msg.setSentAt(sentAt);
@@ -383,7 +383,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 			TimeStamp tSentAt = getLatest(msg, new TimeStampDelegate()
 			{
 				@Override
-				public TimeStamp getTimeStamp(Message m)
+				public TimeStamp getTimeStamp(M m)
 				{
 					return m.getSentAt();
 				}
@@ -398,12 +398,12 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 				store();
 		}
 		
-		public void onDelivered(Message msg)
+		public void onDelivered(M msg)
 		{
 			onDelivered(msg, TimeStamp.now());
 		}
 		
-		public void onDelivered(Message msg, TimeStamp deliveredAt)
+		public void onDelivered(M msg, TimeStamp deliveredAt)
 		{
 			// Mark msg as sent:
 			msg.setDeliveredAt(deliveredAt);
@@ -412,7 +412,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 			TimeStamp tDeliveredAt = getLatest(msg, new TimeStampDelegate()
 			{
 				@Override
-				public TimeStamp getTimeStamp(Message m)
+				public TimeStamp getTimeStamp(M m)
 				{
 					return m.getDeliveredAt();
 				}
@@ -425,7 +425,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 			store(); // !!!
 		}
 		
-		private TimeStamp getLatest(Message msg, TimeStampDelegate delegate)
+		private TimeStamp getLatest(M msg, TimeStampDelegate delegate)
 		{
 			// Just in case:
 			if(SMSTransmission.this != msg.getTransmission())
@@ -433,7 +433,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 			
 			// Check if this was the last part to be sent:
 			TimeStamp latest = null;
-			for(Message m : parts)
+			for(M m : parts)
 			{
 				TimeStamp ts = delegate.getTimeStamp(m);
 				if(ts == null) // this means Message m hasn't been sent/delivered yet
@@ -452,10 +452,10 @@ public abstract class SMSTransmission<M extends Message> extends Transmission<SM
 	/**
 	 * @author mstevens
 	 */
-	private interface TimeStampDelegate
+	private abstract class TimeStampDelegate
 	{
 		
-		public TimeStamp getTimeStamp(Message m);
+		public abstract TimeStamp getTimeStamp(M m);
 		
 	}
 	

@@ -32,4 +32,9 @@ public class InvalidMessageException extends Exception
 		super(msg);
 	}
 	
+	public InvalidMessageException(String msg, Throwable cause)
+	{
+		super(msg, cause);
+	}
+	
 }

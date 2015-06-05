@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
@@ -45,10 +46,10 @@ import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
  * @see BinarySMSTransmission
  * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  */
-public class BinaryMessage extends Message
+public class BinaryMessage extends Message<BinaryMessage, byte[]>
 {
 
-	// STATICS-------------------------------------------------------
+	// STATIC -------------------------------------------------------
 	/**
 	 * Our {@link BinaryMessage}s can contain up to 133 bytes of data.
 	 * <br/>
@@ -84,7 +85,7 @@ public class BinaryMessage extends Message
 	
 	public static final int MAX_BODY_SIZE_BITS = (MAX_TOTAL_SIZE_BYTES * Byte.SIZE) - HEADER_SIZE_BITS;
 	
-	// DYNAMICS------------------------------------------------------
+	// DYNAMIC ------------------------------------------------------
 	/**
 	 * the body of the message, i.e. a part of the whole transmission body.
 	 */
@@ -97,7 +98,7 @@ public class BinaryMessage extends Message
 	 * @param transmission
 	 * @param partNumber a value from [1, totalParts]
 	 * @param totalParts a value from [1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS]
-	 * @param payload
+	 * @param body
 	 */
 	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, BitArray body)
 	{
@@ -113,24 +114,23 @@ public class BinaryMessage extends Message
 	 * To be called on the receiving side (msg received *now*)
 	 * 
 	 * @param sender
-	 * @param data
-	 * @throws Exception
+	 * @param content	= header + body
+	 * @throws InvalidMessageException
 	 */
-	public BinaryMessage(SMSCorrespondent sender, byte[] data) throws Exception
+	public BinaryMessage(SMSCorrespondent sender, byte[] content) throws InvalidMessageException
 	{
-		this(sender, data, TimeStamp.now() /*received NOW*/);
+		this(sender, content, TimeStamp.now() /*received NOW*/);
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
 	 * @param sender
-	 * @param data
+	 * @param content	= header + body
 	 * @param receivedAt
 	 * @throws InvalidMessageException
-	 * @throws Exception
 	 */
-	public BinaryMessage(SMSCorrespondent sender, byte[] data, TimeStamp receivedAt) throws InvalidMessageException, Exception
+	public BinaryMessage(SMSCorrespondent sender, byte[] content, TimeStamp receivedAt) throws InvalidMessageException
 	{
 		super(sender, receivedAt);
 		// Read data:
@@ -138,10 +138,10 @@ public class BinaryMessage extends Message
 		try
 		{
 			// Input stream:
-			in = new BitWrapInputStream(new ByteArrayInputStream(data));
+			in = new BitWrapInputStream(new ByteArrayInputStream(content));
 			
 			// Check data size:
-			if(data.length * Byte.SIZE < HEADER_SIZE_BITS)
+			if(content.length * Byte.SIZE < HEADER_SIZE_BITS)
 				throw new InvalidMessageException("Data byte array is too short for this to be a valid Sapelli binary SMS message");
 			
 			// Read header:
@@ -159,7 +159,7 @@ public class BinaryMessage extends Message
 		}
 		catch(IOException ioe)
 		{
-			throw new Exception("Error upon reading message data.", ioe);
+			throw new InvalidMessageException("Error upon reading message data.", ioe);
 		}
 		finally
 		{
@@ -200,12 +200,15 @@ public class BinaryMessage extends Message
 	}
 	
 	/**
-	 * Called by SMSClient
+	 * Called on sending side.
 	 * 
-	 * @return the full message content (= header + payload)
-	 * @throws Exception
+	 * @return the full message content bytes (= header + body)
+	 * @throws InvalidMessageException
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message#getContent()
 	 */
-	public byte[] getBytes() throws Exception
+	@Override
+	public byte[] getContent() throws InvalidMessageException
 	{
 		byte[] data = null;
 		BitOutputStream out = null;
@@ -232,7 +235,7 @@ public class BinaryMessage extends Message
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on assembling bytes of BinaryMessage.", e);
+			throw new InvalidMessageException("Error on assembling content bytes of BinaryMessage.", e);
 		}
 		finally
 		{
@@ -243,10 +246,8 @@ public class BinaryMessage extends Message
 			}
 			catch(Exception ignore) {}
 		}
-		if(data == null)
-			throw new NullPointerException("Error on assembling bytes of BinaryMessage, byte array is null"); //should not happen
 		if(data.length > MAX_TOTAL_SIZE_BYTES)
-			throw new Exception("Error on assembling bytes of BinaryMessage, maximum length exceeded (" + data.length + ", max is " + MAX_TOTAL_SIZE_BYTES + ").");		
+			throw new InvalidMessageException("Error on assembling bytes of BinaryMessage, maximum length exceeded (" + data.length + ", max is " + MAX_TOTAL_SIZE_BYTES + ").");		
 		return data;
 	}
 
@@ -263,9 +264,9 @@ public class BinaryMessage extends Message
 	}
 
 	@Override
-	protected boolean equalBody(Message another)
+	protected boolean equalBody(BinaryMessage that)
 	{
-		return another instanceof BinaryMessage && body.equals(((BinaryMessage) another).body);
+		return Objects.equals(this.body, that.body);
 	}
 	
 	@Override
