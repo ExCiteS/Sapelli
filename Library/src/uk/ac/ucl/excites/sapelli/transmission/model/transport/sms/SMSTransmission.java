@@ -33,8 +33,11 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 
 /**
+ * An abstract {@link Transmission} class which uses SMS messages as the transmission medium.
+ * 
  * @author mstevens
- *
+ * 
+ * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  */
 public abstract class SMSTransmission<M extends Message> extends Transmission<SMSCorrespondent>
 {

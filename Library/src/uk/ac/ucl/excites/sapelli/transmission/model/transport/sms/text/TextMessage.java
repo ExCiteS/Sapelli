@@ -31,24 +31,26 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
- * Textual SMS message in which data in encoding as 7-bit characters using the default GSM 03.38 alphabet.
- * 
- * The contents of the message always start with a {@value #HEADER_SIZE_CHARS} character header.
- * Only 6 out of 7 of the bits represented by the header characters have actual meaning, the other are separator bits (= {@value #HEADER_SEPARATOR_BIT})
- * each of which prefixes a groups of 6 meaningful bits. This mechanism achieves 2 things:
+ * Textual SMS message in which data is encoded as 7-bit characters using the default GSM 03.38 alphabet.
+ * <br/><br/>
+ * The contents of the message always start with a {@value #HEADER_SIZE_CHARS} character header, in which
+ * we only use characters from a subset containing half of the GSM 03.38 alphabet. Hence only 6 out of 7
+ * of the bits represented by each header character have actual meaning. This mechanism achieves 3 things:
  * <ul>
- * <li>it causes the header to take up exactly {@value #HEADER_SIZE_CHARS} characters,
- * meaning the message header can be easily separated from the message payload
- * (because they are aligned to the character boundary);</li>
- * <li>the choice of the separator bit ensures that none of the header characters
- * will ever be <code>ESC</code>, thereby avoiding the need for additional escaping
- * (unlike is necessary for the transmission payload, see {@link TextSMSTransmission}),
- * which thus allows for a fixed header length.</li>
+ * <li>it causes the header to take up exactly {@value #HEADER_SIZE_CHARS} characters, meaning the message
+ * header can be easily separated from the message payload (because they are aligned to the character boundary);</li>
+ * <li>the alphabet subset does not contain the <code>ESC</code> character, thereby avoiding the need for
+ * an escaping mechanism (unlike for the transmission payload, see {@link TextSMSTransmission}), which thus
+ * allows for a fixed header length;</li>
+ * <li>the characters which <i>are</i> in the alphabet subset have been selected to reduce the risk of
+ * human-written SMS messages being mistaken for Sapelli messages (see {@link Encoding#HEADER_CHAR_INDEX_MAPPING}).</li> 
  * </ul>
  * 
  * @author mstevens
  * 
  * @see TextSMSTransmission
+ * @see Encoding
+ * @see Decoding
  * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  * @see <a href="http://en.wikipedia.org/wiki/GSM_03.38">GSM 03.38 / 3GPP TS 23.038</a>
  */
@@ -56,17 +58,17 @@ public class TextMessage extends Message
 {
 	
 	// STATICS-------------------------------------------------------
-	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using 
-	public static final int MAX_TOTAL_CHARS = 160; // 	concatenated SMS would cause us to lose 7 chars per message
-	
-	private static final int HEADER_SEPARATOR_BIT = 1; // chosen such that the ESC character is never produced in the header
+	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using concatenated SMS would cause us to lose 7 chars per message (i.e. 153 instead of 160 chars) 
+	public static final int MAX_TOTAL_CHARS = 160;
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
+	
+	public static final int BITS_PER_HEADER_CHAR = TextSMSTransmission.BITS_PER_CHAR - 1;
 	
 	private static final int HEADER_SIZE_CHARS = (	Transmission.TRANSMISSION_ID_FIELD.size() +
 													Transmission.PAYLOAD_HASH_FIELD.size() +
 													PART_NUMBER_FIELD.size() +
-													PART_NUMBER_FIELD.size()) / (TextSMSTransmission.BITS_PER_CHAR - 1 /* for separator bit */); // = 8 chars
+													PART_NUMBER_FIELD.size()) / (BITS_PER_HEADER_CHAR); // = 8 chars
 	
 	public static final int MAX_BODY_CHARS = MAX_TOTAL_CHARS - HEADER_SIZE_CHARS;	
 
@@ -121,27 +123,25 @@ public class TextMessage extends Message
 		
 		// Check content size:
 		if(content.length() < HEADER_SIZE_CHARS)
-			throw new InvalidMessageException("Data byte array is too short for this to be a valid Sapelli text SMS message.");
+			throw new InvalidMessageException("Message content is too short.");
+		
+		// Check content against alphabet (if it contains characters outside the basic GSM_0338 alphabet it is definitely not a Sapelli message):
+		for(int h = 0; h < HEADER_SIZE_CHARS; h++)
+			if(Decoding.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h)) == null)
+				throw new InvalidMessageException("Message content contains invalid characters.");
 		
 		// Read header:
-		//	Convert from chars and remove separator bits:
+		//	Convert from chars to 6-bit integers:
 		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
 		try
 		{
 			for(int h = 0; h < HEADER_SIZE_CHARS; h++)
-			{
-				// Read header char (7 bits):
-				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h)); // may throw a NPE if char not found
-				// Check separator bit:
-				if(c >> (TextSMSTransmission.BITS_PER_CHAR - 1) != HEADER_SEPARATOR_BIT)
-					throw new InvalidMessageException("This is not a valid Sapelli text SMS message (invalid separator bit in header)");
-				// Strip away the separator bit and write remaining 6 bit header part:
-				hdrFieldBitsOut.write(c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1)), TextSMSTransmission.BITS_PER_CHAR - 1, false); 
-			}
+				// Each header character represents 6 bits of meaningful information:
+				hdrFieldBitsOut.write(Decoding.HEADER_VALUE_REVERSE_MAPPING.get(content.charAt(h)), BITS_PER_HEADER_CHAR, false); // get() will throw NPE if char not found
 		}
-		catch (NullPointerException npe)
+		catch(NullPointerException npe)
 		{
-			throw new InvalidMessageException("Message contained invalid GSM characters.");
+			throw new InvalidMessageException("Message content contains invalid characters in header.");
 		}
 		finally
 		{
@@ -193,10 +193,6 @@ public class TextMessage extends Message
 	/**
 	 * Called by sender
 	 * 
-	 * The header encoding is designed to avoid that the reserved {@code ESC} character is ever produced in the header characters.
-	 * The strategy is to insert an additional "separator bit" before every group of 6 header bits, this bit is chosen such that the
-	 * none of the resulting 7 bit patterns will ever map to the {@code ESC} character.
-	 * 
 	 * @return the full message content (= header + payload)
 	 * @throws Exception
 	 */
@@ -212,17 +208,18 @@ public class TextMessage extends Message
 		PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
 		PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
 		hdrFieldBitsOut.close();
-		//	Insert separator bits and convert to chars:
+		//	Split in groups of 6 bits and convert to chars:
 		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
 		try
 		{
-			while(hdrFieldBitsIn.bitsAvailable() >= TextSMSTransmission.BITS_PER_CHAR - 1)
+			while(hdrFieldBitsIn.bitsAvailable() >= BITS_PER_HEADER_CHAR)
 			{
-				int c = (HEADER_SEPARATOR_BIT << TextSMSTransmission.BITS_PER_CHAR - 1) + (int) hdrFieldBitsIn.readInteger(TextSMSTransmission.BITS_PER_CHAR - 1, false); // the separator bit ensures none of the header chars will ever be 'ESC'
-				if(c == TextSMSTransmission.ESCAPE_ESC)
-					throw new IllegalStateException("Cannot encode 0x1B (ESC)!"); // (this should never happen)
+				// Map 6-bit int to an index of a character from the GSM_0338 alphabet which can be used in the header:
+				int c = Encoding.HEADER_CHAR_INDEX_MAPPING[(int) hdrFieldBitsIn.readInteger(BITS_PER_HEADER_CHAR, false)];	
+				/*if(c == Encoding.ESCAPE_ESC)
+					throw new IllegalStateException("Cannot encode 0x1B (ESC)!"); // (this should never happen)*/
 				// Add header char to content:
-				blr.append(TextSMSTransmission.GSM_0338_CHAR_TABLE[c]);
+				blr.append(Encoding.GSM_0338_CHAR_TABLE[c]);
 			}
 		}
 		finally
