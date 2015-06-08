@@ -36,7 +36,7 @@ public class SMSCorrespondent extends Correspondent
 	// STATIC -------------------------------------------------------
 	/**
 	 * @param phoneNumber
-	 * @param defaultCountryISOCode the ISO 3166-1 two-letter region code that denotes the region that we are expecting the number to be from
+	 * @param defaultCountryISOCode the ISO 3166-1 two-letter region code that denotes the region that we are expecting the number to be from - may be null if phoneNumber starts with '+'
 	 * @return
 	 * @throws IllegalArgumentException
 	 */
@@ -59,14 +59,34 @@ public class SMSCorrespondent extends Correspondent
 	 */
 	static public PhoneNumber toPhoneNumber(String phoneNumberInternational) throws IllegalArgumentException
 	{
-		try
-		{
-			return PhoneNumberUtil.getInstance().parse(phoneNumberInternational, null);
-		}
-		catch(NumberParseException e)
-		{
-			throw new IllegalArgumentException("Error parsing phone number", e);
-		}
+		return toPhoneNumber(phoneNumberInternational, null);
+	}
+	
+	/**
+	 * @param phoneNumber
+	 * @return the given phoneNumber as a String in international format
+	 */
+	static public String formatInternational(PhoneNumber phoneNumber)
+	{
+		return PhoneNumberUtil.getInstance().format(phoneNumber, PhoneNumberFormat.INTERNATIONAL);
+	}
+	
+	/**
+	 * @param phoneNumber
+	 * @return the given phoneNumber as a String in E164 ("dialable") format (= international format but without spaces and formatting)
+	 */
+	static public String formatDialable(PhoneNumber phoneNumber)
+	{
+		return PhoneNumberUtil.getInstance().format(phoneNumber, PhoneNumberFormat.E164);
+	}
+	
+	/**
+	 * @param phoneNumber
+	 * @return the given phoneNumber as a String formated as address of a correspondent as stored by the TransmissionStore
+	 */
+	static public String getAddressString(PhoneNumber phoneNumber) throws IllegalArgumentException
+	{
+		return formatDialable(phoneNumber);
 	}
 	
 	// DYNAMIC ------------------------------------------------------
@@ -77,7 +97,7 @@ public class SMSCorrespondent extends Correspondent
 	 * @param phoneNumber
 	 * @param binarySMS
 	 */
-	private SMSCorrespondent(String name, PhoneNumber phoneNumber, boolean binarySMS)
+	public SMSCorrespondent(String name, PhoneNumber phoneNumber, boolean binarySMS)
 	{
 		super(name, binarySMS ? Transmission.Type.BINARY_SMS : Transmission.Type.TEXTUAL_SMS);
 		if(phoneNumber == null)
@@ -127,7 +147,7 @@ public class SMSCorrespondent extends Correspondent
 	 */
 	public String getPhoneNumberInternational()
 	{
-		return PhoneNumberUtil.getInstance().format(getPhoneNumber(), PhoneNumberFormat.INTERNATIONAL);
+		return formatInternational(phoneNumber);
 	}
 	
 	/**
@@ -135,13 +155,13 @@ public class SMSCorrespondent extends Correspondent
 	 */
 	public String getPhoneNumberDialable()
 	{
-		return PhoneNumberUtil.getInstance().format(getPhoneNumber(), PhoneNumberFormat.E164);
+		return formatDialable(phoneNumber);
 	}
 	
 	@Override
 	public String getAddress()
 	{
-		return getPhoneNumberInternational();
+		return getAddressString(phoneNumber);
 	}
 	
 	/**

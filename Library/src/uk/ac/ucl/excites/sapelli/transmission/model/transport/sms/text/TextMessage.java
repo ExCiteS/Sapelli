@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
@@ -64,7 +65,7 @@ public class TextMessage extends Message<TextMessage, String>
 	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using concatenated SMS would cause us to lose 7 chars per message (i.e. 153 instead of 160 chars) 
 	public static final int MAX_TOTAL_CHARS = 160;
 	
-	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
+	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(SMSTransmission.MIN_PART_NUMBER /*1*/, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
 	
 	public static final int BITS_PER_HEADER_CHAR = TextSMSTransmission.BITS_PER_CHAR - 1;
 	

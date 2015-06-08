@@ -47,6 +47,11 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	public static final int MAX_RESEND_REQUESTS = 5;
 	
 	/**
+	 * Part numbers start from 1, not 0!
+	 */
+	public static final int MIN_PART_NUMBER = 1;
+			
+	/**
 	 * Returned values:<br/>
 	 * 	1th request: wait  00:12:00; total elapsed time: 12 mins<br/>
 	 * 	2th request: wait  01:00:00; total elapsed time: 1 hours 12 mins<br/>
@@ -93,7 +98,7 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	public SMSTransmission(TransmissionClient client, M firstReceivedPart)
 	{
 		super(client, firstReceivedPart.getSender(), firstReceivedPart.getSendingSideTransmissionID(), firstReceivedPart.getPayloadHash()); // pass on the remoteID & payload hash
-		receivePart(firstReceivedPart);
+		addPart(firstReceivedPart);
 	}
 	
 	/**
@@ -130,35 +135,21 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	}
 
 	/**
-	 * To be called on receiving side.
-	 * 
-	 * @param msg
-	 */
-	public void receivePart(M msg)
-	{
-		addPart(msg, true);
-	}
-
-	/**
-	 * To be called upon database retrieval on both the sending and the receiving side.
+	 * To be called on receiving side when receiving a new part,
+	 * and to be called upon database retrieval on both the sending and the receiving side.
 	 * 
 	 * @param msg
 	 */
 	public void addPart(M msg)
 	{
-		addPart(msg, false);
-	}
-
-	private void addPart(M msg, boolean justReceived)
-	{
 		if(!parts.isEmpty())
 		{	// Each message that's received after the first one must have a matching remote transmission id, payload hash, sender & total # of parts:
 			String error = null;
-			if((justReceived ? getRemoteID() : getLocalID()) != msg.getSendingSideTransmissionID())
+			if((received ? getRemoteID() : getLocalID()) != msg.getSendingSideTransmissionID())
 				error = "sending-side ID mismatch";
 			else if(getPayloadHash() != msg.getPayloadHash())
 				error = "Payload hash mismatch";
-			else if(justReceived && !correspondent.equals(msg.getSender()))
+			else if(received && !correspondent.equals(msg.getSender()))
 				error = "sender mismatch";
 			else if(parts.first().getTotalParts() != msg.getTotalParts())
 				error = "different total number of parts";

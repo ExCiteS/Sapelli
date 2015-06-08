@@ -196,7 +196,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C receiver, Payload payload)
 	{
-		this.received = false;
+		this.received = false; // !!!
 		this.client = client;
 		this.correspondent = receiver;
 		this.payload = payload;
@@ -215,7 +215,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C sender, int sendingSideID, int payloadHash)
 	{
-		this.received = true;
+		this.received = true; // !!!
 		this.client = client;
 		this.correspondent = sender;
 		this.remoteID = sendingSideID;
@@ -458,7 +458,7 @@ public abstract class Transmission<C extends Correspondent>
 		{
 			prepare(true);
 		}
-		catch(IOException | TransmissionCapacityExceededException e) // TODO requires Java7
+		catch(IOException | TransmissionCapacityExceededException e)
 		{
 			clearPreparation();
 			throw e;
@@ -722,7 +722,7 @@ public abstract class Transmission<C extends Correspondent>
 			setSentAt(sentAt);
 			
 			// Run payload callback if there is one:
-			if(payload.getCallback() != null)
+			if(payload != null /*just in case*/ && payload.getCallback() != null)
 				payload.getCallback().onSent(sentAt);
 			
 			// Store updated transmission:

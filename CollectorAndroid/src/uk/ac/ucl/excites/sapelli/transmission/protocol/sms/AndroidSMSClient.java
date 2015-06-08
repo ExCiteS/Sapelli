@@ -43,7 +43,7 @@ import android.util.Log;
 public class AndroidSMSClient implements SMSClient
 {
 	
-	private static final String TAG = "SMSSender";
+	private static final String TAG = AndroidSMSClient.class.getSimpleName();
 	private static final String SMS_SENT = "SMS_SENT";
 	private static final String SMS_DELIVERED = "SMS_DELIVERED";
 	

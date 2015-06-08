@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
@@ -76,7 +77,7 @@ public class BinaryMessage extends Message<BinaryMessage, byte[]>
 	 */
 	public static final int MAX_TOTAL_SIZE_BYTES = 133; //in bytes
 	
-	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
+	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(SMSTransmission.MIN_PART_NUMBER /*1*/, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	
 	public static final int HEADER_SIZE_BITS =	Transmission.TRANSMISSION_ID_FIELD.size() +		// Transmission ID
 												Transmission.PAYLOAD_HASH_FIELD.size() +		// Payload hash

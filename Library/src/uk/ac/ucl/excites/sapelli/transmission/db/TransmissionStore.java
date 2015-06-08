@@ -23,6 +23,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
+
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
@@ -297,11 +299,11 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	 * @param binarySMS
 	 * @return the correspondent or null
 	 */
-	public SMSCorrespondent retrieveSMSCorrespondent(String phoneNumber, boolean binarySMS)
+	public SMSCorrespondent retrieveSMSCorrespondent(PhoneNumber phoneNumber, boolean binarySMS)
 	{
 		return (SMSCorrespondent) retrieveCorrespondentByQuery(
 			new FirstRecordQuery(	CORRESPONDENT_SCHEMA,
-									new EqualityConstraint(CORRESPONDENT_COLUMN_ADDRESS, phoneNumber),
+									new EqualityConstraint(CORRESPONDENT_COLUMN_ADDRESS, SMSCorrespondent.getAddressString(phoneNumber)),
 									new RuleConstraint(	CORRESPONDENT_COLUMN_TRANSMISSION_TYPE,
 														Comparison.EQUAL,
 														(binarySMS ?
@@ -472,7 +474,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		
 		// Values:
 		boolean received = tRec.getSchema().equals(RECEIVED_TRANSMISSION_SCHEMA);
-		Integer localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
+		int localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
 		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null;
 		Integer payloadType = TRANSMISSION_COLUMN_PAYLOAD_TYPE.isValueSet(tRec) ? TRANSMISSION_COLUMN_PAYLOAD_TYPE.retrieveValue(tRec).intValue() : null;

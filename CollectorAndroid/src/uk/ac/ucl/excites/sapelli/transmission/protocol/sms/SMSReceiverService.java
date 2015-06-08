@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 
 import org.joda.time.DateTime;
 
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
+
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
@@ -28,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
@@ -229,7 +232,7 @@ public class SMSReceiverService extends IntentService
 		try
 		{
 			// Create a (Sapelli) Message object from the PDU:
-			final Message message = messageFromPDU(pdu, binary);
+			final Message<?, ?> message = messageFromPDU(pdu, binary);
 
 			// Receive/decode:
 			transmissionController.receiveSMS(message);
@@ -241,7 +244,7 @@ public class SMSReceiverService extends IntentService
 					@Override
 					public void run()
 					{
-						Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumber(), Toast.LENGTH_SHORT).show();
+						Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumberInternational(), Toast.LENGTH_SHORT).show();
 					}
 				});
 		}
@@ -262,16 +265,21 @@ public class SMSReceiverService extends IntentService
 	 * @throws InvalidMessageException if the message was definitely not relevant to Sapelli
 	 * @throws Exception for any other errors that occur while trying to parse the message
 	 */
-	private Message messageFromPDU(byte[] pdu, boolean binary) throws InvalidMessageException, Exception
+	private Message<?, ?> messageFromPDU(byte[] pdu, boolean binary) throws InvalidMessageException, Exception
 	{
 		// Get Android SMS msg representation for pdu:
 		SmsMessage androidMsg = SmsMessage.createFromPdu(pdu);
 		if(androidMsg == null)
 			throw new Exception("Android could not parse the SMS message from its PDU.");
 		
-		// Get correspondent:
-		SMSCorrespondent sender = transmissionController.getSendingCorrespondentFor(androidMsg.getOriginatingAddress(), binary);
+		// Debug:
 		Log.d(TAG,"MESSAGE BODY: " + androidMsg.getMessageBody());
+		
+		// Get sender phone number (we assume that if the number doesn't start with '+' the correct country is given by the current network (rather than the SIM)):
+		PhoneNumber senderPhoneNumber = SMSCorrespondent.toPhoneNumber(androidMsg.getOriginatingAddress(), DeviceControl.getNetworkCountryISOCode(this));
+		// Get an SMSCorrespondent corresponding to this phone number:
+		SMSCorrespondent sender = transmissionController.getSendingCorrespondentFor(senderPhoneNumber, binary);
+		
 		// Return Sapelli Message:
 		if(binary)
 			return new BinaryMessage(sender, androidMsg.getUserData());

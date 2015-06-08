@@ -24,6 +24,8 @@ import java.util.Map;
 
 import org.joda.time.DateTime;
 
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
+
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
@@ -285,7 +287,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 * @return
 	 * @throws Exception
 	 */
-	public SMSCorrespondent getSendingCorrespondentFor(String phoneNumber, boolean binarySMS) throws Exception
+	public SMSCorrespondent getSendingCorrespondentFor(PhoneNumber phoneNumber, boolean binarySMS) throws Exception
 	{
 		// Try to find sender:
 		SMSCorrespondent corr = transmissionStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
@@ -327,7 +329,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 		catch(Exception e)
 		{
-			addLogLine("EXCEPTION", "Upon SMS message reception", ExceptionHelpers.getMessageAndCause(e));
+			addLogLine("ERROR", "Upon SMS message reception", ExceptionHelpers.getMessageAndCause(e));
 			throw e;
 		}
 	}
@@ -416,7 +418,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			}
 			catch(Exception e)
 			{
-				addLogLine("ERROR: " + ExceptionHelpers.getMessageAndCause(e));
+				addLogLine("ERROR", "Upon querying for existing SMS transmission", ExceptionHelpers.getMessageAndCause(e));
 			}
 			
 			// Handle specific message type:
@@ -432,7 +434,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				transmission = new BinarySMSTransmission(transmissionClient, binSms);
 			else
 				// this is not the first part, add it to the existing transmission:
-				((BinarySMSTransmission) transmission).receivePart(binSms);
+				((BinarySMSTransmission) transmission).addPart(binSms);
 		}
 
 		@Override
@@ -444,7 +446,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				transmission = new TextSMSTransmission(transmissionClient, txtSms);
 			else
 				// this is not the first part, add it to the existing transmission:
-				((TextSMSTransmission) transmission).receivePart(txtSms);
+				((TextSMSTransmission) transmission).addPart(txtSms);
 		}
 		
 		private void log(Message<?, ?> msg, boolean binary)
@@ -509,7 +511,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 						"Subject local ID: " + resendReq.getSubjectSenderSideID(),
 						"Subject hash: " + resendReq.getSubjectPayloadHash(),
 						"Subject total parts: " + resendReq.getSubjectTotalParts(),
-						"Requested parts: " + StringUtils.join(resendReq.getRequestedPartNumbers(), ", "),
+						"Requested part numbers: " + StringUtils.join(resendReq.getRequestedPartNumbers(), ", "),
 						"Subject found: " + (subject != null));
 			if(subject != null) // subject is known ...
 			{

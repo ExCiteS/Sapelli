@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
 public class ResendRequestPayload extends ResponsePayload
 {
 
-	static private IntegerRangeMapping TOTAL_PARTS_FIELD = new IntegerRangeMapping(1, Math.max(BinarySMSTransmission.MAX_TRANSMISSION_PARTS, TextSMSTransmission.MAX_TRANSMISSION_PARTS));
+	static private IntegerRangeMapping TOTAL_PARTS_FIELD = new IntegerRangeMapping(SMSTransmission.MIN_PART_NUMBER /*1*/, Math.max(BinarySMSTransmission.MAX_TRANSMISSION_PARTS, TextSMSTransmission.MAX_TRANSMISSION_PARTS));
 	
 	private int subjectTotalParts;
 	private boolean[] requestedParts;
