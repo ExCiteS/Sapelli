@@ -94,6 +94,7 @@ public class DeviceID
 	 * @param separator
 	 * @return
 	 */
+	@SuppressWarnings("deprecation")
 	static public String getHardwareInfo(String separator)
 	{
 		StringBuilder bldr = new StringBuilder();

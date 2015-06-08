@@ -31,9 +31,9 @@
 	<properties>
 		<!-- Android & support libs version -->
 		<!--	Always change Android version & API level together!: -->
-		<android.version>5.1_r1</android.version>
+		<android.version>5.1.1_r2</android.version>
 		<android.api-level>22</android.api-level>
-		<android.support.libs.version>22.0.0</android.support.libs.version>
+		<android.support.libs.version>22.2.0</android.support.libs.version>
 		
 		<!-- Build info generation: -->
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
@@ -456,7 +456,7 @@
 			<plugin>
 				<groupId>com.simpligility.maven.plugins</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.2.0</version>
+				<version>4.2.1</version>
 				<configuration>
 					<!-- General config: -->
 					<sdk>

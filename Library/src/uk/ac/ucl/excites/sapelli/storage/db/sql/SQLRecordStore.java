@@ -39,13 +39,13 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
@@ -83,8 +83,11 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
+	// STATIC ------------------------------------------------------------
 	static protected final String SPACE = " ";
 	
+	// DYNAMIC -----------------------------------------------------------
+	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
 	
@@ -101,11 +104,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 
 	/**
 	 * @param client
+	 * @param version current (targetted) version of the database, if existing database is older it will be upgrader (see {@link #initialise(boolean, int, Upgrader)}).
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
-	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
+	public SQLRecordStore(StorageClient client, int version, String valuePlaceHolder)
 	{
 		super(client, true); // make use of roll-back tasks
+		this.version = version;
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
 	}
@@ -116,7 +121,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @param newDB whether or not the database file is new (i.e. empty)
 	 * @throws DBException
 	 */
-	protected void initialise(boolean newDB) throws DBException
+	protected void initialise(boolean newDB, int dbVersion, Upgrader upgrader) throws DBException
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
 		if(newDB)
@@ -125,6 +130,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
 			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
+			
+			// Upgrade if necessary:
+			if(dbVersion < version && upgrader != null)
+				upgrader.upgrade(this, dbVersion, version);
 		}
 		catch(DBException e)
 		{
@@ -140,6 +149,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract int executeSQLReturnAffectedRows(String sql) throws DBException;
 	
 	protected abstract String sanitiseIdentifier(String identifier);
+	
+	protected String getTableName(Schema schema)
+	{
+		return sanitiseIdentifier(client.getTableName(schema));
+	}
+	
+	/**
+	 * Checks whether a table for the given schema exists in the database.
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	protected boolean doesTableExist(Schema schema)
+	{
+		return doesTableExist(getTableName(schema));
+	}
 	
 	/**
 	 * Checks whether a table with the given name exists in the database.
@@ -357,6 +382,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 	}
 	
+	/**
+	 * Returns a Schema object that corresponds to the stored version of the given schema.
+	 * Only to be used for upgrade purposes.
+	 * 
+	 * @param schema
+	 * @return the stored version of the schema, or null if no records of this schema are currently stored
+	 */
+	protected Schema getStoredVersion(Schema schema)
+	{
+		try
+		{
+			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
+			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
+			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+	
 	protected abstract TableFactory getTableFactory();
 	
 	protected Collection<Schema> getSchemata(Source source)
@@ -568,7 +616,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public SQLTable(Schema schema)
 		{
-			this.tableName = sanitiseIdentifier(client.getTableName(schema));
+			this.tableName = getTableName(schema);
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>(); // we use a LHP to preserve column order!
@@ -590,7 +638,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			sqlColumns.put(sourceCP, sqlColumn);
 			
 			// Deal with AutoIncr...
-			if(sourceCP.getColumn().equals(autoIncrementKeySapColumn, true, true))
+			if(sourceCP.getColumn() == autoIncrementKeySapColumn)
 				this.autoIncrementKeySQLColumn = sqlColumn;
 			
 			// Deal with composites...
@@ -1354,13 +1402,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// Columns:
-			int c = 0;
 			for(SColumn sqlCol : table.sqlColumns.values())
 			{
 				bldr.openTransaction(SPACE);
 				bldr.append(sqlCol.name);
 				bldr.append(sqlCol.type);
-				bldr.append(colConstraints.get(c++));
+				bldr.append(colConstraints.get(sqlCol));
 				bldr.commitTransaction();
 			}
 			// Table constraints:
@@ -1925,6 +1972,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			Order order = recordsQuery.getOrder();
 			if(order.isDefined())
 			{
+				bldr.append("ORDER BY");
 				bldr.append(table.getSQLColumn(order.getBy()).name);
 				bldr.append(order.isAsc() ? "ASC" : "DESC");
 			}

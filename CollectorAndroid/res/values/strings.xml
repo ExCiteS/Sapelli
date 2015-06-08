@@ -18,12 +18,16 @@
  -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
 
-    <string name="app_name">Sapelli</string>
+    <string name="app_name">Sapelli Collector</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="done">Done</string>
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
+    
+	<string name="add">Add</string>
+    <string name="remove">Remove</string>
     
     <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&quot;&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators.</string>
     <string name="license">&lt;a href=&quot;http://github.com/ExCiteS/Sapelli&quot;&gt;Source code available&lt;/a&gt; under the terms of the &lt;a href=&quot;http://www.apache.org/licenses/LICENSE-2.0&quot;&gt;Apache License, Version 2.0&lt;/a&gt;.</string>
@@ -81,7 +85,7 @@
 	
 	<string name="lstPleaseSelect">&#8212; Please select &#8212;</string>
 	<string name="lstUndoSelection">&#8212; No selection &#8212;</string>
-    
+	
     <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
     <string name="enableLocationProvider">Please enable location provider (%s) in device settings.</string>
     <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>
@@ -92,6 +96,19 @@
     <string name="projectLoadFailure">Could not find project %1$s[id: %2$d; fingerprint: %3$d].</string>
     <string name="shortcutRemoved">Shortcut was removed.</string>
     <string name="noProjectSpecified">CollectorActivity started without project-specifying intent parameters, don\'t know which project to load.</string>
+    
+    <string name="criteria">Criteria</string>
+    <string name="output">Output</string>
+    <string name="expand_transmission">Expand Transmission Settings</string>
+    <string name="expand_export">Expand Export Settings</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="send">Send Data</string>
+    <string name="receive">Receive Data</string>
+    <string name="add_project">Please add a project by clicking on the "+" button&#8212;</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
+    <string name="load_projects">Loading Projects</string>
+    
     <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
     <string name="exportSelection">Select records to export:</string>
@@ -121,19 +138,8 @@
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records&#8230;</string>
     <string name="exporting_data">Exporting data&#8230;</string>
-    <string name="criteria">Criteria</string>
-    <string name="output">Output</string>
-    <string name="expand_transmission">Expand Transmission Settings</string>
-    <string name="expand_export">Expand Export Settings</string>
-    <string name="phone_number">Phone Number</string>
-    <string name="send">Send Data</string>
-    <string name="receive">Receive Data</string>
-    <string name="add_project">Please add a project</string>
-    <string name="drawer_open">Open navigation drawer</string>
-    <string name="drawer_close">Close navigation drawer</string>
-    <string name="add">Add</string>
-    <string name="remove">Remove</string>
-    <string name="load_projects">Loading Projects</string>
+    
+    <string name="importFromX">Importing records from %s…</string>
 
     <string name="backup">Back-up</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>
@@ -142,6 +148,11 @@
     <string name="folderLogs">Log files</string>
     <string name="folderAttachments">Attachments</string>
     <string name="folderProjects">Project files</string>
+    <string name="preBackupExportTitle">Export for back-up</string>
+    <string name="preBackupExportMsg">You have chosen to back-up the folder with exported data. Do you which to include a new export of all project data, or only previous exports?</string>
+    <string name="preBackupExportFormatMsg">Found %d records to export.\nPlease specify the export format:</string>
+    <string name="preBackupExportYes">Yes, include new export</string>
+    <string name="backup_continue">Back-up process will continue&#8230;</string>
     <string name="backup_progress_init">Preparing for back-up&#8230;</string>
     <string name="backup_progress_db">Backing-up database(s)&#8230;</string>
     <string name="backup_progress_zipping">Creating back-up package&#8230;</string>

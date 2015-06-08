@@ -249,11 +249,12 @@ public class Model implements Serializable
 	/**
 	 * @param schemaNumber
 	 * @return
+	 * @throws IndexOutOfBoundsException
 	 */
-	public Schema getSchema(int schemaNumber)
+	public Schema getSchema(int schemaNumber) throws IndexOutOfBoundsException
 	{
 		if(schemaNumber < 0 || schemaNumber > schemata.size())
-			throw new IndexOutOfBoundsException("Invalid schemaNumber (" + schemaNumber + "), must be in range [0, " + (schemata.size() - 1) + "].");
+			throw new IndexOutOfBoundsException("Invalid schemaNumber (" + schemaNumber + ") for model , must be in range [0, " + (schemata.size() - 1) + "].");
 		return schemata.get(schemaNumber);
 	}
 	

@@ -23,6 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.Upgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -43,13 +44,15 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	
 	/**
 	 * @param client
-	 * @param context
-	 * @param dbName
-	 * @throws DBException 
+	 * @param folderPath
+	 * @param baseName
+	 * @param version
+	 * @param upgrader
+	 * @throws DBException
 	 */
-	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName) throws DBException
+	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName, int version, Upgrader upgrader) throws DBException
 	{
-		super(client);
+		super(client, version);
 		
 		// Open database connection:
 		try
@@ -62,8 +65,25 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 			throw new DBException(sqlE);
 		}
 		
-		// Initialise:
-		initialise(!doesTableExist(client.getTableName(Model.MODEL_SCHEMA)));
+		boolean newDB = !doesTableExist(Model.MODEL_SCHEMA);
+		
+		// Get current user_version from SQLite file and change/set it if needed:
+		int dbVersion = newDB ? version : getVersion();
+		if(newDB || dbVersion < version)
+			setVersion(version);
+		
+		// Initialise, and upgrade if necessary:
+		initialise(newDB, dbVersion, upgrader);
+	}
+	
+	protected int getVersion() throws DBException
+	{
+		return getStatement("PRAGMA user_version;", null).executeLongQuery().intValue();
+	}
+	
+	protected void setVersion(int newVersion) throws DBException
+	{
+		executeSQL("PRAGMA user_version = " + newVersion + ";");
 	}
 	
 	@Override

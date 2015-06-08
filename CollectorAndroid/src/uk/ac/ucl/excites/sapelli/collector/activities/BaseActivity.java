@@ -24,11 +24,11 @@ import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.view.ContextThemeWrapper;
 
 /**
  * Abstract super class for our activities.
@@ -204,7 +204,7 @@ public abstract class BaseActivity extends ActionBarActivity
 	private void showDialog(String title, String message, int postiveButtonId, final boolean finishOnPositive, final Runnable positiveTask, int negativeButtonId, boolean finishOnNegative)
 	{
 		// Builder:
-		AlertDialog.Builder bldr = new AlertDialog.Builder(this);
+		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
 		
 		// set title:
 		bldr.setTitle(title);
@@ -222,7 +222,7 @@ public abstract class BaseActivity extends ActionBarActivity
 			}
 		} : null);
 		// set negative button:
-		if(negativeButtonId != -1)
+		if(negativeButtonId != HIDE_BUTTON)
 			bldr.setNegativeButton(negativeButtonId, finishOnNegative ? new DialogInterface.OnClickListener()
 			{
 				public void onClick(DialogInterface dialog, int whichButton)
@@ -230,6 +230,8 @@ public abstract class BaseActivity extends ActionBarActivity
 					finish();
 				}
 			} : null);
+		// set cancelable (only true if there no effects):
+		bldr.setCancelable(!finishOnPositive && positiveTask == null && (negativeButtonId == HIDE_BUTTON || !finishOnNegative));
 		// create & show
 		bldr.create().show();
 	}

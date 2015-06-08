@@ -26,10 +26,11 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -44,16 +45,19 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 {
 	
-	static public final int STATE_HIDDEN = 0;
-	static public final int STATE_SHOWN_ALONE = 1;
-	static public final int STATE_SHOWN_ON_PAGE = 2;
+	static public final byte VISIBILITY_HIDDEN = 0;
+	static public final byte VISIBILITY_SHOWN_ALONE = 1;
+	static public final byte VISIBILITY_SHOWN_ON_PAGE = 2;
 	
-	protected final F field;
+	public final F field;
 	protected final Controller<UI> controller;
 	protected final UI collectorUI;
-	private int state = STATE_HIDDEN;
 	
+	private boolean current = false;
+	private int visibility = VISIBILITY_HIDDEN;
+	private boolean newRecord = true;
 	private Record lastKnownRecord = null;
+	private boolean wasUserGoingBack = false;
 	
 	public FieldUI(F field, Controller<UI> controller, UI collectorUI)
 	{
@@ -62,31 +66,68 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		this.collectorUI = collectorUI;
 	}
 	
-	public final F getField()
+	public final void update()
 	{
-		return field;
+		if(!current) // Only update if no longer current...
+		{				
+			// Set visibility base on Controller's current state:
+			Field currentField = controller.getCurrentField();
+			visibility = (currentField == field ?
+							VISIBILITY_SHOWN_ALONE :
+							(currentField instanceof Page && currentField == field.getPage() ?
+								VISIBILITY_SHOWN_ON_PAGE :
+								VISIBILITY_HIDDEN));
+			
+			// Update additional state variables if the field is/we be shown:
+			if(visibility != VISIBILITY_HIDDEN)
+			{
+				// Remember whether this field was reached by means of a user-initiated back-press:
+				wasUserGoingBack = controller.isGoingBack();
+
+				// Record related state:
+				Record currentRecord = controller.getCurrentRecord();
+				//	Check if record is new:
+				newRecord = (lastKnownRecord != currentRecord);
+				//	Remember record:
+				lastKnownRecord = currentRecord;
+				
+				// Set subclass-specific (and possibly argument-dependent) state: 
+				update(currentRecord, visibility != VISIBILITY_SHOWN_ON_PAGE ? controller.getCurrentFieldArguments() : FieldParameters.EMPTY); // fields shown on a page never get arguments
+			}
+			
+			// FieldUI is now uptodate:
+			current = true;
+		}
+	}
+	
+	/**
+	 * Subclass-specific update routines go here.
+	 * 
+	 * @param arguments
+	 */
+	protected void update(Record record, FieldParameters arguments)
+	{
+		// does nothing by default
 	}
 	
 	/**
 	 * Returns a platform-specific UI element (e.g. an Android View instance),
 	 * the object may be recycled but should be updated w.r.t. the provided record.
 	 * 
-	 * @param onPage
-	 * @param record
 	 * @return
 	 */
-	public V showField(boolean onPage, Record record)
+	public final V showField()
 	{
-		// Check if record is new:
-		boolean newRecord = (lastKnownRecord != record);
+		// Update FieldUI state if needed:
+		if(!current)
+			update(); // !!!
 		
-		// Remember record:
-		lastKnownRecord = record;
+		// Just in case...
+		if(!isFieldShown())
+			throw new IllegalStateException("Field \"" + field.id + "\" cannot be shown because it is not (part of) the current field (\"" + controller.getCurrentField().id + "\")!");
 		
-		// Mark the fieldUI as currently shown:
-		this.state = onPage ? STATE_SHOWN_ON_PAGE : STATE_SHOWN_ALONE;
-		
-		return getPlatformView(onPage, controller.isFieldEnabled(field), record, newRecord);
+		// Return platform-specific UI element:
+		return getPlatformView(isFieldShownOnPage(), controller.isFieldEnabled(field), controller.getCurrentRecord(), newRecord);
 	}
 	
 	/**
@@ -104,14 +145,17 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	/**
 	 * Hides/cancels the fieldUI
 	 */
-	public void hideField()
+	public final void hideField()
 	{
 		// Stop any audiofeedback which may still be running:
-		if(isUsingAudioFeedback(isShownOnPage()))
+		if(isUsingAudioFeedback(isFieldShownOnPage()))
 			collectorUI.stopAudioFeedback();
 		
 		// Mark fieldUI as *not* currently shown:
-		this.state = STATE_HIDDEN; // (do not move this above the call to isShownOnPage())
+		this.visibility = VISIBILITY_HIDDEN;
+		
+		// This also means the FieldUI will need to be updated before it can be shown again:
+		this.current = false;
 		
 		// Run cancel behaviour:
 		cancel();
@@ -166,10 +210,15 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	/**
 	 * @return whether or not the FieldUI is currently being shown as part of a page
 	 */
-	protected boolean isShownOnPage()
+	protected boolean isFieldShownOnPage()
 	{
-		return state == STATE_SHOWN_ON_PAGE;
+		return visibility == VISIBILITY_SHOWN_ON_PAGE;
 		// Alternative: return controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
+	}
+	
+	public boolean isFieldShownAlone()
+	{
+		return visibility == VISIBILITY_SHOWN_ALONE;
 	}
 	
 	/**
@@ -177,7 +226,23 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public boolean isFieldShown()
 	{
-		return state != STATE_HIDDEN;
+		return visibility != VISIBILITY_HIDDEN;
+	}
+	
+	/**
+	 * @return the wasGoingBack whether or not the currently displayed field was reached by means of a user-initiated back-press
+	 */
+	public boolean wasUserGoingBack()
+	{
+		return wasUserGoingBack;
+	}
+
+	/**
+	 * @return the newRecord
+	 */
+	public boolean isNewRecord()
+	{
+		return newRecord;
 	}
 	
 	/**
@@ -200,7 +265,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	@SuppressWarnings("unchecked")
 	protected boolean isValidInformPage(Record record)
 	{
-		if(isShownOnPage())
+		if(isFieldShownOnPage())
 			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record);
 		else
 			return this.isValid(record); // validate field on its own
@@ -213,17 +278,27 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	@SuppressWarnings("unchecked")
 	protected void clearPageInvalidMark()
 	{
-		if(isShownOnPage())
+		if(isFieldShownOnPage())
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
 	}
 	
+	/**
+	 * @param control
+	 * @return the current ControlsUI.State for the given Control.Type
+	 */
 	public ControlsUI.State getControlState(Control.Type control)
 	{
-		// Check if the field allows this control to be shown in the current formMode:
+		// Check if the field (as statically defined in the project XML) allows this control to be shown in the current formMode:
 		boolean show = field.isControlAllowedToBeShown(control, controller.getCurrentMode());
 		
-		// Additional checks (if not forbidden by field):
+		// If not forbidden by field/formMode, perform additional (dynamic) checks... 
 		if(show)
+		{
+			// But first update the FieldUI state if needed:
+			if(!current)
+				update(); // !!!
+			
+			// Check...
 			switch(control)
 			{
 				case Back:
@@ -236,9 +311,10 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 					show &= isShowForward();
 					break;
 			}
+		}
 		
 		// Return state
-		return show ? State.SHOWN_ENABLED : State.HIDDEN; // for now we don't use SHOWN_DISABLED (= "grayed-out")
+		return show ? ControlsUI.State.SHOWN_ENABLED : ControlsUI.State.HIDDEN; // for now we don't use SHOWN_DISABLED (= "grayed-out")
 	}
 	
 	/**

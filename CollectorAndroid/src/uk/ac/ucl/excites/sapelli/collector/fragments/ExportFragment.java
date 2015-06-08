@@ -169,8 +169,8 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 			setDateRange(DT_RANGE_IDX_TO);
 			break;
 		case R.id.btnExportOK:
-			projectManagerActivity.export(getExporter(), selectionDesc, dateRange, projectManagerActivity.getSelectedProject(false), getArguments().getBoolean(EXPORT_ALL, false)); //TODO: SelectionDest
-			if (getDialog() != null)
+			//projectManagerActivity.export(getExporter(), selectionDesc, dateRange, projectManagerActivity.getSelectedProject(false), getArguments().getBoolean(EXPORT_ALL, false)); //TODO: SelectionDest
+			if(getDialog() != null)
 				dismiss(); //dismiss ExportFragment if it is a dialog
 			break;
 		case R.id.btn_exportSettings:

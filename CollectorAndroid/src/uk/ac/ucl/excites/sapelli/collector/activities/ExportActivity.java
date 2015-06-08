@@ -18,18 +18,21 @@
 
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFormatFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -40,7 +43,18 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import android.util.Log;
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.RadioButton;
+import android.widget.TimePicker;
 
 /**
  * Activty that handles the export of Sapelli Collector records
@@ -49,39 +63,227 @@ import android.util.Log;
  * 
  * @author mstevens, Julia
  */
-public class ExportActivity extends ProjectActivity {
-
+public class ExportActivity extends ProjectActivity implements OnClickListener, RecordsTasks.QueryCallback, RecordsTasks.ExportCallback, RecordsTasks.DeleteCallback
+{
+	
+	// Statics---------------------------------------------
+	static private final int DT_RANGE_IDX_FROM = 0;
+	static private final int DT_RANGE_IDX_TO = 1;
+	static private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm");
+	
 	// Dynamics--------------------------------------------
-	private Exporter exporter;
 	private String selectionDesc;
 	private DateTime[] dateRange = new DateTime[2];
-	private Boolean exportAll;
-	private Project selectedProject;
+	private File exportFolder;
+	
+	// UI Elements
+	private RadioButton radioSelectedProject;
+	private RadioButton radioAllProjects;
 
-	public void export(Exporter exporter, String selectionDesc, DateTime[] dateRange, Project selectedProject, Boolean exportAll) {
-		this.exporter = exporter;
-		this.selectionDesc = selectionDesc;
-		this.dateRange = dateRange;
-		this.selectedProject = selectedProject;
-		this.exportAll = exportAll;
-		new QueryTask().execute();
+	private Button btnFrom;
+	private Button btnTo;
+	private Button btnDestination;
+	
+	private ExportFormatFragment frgFormat;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState)
+	{
+		super.onCreate(savedInstanceState); // sets app, projectStore & recordStore members!
+		setContentView(R.layout.activity_export);
+		
+		this.loadProject(false); // loads project specified by intent (if one was selected)
+		
+		// UI elements...
+		radioSelectedProject = (RadioButton) findViewById(R.id.radioExportSelectedProj);
+		radioAllProjects = (RadioButton) findViewById(R.id.radioExportAllProj);
+		if(project != null)
+		{
+			radioSelectedProject.setText(getString(R.string.exportSelectedProj, project));
+			radioSelectedProject.setChecked(true);
+		}
+		else
+		{
+			radioSelectedProject.setVisibility(View.GONE);
+			radioAllProjects.setChecked(true);
+		}
+		
+		// Time range:
+		btnFrom = (Button) findViewById(R.id.btnExportFromDate);
+		btnFrom.setOnClickListener(this);
+		btnTo = (Button) findViewById(R.id.btnExportToDate);
+		btnTo.setOnClickListener(this);
+		updateDateRange(DT_RANGE_IDX_FROM, null);
+		updateDateRange(DT_RANGE_IDX_TO, null);
+		
+		// Output destination:
+		btnDestination = (Button) findViewById(R.id.btnDestination);
+		btnDestination.setEnabled(false); // TODO make export path configurable (for now it is not)
+		
+		// Export format fragment:
+		frgFormat = (ExportFormatFragment) getSupportFragmentManager().findFragmentById(R.id.frgFormat);
+		
+		//	OK & Cancel buttons:
+		((Button) findViewById(R.id.btnExportOK)).setOnClickListener(this);
+		((Button) findViewById(R.id.btnExportCancel)).setOnClickListener(this);
 	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
 
-	private void queryCallback(List<Record> result) {
-		if (result.isEmpty())
-			showOKDialog(getString(R.string.title_activity_export), getString(R.string.exportNoRecordsFound));
-		else {
-			//	Export!:
-			new ExportTask(result, exporter, selectionDesc).execute(); // TODO: check whether they are not null
+		// All storage operations should happen in onResume, otherwise the storage will be unaccessible
+
+		// Export path:
+		exportFolder = fileStorageProvider.getExportFolder(true);
+
+		// Set UI:
+		btnDestination.setText(exportFolder.getAbsolutePath());
+	};
+
+	@Override
+	public void onClick(View v)
+	{
+		switch(v.getId())
+		{
+			case R.id.btnExportFromDate :
+				setDateRange(DT_RANGE_IDX_FROM);
+				break;
+			case R.id.btnExportToDate :
+				setDateRange(DT_RANGE_IDX_TO);
+				break;
+			case R.id.btnExportOK :
+				buildAndRunQuery();
+				break;
+			case R.id.btnExportCancel :
+				this.finish();
+				break;
 		}
 	}
 	
-	private void queryCallback(Exception queryFailure)
+	@SuppressLint("InflateParams")
+	private void setDateRange(final int dtRangeIdx)
 	{
-		showErrorDialog(getString(R.string.exportQueryFailed, ExceptionHelpers.getMessageAndCause(queryFailure)), true);
+		// Init current date time to show in dialog:
+		DateTime current = dateRange[dtRangeIdx];
+		if(current == null)
+			switch(dtRangeIdx)
+			{
+				case DT_RANGE_IDX_FROM :
+					// default "from" time is today at 00:00:00:
+					DateTime now = DateTime.now();
+					current = new DateTime(now.getYear(), now.getMonthOfYear(), now.getDayOfMonth(), 0, 0);
+					break;
+				case DT_RANGE_IDX_TO :
+					// default "to" time is *now*:
+					current = DateTime.now();
+					break;
+			}
+		
+		// UI elements:
+		View view = getLayoutInflater().inflate(R.layout.dialog_datetime, null);
+		final DatePicker datePicker = (DatePicker) view.findViewById(R.id.DTdatePicker);
+		datePicker.updateDate(current.getYear(), current.getMonthOfYear(), current.getDayOfMonth());
+		final TimePicker timePicker = (TimePicker) view.findViewById(R.id.DTtimePicker);
+		timePicker.setIs24HourView(true);
+		timePicker.setCurrentHour(current.getHourOfDay());
+		timePicker.setCurrentMinute(current.getMinuteOfHour());
+		
+		// Create the dialog
+		AlertDialog.Builder builder = new Builder(this);
+		// Set the title:
+		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '\u2026')) 
+		// Set UI:
+		.setView(view)
+		// Set the buttons:
+		//	OK:
+		.setPositiveButton(android.R.string.ok, new Dialog.OnClickListener()
+		{
+			@Override
+			public void onClick(DialogInterface dialog, int which)
+			{
+				updateDateRange(dtRangeIdx,
+								new DateTime(	datePicker.getYear(),
+												datePicker.getMonth(),
+												datePicker.getDayOfMonth(),
+												timePicker.getCurrentHour(),
+												timePicker.getCurrentMinute(),
+												0,
+												0));
+			}
+		})
+		//	Cancel:
+		.setNegativeButton(android.R.string.cancel, new Dialog.OnClickListener()
+		{
+			@Override
+			public void onClick(DialogInterface dialog, int which)
+			{
+				dialog.dismiss();
+			}
+		})
+		//	Any time:
+		.setNeutralButton(StringUtils.capitalizeFirstLetter(getString(R.string.exportDateRangeAnytime)), new Dialog.OnClickListener()
+		{
+			@Override
+			public void onClick(DialogInterface dialog, int which)
+			{
+				updateDateRange(dtRangeIdx, null); // null = *any time* (no limit set)
+			}
+		})
+		// Create the dialog and show it.
+		.create().show();
 	}
 	
-	private void exportCallback(final ExportResult result)
+	private void updateDateRange(int dtRangeIdx, DateTime newDT)
+	{
+		dateRange[dtRangeIdx] = newDT;
+		Button btn = dtRangeIdx == DT_RANGE_IDX_FROM ? btnFrom : btnTo;
+		btn.setText(getString(	dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo,
+								dateRange[dtRangeIdx] == null ? getString(R.string.exportDateRangeAnytime) : dateTimeFormatter.print(dateRange[dtRangeIdx])));
+	}
+	
+	private void buildAndRunQuery()
+	{
+		// Schemas (when list stays empty all records of any schema/project/form will be fetched):
+		Set<Schema> schemata = new HashSet<Schema>();
+		if(project != null && radioSelectedProject.isChecked())
+			schemata.addAll(project.getModel().getSchemata());
+		// Date range:
+		AndConstraint constraints = new AndConstraint();
+		if(dateRange[DT_RANGE_IDX_FROM] != null)
+			constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
+		if(dateRange[DT_RANGE_IDX_TO] != null)
+			constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
+		// TODO Exclude previously exported:
+		// TODO Exclude collector-internal schemas!!!
+		// Retrieve by query:
+		new RecordsTasks.QueryTask(this, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
+	}
+	
+	@Override
+	public void querySuccess(List<Record> result)
+	{
+		if(result == null || result.isEmpty())
+			showOKDialog(R.string.title_activity_export, R.string.exportNoRecordsFound);
+		else
+		{
+			// TODO Generate selection description String:
+			String selectionDesc = "TODO";
+			
+			// Run the right export task:
+			frgFormat.runExportTask(result, this, exportFolder, selectionDesc, this);
+		}
+	}
+	
+	@Override
+	public void queryFailure(Exception reason)
+	{
+		showErrorDialog(getString(R.string.exportQueryFailed, ExceptionHelpers.getMessageAndCause(reason)), true);
+	}
+	
+	@Override
+	public void exportDone(final ExportResult result)
 	{
 		if(result == null)
 			return; // just in case (shouldn't happen)
@@ -89,10 +291,11 @@ public class ExportActivity extends ProjectActivity {
 		// Runnable to delete exported records:
 		Runnable deleteTask = new Runnable()
 		{
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run()
 			{
-				new DeleteTask(result.getExportedRecords()).execute();
+				new RecordsTasks.Delete(ExportActivity.this, ExportActivity.this).execute(result.getExportedRecords());
 			}
 		};
 		
@@ -122,127 +325,23 @@ public class ExportActivity extends ProjectActivity {
 	 * @param failure
 	 *            exception that caused record deletion to fail (may be null)
 	 */
-	private void deleteCallback(Exception failure) {
-		if (failure != null)
+	private void deleteCallback(Exception failure)
+	{
+		if(failure != null)
 			showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(failure)), false);
 
 	}
-	
-	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, List<Record>>
+
+	/**
+	 * @param reason exception that caused record deletion to fail (may be null)
+	 */
+	@Override
+	public void deleteFailure(Exception reason)
 	{
-
-		private Exception failure = null;
-		
-		public QueryTask()
-		{
-			super(ExportActivity.this, getString(R.string.exportFetching));
-		}
-
-		@Override
-		protected List<Record> doInBackground(Void... params)
-		{
-			try
-			{
-				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-				Set<Schema> schemata = new HashSet<Schema>();
-				if(selectedProject != null && !exportAll)
-					schemata.addAll(project.getModel().getSchemata());
-				// Date range:
-				AndConstraint constraints = new AndConstraint();
-				if(dateRange[ExportFragment.DT_RANGE_IDX_FROM] != null)
-					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[ExportFragment.DT_RANGE_IDX_FROM])));
-				if(dateRange[ExportFragment.DT_RANGE_IDX_TO] != null)
-					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[ExportFragment.DT_RANGE_IDX_TO])));
-				// TODO Exclude previously exported:
-				// Retrieve by query:
-				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				Log.d("QueryTask", ExceptionHelpers.getMessageAndCause(e));
-				failure = e;
-				return null;
-			}
-		}
-		
-		@Override
-		protected void onPostExecute(List<Record> result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			if(failure != null)
-				queryCallback(failure);
-			else
-				queryCallback(result);
-		}
-		
-	}
-	
-	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, ExportResult>
-	{
-
-		private List<Record> records;
-		private Exporter exporter;
-		private String selectionDescr;
-		
-		public ExportTask(List<Record> records, Exporter exporter, String selectionDescr)
-		{
-			super(ExportActivity.this, getString(R.string.exportXRecords, records.size()));
-			this.records = records;
-			this.exporter = exporter;
-			this.selectionDescr = selectionDescr;
-		}
-
-		@Override
-		protected ExportResult doInBackground(Void... params)
-		{
-			return exporter.export(records, selectionDescr);
-		}
-		
-		@Override
-		protected void onPostExecute(ExportResult result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			exportCallback(result);
-		}
-		
-	}
-	
-	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void>
-	{
-
-		private List<Record> records;
-		private Exception failure = null;
-		
-		public DeleteTask(List<Record> recordsToDelete)
-		{
-			super(ExportActivity.this, getString(R.string.exportDeletingX, recordsToDelete.size()));
-			this.records = recordsToDelete;
-		}
-
-		@Override
-		protected Void doInBackground(Void... params)
-		{
-			try
-			{
-				recordStore.delete(records);
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
-				failure = e;
-			}
-			return null;
-		}
-		
-		@Override
-		protected void onPostExecute(Void result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			deleteCallback(failure);
-		}
-		
-	}
+		if(reason != null)
+			showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(reason)), true);
+		else
+			this.finish();
+	}	
 
 }

@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
 import uk.ac.ucl.excites.sapelli.collector.ui.PagerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
@@ -43,8 +44,8 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -55,7 +56,7 @@ import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
-import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.text.Html;
@@ -85,7 +86,7 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends ExportActivity implements StoreHandle.StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener
+public class ProjectManagerActivity extends BaseActivity implements StoreHandle.StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener, RecordsTasks.ImportCallback
 {
 
 	// STATICS--------------------------------------------------------
@@ -96,7 +97,8 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 	static private final String DEMO_PROJECT = "demo.excites";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
-	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
+	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
+	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 3;
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
@@ -105,6 +107,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 	private List<Project> parsedProjects;
 
 	// UI
+	private TextView lblProjectTitle;
 	private TextView addProjects;
 	private PagerSlidingTabStrip tabs;
 	private ViewPager pager;
@@ -116,6 +119,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 	private ActionBarDrawerToggle drawerToggle;
 	private DrawerLayout drawerLayout;
 	private Button runProject;
+	
 	private boolean initialised = false;
 
 	@Override
@@ -134,18 +138,20 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		setContentView(R.layout.activity_projectmanager);
 		drawerList = (ListView) findViewById(R.id.left_drawer);
 		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+		lblProjectTitle = (TextView) findViewById(R.id.lblProjectTitle);
 		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
 		pager = (ViewPager) findViewById(R.id.pager);
 		pageMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
 		addProjects = (TextView) findViewById(R.id.addProjects);
 		runProject = (Button) findViewById(R.id.btn_runProject);
 
-		addProjects.setOnClickListener(new OnClickListener() {
-
+		addProjects.setOnClickListener(new OnClickListener()
+		{
 			@SuppressLint("ClickableViewAccessibility")
 			@Override
-			public void onClick(View v) {
-				browse();
+			public void onClick(View v)
+			{
+				browse(v);
 			}
 		});
 
@@ -154,16 +160,19 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		// enable ActionBar icon to behave as action to toggle drawer
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		getSupportActionBar().setHomeButtonEnabled(true);
-		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.drawable.ic_drawer)
+		{
 
 			/** Called when a drawer has settled in a completely closed state. */
-			public void onDrawerClosed(View view) {
+			public void onDrawerClosed(View view)
+			{
 				super.onDrawerClosed(view);
 				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
 			}
 
 			/** Called when a drawer has settled in a completely open state. */
-			public void onDrawerOpened(View drawerView) {
+			public void onDrawerOpened(View drawerView)
+			{
 				super.onDrawerOpened(drawerView);
 				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
 			}
@@ -176,20 +185,39 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		drawerList.setOnItemClickListener(this);
 
 	}
-
-	public void browse() {
+	
+	/**
+	 * Clickon the big '+' actionbar button
+	 * 
+	 * @param menuItem
+	 */
+	public void browse(MenuItem menuItem)
+	{
+		browse(true);
+	}
+	
+	/**
+	 * Click on the old 'Browse' button
+	 * 
+	 * @param view
+	 */
+	public void browse(View view)
+	{
+		browse(false);
+	}
+	
+	public void browse(boolean loadImmediately)
+	{
 		// Use the GET_CONTENT intent from the utility class
 		Intent target = FileUtils.createGetContentIntent();
 		// Create the chooser Intent
 		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
-		try {
-			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
-		} catch (ActivityNotFoundException e) {
+		try
+		{
+			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
+			startActivityForResult(intent, loadImmediately ? RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD : RETURN_BROWSE_FOR_PROJECT_LOAD);
 		}
-	}
-
-	public void browse(MenuItem item) {
-		browse();
+		catch(ActivityNotFoundException e){}
 	}
 
 	@Override
@@ -207,6 +235,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		}
 		catch(Exception e)
 		{
+			Log.e(TAG, getString(R.string.projectStorageAccessFail), e);
 			showErrorDialog(getString(R.string.projectStorageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
 			return;
 		}
@@ -332,7 +361,8 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 	}
 
 	// Export all projects!!
-	public boolean exportRecords(MenuItem item) {
+	public boolean exportRecords(MenuItem item)
+	{
 		ExportFragment exportFragment = ExportFragment.newInstance(true);
 		exportFragment.show(getSupportFragmentManager(), TAG);
 		getSupportFragmentManager().executePendingTransactions();
@@ -378,23 +408,14 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		return true;
 	}
 
-	// public void browse(View view) {
-	// // Use the GET_CONTENT intent from the utility class
-	// Intent target = FileUtils.createGetContentIntent();
-	// // Create the chooser Intent
-	// Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
-	// try {
-	// startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
-	// } catch (ActivityNotFoundException e) {
-	// }
-	// }
-
 	/**
 	 * Retrieve all parsed projects from db and populate tabs
 	 */
-	public void populateTabs() {
+	public void populateTabs()
+	{
 		projectsArray = new String[parsedProjects.size()];
-		for (int i = 0; i < parsedProjects.size(); i++) {
+		for(int i = 0; i < parsedProjects.size(); i++)
+		{
 			projectsArray[i] = parsedProjects.get(i).getName() + " " + parsedProjects.get(i).getVersion();
 		}
 
@@ -403,8 +424,11 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 
 		adapter = new PagerAdapter(getSupportFragmentManager());
 		pager.setAdapter(adapter);
-		if (!parsedProjects.isEmpty()) {
-			getSupportActionBar().setTitle(parsedProjects.get(0).getName());
+		if(!parsedProjects.isEmpty())
+		{
+			//getSupportActionBar().setTitle(parsedProjects.get(0).getName());
+			lblProjectTitle.setVisibility(View.VISIBLE);
+			lblProjectTitle.setText(parsedProjects.get(0).toString());
 			selectedProject = parsedProjects.get(0);
 			pager.setPageMargin(pageMargin);
 			tabs.setViewPager(pager);
@@ -412,8 +436,11 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 			pager.setVisibility(View.VISIBLE);
 			runProject.setVisibility(View.VISIBLE);
 			addProjects.setVisibility(View.GONE);
-		} else {
-			getSupportActionBar().setTitle(R.string.app_name);
+		}
+		else
+		{
+			//getSupportActionBar().setTitle(R.string.app_name);
+			lblProjectTitle.setVisibility(View.GONE);
 			tabs.setVisibility(View.GONE);
 			pager.setVisibility(View.GONE);
 			runProject.setVisibility(View.GONE);
@@ -423,10 +450,17 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 
 		supportInvalidateOptionsMenu();
 	}
+	
+	public void selectProject(Project project)
+	{
+		
+	}
 
-	public Project getSelectedProject(boolean errorIfNull) {
-		if (selectedProject == null) {
-			if (errorIfNull)
+	public Project getSelectedProject(boolean errorIfNull)
+	{
+		if(selectedProject == null)
+		{
+			if(errorIfNull)
 				showErrorDialog(R.string.selectProject, false);
 			return null;
 		}
@@ -457,23 +491,19 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		
 		// Refresh list:
 		new RetrieveProjectsTask().execute();
-
-		// TODO Re-enable the service at same point
-		// Restart the DataSenderService to stop monitoring the deleted project
-		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void loadProject(String path)
 	{
 		String location = path.trim();
 		if(location.isEmpty())
-			// Download Sapelli file if path is a URL
-			showErrorDialog(R.string.pleaseSelect);
+		{	// TODO get rid of this, there is no longer a textbox for the path
+			//showErrorDialog(R.string.pleaseSelect);
+			browse(true);
+		}
 		else
 		{
-			// Extract & parse a local Sapelli file
-			
-			// Add project
+			// Download Sapelli file if path is a URL
 			if(Patterns.WEB_URL.matcher(location).matches())
 				// Location is a (remote) URL: download Sapelli file:
 				AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
@@ -529,80 +559,75 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	protected void onActivityResult(int requestCode, int resultCode, Intent intent)
 	{
-		super.onActivityResult(requestCode, resultCode, data);
+		super.onActivityResult(requestCode, resultCode, intent);
 
-		Uri uri = null;
-		String path = null;
-
-		if(resultCode == Activity.RESULT_OK)
-			switch(requestCode)
-			{
+		if(resultCode != Activity.RESULT_OK)
+			return;
+		//else...
+		Uri uri = intent.getData();
+		switch(requestCode)
+		{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
-
-				uri = data.getData();
-
+			case RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD:
 				// Get the File path from the Uri
-				path = FileUtils.getPath(this, uri);
-
-				loadProject(path);
+				loadProject(FileUtils.getPath(this, uri));
 				break;
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-
-				uri = data.getData();
-
-				// Get the File path from the Uri
-				path = FileUtils.getPath(this, uri);
-
-				// Alternatively, use FileUtils.getFile(Context, Uri)
-				if(path != null && FileUtils.isLocal(path))
-				{
-					try
-					{ // TODO make import & storage async
-						// Import:
-						XMLRecordsImporter importer = new XMLRecordsImporter(app.collectorClient);
-						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
-
-						// Show parser warnings if needed:
-						List<String> warnings = importer.getWarnings(); 
-						if(!warnings.isEmpty())
-						{
-							TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
-							bldr.append(getString(R.string.parsingWarnings) + ":");
-							for(String warning : warnings)
-								bldr.append(" - " + warning);
-							showWarningDialog(bldr.toString());
-						}
-
-						/*
-						 * //TEST CODE (export again to compare with imported file): RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao); exporter.export(records);
-						 */
-
-						// Store the records:
-						// for(Record r : records)
-						// dao.store(r); //TODO avoid duplicates!
-
-						// User feedback:
-						showInfoDialog("Succesfully imported " + records.size() + " records."); // TODO report skipped duplicates
-					} catch (Exception e) {
-						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
-					}
-				}
-
+				new RecordsTasks.XMLImportTask(this, this).execute(FileUtils.getFile(this, uri)); // run XMLImportTask ...
 				break;
+				
 			// QR Reader
 			case IntentIntegrator.REQUEST_CODE:
-				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 				if (scanResult != null) {
-					String fileUrl = data.getStringExtra("SCAN_RESULT");
+					String fileUrl = intent.getStringExtra("SCAN_RESULT");
 					loadProject(fileUrl);
 				}
 				break;
-			}
+		}
+	}
+
+	@Override
+	public void importSuccess(List<Record> records, List<String> warnings)
+	{
+		// Show parser warnings if needed: 
+		if(!warnings.isEmpty())
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+			bldr.append(getString(R.string.parsingWarnings) + ":");
+			for(String warning : warnings)
+				bldr.append(" - " + warning);
+			showWarningDialog(bldr.toString());
+		}
+		
+		//Store the records:
+		//for(Record r : records)
+		//	dao.store(r); //TODO avoid duplicates!
+		
+		//User feedback:
+		showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
+	}
+
+	@Override
+	public void importFailure(Exception reason)
+	{
+		try
+		{
+			throw reason;
+		}
+		catch(UnknownModelException ume)
+		{
+			showErrorDialog("Error upon importing records: " + (ume.getSchemaName() != null ? "could not find matching project/form (Project:Form = " + ume.getSchemaName() + ")" : ume.getMessage()));
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Error upon importing records: " + e.getMessage(), false);
+		}
 	}
 
 	/**
@@ -676,12 +701,7 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
 		
 		// Update project list:
-		Log.d("","Going to dispatch...");
 		new RetrieveProjectsTask().execute();
-		Log.d("","Dispatched");
-		// TODO Re-enable the service at same point
-		// Restart the DataSenderService to start monitoring the new project
-		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	@Override
@@ -697,9 +717,10 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+	{
 		selectedProject = parsedProjects.get(position);
-		if (!parsedProjects.isEmpty())
+		if(!parsedProjects.isEmpty())
 			getSupportActionBar().setTitle(selectedProject.getName());
 		else
 			getSupportActionBar().setTitle(R.string.app_name);
@@ -718,21 +739,15 @@ public class ProjectManagerActivity extends ExportActivity implements StoreHandl
 		@Override
 		protected List<Project> doInBackground(Void... params)
 		{
-			Log.d("","About to retrieve...");
-			List<Project> ret = projectStore.retrieveProjects();
-			Log.d("","Retrieved");
-			return ret;
+			return projectStore.retrieveProjects();
 		}
 
 		@Override
 		protected void onPostExecute(List<Project> result)
 		{
-			Log.d("","PostExecute");
-
 			parsedProjects = result;
 			super.onPostExecute(result); // dismiss dialog
 			populateTabs();
-			Log.d("", "Done");
 		}
 
 	}

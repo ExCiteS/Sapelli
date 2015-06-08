@@ -23,7 +23,7 @@
 
     <uses-sdk
         android:minSdkVersion="10"
-        android:targetSdkVersion="21" />
+        android:targetSdkVersion="22" />
 		<!-- Note: keep target SDK version in sync with version targeted in pom.xml/Eclipse -->
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
