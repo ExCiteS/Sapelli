@@ -469,7 +469,7 @@ public class CollectorActivity extends ProjectActivity
 				{ // time's up!
 					collectorView.cancelCurrentField();
 					if(controller != null)
-						controller.discard(); // discards current record, stops GPS, etc.
+						controller.discard(); // discards current record & attachments, stops GPS, etc.
 					// don't make controller null so we can restart the same project in onResume()
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");

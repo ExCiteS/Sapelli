@@ -51,6 +51,7 @@
     <string name="statistics_menuitem">Statistics</string>
     <string name="export_records_menuitem">Export records</string>
     <string name="import_records_menuitem">Import records</string>
+    <string name="delete_records_menuitem">Delete records</string>
     <string name="show_statistics">Show</string>
     <string name="app_usage_statistics">Statistics on App usage</string>
     <string name="settings">Settings</string>
@@ -129,11 +130,15 @@
     <string name="exportDeleteConfirm">Do you want to delete the exported records?</string>
     <string name="exportFailureTitle">Failure</string>
     <string name="exportFailureMsg">Failed to export any records to %1$s, due to: %2$s.</string>
-    <string name="exportDeleteFailureMsg">Failed to delete (some of) the record, due to: %s.</string>
+    <string name="exportDeleteFailureMsg">Failed to delete (some of) the records, due to: %s.</string>
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records&#8230;</string>
     <string name="exporting_data">Exporting data&#8230;</string>
-    <string name="importFromX">Importing records from %s…</string>
+    <string name="importFromX">Importing records from %s&#8230;</string>
+    
+    <string name="deleteNoRecordsFound">No records found.</string>
+    <string name="deleteRecordsConfirmation">Are you sure you want to delete all %1$d records associated with project %2$s?</string>
+    <string name="deleteAttachmentsConfirmation">Do you also wish to delete the %d attachments (photos, audio or video recordings)?</string>
 
     <string name="backup">Back-up</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>

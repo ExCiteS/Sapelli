@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
+import uk.ac.ucl.excites.sapelli.collector.tasks.DeleteData;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
@@ -279,24 +280,26 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		 * 	the android:onClick attribute in the XML only works on Android >= v3.0,
 		 *	so we need to direct the handling of menu clicks manually here for things
 		 *	to work on earlier versions. */
-	    switch(item.getItemId())
-	    {
-	    	case R.id.sender_settings_menuitem :
-	    		return openSenderSettings(item);
-	    	case R.id.export_records_menuitem :
-	    		return exportRecords(item);
-	    	case R.id.import_records_menuitem :
-	    		return importRecords(item);
-	    	case R.id.create_shortcut :
-	    		return createShortcut(item);
-	    	case R.id.remove_shortcut :
-	    		return removeShortcut(item);
+		switch(item.getItemId())
+		{
+			case R.id.sender_settings_menuitem :
+				return openSenderSettings(item);
+			case R.id.export_records_menuitem :
+				return exportRecords(item);
+			case R.id.import_records_menuitem :
+				return importRecords(item);
+			case R.id.delete_records_menuitem :
+				return deleteRecords(item);
+			case R.id.create_shortcut :
+				return createShortcut(item);
+			case R.id.remove_shortcut :
+				return removeShortcut(item);
 			case R.id.backup:
 				return backupSapelli(item);
-	    	case R.id.about_menuitem :
-	    		return openAboutDialog(item);
-	    }
-	    return true;
+			case R.id.about_menuitem :
+				return openAboutDialog(item);
+		}
+		return true;
 	}
 
 	public boolean openSenderSettings(MenuItem item)
@@ -376,6 +379,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		{
 			Log.e(TAG, "Could not open file choose for import file selection.", e);
 		}
+		return true;
+	}
+	
+	public boolean deleteRecords(MenuItem item)
+	{
+		Project project = getSelectedProject(false);
+		if(project != null)
+			new DeleteData(this).deleteFor(project);
 		return true;
 	}
 	
