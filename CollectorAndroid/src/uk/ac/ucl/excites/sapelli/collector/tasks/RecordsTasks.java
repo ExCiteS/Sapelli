@@ -238,14 +238,14 @@ public final class RecordsTasks
 		
 	}
 	
-	static public class Delete extends AsyncTaskWithWaitingDialog<List<Record>, Void> implements StoreUser
+	static public class DeleteTask extends AsyncTaskWithWaitingDialog<List<Record>, Void> implements StoreUser
 	{
 
 		private final CollectorClient client;
 		private final DeleteCallback callback;
 		private Exception failure = null;
 		
-		public Delete(BaseActivity owner, DeleteCallback callback)
+		public DeleteTask(BaseActivity owner, DeleteCallback callback)
 		{
 			super(owner);
 			this.client = owner.getCollectorApp().collectorClient;
@@ -284,12 +284,16 @@ public final class RecordsTasks
 			super.onPostExecute(result); // dismiss dialog
 			if(failure != null)
 				callback.deleteFailure(failure);
+			else
+				callback.deleteSuccess();
 		}
 		
 	}
 	
 	public interface DeleteCallback
 	{
+		
+		public void deleteSuccess();
 		
 		public void deleteFailure(Exception reason);
 		

@@ -54,14 +54,18 @@
         android:onClick="importRecords"
         android:showAsAction="always"
         android:title="@string/import_records_menuitem"/> -->
-   
+    <item
+        android:id="@+id/delete_records_menuitem"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:onClick="deleteRecords"
+        android:showAsAction="always"
+        android:title="@string/delete_records_menuitem"/>   
     <item
         android:id="@+id/backup"
         android:icon="@android:drawable/ic_menu_save"
         android:onClick="backupSapelli"
         android:showAsAction="always"
         android:title="@string/backup"/>
-    
     <item
         android:id="@+id/about_menuitem"
         android:icon="@android:drawable/ic_menu_info_details"
