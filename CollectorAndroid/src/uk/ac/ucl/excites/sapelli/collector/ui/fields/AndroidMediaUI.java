@@ -66,10 +66,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	
 	// STATIC -------------------------------------------------------
 	protected static final String TAG = "AndroidMediaUI";
-	
-	// Keys to use when obtaining values from field arguments:
-	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
-	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
 	/**
 	 * PAdding to put around the built-in play/stop/pause SVGs when displaying them in the review content

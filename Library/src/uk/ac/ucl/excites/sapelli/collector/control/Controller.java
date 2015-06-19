@@ -473,7 +473,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		// NOTE: no need to touch the added files since they were added on creation
 		
 		// Clear the list of added files so they cannot be deleted accidentally:
-		currFormSession.clearAddedAttachments();
+		currFormSession.clearAddedAttachments(); // !!!
 				
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
@@ -492,7 +492,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			addLogLine("ERROR", "Upon saving record", ExceptionHelpers.getMessageAndCause(e));
 			return;
 		}
-		
+	
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currFormSession.form.isVibrateOnSave())
@@ -506,23 +506,25 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	/**
 	 * Makes the record null & deletes any media attachments.
 	 * 
-	 * Note:
-	 * 	Making the record null is necessary to avoid that unsaved foreign records are used
-	 * 	(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
-	 * 	a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
-	 *  Doing so is risky however because an NPE will be thrown (likely crashing the app)
-	 *  when some FieldUI or controller method attempts to (illegally!) use the record
-	 *  after this discard operation. Obviously that shouldn't happen but we've had several
-	 *  cases in which it did. However, all (known) cases have been resolved and any new
-	 *  similar cases would be revealed soon by an NPE and/or crash. 
+	 * Notes:
+	 * 	 - 	Making the record null is necessary to avoid that unsaved foreign records are used
+	 * 		(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
+	 * 		a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
+	 *  	Doing so is risky however because an NPE will be thrown (likely crashing the app)
+	 *  	when some FieldUI or controller method attempts to (illegally!) use the record
+	 *  	after this discard operation. Obviously that shouldn't happen but we've had several
+	 *  	cases in which it did. However, all (known) cases have been resolved and any new
+	 *  	similar cases would be revealed soon by an NPE and/or crash.
+	 *   -	Files that were created AND discarded during this session will already have been deleted.
+	 *   -	Files that were discard during this session but created earlier should not be deleted! Their deletion is cancelled because the whole session is cancelled.
 	 * 
+	 * @see FormSession#discardAttachment(File)
 	 */
 	protected void discardRecordAndAttachments()
 	{
 		// delete any files that were added but have now been discarded:
 		currFormSession.deleteAddedAttachments();
-		
-		// NOTE: no need to touch the deleted files since their deletion has been aborted
+		// See notes above about discarded files.
 		
 		// Clear the list of deleted files:
 		currFormSession.clearDiscardedAttachments();
@@ -979,6 +981,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	public FileStorageProvider getFileStorageProvider()
 	{
 		return fileStorageProvider;
+	}
+	
+	public long getFormStartTime()
+	{
+		return currFormSession.startTime;
 	}
 	
 	public void addAttachment(File file)

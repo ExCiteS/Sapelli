@@ -188,9 +188,10 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					// Column names (separated by the separator):
 					for(ColumnPointer cp : columnPointers)
 						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorChar() : "") + cp.getQualifiedColumnName());
-					// Postfix: separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
+					// Postfix: separator+modelID=+...+separator+modelSchemaNumber=+...+separator+schemaName="+...+"separator
 					writer.write(	separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_ID + "=" + schema.getModelID() +
 									separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=" + schema.getModelSchemaNumber() +
+									separator.getSeparatorChar() + Schema.ATTRIBUTE_SCHEMA_NAME + "=" + escapeAndQuote(schema.getName(), true) +
 									separator.getSeparatorChar());
 					writer.write('\n');
 				}

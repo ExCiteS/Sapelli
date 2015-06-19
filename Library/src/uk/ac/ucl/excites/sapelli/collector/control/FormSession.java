@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import org.apache.commons.io.FileUtils;
+
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -54,14 +56,14 @@ public class FormSession
 	protected final Form form;
 	protected final Mode mode;
 	protected Record record; //TODO make final? do we really need to make the record null in Controller#discardRecordAndAttachments()?
-	protected final long startTime;
+	public final long startTime;
 	
 	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
-	private List<File> addedAttachments; // list containing files to be added
-	private List<File> discardedAttachments; // list containing files to be deleted
+	private final List<File> addedAttachments; // list containing files to be added
+	private final List<File> discardedAttachments; // list containing files to be deleted
 	
 	/**
 	 * @param form
@@ -79,6 +81,8 @@ public class FormSession
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
 		this.startTime = startTime;
+		addedAttachments = new ArrayList<File>();
+		discardedAttachments = new ArrayList<File>();
 	}
 	
 	public FieldWithArguments getPrevious(boolean forBackMove)
@@ -186,24 +190,29 @@ public class FormSession
 	
 	/**
 	 * Adds a file to the list of attachments added in this form session.
+	 * 
 	 * @param file
 	 */
 	public void addAttachment(File file)
 	{
-		if(addedAttachments == null)
-			addedAttachments = new ArrayList<File>();
 		addedAttachments.add(file);
 	}
 	
 	/**
 	 * Adds a file to the list of attachments deleted in this form session.
+	 * 
 	 * @param file
 	 */
 	public void discardAttachment(File file)
 	{
-		if(discardedAttachments == null)
-			discardedAttachments = new ArrayList<File>();
-		discardedAttachments.add(file);
+		if(addedAttachments.contains(file))
+		{	// the file being discard was created during the current session, i.e. it has never been "saved" along with a record so can be deleted right away (cannot be undone)...
+			FileUtils.deleteQuietly(file);
+			addedAttachments.remove(file);
+		}
+		else
+			// the file being discarded was created during an earlier session (meaning the current session is an EDIT session), i.e. the deletion must not happen now as the user can still undo it by hitting cancel...
+			discardedAttachments.add(file);
 	}
 	
 	/**
@@ -212,11 +221,8 @@ public class FormSession
 	public void deleteDiscardedAttachments()
 	{
 		if(discardedAttachments != null)
-		{
 			for(File file : discardedAttachments)
-				file.delete();
-		}
-		discardedAttachments = null;
+				FileUtils.deleteQuietly(file);
 	}
 	
 	/**
@@ -225,20 +231,18 @@ public class FormSession
 	public void deleteAddedAttachments()
 	{
 		if(addedAttachments != null)
-		{
 			for(File file : addedAttachments)
-				file.delete();
-		}
-		addedAttachments = null;
+				FileUtils.deleteQuietly(file);
 	}
 	
 	public void clearDiscardedAttachments()
 	{
-		discardedAttachments = null;
+		discardedAttachments.clear();
 	}
 
 	public void clearAddedAttachments()
 	{
-		addedAttachments = null;
+		addedAttachments.clear();
 	}
+	
 }

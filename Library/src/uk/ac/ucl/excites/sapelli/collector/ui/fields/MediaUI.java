@@ -49,8 +49,8 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	}
 	
 	// Keys to use when obtaining values from field arguments:
-	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
-	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
+	protected static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
+	protected static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 	
 	// DYNAMIC ----------------------------------------------------------------
 	private Mode mode = null;
@@ -135,7 +135,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
-			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getName());
+			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getAbsolutePath());
 			// add it to the record
 			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
 			// mark it to be added when the user saves their session
@@ -157,6 +157,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 		controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
 		field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
+		
 		controller.discardAttachment(mediaAttachment);
 	}
 	

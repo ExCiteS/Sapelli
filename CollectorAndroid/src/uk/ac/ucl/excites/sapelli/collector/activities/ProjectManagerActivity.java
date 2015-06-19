@@ -30,6 +30,8 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
+import uk.ac.ucl.excites.sapelli.collector.tasks.DeleteData;
+import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
@@ -40,8 +42,8 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -80,7 +82,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements StoreHandle.StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback
+public class ProjectManagerActivity extends BaseActivity implements StoreHandle.StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, RecordsTasks.ImportCallback
 {
 
 	// STATICS--------------------------------------------------------
@@ -281,24 +283,26 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		 * 	the android:onClick attribute in the XML only works on Android >= v3.0,
 		 *	so we need to direct the handling of menu clicks manually here for things
 		 *	to work on earlier versions. */
-	    switch(item.getItemId())
-	    {
-	    	case R.id.sender_settings_menuitem :
-	    		return openSenderSettings(item);
-	    	case R.id.export_records_menuitem :
-	    		return exportRecords(item);
-	    	//case R.id.import_records_menuitem :
-	    		//return importRecords(item);
-	    	case R.id.create_shortcut :
-	    		return createShortcut(item);
-	    	case R.id.remove_shortcut :
-	    		return removeShortcut(item);
+		switch(item.getItemId())
+		{
+			case R.id.sender_settings_menuitem :
+				return openSenderSettings(item);
+			case R.id.export_records_menuitem :
+				return exportRecords(item);
+			//case R.id.import_records_menuitem :
+				//return importRecords(item);
+			case R.id.delete_records_menuitem :
+				return deleteRecords(item);
+			case R.id.create_shortcut :
+				return createShortcut(item);
+			case R.id.remove_shortcut :
+				return removeShortcut(item);
 			case R.id.backup:
 				return backupSapelli(item);
-	    	case R.id.about_menuitem :
-	    		return openAboutDialog(item);
-	    }
-	    return true;
+			case R.id.about_menuitem :
+				return openAboutDialog(item);
+		}
+		return true;
 	}
 
 	public boolean openSenderSettings(MenuItem item)
@@ -371,6 +375,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		}
 		catch(ActivityNotFoundException e){}
 
+		return true;
+	}
+	
+	public boolean deleteRecords(MenuItem item)
+	{
+		Project project = getSelectedProject(false);
+		if(project != null)
+			new DeleteData(this).deleteFor(project);
 		return true;
 	}
 	
@@ -536,23 +548,21 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	protected void onActivityResult(int requestCode, int resultCode, Intent intent)
 	{
-		super.onActivityResult(requestCode, resultCode, data);
+		super.onActivityResult(requestCode, resultCode, intent);
 
-		Uri uri = null;
-		String path = null;
-
-		if(resultCode == Activity.RESULT_OK)
-			switch(requestCode)
-			{
+		if(resultCode != Activity.RESULT_OK)
+			return;
+		//else...
+		Uri uri = intent.getData();
+		switch(requestCode)
+		{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
 			case RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD:
-				uri = data.getData();
-
 				// Get the File path from the Uri
-				path = FileUtils.getPath(this, uri);
+				String path = FileUtils.getPath(this, uri);
 
 				// Alternatively, use FileUtils.getFile(Context, Uri)
 				if(path != null && FileUtils.isLocal(path))
@@ -568,61 +578,59 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-				uri = data.getData();
-
-				// Get the File path from the Uri
-				path = FileUtils.getPath(this, uri);
-
-				// Alternatively, use FileUtils.getFile(Context, Uri)
-				if(path != null && FileUtils.isLocal(path))
-				{
-					try
-					{ // TODO make import & storage async
-						// Import:
-						XMLRecordsImporter importer = new XMLRecordsImporter(app.collectorClient);
-						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
-
-						// Show parser warnings if needed:
-						List<String> warnings = importer.getWarnings(); 
-						if(!warnings.isEmpty())
-						{
-							TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
-							bldr.append(getString(R.string.parsingWarnings) + ":");
-							for(String warning : warnings)
-								bldr.append(" - " + warning);
-							showWarningDialog(bldr.toString());
-						}
-
-						/*//TEST CODE (export again to compare with imported file):
-						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
-						exporter.export(records);*/
-	
-						//Store the records:
-						//for(Record r : records)
-						//	dao.store(r); //TODO avoid duplicates!
-						
-						//User feedback:
-						showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
-					}
-					catch(Exception e)
-					{
-						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
-					}
-				}
-
+				new RecordsTasks.XMLImportTask(this, this).execute(FileUtils.getFile(this, uri)); // run XMLImportTask ...
 				break;
+				
 			// QR Reader
 			case IntentIntegrator.REQUEST_CODE:
-				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 				if(scanResult != null)
 				{
-					String fileUrl = data.getStringExtra("SCAN_RESULT");
+					String fileUrl = intent.getStringExtra("SCAN_RESULT");
 					txtProjectPathOrURL.setText(fileUrl);
 					// Move the cursor to the end
 					txtProjectPathOrURL.setSelection(fileUrl.length());
 				}
 				break;
-			}
+		}
+	}
+
+	@Override
+	public void importSuccess(List<Record> records, List<String> warnings)
+	{
+		// Show parser warnings if needed: 
+		if(!warnings.isEmpty())
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+			bldr.append(getString(R.string.parsingWarnings) + ":");
+			for(String warning : warnings)
+				bldr.append(" - " + warning);
+			showWarningDialog(bldr.toString());
+		}
+		
+		//Store the records:
+		//for(Record r : records)
+		//	dao.store(r); //TODO avoid duplicates!
+		
+		//User feedback:
+		showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
+	}
+
+	@Override
+	public void importFailure(Exception reason)
+	{
+		try
+		{
+			throw reason;
+		}
+		catch(UnknownModelException ume)
+		{
+			showErrorDialog("Error upon importing records: " + (ume.getSchemaName() != null ? "could not find matching project/form (Project:Form = " + ume.getSchemaName() + ")" : ume.getMessage()));
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Error upon importing records: " + e.getMessage(), false);
+		}
 	}
 
 	/**

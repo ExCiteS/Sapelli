@@ -24,10 +24,11 @@ import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.ContextThemeWrapper;
 
 /**
  * Abstract super class for our activities.
@@ -36,7 +37,7 @@ import android.os.Bundle;
  * 
  * @author mstevens
  */
-public abstract class BaseActivity extends Activity
+public abstract class BaseActivity extends FragmentActivity
 {
 	
 	private static final int HIDE_BUTTON = -1;
@@ -203,7 +204,7 @@ public abstract class BaseActivity extends Activity
 	private void showDialog(String title, String message, int postiveButtonId, final boolean finishOnPositive, final Runnable positiveTask, int negativeButtonId, boolean finishOnNegative)
 	{
 		// Builder:
-		AlertDialog.Builder bldr = new AlertDialog.Builder(this);
+		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
 		
 		// set title:
 		bldr.setTitle(title);

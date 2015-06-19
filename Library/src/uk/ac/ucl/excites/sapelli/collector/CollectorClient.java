@@ -171,7 +171,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 			for(Form f : project.getForms())
 				if(f.getSchema().equals(schema))
 					return f;
-		throw new UnknownModelException(schema.getModelID());
+		throw new UnknownModelException(schema.getModelID(), schema.getModel().getName());
 	}
 	
 	/* (non-Javadoc)
@@ -185,7 +185,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		if(project != null)
 			return project.getModel();
 		else
-			throw new UnknownModelException(modelID);
+			throw new UnknownModelException(modelID, null);
 	}
 	
 	/* (non-Javadoc)

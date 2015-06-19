@@ -188,7 +188,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
 									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null)),
-									Collections.<Object> singletonList(tableName));
+									Collections.<String> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
 		catch(DBException e)
@@ -237,7 +237,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return an cursor to iterate over the results
 	 * @throws DBException
 	 */
-	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
+	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
 
 	@Override
 	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
@@ -323,7 +323,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public boolean isRecordInDB(Record record) throws DBException
+		public synchronized boolean isRecordInDB(Record record) throws DBException
 		{
 			// Check if table itself exists in db:
 			if(!isInDB())
@@ -353,7 +353,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#insert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void insert(Record record) throws DBException
+		public synchronized void insert(Record record) throws DBException
 		{
 			if(insertStatement == null)
 			{
@@ -388,7 +388,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public boolean update(Record record) throws DBException
+		public synchronized boolean update(Record record) throws DBException
 		{
 			if(updateStatement == null)
 			{
@@ -405,7 +405,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return updateStatement.executeUpdate() == 1;
 		}
 		
-		public void upsert(Record record) throws DBException
+		public synchronized void upsert(Record record) throws DBException
 		{
 			// TODO first read http://stackoverflow.com/questions/3634984/insert-if-not-exists-else-update 
 			// and http://stackoverflow.com/questions/418898/sqlite-upsert-not-insert-or-replace
@@ -415,7 +415,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public boolean delete(Record record) throws DBException
+		public synchronized boolean delete(Record record) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -435,7 +435,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
 		 */
-		public int delete(RecordsQuery query) throws DBException
+		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
 			SapelliSQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
@@ -457,7 +457,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordSelectHelper)
 		 */
 		@Override
-		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
+		protected synchronized List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
 			ISQLiteCursor cursor = null;
 			try
@@ -493,7 +493,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#getRecordCount()
 		 */
 		@Override
-		public long getRecordCount() throws DBException
+		public synchronized long getRecordCount() throws DBException
 		{
 			if(countStatement == null)
 				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
@@ -501,7 +501,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		@Override
-		public void release()
+		public synchronized void release()
 		{
 			if(existsStatement != null)
 				existsStatement.close();

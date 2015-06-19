@@ -33,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -375,9 +376,14 @@ public abstract class MediaField extends Field
 	
 	public File getAttachment(FileStorageProvider fileStorageProvider, Record record, int index)
 	{
+		return getAttachmentFromOffset(fileStorageProvider, record, getCreationTimeOffset(record, index));
+	}
+	
+	protected Long getCreationTimeOffset(Record record, int index)
+	{
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets != null && index >= 0 && index < offsets.size())
-			return getAttachmentFromOffset(fileStorageProvider, record, offsets.get(index));
+			return offsets.get(index);
 		else
 			return null;
 	}
@@ -439,7 +445,7 @@ public abstract class MediaField extends Field
 		
 		// Assemble base filename
 		// Format: "FieldID_DeviceID_DateTime_CreationTimeOffset"
-		String filename = this.getID() + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
+		String filename = FileHelpers.makeValidFileName(this.getID()) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
 		String extension = getFileExtension();
 		char extensionSeparator = '.';
 		

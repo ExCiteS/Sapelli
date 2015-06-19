@@ -83,8 +83,10 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
+	// STATIC ------------------------------------------------------------
 	static protected final String SPACE = " ";
 	
+	// DYNAMIC -----------------------------------------------------------
 	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
@@ -130,7 +132,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
 			
 			// Upgrade if necessary:
-			if(dbVersion < version)
+			if(dbVersion < version && upgrader != null)
 				upgrader.upgrade(this, dbVersion, version);
 		}
 		catch(DBException e)
@@ -636,7 +638,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			sqlColumns.put(sourceCP, sqlColumn);
 			
 			// Deal with AutoIncr...
-			if(sourceCP.getColumn().equals(autoIncrementKeySapColumn, true, true))
+			if(sourceCP.getColumn() == autoIncrementKeySapColumn)
 				this.autoIncrementKeySQLColumn = sqlColumn;
 			
 			// Deal with composites...
@@ -1400,13 +1402,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// Columns:
-			int c = 0;
 			for(SColumn sqlCol : table.sqlColumns.values())
 			{
 				bldr.openTransaction(SPACE);
 				bldr.append(sqlCol.name);
 				bldr.append(sqlCol.type);
-				bldr.append(colConstraints.get(c++));
+				bldr.append(colConstraints.get(sqlCol));
 				bldr.commitTransaction();
 			}
 			// Table constraints:
@@ -1971,6 +1972,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			Order order = recordsQuery.getOrder();
 			if(order.isDefined())
 			{
+				bldr.append("ORDER BY");
 				bldr.append(table.getSQLColumn(order.getBy()).name);
 				bldr.append(order.isAsc() ? "ASC" : "DESC");
 			}

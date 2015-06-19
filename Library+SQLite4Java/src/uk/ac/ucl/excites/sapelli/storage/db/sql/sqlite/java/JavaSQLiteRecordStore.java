@@ -119,7 +119,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException
+	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
 		// Get statement:
 		JavaSQLiteStatement selectStatement = getStatement(sql, paramCols);

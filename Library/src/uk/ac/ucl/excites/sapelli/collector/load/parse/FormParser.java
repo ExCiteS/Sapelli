@@ -1077,10 +1077,12 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// </Item>, </List> or </MultiList>
 		else if(qName.equals(TAG_LISTITEM) || qName.equals(TAG_LIST) || qName.equals(TAG_MULTILIST))
 		{
+			if(currentListItem == null && qName.equals(TAG_LISTITEM))
+				throw new SAXException("<" + TAG_LISTITEM + "> should only appear inside a <" + TAG_LIST + ">, a <" + TAG_MULTILIST + "> or another <" + TAG_LISTITEM + ">.");
 			if(currentListItem.isRoot() && currentListItem.isLeaf())
 				throw new SAXException("A list needs at least 1 <Item> (but 2 or more probably makes more sense).");
 			if(!currentListItem.isLeaf() && currentListItem.getDefaultChild() == null)
-				currentListItem.setDefaultChild(currentListItem.getChildren().get(0)); // first child become default
+				currentListItem.setDefaultChild(currentListItem.getChildren().get(0)); // first child becomes default
 			currentListItem = currentListItem.getParent(); // parent (possibly null in case of root) becomes currentListItem
 		}
 		
