@@ -14,8 +14,7 @@
 	distributed under the License is distributed on an "AS IS" BASIS,
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
-	limitations under the License.
- -->
+	limitations under the License. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:compat="http://schemas.android.com/apk/res-auto" >
 
@@ -24,28 +23,45 @@
         android:id="@+id/action_add"
         android:icon="@drawable/ic_action_new"
         android:onClick="browse"
-        compat:showAsAction="always"
-        android:title="@string/add_project"/>
+        android:title="@string/add_project"
+        compat:showAsAction="always"/>
     <item
         android:id="@+id/action_remove"
         android:icon="@drawable/ic_action_discard"
         android:onClick="removeDialog"
-        compat:showAsAction="always"
-        android:title="@string/remove_project"/>
+        android:title="@string/remove_project"
+        compat:showAsAction="always"/>
     <item
         android:id="@+id/action_settings"
         android:icon="@drawable/ic_action_overflow"
-        compat:showAsAction="always"
-        android:title="@string/settings">
+        android:title="@string/settings"
+        compat:showAsAction="always">
         <menu>
-            <item
-                android:id="@+id/export_all"
-                android:onClick="exportRecords"
-                android:title="@string/exportAllProj"/>
-            <item
-                android:id="@+id/scan_qr"
-                android:onClick="scanQR"
-                android:title="@string/scan_qr_code"/>
+            <group android:id="@+id/groupLoad" >
+                <item
+                    android:icon="@drawable/ic_action_new"
+                    android:onClick="browse"
+                    android:title="@string/add_project"/>
+                <item
+                    android:id="@+id/scan_qr"
+                    android:onClick="scanQR"
+                    android:title="@string/scan_qr_code"/>
+                <item
+                    android:onClick=""
+                    android:title="Load project from URL"/>
+            </group>
+            <group android:id="@+id/groupData" >
+                <item
+                    android:id="@+id/export_all"
+                    android:onClick="exportRecords"
+                    android:title="@string/exportAllProj"/>
+                <item
+                    android:id="@+id/backup"
+                    android:icon="@android:drawable/ic_menu_save"
+                    android:onClick="backupSapelli"
+                    android:showAsAction="always"
+                    android:title="@string/backup"/>
+            </group>
             <item
                 android:id="@+id/about"
                 android:onClick="openAboutDialog"
@@ -54,33 +70,12 @@
     </item>
 
     <!--
-    <item
-        android:id="@+id/sender_settings_menuitem"
-        android:icon="@android:drawable/ic_menu_preferences"
-        android:onClick="openSenderSettings"
-        android:showAsAction="always"
-        android:title="@string/sender_settings_menuitem"/>
-     <item
-        android:id="@+id/statistics_menuitem"
-        android:icon="@android:drawable/ic_menu_info_details"
-        android:onClick="showStatistics"
-        android:showAsAction="always"
-        android:title="@string/statistics_menuitem"/> 
      <item
         android:id="@+id/import_records_menuitem"
         android:icon="@drawable/ic_menu_archive"
         android:onClick="importRecords"
         android:showAsAction="always"
-        android:title="@string/import_records_menuitem"/> 
-   
-    <item
-        android:id="@+id/backup"
-        android:icon="@android:drawable/ic_menu_save"
-        android:onClick="backupSapelli"
-        android:showAsAction="always"
-        android:title="@string/backup"/>
-    
-
+        android:title="@string/import_records_menuitem"/> 
     -->
 
 </menu>

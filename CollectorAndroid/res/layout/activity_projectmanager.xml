@@ -31,9 +31,8 @@
 		<TextView
             android:id="@+id/lblProjectTitle"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_height="48dip" />
+            android:layout_height="48dip"
+            android:gravity="center" />
 
         <com.astuetz.PagerSlidingTabStrip
             android:id="@+id/tabs"

@@ -99,6 +99,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
 	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 3;
+	
+	private static final int PAGER_MARGIN_DIP = 4;
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
@@ -111,7 +113,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	private TextView addProjects;
 	private PagerSlidingTabStrip tabs;
 	private ViewPager pager;
-	private int pageMargin;
 	private PagerAdapter adapter;
 	private Dialog encryptionDialog;
 	private DeviceID deviceID;
@@ -132,16 +133,17 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		//else ...
 		// Only if not in demo mode:
 		
-		// Set-up UI...
 		// Hide soft keyboard on create
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+		
+		// Set-up UI...
 		setContentView(R.layout.activity_projectmanager);
 		drawerList = (ListView) findViewById(R.id.left_drawer);
 		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		lblProjectTitle = (TextView) findViewById(R.id.lblProjectTitle);
 		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
 		pager = (ViewPager) findViewById(R.id.pager);
-		pageMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
+		pager.setPageMargin((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, PAGER_MARGIN_DIP, getResources().getDisplayMetrics()));
 		addProjects = (TextView) findViewById(R.id.addProjects);
 		runProject = (Button) findViewById(R.id.btn_runProject);
 
@@ -187,7 +189,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	}
 	
 	/**
-	 * Clickon the big '+' actionbar button
+	 * Click on the big '+' actionbar button
 	 * 
 	 * @param menuItem
 	 */
@@ -310,15 +312,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
-		if (parsedProjects != null)
+		if(parsedProjects != null)
 			menu.findItem(R.id.action_remove).setVisible(!parsedProjects.isEmpty());
-		return true;
-	}
-
-	public boolean openSenderSettings(MenuItem item)
-	{
-		// TODO Re-enable the service at same point
-		// startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
 
@@ -360,7 +355,12 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		return true;
 	}
 
-	// Export all projects!!
+	/**
+	 * Export all projects
+	 * 
+	 * @param item
+	 * @return
+	 */
 	public boolean exportRecords(MenuItem item)
 	{
 		ExportFragment exportFragment = ExportFragment.newInstance(true);
@@ -426,11 +426,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		pager.setAdapter(adapter);
 		if(!parsedProjects.isEmpty())
 		{
-			//getSupportActionBar().setTitle(parsedProjects.get(0).getName());
 			lblProjectTitle.setVisibility(View.VISIBLE);
 			lblProjectTitle.setText(parsedProjects.get(0).toString());
 			selectedProject = parsedProjects.get(0);
-			pager.setPageMargin(pageMargin);
 			tabs.setViewPager(pager);
 			tabs.setVisibility(View.VISIBLE);
 			pager.setVisibility(View.VISIBLE);
