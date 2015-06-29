@@ -14,7 +14,8 @@
 	distributed under the License is distributed on an "AS IS" BASIS,
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
-	limitations under the License. -->
+	limitations under the License.
+-->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:compat="http://schemas.android.com/apk/res-auto" >
 
@@ -56,26 +57,35 @@
                     android:onClick="exportRecords"
                     android:title="@string/exportAllProj"/>
                 <item
+                    android:id="@+id/import_records_menuitem"
+                    android:icon="@drawable/ic_menu_archive"
+                    android:onClick="importRecords"
+                    android:showAsAction="always"
+                    android:title="@string/import_records_menuitem"/>
+                <item
                     android:id="@+id/backup"
                     android:icon="@android:drawable/ic_menu_save"
                     android:onClick="backupSapelli"
                     android:showAsAction="always"
                     android:title="@string/backup"/>
             </group>
+
             <item
-                android:id="@+id/about"
+                android:id="@+id/about_menuitem"
+                android:icon="@android:drawable/ic_menu_info_details"
                 android:onClick="openAboutDialog"
+                android:showAsAction="always"
                 android:title="@string/about"/>
         </menu>
     </item>
 
     <!--
-     <item
-        android:id="@+id/import_records_menuitem"
-        android:icon="@drawable/ic_menu_archive"
-        android:onClick="importRecords"
+    <item
+        android:id="@+id/delete_records_menuitem"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:onClick="deleteRecords"
         android:showAsAction="always"
-        android:title="@string/import_records_menuitem"/> 
+        android:title="@string/delete_records_menuitem"/>
     -->
 
 </menu>

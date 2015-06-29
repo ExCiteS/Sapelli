@@ -44,7 +44,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
-			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getName());
+			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getAbsolutePath());
 			
 			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
 			

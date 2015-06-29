@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -176,9 +177,14 @@ public abstract class MediaField extends Field
 
 	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
-		String filename = generateFilename(record, getCount(record));
+		return getMediaFile(fileStorageProvider, record, getCount(record));
+	}
+	
+	public File getMediaFile(FileStorageProvider fileStorageProvider, Record record, int attachementNumber) throws FileStorageException
+	{
+		String filename = generateFilename(record, attachementNumber);
 		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.project, true).getAbsolutePath();
-		return new File(dataFolderPath + File.separator + filename);
+		return new File(dataFolderPath + File.separator + filename);		
 	}
 	
 	/**
@@ -213,7 +219,7 @@ public abstract class MediaField extends Field
 		
 		// Assemble base filename
 		//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
-		String filename = this.getID() + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
+		String filename = FileHelpers.makeValidFileName(this.getID()) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
 		String extension = getFileExtension();
 		char extensionSeparator = '.';
 		

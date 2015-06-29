@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.commons.io.FileUtils;
+
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -485,19 +487,9 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			return;
 		}
 	
-		// Move attachments from temp to data folder:
-		try
-		{
-			File dataFolder = fileStorageProvider.getProjectAttachmentFolder(project, true);
-			for(File attachment : currFormSession.getMediaAttachments())
-				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(e));
-			return;
-		}
+		// Persist attachments (which are already in the correct folder) by forgetting about them,
+		//	so they are not deleted when the controller is stopped (e.g. upon activity destroy).
+		currFormSession.getMediaAttachments().clear(); // !!!
 	
 		// Signal the successful storage of the currentRecord
 		// Vibration
@@ -530,8 +522,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		
 		// Delete any attachments:
 		for(File attachment : currFormSession.getMediaAttachments())
-			if(attachment.exists())
-				attachment.delete();
+			FileUtils.deleteQuietly(attachment);
 		currFormSession.getMediaAttachments().clear();
 	}
 	

@@ -119,6 +119,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener, 
 		// Output destination:
 		btnDestination = (Button) findViewById(R.id.btnDestination);
 		btnDestination.setEnabled(false); // TODO make export path configurable (for now it is not)
+		btnDestination.setVisibility(View.GONE); // for now we hide this
 		
 		// Export format fragment:
 		frgFormat = (ExportFormatFragment) getSupportFragmentManager().findFragmentById(R.id.frgFormat);
@@ -295,7 +296,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener, 
 			@Override
 			public void run()
 			{
-				new RecordsTasks.Delete(ExportActivity.this, ExportActivity.this).execute(result.getExportedRecords());
+				new RecordsTasks.DeleteTask(ExportActivity.this, ExportActivity.this).execute(result.getExportedRecords());
 			}
 		};
 		
@@ -342,6 +343,12 @@ public class ExportActivity extends ProjectActivity implements OnClickListener, 
 			showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(reason)), true);
 		else
 			this.finish();
+	}
+
+	@Override
+	public void deleteSuccess()
+	{
+		// do nothing
 	}	
 
 }
