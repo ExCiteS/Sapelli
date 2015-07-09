@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.load;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
@@ -110,16 +111,8 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		if(ttvJobComplete == null)
 			ttvJobComplete = new Semaphore(0);
 
-		// TODO the method signature for TextToSpeech#synthesizeToFile changed in API 21 / Lollipop.
-		// Check build version here when SDK is updated to include level 21 and call the new version if appropriate:
-
-		// Set params of synthesis job by creating a hash table:
-		HashMap<String, String> params = new HashMap<String, String>();
-		// use text to be synthesised as "utterance ID" for job:
-		params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
-		
 		// Start synthesis job:
-		if(tts.synthesizeToFile(text, params, filepath) == TextToSpeech.ERROR)
+		if(synthesizeToFile(text, filepath) == TextToSpeech.ERROR)
 			throw new TTVSynthesisFailedException(text);
 		
 		// Block thread until synthesis job completes:
@@ -131,9 +124,35 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		{
 			e.printStackTrace();
 		}
-		Log.d("TTV","Job completed");
+		Log.d("TTV", "Job completed");
+	}
+	
+	private int synthesizeToFile(String textToSynthesize, String filepath)
+	{
+		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP /* = 21 */)
+			return synthesizeToFileLollipop(textToSynthesize, filepath);
+		else
+			return synthesizeToFilePreLollipop(textToSynthesize, filepath);
 	}
 
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+	private int synthesizeToFileLollipop(String textToSynthesize, String filepath)
+	{
+		return tts.synthesizeToFile(textToSynthesize, null, new File(filepath), textToSynthesize); // Use text to be synthesised as "utterance ID" for job
+	}
+
+	@SuppressWarnings("deprecation")
+	private int synthesizeToFilePreLollipop(String textToSynthesize, String filepath)
+	{
+		// Set params of synthesis job by creating a hash table:
+		HashMap<String, String> params = new HashMap<String, String>();
+		// use text to be synthesised as "utterance ID" for job:
+		params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, textToSynthesize);
+		
+		// Start synthesis job:
+		return tts.synthesizeToFile(textToSynthesize, params, filepath);
+	}
+	
 	/**
 	 * Sets the TTS engine's language to the one specified by the provided language code.
 	 * 
