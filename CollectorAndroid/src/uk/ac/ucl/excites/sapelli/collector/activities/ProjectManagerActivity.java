@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
@@ -30,21 +31,23 @@ import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
-import uk.ac.ucl.excites.sapelli.collector.ui.PagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.tasks.DeleteData;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
+import uk.ac.ucl.excites.sapelli.collector.ui.ProjectManagerPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import android.annotation.SuppressLint;
@@ -52,30 +55,31 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.util.Patterns;
 import android.util.TypedValue;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -87,7 +91,7 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements StoreHandle.StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener, RecordsTasks.ImportCallback
+public class ProjectManagerActivity extends BaseActivity implements StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener, RecordsTasks.ImportCallback
 {
 
 	// STATICS--------------------------------------------------------
@@ -104,26 +108,24 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	private static final int PAGER_MARGIN_DIP = 4;
 
 	// DYNAMICS-------------------------------------------------------
+	private DeviceID deviceID;
 	private ProjectStore projectStore;
-	private Project selectedProject;
-	private String[] projectsArray;
-	private List<Project> parsedProjects;
+	private Project currentProject;
+	
+	private ArrayAdapter<ProjectDescriptor> projectListAdaptor;
 
 	// UI
-	private TextView lblProjectTitle;
 	private TextView addProjects;
 	private PagerSlidingTabStrip tabs;
 	private ViewPager pager;
-	private PagerAdapter adapter;
 	private Dialog encryptionDialog;
-	private DeviceID deviceID;
-	private ListView drawerList;
+	private TextView lblAvailableProjects;
+	private ListView projectList;
+	private Toolbar mainToolbar;
+	private Toolbar drawerToolbar;
 	private ActionBarDrawerToggle drawerToggle;
 	private DrawerLayout drawerLayout;
-	private Button runProject;
 	
-	private boolean initialised = false;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -139,90 +141,86 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		
 		// Set-up UI...
 		setContentView(R.layout.activity_projectmanager);
-		drawerList = (ListView) findViewById(R.id.left_drawer);
+		lblAvailableProjects = (TextView) findViewById(R.id.lblAvailableProjects);
+		projectList = (ListView) findViewById(R.id.projectList);
 		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-		lblProjectTitle = (TextView) findViewById(R.id.lblProjectTitle);
+		mainToolbar = (Toolbar) findViewById(R.id.projMngrToolbar);
+		drawerToolbar = (Toolbar) findViewById(R.id.drawerToolbar);
 		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
 		pager = (ViewPager) findViewById(R.id.pager);
 		pager.setPageMargin((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, PAGER_MARGIN_DIP, getResources().getDisplayMetrics()));
 		addProjects = (TextView) findViewById(R.id.addProjects);
-		runProject = (Button) findViewById(R.id.btn_runProject);
+		
+		// We use a Toolbar as the ActionBar:
+		mainToolbar.setSubtitleTextAppearance(this, R.style.TextAppearance_Sap_ActionBarSubTitleText); // somehow I could specific this at the XML level (see styles.xml)
+	    setSupportActionBar(mainToolbar);
+		
+		// Enable ActionBar icon to behave as action to toggle drawer
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setHomeButtonEnabled(true);
+		actionBar.setDisplayShowHomeEnabled(true);
 
-		addProjects.setOnClickListener(new OnClickListener()
+		// ActionBarDrawerToggle ties together the the proper interactions
+		// between the navigation drawer and the action bar app icon.
+		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, mainToolbar, 0, 0)
 		{
-			@SuppressLint("ClickableViewAccessibility")
 			@Override
-			public void onClick(View v)
+			public void onDrawerClosed(View drawerView)
 			{
-				browse(v);
-			}
-		});
-
-		// Set the drawer toggle as the DrawerListener
-		drawerLayout.setDrawerListener(drawerToggle);
-		// enable ActionBar icon to behave as action to toggle drawer
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-		getSupportActionBar().setHomeButtonEnabled(true);
-		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.drawable.ic_drawer)
-		{
-
-			/** Called when a drawer has settled in a completely closed state. */
-			public void onDrawerClosed(View view)
-			{
-				super.onDrawerClosed(view);
-				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+				super.onDrawerClosed(drawerView);
+				supportInvalidateOptionsMenu(); // calls onPrepareOptionsMenu()
 			}
 
-			/** Called when a drawer has settled in a completely open state. */
+			@Override
 			public void onDrawerOpened(View drawerView)
 			{
 				super.onDrawerOpened(drawerView);
-				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+				supportInvalidateOptionsMenu(); // calls onPrepareOptionsMenu()
 			}
 		};
 
+		// Defer code dependent on restoration of previous instance state.
+		// NB: required for the drawer indicator to show up!
+		drawerLayout.post(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				drawerToggle.syncState();
+			}
+		});
+		
 		// Set the drawer toggle as the DrawerListener
 		drawerLayout.setDrawerListener(drawerToggle);
-
+		
 		// Set the list's click listener
-		drawerList.setOnItemClickListener(this);
+		projectList.setOnItemClickListener(this);
+		
+		// Set the drawerToolbar title & menu:
+		drawerToolbar.setTitle(getString(R.string.add_new_project) + ":");
+		drawerToolbar.inflateMenu(R.menu.projectload);
+		// 	Force displaying of icons in overflow menu:
+		MenuHelpers.forceMenuIcons(drawerToolbar.getMenu());
+	}
+		
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		// Inflate main actionbar menu:
+		getMenuInflater().inflate(R.menu.projectmanager, menu);
+		
+		// Inflate & set projectload submenu:
+		getMenuInflater().inflate(R.menu.projectload, menu.findItem(R.id.action_load).getSubMenu());
+		
+		// Dis/enable remove action:
+		menu.findItem(R.id.action_remove).setVisible(projectListAdaptor != null && projectListAdaptor.getCount() > 0);
 
+		// Force displaying of icons in overflow menu:
+		MenuHelpers.forceMenuIcons(menu);
+		
+		return true;
 	}
 	
-	/**
-	 * Click on the big '+' actionbar button
-	 * 
-	 * @param menuItem
-	 */
-	public void browse(MenuItem menuItem)
-	{
-		browse(true);
-	}
-	
-	/**
-	 * Click on the old 'Browse' button
-	 * 
-	 * @param view
-	 */
-	public void browse(View view)
-	{
-		browse(false);
-	}
-	
-	public void browse(boolean loadImmediately)
-	{
-		// Use the GET_CONTENT intent from the utility class
-		Intent target = FileUtils.createGetContentIntent();
-		// Create the chooser Intent
-		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
-		try
-		{
-			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
-			startActivityForResult(intent, loadImmediately ? RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD : RETURN_BROWSE_FOR_PROJECT_LOAD);
-		}
-		catch(ActivityNotFoundException e){}
-	}
-
 	@Override
 	protected void onResume()
 	{
@@ -230,7 +228,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		
 		// Initialise DeviceID:
 		DeviceID.Initialise(this, this); // will post a callback upon completion (success/failure)
-
+		
 		// Get ProjectStore instance:
 		try
 		{
@@ -247,14 +245,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		if(app.getBuildInfo().isDemoBuild())
 			demoMode();
 		else
-			if (!initialised)
-			{
-				// TODO think about the fact that this will be called when you return to the PMActivity after selecting a file... temp fix for now but need more thought:
-				new RetrieveProjectsTask().execute(); // Update project list
-				initialised = true;
-			}
-		// TODO remember & re-select last selected project
-
+			updateProjectList(false);
+			
+		// TODO remember & re-select last selected project (using preferences)
+		
 		// stop tracing
 		Debug.stopMethodTracing();
 	}
@@ -277,6 +271,206 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		showErrorDialog(R.string.noDeviceID, true);
 	}
 
+	private void updateProjectList(boolean force)
+	{
+		if(projectListAdaptor == null || force)
+			new RetrieveProjectDescriptorsTask().execute();
+	}
+	
+	private class RetrieveProjectDescriptorsTask extends AsyncTaskWithWaitingDialog<Void, List<ProjectDescriptor>>
+	{
+		
+		public RetrieveProjectDescriptorsTask()
+		{
+			super(ProjectManagerActivity.this, getString(R.string.load_projects));
+		}
+
+		@Override
+		protected List<ProjectDescriptor> doInBackground(Void... params)
+		{
+			return projectStore.retrieveProjectsOrDescriptors();
+		}
+
+		@Override
+		protected void onPostExecute(List<ProjectDescriptor> result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+
+			// Sort alphabetically:
+			Collections.sort(result);
+			
+			// Update drawer list:
+			projectListAdaptor = new ArrayAdapter<ProjectDescriptor>(ProjectManagerActivity.this, R.layout.projectlist_item, result);
+			projectList.setAdapter(projectListAdaptor);
+			
+			// Set label above list:
+			lblAvailableProjects.setText(result.isEmpty() ? R.string.no_projects : R.string.switch_project);
+			
+			// Select project:
+			if(currentProject != null)
+			{	// look for current project in result list:
+				for(int i = 0; i < result.size(); i++)
+					if(result.get(i).equalDescription(currentProject))
+					{	// (Re)select current project:
+						projectList.setItemChecked(i, true);
+						return; // !!! (no need to switch projects)
+					}
+			}
+			// select nothing or first project in list:
+			switchToProject(result.isEmpty() ? null : result.get(0)); 
+		}
+
+	}
+	
+	/**
+	 * Called when user selected a Project(Descriptor) from the Drawer
+	 * 
+	 * @param parent
+	 * @param view
+	 * @param position
+	 * @param id
+	 */
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+	{
+		// Switch project:
+		switchToProject(projectListAdaptor.getItem(position));
+
+		// Close drawer:
+		closeDrawer(null);
+	}
+	
+	private void switchToProject(ProjectDescriptor projDescr)
+	{		
+		// If we got null or a Project object (instead of a plain ProjectDesciptor):
+		if(projDescr == null || projDescr instanceof Project)
+			setCurrentProject((Project) projDescr);
+		
+		// If we got a ProjectDesciptor:
+		else if(projDescr.equals(currentProject))
+			return; // this is already the current project
+		
+		else // Parse project:
+			new ReloadProjectTask().execute(projDescr);
+	}
+	
+	private class ReloadProjectTask extends AsyncTaskWithWaitingDialog<ProjectDescriptor, Project>
+	{
+		
+		public ReloadProjectTask()
+		{
+			super(ProjectManagerActivity.this, getString(R.string.projectLoading));
+		}
+
+		@Override
+		protected Project doInBackground(ProjectDescriptor... params)
+		{
+			return projectStore.retrieveProject(params[0]);
+		}
+
+		@Override
+		protected void onPostExecute(Project project)
+		{
+			// Dismiss dialog:
+			super.onPostExecute(project);
+			
+			// Set as current project:
+			setCurrentProject(project);
+			
+			// Refresh drawer list (to use project instead of projectDescriptor instance):
+			updateProjectList(true);
+		}
+
+	}
+	
+	/**
+	 * @param project - may be null
+	 */
+	private void setCurrentProject(Project project)
+	{
+		if(currentProject == project && currentProject != null)
+			return; // this is already the current project
+		
+		//else...
+		currentProject = project;
+		pager.setAdapter(new ProjectManagerPagerAdapter(this, getSupportFragmentManager()));
+		if(currentProject != null)
+		{
+			getSupportActionBar().setTitle(currentProject.getName());
+			getSupportActionBar().setSubtitle(currentProject.getVariantVersionString());
+			tabs.setViewPager(pager);
+			tabs.setVisibility(View.VISIBLE);
+			pager.setVisibility(View.VISIBLE);
+			addProjects.setVisibility(View.GONE);
+		}
+		else
+		{
+			getSupportActionBar().setTitle(R.string.sapelli);
+			getSupportActionBar().setSubtitle(R.string.collector);
+			tabs.setVisibility(View.GONE);
+			pager.setVisibility(View.GONE);
+			addProjects.setVisibility(View.VISIBLE);
+		}
+
+		supportInvalidateOptionsMenu();
+	}
+	
+	public Project getCurrentProject(boolean errorIfNull)
+	{
+		if(currentProject == null)
+		{
+			if(errorIfNull)
+				showErrorDialog(R.string.selectProject, false);
+			return null;
+		}
+		return currentProject;
+	}
+	/**
+	 * Click on the big '+' actionbar button
+	 * 
+	 * @param menuItem
+	 */
+	public void browse(MenuItem menuItem)
+	{
+		browse(true);
+		closeDrawer(null);
+	}
+	
+	public void browse(boolean loadImmediately)
+	{
+		// Use the GET_CONTENT intent from the utility class
+		Intent target = FileUtils.createGetContentIntent();
+		// Create the chooser Intent
+		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+		try
+		{
+			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
+			startActivityForResult(intent, loadImmediately ? RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD : RETURN_BROWSE_FOR_PROJECT_LOAD);
+		}
+		catch(ActivityNotFoundException e){}
+	}
+	
+	public void enterURL(MenuItem menuItem)
+	{
+		closeDrawer(null);
+		
+		// Build & show input dialog:
+		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
+		bldr.setTitle(R.string.enter_url_title);
+		bldr.setMessage(R.string.enterURLMsg);
+		final EditText input = new EditText(this);
+		bldr.setView(input);
+		bldr.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton)
+			{
+				loadProject(input.getText().toString());
+			}
+		});
+		bldr.setNegativeButton(android.R.string.cancel, null);
+		bldr.show();
+	}
+	
 	private void demoMode()
 	{
 		try
@@ -308,15 +502,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		// super:
 		super.onDestroy();
 	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu)
-	{
-		getMenuInflater().inflate(R.menu.projectmanager, menu);
-		if(parsedProjects != null)
-			menu.findItem(R.id.action_remove).setVisible(!parsedProjects.isEmpty());
-		return true;
-	}
 	
 //	@Override
 //	public boolean onOptionsItemSelected(MenuItem item)
@@ -346,9 +531,29 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 //		}
 //		return true;
 //	}
+	
+	public void closeDrawer(View view)
+	{
+		drawerLayout.closeDrawers();
+	}
 
-	@SuppressLint("InflateParams")
+	/**
+	 * @param view
+	 */
+	public void openAboutDialog(View view)
+	{
+		openAboutDialog();
+		closeDrawer(null);
+	}
+	
 	public boolean openAboutDialog(MenuItem item)
+	{
+		openAboutDialog();
+		return true;
+	}
+	
+	@SuppressLint("InflateParams")
+	private void openAboutDialog()
 	{
 		// Set-up UI:
 		View view = LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
@@ -362,27 +567,17 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 				"<p>" + getString(R.string.license)  + "</p>" +
 				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));	
 		infoLbl.setPadding(2, 2, 6, 2);
-		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
-		iconImg.setOnClickListener(new OnClickListener()
-		{
-			@Override
-			public void onClick(View v)
-			{
-				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://sapelli.org")));
-			}
-		});
 		
 		// Set-up dialog:
 		AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
 		dialogBuilder.setPositiveButton(getString(android.R.string.ok), null); // click will dismiss the dialog (BACK press will too)
 		AlertDialog aboutDialog = dialogBuilder.create();
 		aboutDialog.setView(view, 0, 10, 0, 0);
-		aboutDialog.setTitle(R.string.software_and_device_info);
+		aboutDialog.setIcon(R.drawable.ic_sapelli_logo);
+		aboutDialog.setTitle(R.string.app_name);
 
 		// Show the dialog:
 		aboutDialog.show();
-
-		return true;
 	}
 
 	/**
@@ -393,21 +588,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	 */
 	public boolean exportRecords(MenuItem item)
 	{
-		ExportFragment exportFragment = ExportFragment.newInstance(true);
-		exportFragment.show(getSupportFragmentManager(), TAG);
-		getSupportFragmentManager().executePendingTransactions();
-		exportFragment.getExportLayout().setBackgroundResource(0);
-		exportFragment.getDialog().setTitle(R.string.exportAllProj);
-
-		// Grab the window of the dialog, and change the width
-		WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-		Window window = exportFragment.getDialog().getWindow();
-		lp.copyFrom(window.getAttributes());
-		// This makes the dialog take up the full width
-		lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-		lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-		window.setAttributes(lp);
-
+		ExportFragment.ShowExportAllDialog(this, true);
 		return true;
 	}
 
@@ -428,7 +609,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	
 	public boolean deleteRecords(MenuItem item)
 	{
-		Project project = getSelectedProject(false);
+		Project project = getCurrentProject(false);
 		if(project != null)
 			new DeleteData(this).deleteFor(project);
 		return true;
@@ -446,87 +627,11 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		return true;
 	}
 
-	/**
-	 * Retrieve all parsed projects from db and populate tabs
-	 */
-	public void populateTabs()
-	{
-		projectsArray = new String[parsedProjects.size()];
-		for(int i = 0; i < parsedProjects.size(); i++)
-		{
-			projectsArray[i] = parsedProjects.get(i).getName() + " " + parsedProjects.get(i).getVersion();
-		}
-
-		// Set the adapter for the list view
-		drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, projectsArray));
-
-		adapter = new PagerAdapter(getSupportFragmentManager());
-		pager.setAdapter(adapter);
-		if(!parsedProjects.isEmpty())
-		{
-			lblProjectTitle.setVisibility(View.VISIBLE);
-			lblProjectTitle.setText(parsedProjects.get(0).toString());
-			selectedProject = parsedProjects.get(0);
-			tabs.setViewPager(pager);
-			tabs.setVisibility(View.VISIBLE);
-			pager.setVisibility(View.VISIBLE);
-			runProject.setVisibility(View.VISIBLE);
-			addProjects.setVisibility(View.GONE);
-		}
-		else
-		{
-			//getSupportActionBar().setTitle(R.string.app_name);
-			lblProjectTitle.setVisibility(View.GONE);
-			tabs.setVisibility(View.GONE);
-			pager.setVisibility(View.GONE);
-			runProject.setVisibility(View.GONE);
-			addProjects.setVisibility(View.VISIBLE);
-
-		}
-
-		supportInvalidateOptionsMenu();
-	}
-	
-	public void selectProject(Project project)
-	{
-		
-	}
-
-	public Project getSelectedProject(boolean errorIfNull)
-	{
-		if(selectedProject == null)
-		{
-			if(errorIfNull)
-				showErrorDialog(R.string.selectProject, false);
-			return null;
-		}
-		return selectedProject;
-	}
-
 	public void runProject(View view)
 	{
-		Project p = getSelectedProject(true);
+		Project p = getCurrentProject(true);
 		if(p != null)
 			startActivity(ProjectRunHelpers.getProjectRunIntent(this, p));
-	}
-
-	private void removeProject()
-	{
-		Project project = getSelectedProject(false);
-		if(project == null)
-			return;
-		
-		// Remove project from store:
-		projectStore.delete(project);
-		
-		// Remove installation folder:
-		org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(project, false));
-		
-		// Remove shortcut:
-		ProjectRunHelpers.removeShortcut(this, project);
-		
-		// Refresh list:
-		new RetrieveProjectsTask().execute();
 	}
 
 	public void loadProject(String path)
@@ -553,8 +658,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 					// Load & store project from local file:
 					new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
 				else
-					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile),
-							StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
+					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
 				// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
 				// Show parser warnings if needed:
 			}
@@ -564,8 +668,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	public void scanQR(MenuItem item)
 	{
 		// Start the Intent to Scan a QR code
-		IntentIntegrator integrator = new IntentIntegrator(this);
-		integrator.initiateScan(IntentIntegrator.QR_CODE_TYPES);
+		new IntentIntegrator(this).initiateScan(IntentIntegrator.QR_CODE_TYPES);
+		
+		closeDrawer(null);
 	}
 	
 	/**
@@ -575,7 +680,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	public boolean createShortcut()
 	{
 		// Get the selected project
-		Project selectedProject = getSelectedProject(true);
+		Project selectedProject = getCurrentProject(true);
 		if(selectedProject != null)
 			ProjectRunHelpers.createShortcut(this, fileStorageProvider, selectedProject);
 		return true;
@@ -588,7 +693,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	public boolean removeShortcut()
 	{
 		// Get the selected project
-		Project selectedProject = getSelectedProject(true);
+		Project selectedProject = getCurrentProject(true);
 		if(selectedProject != null)
 			ProjectRunHelpers.removeShortcut(this, selectedProject);
 		return true;
@@ -673,20 +778,57 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 	 */
 	public void removeDialog(MenuItem item)
 	{
-		Project project = getSelectedProject(true);
+		Project project = getCurrentProject(true);
 		if(project != null)
 		{
-			showYesNoDialog(R.string.project_manager, R.string.removeProjectConfirm, false, new Runnable()
+			showYesNoDialog(R.string.app_name, getString(R.string.removeProjectConfirm, project.toString(false)), false, new Runnable()
 			{
 				@Override
 				public void run()
 				{
-					removeProject();
+					new RemoveProjectTask().execute(getCurrentProject(false));
 				}
 			}, false);
 		}
 	}
+	
+	private class RemoveProjectTask extends AsyncTaskWithWaitingDialog<ProjectDescriptor, Void>
+	{
+		
+		public RemoveProjectTask()
+		{
+			super(ProjectManagerActivity.this, getString(R.string.projectRemoving));
+		}
 
+		@Override
+		protected Void doInBackground(ProjectDescriptor... params)
+		{
+			ProjectDescriptor projDescr = params[0];
+			if(projDescr != null)
+			{
+				// Remove project from store:
+				projectStore.delete(projDescr);
+				
+				// Remove installation folder:
+				org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(projDescr, false));
+				
+				// Remove shortcut:
+				ProjectRunHelpers.removeShortcut(ProjectManagerActivity.this, projDescr);
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+			
+			// Refresh list:
+			updateProjectList(true);
+		}
+
+	}
+	
 	@Override
 	protected void onPause()
 	{
@@ -736,8 +878,11 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		if(!bldr.isEmpty())
 			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
 		
+		// Select project:
+		setCurrentProject(project);
+		
 		// Update project list:
-		new RetrieveProjectsTask().execute();
+		updateProjectList(true);
 	}
 
 	@Override
@@ -750,42 +895,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreHandle.
 		// Report problem:
 		Log.e(TAG, "Could not load/store Sapelli file", cause);
 		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
-	}
-
-	@Override
-	public void onItemClick(AdapterView<?> parent, View view, int position, long id)
-	{
-		selectedProject = parsedProjects.get(position);
-		if(!parsedProjects.isEmpty())
-			getSupportActionBar().setTitle(selectedProject.getName());
-		else
-			getSupportActionBar().setTitle(R.string.app_name);
-		drawerLayout.closeDrawer(drawerList);
-
-	}
-
-	private class RetrieveProjectsTask extends AsyncTaskWithWaitingDialog<Void, List<Project>>
-	{
-
-		public RetrieveProjectsTask()
-		{
-			super(ProjectManagerActivity.this, getString(R.string.load_projects));
-		}
-
-		@Override
-		protected List<Project> doInBackground(Void... params)
-		{
-			return projectStore.retrieveProjects();
-		}
-
-		@Override
-		protected void onPostExecute(List<Project> result)
-		{
-			parsedProjects = result;
-			super.onPostExecute(result); // dismiss dialog
-			populateTabs();
-		}
-
 	}
 
 }

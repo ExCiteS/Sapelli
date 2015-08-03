@@ -1,24 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/exportLayout"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical" >
+<!--
+	Sapelli data collection platform: http://sapelli.org
+	
+	Copyright 2012-2014 University College London - ExCiteS group
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+ -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:fillViewport="true" >
 
-    <ViewSwitcher
-        android:id="@+id/viewSwitcher"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
 
         <LinearLayout
-            android:id="@+id/setExportDate"
-            android:layout_width="match_parent"
+            android:id="@+id/groupExportDateRange"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="10dp"
-            android:weightSum="2" >
+            android:paddingBottom="10dp" >
 
             <TextView
+                android:id="@+id/lblExportDateRange"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/exportDateRange" />
@@ -27,7 +43,6 @@
                 android:id="@+id/btnExportFromDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="10dp"
                 android:text="@string/exportDateRangeFrom" />
 
             <Button
@@ -37,134 +52,88 @@
                 android:text="@string/exportDateRangeTo" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/setExportFormat"
+		<LinearLayout
+		    android:id="@+id/groupExportDestination"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="10dp" >
+            android:paddingBottom="10dp" >
 
-            <LinearLayout
-                android:layout_width="fill_parent"
+            <TextView
+                android:id="@+id/lblExportDestination"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:text="@string/exportDestination" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/exportDestination" />
-
-                <Button
-                    android:id="@+id/btnDestination"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
+            <Button
+                android:id="@+id/btnDestination"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal"
-                android:paddingTop="10dp"
-                android:weightSum="2" >
+                android:textSize="16sp"
+                android:gravity="start|center_vertical" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical" >
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/exportFormat" />
-
-                    <Spinner
-                        android:id="@+id/spinExportFormat"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical" >
-
-                    <LinearLayout
-                        android:id="@+id/layoutXMLOptions"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone" >
-
-                        <TextView
-                            android:id="@+id/lblXMLMode"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/exportXMLMode" />
-
-                        <Spinner
-                            android:id="@+id/spinXMLMode"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/layoutCSVOptions"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone" >
-
-                        <TextView
-                            android:id="@+id/lblCSVMode"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/exportCSVSeparator" />
-
-                        <Spinner
-                            android:id="@+id/spinCSVSeparator"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
         </LinearLayout>
-    </ViewSwitcher>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray" />
-
-    <LinearLayout
-        android:id="@+id/layoutExportOKCancel"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:divider="?android:attr/dividerVertical"
-        android:orientation="horizontal" >
-
-        <Button
-            android:id="@+id/btnExportOK"
+        
+		<LinearLayout
+            android:id="@+id/groupExportFormat"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@layout/button_style"
-            android:text="@string/export" />
+            android:orientation="vertical"
+            android:paddingBottom="10dp" >
+		
+		    <TextView
+		        android:id="@+id/lblExportFormat"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="@string/exportFormat" />
+		
+		    <Spinner
+		        android:id="@+id/spinExportFormat"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content" />
+		
+		    <LinearLayout
+		        android:id="@+id/layoutXMLOptions"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:orientation="vertical"
+		        android:paddingTop="10dp"
+		        android:visibility="gone" >
+		
+		        <TextView
+		            android:id="@+id/lblXMLMode"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="@string/exportXMLMode" />
+		
+		        <Spinner
+		            android:id="@+id/spinXMLMode"
+		            android:layout_width="match_parent"
+		            android:layout_height="wrap_content" />
+		    </LinearLayout>
+		
+		    <LinearLayout
+		        android:id="@+id/layoutCSVOptions"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:orientation="vertical"
+		        android:paddingTop="10dp"
+		        android:visibility="gone" >
+		
+		        <TextView
+		            android:id="@+id/lblCSVMode"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="@string/exportCSVSeparator" />
+		
+		        <Spinner
+		            android:id="@+id/spinCSVSeparator"
+		            android:layout_width="match_parent"
+		            android:layout_height="wrap_content" />
+		    </LinearLayout>
+		    
+		</LinearLayout>
 
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@android:color/darker_gray" />
-
-        <Button
-            android:id="@+id/btn_exportSettings"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@layout/button_style"
-            android:text="@string/output" />
     </LinearLayout>
 
-</LinearLayout>
+</ScrollView>

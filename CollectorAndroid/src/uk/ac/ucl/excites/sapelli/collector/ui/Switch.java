@@ -25,7 +25,8 @@ import android.widget.CompoundButton;
  * 
  * 
  */
-public class Switch extends CompoundButton {
+public class Switch extends CompoundButton
+{
 	// left and right text
 	private CharSequence textLeft;
 	private CharSequence textRight;

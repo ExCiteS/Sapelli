@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.io;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -46,9 +46,9 @@ public class AndroidFileStorageProvider extends FileStorageProvider
 	}
 	
 	@Override
-	public File getProjectInstallationFolder(Project project, boolean create) throws FileStorageException
+	public File getProjectInstallationFolder(ProjectDescriptor projectDescr, boolean create) throws FileStorageException
 	{
-		return createNoMediaIn(super.getProjectInstallationFolder(project, create));
+		return createNoMediaIn(super.getProjectInstallationFolder(projectDescr, create));
 	}
 	
 	@Override

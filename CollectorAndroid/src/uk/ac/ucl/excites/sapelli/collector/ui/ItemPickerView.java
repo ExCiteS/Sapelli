@@ -63,7 +63,7 @@ public class ItemPickerView extends GridView
 		setAdapter(new PickerAdapter());
 		
 		// This is needed to hide the border when an picker item is pressed and to calculate the borders more appropriately
-		setSelector(R.drawable.picker_view_selector);
+		setSelector(R.drawable.projectlist_selector);
 	}
 	
 	public PickerAdapter getAdapter()

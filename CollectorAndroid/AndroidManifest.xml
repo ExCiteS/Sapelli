@@ -75,7 +75,6 @@
             android:configChanges="keyboardHidden|orientation|screenSize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -95,7 +94,6 @@
             android:label="File Manager" >
             <intent-filter>
                 <action android:name="android.intent.action.GET_CONTENT" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.OPENABLE" />
 
@@ -119,15 +117,6 @@
             </intent-filter>
         </receiver>
         -->
-
-        <activity
-            android:name="uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment"
-            android:label="@string/title_activity_export"
-            android:parentActivityName="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" />
-        </activity>
 
         <meta-data
             android:name="com.crashlytics.ApiKey"

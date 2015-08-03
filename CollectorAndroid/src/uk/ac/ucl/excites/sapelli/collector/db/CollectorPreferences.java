@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.util.Map;
 
-import uk.ac.ucl.excites.sapelli.util.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import android.content.Context;
 import android.content.SharedPreferences;
 

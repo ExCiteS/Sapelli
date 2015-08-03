@@ -15,30 +15,33 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- -->
+-->
 <android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res/uk.ac.ucl.excites.sapelli.collector"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent">
 
     <!-- The main content view -->
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/grey_transparent" >
-        
-		<TextView
-            android:id="@+id/lblProjectTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="48dip"
-            android:gravity="center" />
+        android:background="@color/background_material_light" >
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/projMngrToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
+            style="@style/Widget.Sap.ActionBar" />
 
         <com.astuetz.PagerSlidingTabStrip
             android:id="@+id/tabs"
             android:layout_width="match_parent"
             android:layout_height="48dip"
-            android:layout_below="@+id/lblProjectTitle"
+            android:layout_below="@+id/projMngrToolbar"
             android:background="@color/white" />
 
         <android.support.v4.view.ViewPager
@@ -57,34 +60,92 @@
             android:textAppearance="?attr/textAppearanceLargePopupMenu"
             android:textColor="@android:color/darker_gray" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_above="@+id/btn_runProject"
-            android:background="@android:color/darker_gray" />
-
-        <Button
-            android:id="@+id/btn_runProject"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:background="@layout/button_style"
-            android:onClick="runProject"
-            android:padding="10dp"
-            android:text="@string/run_project" />
     </RelativeLayout>
 
     <!-- The navigation drawer -->
 
-    <ListView
-        android:id="@+id/left_drawer"
-        android:layout_width="240dp"
+    <RelativeLayout
+        android:id="@+id/leftDrawer"
+        android:layout_width="245dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="@android:color/white"
-        android:choiceMode="singleChoice"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp" />
+        android:background="@color/colorPrimaryDark" >
+
+        <LinearLayout
+            android:id="@+id/drawerHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|top"
+            android:orientation="horizontal"
+            android:onClick="closeDrawer" >
+
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:padding="5dp"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/ic_sapelli_logo"
+                android:onClick="openAboutDialog" />
+
+	        <LinearLayout
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content"
+	            android:layout_gravity="top"
+	            android:paddingTop="5dp"
+	            android:gravity="top"
+	            android:orientation="vertical" >
+	            
+		        <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="@string/sapelli"
+		            android:textColor="@color/white"
+		            android:textAppearance="?android:attr/textAppearanceLarge" />
+		        
+		        <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="@string/collector"
+		            android:textColor="@color/white"
+		            android:textAppearance="?android:attr/textAppearanceMedium" />
+	            
+	        </LinearLayout>
+		</LinearLayout>
+        
+        <TextView
+            android:id="@+id/lblAvailableProjects"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:layout_below="@+id/drawerHeader"
+            android:text="@string/switch_project" />
+
+        <ListView
+            android:id="@+id/projectList"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:layout_below="@+id/lblAvailableProjects"
+            android:layout_centerInParent="true"
+            android:background="@color/white"
+            android:choiceMode="singleChoice"
+            android:listSelector="@drawable/projectlist_selector"
+            android:divider="@color/black"
+            android:dividerHeight="1dp"
+            android:paddingLeft="6dp"
+            android:paddingRight="6dp" />
+        
+		<android.support.v7.widget.Toolbar
+            android:id="@+id/drawerToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            style="@style/Widget.Sap.ActionBar"
+            app:titleTextAppearance="@style/TextAppearance.Sap.DrawerLoadToolbar"
+            android:minHeight="?attr/actionBarSize" />
+    </RelativeLayout>
 
 </android.support.v4.widget.DrawerLayout>

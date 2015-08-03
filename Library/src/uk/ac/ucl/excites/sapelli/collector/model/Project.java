@@ -31,7 +31,6 @@ import java.util.TreeSet;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
@@ -40,20 +39,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
  * 
  * @author mstevens
  */
-public class Project
+public class Project extends ProjectDescriptor
 {
 	
 	//STATICS-------------------------------------------------------------
-	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // = 24 bits (kept the same was the v1.x Schema#id, for backwards compatibility)
-	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned(!) 24bit integer (compatible with old schemaID)
-	
-	static public final String DEFAULT_VERSION = "0";
-	
-	static public final int PROJECT_FINGERPRINT_SIZE = 32; // project fingerprints are signed 32bit integer (like Java hashCodes)
-	
-	// Backwards compatibility:
-	static public final int PROJECT_ID_V1X_TEMP = -1;
-
 	static public final String DEFAULT_DEFAULT_LANGUAGE = "en"; // the default "default language" to set if there isn't one specified (English)
 	
 	static public final boolean DEFAULT_LOGGING = true;
@@ -63,12 +52,6 @@ public class Project
 	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MAX_SCHEMATA - 1 /* subtract 1 for the heartbeatSchema */);
 
 	//DYNAMICS------------------------------------------------------------
-	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
-	private final int fingerPrint;
-	private final String name;
-	private String variant;
-	private String version;
-
 	private TransmissionSettings transmissionSettings;
 	private String defaultLanguage;
 	private boolean logging;
@@ -77,9 +60,6 @@ public class Project
 	private Model model;
 	private Form startForm;
 	
-	// For backwards compatibility:
-	private Integer v1xSchemaVersion = null; // if this remains null the project is > v1.x
-		
 	/**
 	 * @param id
 	 * @param name
@@ -89,26 +69,7 @@ public class Project
 	 */
 	public Project(int id, String name, String variant, String version, int fingerPrint)
 	{
-		if(name == null || name.isEmpty())
-			throw new IllegalArgumentException("A valid name is required");
-		if(version == null || version.isEmpty())
-			throw new IllegalArgumentException("A valid version is required");
-		
-		// Name, variant & version:
-		this.name = name;
-		if(variant != null && !variant.isEmpty())
-			this.variant = variant;
-		this.version = version;
-		
-		// Finger print:
-		this.fingerPrint = fingerPrint; // must be set before initialise() is called!
-		
-		// Project id:
-		if(id == PROJECT_ID_V1X_TEMP)
-			//Backwards compatibility
-			this.v1xSchemaVersion = -1; // make variable non-null to mark project as v1.x, the real schemaVersion value will be set from setV1XSchemaInfo(), which will in turn call initialise() to set the project id
-		else
-			initialise(id); // checks if it fits in field
+		super(id, name, variant, version, fingerPrint);
 		
 		// Forms list:
 		this.forms = new ArrayList<Form>();
@@ -119,19 +80,12 @@ public class Project
 	}
 	
 	/**
-	 * Must stay private!
-	 * 
 	 * @param id
 	 */
-	private void initialise(int id)
+	@Override
+	protected void initialise(int id)
 	{
-		// Check & set id:
-		if(PROJECT_ID_FIELD.inEffectiveRange(this.id)) // check is there is already a valid id set
-			throw new IllegalStateException("Project id cannot be changed after it has been set.");
-		if(PROJECT_ID_FIELD.inEffectiveRange(id))
-			this.id = id;
-		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getEffectiveRangeString() + ".");
+		super.initialise(id); // !!!
 		
 		// Initialise Model (important this should remain last):
 		this.model = new Model(CollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
@@ -140,76 +94,6 @@ public class Project
 		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 	}
 	
-	/**
-	 * @return the id
-	 */
-	public int getID()
-	{
-		return id;
-	}
-	
-	/**
-	 * @return the v1xProject
-	 */
-	public boolean isV1xProject()
-	{
-		return v1xSchemaVersion != null;
-	}
-	
-	/**
-	 * Method for backwards compatibility with v1.x projects. Passes id & version of the schema of the (assumed only) form to the project.
-	 * 	- project id will be set to schema id of 1st (and assumed only) form
-	 *  - schema version of that form will be stored in schemaVersion variable (to be able to parse old record export xml files)
-	 * Can be used on v1.x projects only!
-	 * 
-	 * @param schemaID
-	 * @param schemaVersion
-	 */
-	public void setV1XSchemaInfo(int schemaID, int schemaVersion)
-	{
-		if(!isV1xProject())
-			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
-		initialise(schemaID); // schemaID of first (and only) form is used as projectID
-		if(Schema.V1X_SCHEMA_VERSION_FIELD.inEffectiveRange(schemaVersion))
-			this.v1xSchemaVersion = schemaVersion;
-		else
-			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getEffectiveRangeString() + ".");
-	}
-	
-	/**
-	 * @return the v1x schemaVersion, or null when the project is not a v1x project!
-	 */
-	public Integer getV1XSchemaVersion()
-	{
-		return v1xSchemaVersion;
-	}
-
-	public String getName()
-	{
-		return name;
-	}
-	
-	/**
-	 * @return the variant
-	 */
-	public String getVariant()
-	{
-		return variant;
-	}
-
-	public String getVersion()
-	{
-		return version;
-	}
-	
-	/**
-	 * @return the fingerPrint
-	 */
-	public int getFingerPrint()
-	{
-		return fingerPrint;
-	}
-
 	/**
 	 * Add a {@link Form} to the project
 	 * 
@@ -319,18 +203,6 @@ public class Project
 		this.transmissionSettings = transmissionSettings;
 	}
 	
-	@Override
-	public String toString()
-	{
-		return toString(false);
-	}
-	
-	public String toString(boolean verbose)
-	{
-		return 	name + (variant != null ? (" " + variant) : "") + " (v" + version + ")"
-				+ (verbose ? (" [id: " + id + "; fingerprint: " + fingerPrint + "]") : "");
-	}
-
 	/**
 	 * @return the logging
 	 */
@@ -410,26 +282,17 @@ public class Project
 			missingFilePaths.add(missingFile.getAbsolutePath().substring(startIndex));
 		return missingFilePaths;
 	}
-	
-	public boolean equalSignature(Project other)
-	{
-		return 	this.name.equals(other.name)
-				&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
-				&& this.version.equals(other.version);
-	}
-	
+
 	@Override
 	public boolean equals(Object obj)
 	{
 		if(this == obj)
 			return true; // references to same object
-		if(obj instanceof Project)
+		if(obj != null && obj.getClass() == Project.class)
 		{
 			Project that = (Project) obj;
-			return 	this.id == that.id &&
+			return 	super.equalDescription(that) &&
 					// no need to check the model here
-					equalSignature(that) && // checks name, variant & version
-					this.fingerPrint == that.fingerPrint &&
 					// TODO transmission settings?
 					(this.defaultLanguage != null ? this.defaultLanguage.equals(that.defaultLanguage) : that.defaultLanguage == null) &&
 					this.logging == that.logging &&
@@ -443,13 +306,8 @@ public class Project
 	@Override
 	public int hashCode()
 	{
+		int hash = super.hashCode(); // ProjectDescriptor#hashCode()
 		// Do not include the model here
-		int hash = 1;
-		hash = 31 * hash + id;
-		hash = 31 * hash + name.hashCode();
-		hash = 31 * hash + (variant == null ? 0 : variant.hashCode());
-		hash = 31 * hash + version.hashCode();
-		hash = 31 * hash + fingerPrint;
 		// TODO include transmission settings?
 		hash = 31 * hash + (defaultLanguage == null ? 0 : defaultLanguage.hashCode());
 		hash = 31 * hash + (logging ? 0 : 1);

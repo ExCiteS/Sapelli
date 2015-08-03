@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.ContextThemeWrapper;
 
 /**
@@ -37,7 +37,7 @@ import android.view.ContextThemeWrapper;
  * 
  * @author mstevens
  */
-public abstract class BaseActivity extends ActionBarActivity
+public abstract class BaseActivity extends AppCompatActivity
 {
 	
 	private static final int HIDE_BUTTON = -1;

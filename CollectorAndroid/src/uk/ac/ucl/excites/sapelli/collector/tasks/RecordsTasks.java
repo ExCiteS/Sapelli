@@ -25,6 +25,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -109,6 +110,22 @@ public final class RecordsTasks
 		
 		public void queryFailure(Exception reason);
 		
+	}
+	
+	@SuppressWarnings("unchecked")
+	static public void runExportTask(List<Record> records, ExportFragment exportFragment, File exportFolder, String exportDesc, ExportCallback callback)
+	{
+		switch(exportFragment.getSelectedFormat())
+		{
+			case CSV:
+				new CSVExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getCSVSeparator(), exportDesc, callback).execute(records);
+				break;
+			case XML:
+				new RecordsTasks.XMLExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getXMLCompositeMode(), exportDesc, callback).execute(records);
+				break;
+			default:
+				throw new IllegalStateException("Unknown export format: " + exportFragment.getSelectedFormat().toString());
+		}
 	}
 	
 	static public class ExportTask extends AsyncTaskWithWaitingDialog<List<Record>, ExportResult>
