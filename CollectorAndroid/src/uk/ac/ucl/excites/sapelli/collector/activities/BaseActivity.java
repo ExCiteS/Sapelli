@@ -18,17 +18,17 @@
 
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.ContextThemeWrapper;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.view.ContextThemeWrapper;
 
 /**
  * Abstract super class for our activities.
@@ -82,7 +82,7 @@ public abstract class BaseActivity extends AppCompatActivity
 					new CollectorPreferences(BaseActivity.this).clearSapelliFolder();
 				}
 			};
-			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
+			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.drawable.sapelli_logo, R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
 		}
 		catch(FileStorageUnavailableException e)
 		{
@@ -94,122 +94,225 @@ public abstract class BaseActivity extends AppCompatActivity
 
 	public void showOKDialog(int titleId, int messageId)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, messageId, null);
+	}
+
+	public void showOKDialog(int titleId, int messageId, Integer iconId)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, int messageId)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, messageId, null);
+	}
+	
+	public void showOKDialog(String title, int messageId, Integer iconId)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, String message)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, message, null);
+	}
+	
+	public void showOKDialog(int titleId, String message, Integer iconId)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, String message)
 	{
-		showDialog(title, message, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, message, null);
+	}
+	
+	public void showOKDialog(String title, String message, Integer iconId)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, int messageId, boolean finishOnOK)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, messageId, null, finishOnOK);
+	}
+	
+	public void showOKDialog(int titleId, int messageId, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, int messageId, boolean finishOnOK)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, messageId, null, finishOnOK);
+	}
+	
+	public void showOKDialog(String title, int messageId, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, String message, boolean finishOnOK)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, message, null, finishOnOK);
+	}
+	
+	public void showOKDialog(int titleId, String message, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, String message, boolean finishOnOK)
 	{
-		showDialog(title, message, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, message, null, finishOnOK);
+	}
+	
+	public void showOKDialog(String title, String message, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, int messageId, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, messageId, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(int titleId, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, int messageId, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, messageId, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(String title, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, String message, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, message, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(int titleId, String message, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, String message, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(title, message, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, message, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(String title, String message, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKCancelDialog(int titleId, int messageId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(titleId, messageId, null, finishOnOK, okTask, finishOnCancel);
 	}
 
+	public void showOKCancelDialog(int titleId, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+	}
+	
 	public void showOKCancelDialog(String title, int messageId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(title, messageId, null, finishOnOK, okTask, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(String title, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
 	}
 	
 	public void showOKCancelDialog(int titleId, String message, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(titleId, message, null, finishOnOK, okTask, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(int titleId, String message, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
 	}
 	
 	public void showOKCancelDialog(String title, String message, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(title, message, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(title, message, null, finishOnOK, okTask, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(String title, String message, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
 	}
 	
 	public void showYesNoDialog(int titleId, int messageId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
 	{
-		showDialog(getString(titleId), getString(messageId), R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showYesNoDialog(titleId, messageId, null, finishOnYes, yesTask, finishOnNo);
 	}
 
+	public void showYesNoDialog(int titleId, int messageId, Integer iconId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+	}
+	
 	public void showYesNoDialog(String title, int messageId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
 	{
-		showDialog(title, getString(messageId), R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showYesNoDialog(title, messageId, null, finishOnYes, yesTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(String title, int messageId, Integer iconId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(title, getString(messageId), iconId, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
 	}
 	
 	public void showYesNoDialog(int titleId, String message, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
 	{
-		showDialog(getString(titleId), message, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showYesNoDialog(titleId, message, null, finishOnYes, yesTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(int titleId, String message, Integer iconId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(getString(titleId), message, iconId, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
 	}
 	
 	public void showYesNoDialog(String title, String message, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
 	{
-		showDialog(title, message, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showYesNoDialog(title, message, null, finishOnYes, yesTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(String title, String message, Integer iconId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(title, message, iconId, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
 	}
 	
 	/**
 	 * @param title
 	 * @param message
+	 * @param iconId
 	 * @param postiveButtonId
 	 * @param finishOnPositive
 	 * @param positiveTask
 	 * @param negativeButtonId
 	 * @param finishOnNegative
 	 */
-	private void showDialog(String title, String message, int postiveButtonId, final boolean finishOnPositive, final Runnable positiveTask, int negativeButtonId, boolean finishOnNegative)
+	private void showDialog(String title, String message, Integer iconId, int postiveButtonId, final boolean finishOnPositive, final Runnable positiveTask, int negativeButtonId, boolean finishOnNegative)
 	{
 		// Builder:
 		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
-		
 		// set title:
 		bldr.setTitle(title);
 		// set message:
 		bldr.setMessage(message);
+		// set icon:
+		if(iconId != null)
+			bldr.setIcon(iconId);
 		// set positive button:
 		bldr.setPositiveButton(postiveButtonId, finishOnPositive || positiveTask != null ? new DialogInterface.OnClickListener()
 		{
