@@ -152,6 +152,8 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		
 		// Get dialog builder & configure the dialog...
 		AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(activity, R.style.AppTheme))
+		//	Set icon:
+		.setIcon(R.drawable.ic_content_save_black_36dp)
 		//	Set title:
 		.setTitle(R.string.backup)
 		//	Set multiple choice:

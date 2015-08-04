@@ -255,7 +255,7 @@ public final class RecordsTasks
 		
 	}
 	
-	static public class DeleteTask extends AsyncTaskWithWaitingDialog<List<Record>, Void> implements StoreUser
+	static public class DeleteTask extends AsyncTaskWithWaitingDialog<List<Record>, List<Record>> implements StoreUser
 	{
 
 		private final CollectorClient client;
@@ -270,7 +270,7 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected Void doInBackground(List<Record>... params)
+		protected List<Record> doInBackground(List<Record>... params)
 		{
 			List<Record> recordsToDelete = params[0];
 			try
@@ -287,22 +287,23 @@ public final class RecordsTasks
 				e.printStackTrace(System.err);
 				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
+				return null;
 			}
 			finally
 			{
 				client.recordStoreHandle.doneUsing(this);
 			}
-			return null;
+			return recordsToDelete;
 		}
 		
 		@Override
-		protected void onPostExecute(Void result)
+		protected void onPostExecute(List<Record> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
 			if(failure != null)
 				callback.deleteFailure(failure);
 			else
-				callback.deleteSuccess();
+				callback.deleteSuccess(result);
 		}
 		
 	}
@@ -310,7 +311,7 @@ public final class RecordsTasks
 	public interface DeleteCallback
 	{
 		
-		public void deleteSuccess();
+		public void deleteSuccess(List<Record> deletedRecords);
 		
 		public void deleteFailure(Exception reason);
 		

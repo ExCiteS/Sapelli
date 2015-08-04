@@ -22,7 +22,7 @@ public class DetailsTabFragment extends ProjectManagerTabFragment
 	}
 
 	@Override
-	protected int getLayoutID()
+	protected Integer getLayoutID()
 	{
 		return R.layout.tab_details;
 	}
@@ -30,7 +30,7 @@ public class DetailsTabFragment extends ProjectManagerTabFragment
 	@Override
 	protected void setupUI(View rootLayout)
 	{
-		Project project = getOwner() != null ? getOwner().getCurrentProject(false) : null;
+		Project project = getProject();
 		if(project != null)
 		{
 			((TextView) rootLayout.findViewById(R.id.lblProjectName)).setText(project.getName());

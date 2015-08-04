@@ -18,13 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import android.content.Context;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 
 /**
  * 
@@ -36,7 +35,7 @@ public class ExportTabFragment extends ProjectManagerTabFragment implements OnCl
 	private ExportFragment exportFragment;
 	
 	@Override
-	protected int getLayoutID()
+	protected Integer getLayoutID()
 	{
 		return R.layout.tab_export;
 	}
@@ -45,8 +44,7 @@ public class ExportTabFragment extends ProjectManagerTabFragment implements OnCl
 	protected void setupUI(View rootLayout)
 	{
 		// Export button:
-		Button btnExport = (Button) rootLayout.findViewById(R.id.btn_exportForProject);
-		btnExport.setOnClickListener(this);
+		rootLayout.findViewById(R.id.btn_exportForProject).setOnClickListener(this);
 		
 		// Export fragment:
 		exportFragment = addChild(R.id.frgExportOnTabContainer, new ExportFragment(getOwner().getCurrentProject(true)));

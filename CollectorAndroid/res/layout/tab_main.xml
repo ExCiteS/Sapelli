@@ -25,56 +25,135 @@
         android:id="@+id/main_scrollview"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
-
+        
         <LinearLayout
-            android:id="@+id/shortcutHeader"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@layout/drop_shadow"
-            android:gravity="center_horizontal"
-            android:orientation="horizontal" >
+        	android:layout_height="wrap_content"
+        	android:orientation="vertical" >
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="10dp"
-                android:text="@string/shortcut" />
-
-            <ImageView
-                android:id="@+id/imgShortcut"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:contentDescription="@string/shortcut"
-                android:src="@drawable/ic_sapelli_logo" />
-
-            <Button
-                android:id="@+id/addShortcut"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="@string/add" />
-
-            <Button
-                android:id="@+id/removeShortcut"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="@string/remove" />
+	        <LinearLayout
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content"
+	            android:background="@layout/drop_shadow"
+	            android:padding="10dp"
+	            android:gravity="center_horizontal"
+	            android:orientation="horizontal" >
+	
+	            <TextView
+	                android:layout_width="0dp"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:text="@string/shortcut" />
+	
+	            <ImageView
+	                android:id="@+id/imgShortcut"
+	                android:layout_width="45dp"
+	                android:layout_height="45dp"
+	                android:contentDescription="@string/shortcut"
+	                android:src="@drawable/ic_sapelli_logo" />
+	
+	            <Button
+	                android:id="@+id/addShortcut"
+	                style="?android:attr/buttonStyleSmall"
+	                android:layout_width="80dp"
+	                android:layout_height="wrap_content"
+	                android:text="@string/add" />
+	
+	            <Button
+	                android:id="@+id/removeShortcut"
+	                style="?android:attr/buttonStyleSmall"
+	                android:layout_width="80dp"
+	                android:layout_height="wrap_content"
+	                android:text="@string/remove" />
+	        </LinearLayout>
+	        
+	        <LinearLayout
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content"
+	            android:background="@layout/drop_shadow"
+	            android:padding="10dp"
+	            android:orientation="vertical">
+	            
+				<TextView
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content"
+	                android:text="@string/data" />
+				
+				<TableLayout
+		            android:layout_width="fill_parent"
+		            android:layout_height="match_parent"
+		            android:paddingLeft="15dp"
+		            android:paddingStart="15dp"
+		            android:paddingRight="5dp"
+		            android:paddingEnd="5dp"
+		            android:paddingTop="5dp" >
+	
+		            <TableRow
+		                android:layout_width="wrap_content"
+		                android:layout_height="wrap_content" >
+		
+		                <TextView
+		                    android:gravity="end"
+		                    android:paddingLeft="0dp"
+		                    android:paddingStart="0dp"
+		                    android:paddingRight="7dp"
+		                    android:paddingEnd="7dp"
+		                    android:text="@string/records"
+		                    android:textColor="@color/black" />
+		
+		                <TextView
+		                    android:id="@+id/lblNumberOfRecords"
+		                    android:textColor="@color/colorPrimaryDark" />
+		            </TableRow>
+		
+		            <TableRow
+		                android:layout_width="wrap_content"
+		                android:layout_height="wrap_content" >
+		
+		                <TextView
+		                    android:gravity="end"
+		                    android:paddingLeft="0dp"
+		                    android:paddingStart="0dp"
+		                    android:paddingRight="7dp"
+		                    android:paddingEnd="7dp"
+		                    android:text="@string/media_files"
+		                    android:textColor="@color/black" />
+		
+		                <TextView
+		                    android:id="@+id/lblNumberOfMediaFiles"
+		                    android:textColor="@color/colorPrimaryDark" />
+		            </TableRow>
+		            
+				</TableLayout>
+	            
+	        </LinearLayout>
+        
         </LinearLayout>
     </ScrollView>
 
-    <Button
+    <FrameLayout
         android:id="@+id/btn_runProject"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:background="@layout/button_style"
-		android:drawableStart="@drawable/ic_play_arrow_black_36dp"
-        android:drawableLeft="@drawable/ic_play_arrow_black_36dp"
-        android:onClick="runProject"
-        android:padding="10dp"
-        android:text="@string/run_project" />
+		android:background="@layout/button_style"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentBottom="true"
+		android:onClick="runProject" >
+ 
+		<TextView
+		    style="?android:attr/buttonStyle"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_gravity="center"
+		    android:background="@null"
+		    android:clickable="false"
+			android:drawableStart="@drawable/ic_play_arrow_black_36dp"
+			android:drawableLeft="@drawable/ic_play_arrow_black_36dp"
+			android:drawablePadding="4dp"
+		    android:focusable="false"
+		    android:gravity="center"
+		    android:minHeight="0dp"
+		    android:minWidth="0dp"
+		    android:text="@string/run_project" />
+	</FrameLayout>
 
 </RelativeLayout>

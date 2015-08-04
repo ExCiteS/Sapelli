@@ -78,8 +78,7 @@
             android:id="@+id/groupExportFormat"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="10dp" >
+            android:orientation="vertical" >
 		
 		    <TextView
 		        android:id="@+id/lblExportFormat"

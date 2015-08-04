@@ -167,7 +167,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	}
 	
 	@Override
-	protected int getLayoutID()
+	protected Integer getLayoutID()
 	{
 		return R.layout.fragment_export;
 	}
@@ -244,10 +244,11 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
-		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner());
-		builder.setTitle(getArguments().getString(DIALOG_TITLE_KEY));
-		builder.setMessage(getArguments().getString(DIALOG_MESSAGE_KEY));
-		builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
+		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
+		.setTitle(getArguments().getString(DIALOG_TITLE_KEY))
+		.setIcon(R.drawable.ic_export_black_36dp)
+		.setMessage(getArguments().getString(DIALOG_MESSAGE_KEY))
+		.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
 		{
 			@Override
 			public void onClick(DialogInterface dialog, int which)
@@ -528,7 +529,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		}
 	
 		@Override
-		public void deleteSuccess()
+		public void deleteSuccess(List<Record> deletedRecords)
 		{
 			// do nothing
 		}

@@ -42,7 +42,7 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
-		if(getShowsDialog())
+		if(getShowsDialog() || getLayoutID() == null)
 			return super.onCreateView(inflater, container, savedInstanceState); // avoids crash (see stackoverflow link above)
 		else
 		{
@@ -52,15 +52,17 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		}
 	}
 	
-	protected abstract int getLayoutID();
+	protected abstract Integer getLayoutID();
 	
-	protected abstract void setupUI(View rootLayout);
+	protected void setupUI(View rootLayout)
+	{
+		// does nothing by default
+	}
 	
 	@Override
 	public void onDetach()
 	{
 	    activity = null;
-
 	    super.onDetach();
 	}
 	
@@ -75,20 +77,6 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	{
 		String tag = this.getClass().getSimpleName() + '|' + getTag() + '|' + child.getClass().getSimpleName();
 		getFragmentManager().beginTransaction().add(containerViewId, child, tag).commit();
-		return child;
-	}
-	
-	/**
-	 * Adds a child fragment to the given container view
-	 * 
-	 * @param containerViewId
-	 * @param child the child Fragment to add
-	 * @return the child itself
-	 */
-	protected <F extends Fragment> F addChild2(int containerViewId, F child)
-	{
-		String tag = this.getClass().getSimpleName() + '|' + getTag() + '|' + child.getClass().getSimpleName();
-		getChildFragmentManager().beginTransaction().add(containerViewId, child, tag).commit();
 		return child;
 	}
 	

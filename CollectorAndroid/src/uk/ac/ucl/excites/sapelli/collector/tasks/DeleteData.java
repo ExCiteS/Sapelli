@@ -19,22 +19,15 @@
 package uk.ac.ucl.excites.sapelli.collector.tasks;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -47,13 +40,11 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
  * 
  * @author mstevens
  */
-public class DeleteData implements RecordsTasks.QueryCallback, RecordsTasks.DeleteCallback
+public class DeleteData implements RecordsTasks.QueryCallback, RecordsTasks.DeleteCallback, MediaTasks.ScanCallback
 {
 	
 	private final BaseActivity owner;
 	private Project project;
-	private final Map<Schema,Form> schema2Form;
-	private final Map<Form,List<Record>> recordsByForm;
 	
 	/**
 	 * @param owner
@@ -61,21 +52,14 @@ public class DeleteData implements RecordsTasks.QueryCallback, RecordsTasks.Dele
 	public DeleteData(BaseActivity owner)
 	{
 		this.owner = owner;
-		this.schema2Form = new HashMap<Schema, Form>();
-		this.recordsByForm = new HashMap<Form, List<Record>>();
 	}
 
 	public void deleteFor(Project project)
 	{
 		this.project = project;
-		this.schema2Form.clear();
-		this.recordsByForm.clear();
 		// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 		Set<Schema> schemata = new HashSet<Schema>();
 		schemata.addAll(project.getModel().getSchemata());
-		// Populate schema->form map:
-		for(Form form : project.getForms())
-			schema2Form.put(form.getSchema(), form);
 		// Retrieve by query:
 		new RecordsTasks.QueryTask(owner, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED));
 	}
@@ -88,19 +72,6 @@ public class DeleteData implements RecordsTasks.QueryCallback, RecordsTasks.Dele
 			owner.showOKDialog(R.string.delete_records_menuitem, R.string.deleteNoRecordsFound);
 		else
 		{
-			// Group by form:
-			for(Record r : toDelete)
-			{
-				Form form = schema2Form.get(r.getSchema());
-				if(form == null)
-					continue;
-				List<Record> formRecs;
-				if(!recordsByForm.containsKey(form))
-					recordsByForm.put(form, formRecs = new ArrayList<Record>());
-				else
-					formRecs = recordsByForm.get(form);
-				formRecs.add(r);
-			}
 			// Confirm deletion & delete all records:
 			owner.showOKCancelDialog(
 				R.string.delete_records_menuitem,
@@ -130,25 +101,23 @@ public class DeleteData implements RecordsTasks.QueryCallback, RecordsTasks.Dele
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks.DeleteCallback#deleteSuccess()
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
-	public void deleteSuccess()
+	public void deleteSuccess(List<Record> deletedRecords)
 	{
-		// Scan for attachments:
-		final List<File> attachments = new ArrayList<File>();		
-		FileStorageProvider fileSP = owner.getCollectorApp().getFileStorageProvider();
-		for(Form form : recordsByForm.keySet())
-			for(Record record : recordsByForm.get(form))
-				for(Field field : form.getFields())
-					if(field instanceof MediaField)
-					{
-						MediaField mf = (MediaField) field;
-						for(int i = 0; i < mf.getCount(record); i++)
-						{
-							File attachment = mf.getMediaFile(fileSP, record, i);
-							if(attachment.exists())
-								attachments.add(attachment);
-						}
-					}
+		// Scan for media attachments:
+		new MediaTasks.ScanTask(owner, project, this).execute(deletedRecords);
+	}
+	
+	@Override
+	public void deleteFailure(Exception reason)
+	{
+		owner.showErrorDialog(String.format(owner.getString(R.string.exportDeleteFailureMsg), ExceptionHelpers.getMessageAndCause(reason)));
+	}
+
+	@Override
+	public void scanSuccess(final List<File> attachments)
+	{
 		// Ask for confirmation:
 		if(!attachments.isEmpty())
 			owner.showOKCancelDialog(
@@ -167,11 +136,11 @@ public class DeleteData implements RecordsTasks.QueryCallback, RecordsTasks.Dele
 				},
 				false);
 	}
-	
+
 	@Override
-	public void deleteFailure(Exception reason)
+	public void scanFailure(Exception reason)
 	{
-		owner.showErrorDialog(String.format(owner.getString(R.string.exportDeleteFailureMsg), ExceptionHelpers.getMessageAndCause(reason)));
+		// do nothing
 	}
 
 }

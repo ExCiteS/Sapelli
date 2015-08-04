@@ -22,10 +22,40 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
+import com.astuetz.PagerSlidingTabStrip;
+import com.crashlytics.android.Crashlytics;
+import com.ipaulpro.afilechooser.utils.FileUtils;
+
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.content.res.AssetManager;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Debug;
+import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.util.Patterns;
+import android.util.TypedValue;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.fragments.AboutFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.EnterURLFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
@@ -50,42 +80,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.res.AssetManager;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Debug;
-import android.support.v4.view.ViewPager;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.widget.Toolbar;
-import android.text.Html;
-import android.text.method.LinkMovementMethod;
-import android.util.Log;
-import android.util.Patterns;
-import android.util.TypedValue;
-import android.view.ContextThemeWrapper;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.TextView;
-
-import com.astuetz.PagerSlidingTabStrip;
-import com.crashlytics.android.Crashlytics;
-import com.ipaulpro.afilechooser.utils.FileUtils;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
@@ -271,6 +265,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		showErrorDialog(R.string.noDeviceID, true);
 	}
 
+	/**
+	 * @return the deviceID
+	 */
+	public DeviceID getDeviceID()
+	{
+		return deviceID;
+	}
+
 	private void updateProjectList(boolean force)
 	{
 		if(projectListAdaptor == null || force)
@@ -452,23 +454,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	
 	public void enterURL(MenuItem menuItem)
 	{
-		closeDrawer(null);
-		
-		// Build & show input dialog:
-		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
-		bldr.setTitle(R.string.enter_url_title);
-		bldr.setMessage(R.string.enterURLMsg);
-		final EditText input = new EditText(this);
-		bldr.setView(input);
-		bldr.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton)
-			{
-				loadProject(input.getText().toString());
-			}
-		});
-		bldr.setNegativeButton(android.R.string.cancel, null);
-		bldr.show();
+		closeDrawer(null);		
+		new EnterURLFragment().show(getSupportFragmentManager(), getString(R.string.enter_url));
 	}
 	
 	private void demoMode()
@@ -546,38 +533,19 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		closeDrawer(null);
 	}
 	
+	/**
+	 * @param item
+	 * @return
+	 */
 	public boolean openAboutDialog(MenuItem item)
 	{
 		openAboutDialog();
 		return true;
 	}
 	
-	@SuppressLint("InflateParams")
 	private void openAboutDialog()
 	{
-		// Set-up UI:
-		View view = LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
-		TextView infoLbl = (TextView) view.findViewById(R.id.aboutInfo);
-		infoLbl.setClickable(true);
-		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
-		infoLbl.setText(Html.fromHtml(
-				"<p><b>" + app.getBuildInfo().getNameAndVersion() + "</b><br/>[" + app.getBuildInfo().getExtraVersionInfo() + "]</p>" +
-				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
-				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
-				"<p>" + getString(R.string.license)  + "</p>" +
-				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));	
-		infoLbl.setPadding(2, 2, 6, 2);
-		
-		// Set-up dialog:
-		AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-		dialogBuilder.setPositiveButton(getString(android.R.string.ok), null); // click will dismiss the dialog (BACK press will too)
-		AlertDialog aboutDialog = dialogBuilder.create();
-		aboutDialog.setView(view, 0, 10, 0, 0);
-		aboutDialog.setIcon(R.drawable.ic_sapelli_logo);
-		aboutDialog.setTitle(R.string.app_name);
-
-		// Show the dialog:
-		aboutDialog.show();
+		new AboutFragment().show(getSupportFragmentManager(), getString(R.string.about));
 	}
 
 	/**
@@ -636,32 +604,24 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 
 	public void loadProject(String path)
 	{
+		if(path == null || path.isEmpty())
+			return;
+		//else:
 		String location = path.trim();
-		if(location.isEmpty())
-		{	// TODO get rid of this, there is no longer a textbox for the path
-			//showErrorDialog(R.string.pleaseSelect);
-			browse(true);
-		}
+		// Download Sapelli file if path is a URL
+		if(Patterns.WEB_URL.matcher(location).matches())
+			// Location is a (remote) URL: download Sapelli file:
+			AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
+		else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
+			// Warn about bare XML file (no longer supported):
+			showErrorDialog(R.string.noBareXMLProjects);
 		else
-		{
-			// Download Sapelli file if path is a URL
-			if(Patterns.WEB_URL.matcher(location).matches())
-				// Location is a (remote) URL: download Sapelli file:
-				AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
-			else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
-				// Warn about bare XML file (no longer supported):
-				showErrorDialog(R.string.noBareXMLProjects);
+		{	// loading project from local file:
+			File localFile = new File(location);
+			if(ProjectLoader.HasSapelliFileExtension(localFile))
+				new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
 			else
-			{
-				File localFile = new File(location);
-				if(ProjectLoader.HasSapelliFileExtension(localFile))
-					// Load & store project from local file:
-					new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
-				else
-					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
-				// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-				// Show parser warnings if needed:
-			}
+				showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
 		}
 	}
 	
@@ -781,7 +741,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		Project project = getCurrentProject(true);
 		if(project != null)
 		{
-			showYesNoDialog(R.string.app_name, getString(R.string.removeProjectConfirm, project.toString(false)), false, new Runnable()
+			showYesNoDialog(R.string.remove_project, getString(R.string.removeProjectConfirm, R.drawable.ic_delete_black_36dp, project.toString(false)), false, new Runnable()
 			{
 				@Override
 				public void run()

@@ -31,7 +31,7 @@
 	</item>
     <item
         android:id="@+id/action_remove"
-        android:icon="@drawable/ic_action_delete_white"
+        android:icon="@drawable/ic_delete_white_36dp"
         android:onClick="removeDialog"
         android:title="@string/remove_project"
         compat:showAsAction="ifRoom"/>

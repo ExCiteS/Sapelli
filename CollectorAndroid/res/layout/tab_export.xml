@@ -26,18 +26,30 @@
         android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
         android:background="@layout/drop_shadow"
-        android:padding="5dp" />
+		android:padding="10dp" />
     
-	<Button
+    <FrameLayout
         android:id="@+id/btn_exportForProject"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:background="@layout/button_style"
-        android:drawableStart="@drawable/ic_export_black_36dp"
-        android:drawableLeft="@drawable/ic_export_black_36dp"
-        android:padding="10dp"
-        android:text="@string/export" />
+		android:background="@layout/button_style"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentBottom="true" >
+ 
+		<TextView
+		    style="?android:attr/buttonStyle"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_gravity="center"
+		    android:background="@null"
+		    android:clickable="false"
+	        android:drawableStart="@drawable/ic_export_black_36dp"
+	        android:drawableLeft="@drawable/ic_export_black_36dp"
+	        android:drawablePadding="8dp"
+		    android:focusable="false"
+		    android:gravity="center"
+		    android:minHeight="0dp"
+		    android:minWidth="0dp"
+		    android:text="@string/export" />
+	</FrameLayout>
 
 </RelativeLayout>

@@ -38,7 +38,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	}
 
 	@Override
-	protected int getLayoutID()
+	protected Integer getLayoutID()
 	{
 		return R.layout.tab_transmission;
 	}
