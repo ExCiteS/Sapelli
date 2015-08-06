@@ -26,6 +26,12 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.view.ContextThemeWrapper;
+import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
@@ -41,13 +47,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
-import android.view.ContextThemeWrapper;
-import android.widget.TextView;
 
 /**
  * Sapelli Collector Back-up procedure 
@@ -61,20 +60,20 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	static public final Folder[] BACKUPABLE_FOLDERS = { Folder.Attachments, Folder.Crashes, Folder.Export, Folder.Logs, Folder.Projects };
 	static public final String EMPTY_FILE = ".empty";
 	
-	static private String getFolderString(Context context, Folder folder)
+	static private int getFolderStringID(Folder folder)
 	{
 		switch(folder)
 		{
 			case Crashes:
-				return context.getString(R.string.folderCrashes);
+				return R.string.folderCrashes;
 			case Export:
-				return context.getString(R.string.folderExports);
+				return R.string.folderExports;
 			case Logs:
-				return context.getString(R.string.folderLogs);
+				return R.string.folderLogs;
 			case Attachments:
-				return context.getString(R.string.folderAttachments);
+				return R.string.folderAttachments;
 			case Projects:
-				return context.getString(R.string.folderProjects);
+				return R.string.folderProjects;
 			// Not back-upable:
 			case Downloads:
 			case Temp:
@@ -144,7 +143,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		int f = 0;
 		for(Folder folder : BACKUPABLE_FOLDERS)
 		{
-			checkboxItems[f] = getFolderString(activity, folder);
+			checkboxItems[f] = activity.getString(getFolderStringID(folder));
 			if(checkedItems[f] = isFolderDefaultSelected(folder))
 				foldersToExport.add(folder);
 			f++;

@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.util.Map;
 
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -35,6 +37,7 @@ public class CollectorPreferences
 	private static final String PREFERENCES_NAME = "COLLECTOR_PREFERANCES";
 	private static final String PREF_SAPELLI_FOLDER = "SAPELLI_FOLDER";
 	private static final String PREF_FIRST_INSTALLATION = "FIRST_INSTALLATION";
+	private static final String PREF_ACTIVE_PROJECT_SIGNATURE = "ACTIVE_PROJECT_SIGNATURE"; 
 
 	// Dynamics---------------------------------------------
 	private SharedPreferences preferences;
@@ -92,6 +95,35 @@ public class CollectorPreferences
 		return preferences.getBoolean(PREF_FIRST_INSTALLATION, true);
 	}
 
+	/**
+	 * Store the signature of the project currently selected in {@link ProjectManagerActivity}
+	 * 
+	 * @param project
+	 * @return
+	 */
+	public void setActiveProjectSignature(ProjectDescriptor project)
+	{
+		preferences.edit().putString(PREF_ACTIVE_PROJECT_SIGNATURE, project != null ? project.getSignatureString() : null).commit();
+	}
+	
+	/**
+	 * Retrieves the signature of the project most recently selected in {@link ProjectManagerActivity}
+	 * 
+	 * @return the signature of the active project, or null
+	 */
+	public String getActiveProjectSignature()
+	{
+		return preferences.getString(PREF_ACTIVE_PROJECT_SIGNATURE, null);
+	}
+	
+	/**
+	 * Forget the signature of the project currently selected in {@link ProjectManagerActivity}
+	 */
+	public void clearActiveProjectSignature()
+	{
+		setActiveProjectSignature(null);
+	}
+	
 	public void printAll()
 	{
 		Map<String, ?> keys = preferences.getAll();

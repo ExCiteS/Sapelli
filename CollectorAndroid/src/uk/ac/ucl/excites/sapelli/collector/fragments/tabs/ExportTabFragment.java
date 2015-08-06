@@ -44,7 +44,7 @@ public class ExportTabFragment extends ProjectManagerTabFragment implements OnCl
 	protected void setupUI(View rootLayout)
 	{
 		// Export button:
-		rootLayout.findViewById(R.id.btn_exportForProject).setOnClickListener(this);
+		rootLayout.findViewById(R.id.btnExportForProject).setOnClickListener(this);
 		
 		// Export fragment:
 		exportFragment = addChild(R.id.frgExportOnTabContainer, new ExportFragment(getOwner().getCurrentProject(true)));
@@ -53,7 +53,7 @@ public class ExportTabFragment extends ProjectManagerTabFragment implements OnCl
 	@Override
 	public void onClick(View v)
 	{
-		if(v.getId() == R.id.btn_exportForProject)
+		if(v.getId() == R.id.btnExportForProject)
 			exportFragment.runExport();
 	}
 

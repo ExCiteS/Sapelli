@@ -30,7 +30,6 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
@@ -63,7 +62,6 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
-import uk.ac.ucl.excites.sapelli.collector.tasks.DeleteData;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.collector.ui.ProjectManagerPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
@@ -93,7 +91,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 
 	static protected final String XML_FILE_EXTENSION = "xml";
 
-	static private final String DEMO_PROJECT = "demo.excites";
+	static protected final String DEMO_PROJECT = "demo.excites";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
 	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
@@ -236,16 +234,37 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 		
 		// And finally...
-		if(app.getBuildInfo().isDemoBuild())
+		/*if(app.getBuildInfo().isDemoBuild())
 			demoMode();
-		else
-			updateProjectList(false);
-			
-		// TODO remember & re-select last selected project (using preferences)
+		else*/
+		updateProjectList(false);
 		
 		// stop tracing
 		Debug.stopMethodTracing();
 	}
+	
+	/*private void demoMode()
+	{
+		try
+		{
+			List<Project> projects = projectStore.retrieveProjects();
+			Project p = null;
+			if(projects.isEmpty())
+			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
+				p = new ProjectLoader(fileStorageProvider).load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
+				projectStore.add(p);
+			}
+			else
+				p = projects.get(0); // Assumption: there is only one stored project in demo mode
+			// Run the project
+			startActivity(ProjectRunHelpers.getProjectRunIntent(this, p));
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error loading/storing/launching demo project", e);
+			showErrorDialog(R.string.demoLoadFail, true);
+		}
+	}*/
 
 	@Override
 	public void initialisationSuccess(DeviceID deviceID)
@@ -308,18 +327,29 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			// Set label above list:
 			lblAvailableProjects.setText(result.isEmpty() ? R.string.no_projects : R.string.switch_project);
 			
-			// Select project:
+			// Set/switch to current project
 			if(currentProject != null)
 			{	// look for current project in result list:
 				for(int i = 0; i < result.size(); i++)
 					if(result.get(i).equalDescription(currentProject))
-					{	// (Re)select current project:
+						// (Re)select current project:
+						projectList.setItemChecked(i, true); // no need to call switchToProject(), project is already the current one
+			}
+			else if(app.getPreferences().getActiveProjectSignature() != null)
+			{	// Reselect previously active project:
+				String prevActiveProjectSign = app.getPreferences().getActiveProjectSignature();
+				for(int i = 0; i < result.size(); i++)
+					if(result.get(i).getSignatureString().equals(prevActiveProjectSign))
+					{
+						// select in list:
 						projectList.setItemChecked(i, true);
-						return; // !!! (no need to switch projects)
+						// switch to it:
+						switchToProject(result.get(i));
 					}
 			}
-			// select nothing or first project in list:
-			switchToProject(result.isEmpty() ? null : result.get(0)); 
+			else
+				// select nothing or first project in list:
+				switchToProject(result.isEmpty() ? null : result.get(0)); 
 		}
 
 	}
@@ -413,7 +443,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			pager.setVisibility(View.GONE);
 			addProjects.setVisibility(View.VISIBLE);
 		}
-
+		// Remember current project:
+		app.getPreferences().setActiveProjectSignature(currentProject);
+		
 		supportInvalidateOptionsMenu();
 	}
 	
@@ -427,6 +459,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 		return currentProject;
 	}
+	
 	/**
 	 * Click on the big '+' actionbar button
 	 * 
@@ -458,27 +491,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		new EnterURLFragment().show(getSupportFragmentManager(), getString(R.string.enter_url));
 	}
 	
-	private void demoMode()
+	public void switchToTab(int index)
 	{
-		try
-		{
-			List<Project> projects = projectStore.retrieveProjects();
-			Project p = null;
-			if(projects.isEmpty())
-			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
-				p = new ProjectLoader(fileStorageProvider).load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
-				projectStore.add(p);
-			}
-			else
-				p = projects.get(0); // Assumption: there is only one stored project in demo mode
-			// Run the project
-			startActivity(ProjectRunHelpers.getProjectRunIntent(this, p));
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "Error loading/storing/launching demo project", e);
-			showErrorDialog(R.string.demoLoadFail, true);
-		}
+		pager.setCurrentItem(index);
 	}
 
 	@Override
@@ -575,14 +590,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		return true;
 	}
 	
-	public boolean deleteRecords(MenuItem item)
-	{
-		Project project = getCurrentProject(false);
-		if(project != null)
-			new DeleteData(this).deleteFor(project);
-		return true;
-	}
-	
 	/**
 	 * Create Sapelli back-up package
 	 * 
@@ -631,32 +638,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		new IntentIntegrator(this).initiateScan(IntentIntegrator.QR_CODE_TYPES);
 		
 		closeDrawer(null);
-	}
-	
-	/**
-	 * Create a shortcut
-	 * 
-	 */
-	public boolean createShortcut()
-	{
-		// Get the selected project
-		Project selectedProject = getCurrentProject(true);
-		if(selectedProject != null)
-			ProjectRunHelpers.createShortcut(this, fileStorageProvider, selectedProject);
-		return true;
-	}
-
-	/**
-	 * Remove a shortcut
-	 * 
-	 */
-	public boolean removeShortcut()
-	{
-		// Get the selected project
-		Project selectedProject = getCurrentProject(true);
-		if(selectedProject != null)
-			ProjectRunHelpers.removeShortcut(this, selectedProject);
-		return true;
 	}
 
 	@Override
@@ -736,19 +717,19 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 * 
 	 * @param view
 	 */
-	public void removeDialog(MenuItem item)
+	public void removeProject(MenuItem item)
 	{
 		Project project = getCurrentProject(true);
 		if(project != null)
 		{
-			showYesNoDialog(R.string.remove_project, getString(R.string.removeProjectConfirm, R.drawable.ic_delete_black_36dp, project.toString(false)), false, new Runnable()
+			showYesNoDialog(R.string.remove_project, getString(R.string.removeProjectConfirm, project.toString(false)), R.drawable.ic_delete_black_36dp, new Runnable()
 			{
 				@Override
 				public void run()
 				{
 					new RemoveProjectTask().execute(getCurrentProject(false));
 				}
-			}, false);
+			}, false, null, false);
 		}
 	}
 	
@@ -774,6 +755,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				
 				// Remove shortcut:
 				ProjectRunHelpers.removeShortcut(ProjectManagerActivity.this, projDescr);
+				
+				// Remove as active project
+				if(app.getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
+					app.getPreferences().clearActiveProjectSignature();
 			}
 			return null;
 		}

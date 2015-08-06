@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -32,7 +31,6 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 public class EnterURLFragment extends ProjectManagerFragment
 {
 
-	@SuppressLint("InflateParams")
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{

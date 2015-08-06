@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
 
 /**
  * Helper methods to deal with menus.

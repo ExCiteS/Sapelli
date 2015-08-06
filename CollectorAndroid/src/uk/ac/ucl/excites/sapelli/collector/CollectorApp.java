@@ -74,6 +74,8 @@ public class CollectorApp extends Application
 	// DYNAMICS-----------------------------------------------------------
 	private BuildInfo buildInfo;
 	
+	private CollectorPreferences preferences;
+	
 	public final CollectorClient collectorClient = new AndroidCollectorClient();
 	
 	// Files storage:
@@ -98,6 +100,9 @@ public class CollectorApp extends Application
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 		
+		// Get collector preferences:
+		preferences = new CollectorPreferences(getApplicationContext());
+		
 		// Initialise file storage:
 		try {
 			this.fileStorageProvider = initialiseFileStorage(); // throws FileStorageException
@@ -112,14 +117,12 @@ public class CollectorApp extends Application
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
 
 		// Create shortcut to Sapelli Collector on Home Screen:
-		// Get collector preferences:
-		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
-		if(pref.isFirstInstallation())
+		if(preferences.isFirstInstallation())
 		{
 			// Create shortcut
 			ProjectRunHelpers.createCollectorShortcut(getApplicationContext());
 			// Set first installation to false
-			pref.setFirstInstallation(false);
+			preferences.setFirstInstallation(false);
 		}
 	}
 	
@@ -131,13 +134,10 @@ public class CollectorApp extends Application
 	{
 		File sapelliFolder = null;
 		
-		// Get collector preferences:
-		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
-		
 		// Try to get Sapelli folder path from preferences:
 		try
 		{
-			sapelliFolder = new File(pref.getSapelliFolderPath());
+			sapelliFolder = new File(preferences.getSapelliFolderPath());
 		}
 		catch(NullPointerException npe) {}
 
@@ -161,7 +161,7 @@ public class CollectorApp extends Application
 			// Do we have a path?
 			if(sapelliFolder != null)
 				// Yes: store it in the preferences:
-				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
+				preferences.setSapelliFolder(sapelliFolder.getAbsolutePath());
 			else
 				// No :-(
 				throw new FileStorageUnavailableException();
@@ -201,6 +201,14 @@ public class CollectorApp extends Application
 			throw new FileStorageUnavailableException(); // this shouldn't happen
 	}
 	
+	/**
+	 * @return the preferences
+	 */
+	public CollectorPreferences getPreferences()
+	{
+		return preferences;
+	}
+
 	/**
 	 * Check if a directory is on a mounted storage and writable/readable
 	 * 

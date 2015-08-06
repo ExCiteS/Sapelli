@@ -34,30 +34,82 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 
 /**
  * @author mstevens
  *
  */
-public final class MediaTasks
+public final class ProjectTasks
 {
 	
-	private MediaTasks() { /* should never be instantiated */ }
+	private ProjectTasks() { /* should never be instantiated */ }
+	
+	/**
+	 * Runs asynchronous queries to find the records and media files associated with a given Project
+	 * 
+	 * @param owner
+	 * @param project
+	 * @param callback
+	 */
+	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallaback callback)
+	{
+		// Update records & media stats:
+		new RecordsTasks.QueryTask(owner, new RecordsTasks.QueryCallback()
+		{
+			@SuppressWarnings("unchecked")
+			@Override
+			public void querySuccess(final List<Record> records)
+			{
+				// Run media scan:
+				new MediaFilesQueryTask(owner, project, new MediaFilesQueryCallback()
+				{
+					
+					@Override
+					public void mediaQuerySuccess(List<File> mediaFiles)
+					{
+						callback.projectDataQuerySuccess(records, mediaFiles);
+					}
+					
+					@Override
+					public void mediaQueryFailure(Exception reason)
+					{
+						callback.projectDataQueryFailure(reason);
+					}
+				}).execute(records);
+			}
+			
+			@Override
+			public void queryFailure(Exception reason)
+			{
+				callback.projectDataQueryFailure(reason);
+			}
+		}).execute(new RecordsQuery(Source.From(project.getModel().getSchemata())));
+	}
+	
+	static public interface ProjectDataCallaback
+	{
+		
+		public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles);
+		
+		public void projectDataQueryFailure(Exception reason);
+		
+	}
 	
 	/**
 	 * Finds media files ("attachments") associated with a given set of records created using a given project or projects. 
 	 * 
 	 * @author mstevens
 	 */
-	static public class ScanTask extends AsyncTaskWithWaitingDialog<List<Record>, List<File>> implements StoreUser
+	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<List<Record>, List<File>>
 	{
 
 		private final BaseActivity owner;
-		private final ScanCallback callback;
+		private final MediaFilesQueryCallback callback;
 		private final Map<Schema, Form> schema2Form;
 		private Exception failure = null;
 		
@@ -66,7 +118,7 @@ public final class MediaTasks
 		 * @param project project used to create the records to find media attachments for
 		 * @param callback
 		 */
-		public ScanTask(BaseActivity owner, Project project, ScanCallback callback)
+		public MediaFilesQueryTask(BaseActivity owner, Project project, MediaFilesQueryCallback callback)
 		{
 			this(owner, Collections.singletonList(project), callback);
 		}
@@ -76,7 +128,7 @@ public final class MediaTasks
 		 * @param projects projects used to create the records to find media attachments for
 		 * @param callback
 		 */
-		public ScanTask(BaseActivity owner, List<Project> projects, ScanCallback callback)
+		public MediaFilesQueryTask(BaseActivity owner, List<Project> projects, MediaFilesQueryCallback callback)
 		{
 			super(owner, owner.getString(R.string.mediaScanning));
 			this.owner = owner;
@@ -141,19 +193,19 @@ public final class MediaTasks
 		{
 			super.onPostExecute(result); // dismiss dialog
 			if(failure != null)
-				callback.scanFailure(failure);
+				callback.mediaQueryFailure(failure);
 			else
-				callback.scanSuccess(result);
+				callback.mediaQuerySuccess(result);
 		}
 		
 	}
 	
-	public interface ScanCallback
+	public interface MediaFilesQueryCallback
 	{
 		
-		public void scanSuccess(List<File> mediaFiles);
+		public void mediaQuerySuccess(List<File> mediaFiles);
 		
-		public void scanFailure(Exception reason);
+		public void mediaQueryFailure(Exception reason);
 		
 	}
 	

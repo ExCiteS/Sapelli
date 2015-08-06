@@ -151,9 +151,14 @@ public class ProjectDescriptor implements Comparable<ProjectDescriptor>
 		return toString(false);
 	}
 	
+	public String getSignatureString()
+	{
+		return name + (variant != null ? (" " + variant) : "") + " (v" + version + ")";
+	}
+	
 	public String toString(boolean verbose)
 	{
-		return 	name + (variant != null ? (" " + variant) : "") + " (v" + version + ")"
+		return 	getSignatureString()
 				+ (verbose ? (" [id: " + id + "; fingerprint: " + fingerPrint + "]") : "");
 	}
 	
@@ -207,7 +212,7 @@ public class ProjectDescriptor implements Comparable<ProjectDescriptor>
 		hash = 31 * hash + (v1xSchemaVersion == null ? -1 : v1xSchemaVersion);
 		return hash;
 	}
-
+	
 	@Override
 	public int compareTo(ProjectDescriptor that)
 	{

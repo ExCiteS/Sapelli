@@ -29,11 +29,12 @@
 		android:padding="10dp" />
     
     <FrameLayout
-        android:id="@+id/btn_exportForProject"
+        android:id="@+id/btnExportForProject"
 		android:background="@layout/button_style"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_alignParentBottom="true" >
+		android:layout_alignParentBottom="true"
+		android:padding="10dp" >
  
 		<TextView
 		    style="?android:attr/buttonStyle"

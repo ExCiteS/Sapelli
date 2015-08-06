@@ -53,16 +53,16 @@
 	                android:src="@drawable/ic_sapelli_logo" />
 	
 	            <Button
-	                android:id="@+id/addShortcut"
+	                android:id="@+id/btnAddShortcut"
 	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="80dp"
+	                android:layout_width="85dp"
 	                android:layout_height="wrap_content"
 	                android:text="@string/add" />
 	
 	            <Button
-	                android:id="@+id/removeShortcut"
+	                android:id="@+id/btnRemoveShortcut"
 	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="80dp"
+	                android:layout_width="85dp"
 	                android:layout_height="wrap_content"
 	                android:text="@string/remove" />
 	        </LinearLayout>
@@ -126,17 +126,40 @@
 		            
 				</TableLayout>
 	            
+		        <LinearLayout
+		            android:layout_width="match_parent"
+		            android:layout_height="wrap_content"
+		            android:gravity="end"
+		            android:orientation="horizontal" >
+				
+					<Button
+		                android:id="@+id/btnExportData"
+		                style="?android:attr/buttonStyleSmall"
+		                android:layout_width="85dp"
+		                android:layout_height="wrap_content"
+		                android:text="@string/exportEtc" />
+		            
+		            <Button
+		                android:id="@+id/btnDeleteData"
+		                style="?android:attr/buttonStyleSmall"
+		                android:layout_width="85dp"
+		                android:layout_height="wrap_content"
+		                android:text="@string/delete" />
+		
+		        </LinearLayout>
+				
 	        </LinearLayout>
         
         </LinearLayout>
     </ScrollView>
 
     <FrameLayout
-        android:id="@+id/btn_runProject"
+        android:id="@+id/btnRunProject"
 		android:background="@layout/button_style"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
+		android:padding="10dp"
 		android:onClick="runProject" >
  
 		<TextView

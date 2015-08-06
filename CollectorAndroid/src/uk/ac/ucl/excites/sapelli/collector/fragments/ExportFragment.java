@@ -452,7 +452,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		public void querySuccess(List<Record> result)
 		{
 			if(result == null || result.isEmpty())
-				activity.showOKDialog(R.string.title_activity_export, R.string.exportNoRecordsFound);
+				activity.showOKDialog(R.string.title_activity_export, R.string.exportNoRecordsFound, R.drawable.ic_export_black_36dp);
 			else
 			{
 				// TODO Generate selection description String:
@@ -494,9 +494,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 					activity.showYesNoDialog(
 						R.string.exportSuccessTitle,
 						getString(R.string.exportSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination()) + '\n' + getString(R.string.exportDeleteConfirm),
-						false,
 						deleteTask,
-						false);
+						false, null, false);
 				else
 					// show dialog:
 					activity.showOKDialog(R.string.exportSuccessTitle, getString(R.string.exportNothing), false);
@@ -508,9 +507,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 					activity.showYesNoDialog(
 						R.string.exportPartialSuccessTitle,
 						getString(R.string.exportPartialSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination(), result.getNumberOfUnexportedRecords(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())) + '\n' + getString(R.string.exportDeleteConfirm),
-						false,
 						deleteTask,
-						false);
+						false, null, false);
 				else
 					// show dialog:
 					activity.showOKDialog(R.string.exportFailureTitle, getString(R.string.exportFailureMsg, result.getDestination(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())), false);

@@ -53,7 +53,8 @@
     <string name="statistics">Statistics</string>
     <string name="export_records">Export records</string>
     <string name="import_records_menuitem">Import records</string>
-    <string name="delete_records_menuitem">Delete records</string>
+    <string name="delete">Delete</string>
+    <string name="delete_data">Delete data</string>
     <string name="in_export">In- &amp; export</string>
     <string name="more_options">Additional options</string>
     <string name="settings">Settings</string>
@@ -117,6 +118,7 @@
     <string name="load_projects">Loading projects</string>
     <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
+    <string name="exportEtc">Export…</string>
     <string name="exportSelection">Select records to export:</string>
     <string name="exportSelectedProj">All records of %s</string>
     <string name="exportAllProjTitle">Export all projects</string>
@@ -150,6 +152,7 @@
     <string name="deleteNoRecordsFound">No records found.</string>
     <string name="deleteRecordsConfirmation">Are you sure you want to delete all %1$d records associated with project %2$s?</string>
     <string name="deleteAttachmentsConfirmation">Do you also wish to delete the %d media files (photos, audio or video recordings) associated with the records?</string>
+    <string name="deleteRecordsAndMediaConfirmation">Are you sure you want to delete all %1$d records and %2$d associated media files (photos, audio or video recordings) collected using project %3$s?</string>
     <string name="backup">Back-up</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>
     <string name="folderCrashes">Crash reports</string>
