@@ -62,6 +62,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
+import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.collector.ui.ProjectManagerPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
@@ -383,36 +384,18 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			return; // this is already the current project
 		
 		else // Parse project:
-			new ReloadProjectTask().execute(projDescr);
-	}
-	
-	private class ReloadProjectTask extends AsyncTaskWithWaitingDialog<ProjectDescriptor, Project>
-	{
-		
-		public ReloadProjectTask()
-		{
-			super(ProjectManagerActivity.this, getString(R.string.projectLoading));
-		}
-
-		@Override
-		protected Project doInBackground(ProjectDescriptor... params)
-		{
-			return projectStore.retrieveProject(params[0]);
-		}
-
-		@Override
-		protected void onPostExecute(Project project)
-		{
-			// Dismiss dialog:
-			super.onPostExecute(project);
-			
-			// Set as current project:
-			setCurrentProject(project);
-			
-			// Refresh drawer list (to use project instead of projectDescriptor instance):
-			updateProjectList(true);
-		}
-
+			new ProjectTasks.ReloadProjectTask(this, projectStore, new ProjectTasks.ReloadProjectCallback()
+			{
+				@Override
+				public void projectReloaded(Project project)
+				{
+					// Set as current project:
+					setCurrentProject(project);
+					
+					// Refresh drawer list (to use project instead of projectDescriptor instance):
+					updateProjectList(true);					
+				}
+			}).execute(projDescr);
 	}
 	
 	/**
@@ -727,51 +710,17 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				@Override
 				public void run()
 				{
-					new RemoveProjectTask().execute(getCurrentProject(false));
+					new ProjectTasks.RemoveProjectTask(ProjectManagerActivity.this, projectStore, new ProjectTasks.RemoveProjectCallback()
+					{
+						@Override
+						public void projectRemoved()
+						{
+							updateProjectList(true); // Refresh list
+						}
+					}).execute(getCurrentProject(false));
 				}
 			}, false, null, false);
 		}
-	}
-	
-	private class RemoveProjectTask extends AsyncTaskWithWaitingDialog<ProjectDescriptor, Void>
-	{
-		
-		public RemoveProjectTask()
-		{
-			super(ProjectManagerActivity.this, getString(R.string.projectRemoving));
-		}
-
-		@Override
-		protected Void doInBackground(ProjectDescriptor... params)
-		{
-			ProjectDescriptor projDescr = params[0];
-			if(projDescr != null)
-			{
-				// Remove project from store:
-				projectStore.delete(projDescr);
-				
-				// Remove installation folder:
-				org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(projDescr, false));
-				
-				// Remove shortcut:
-				ProjectRunHelpers.removeShortcut(ProjectManagerActivity.this, projDescr);
-				
-				// Remove as active project
-				if(app.getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
-					app.getPreferences().clearActiveProjectSignature();
-			}
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			
-			// Refresh list:
-			updateProjectList(true);
-		}
-
 	}
 	
 	@Override

@@ -44,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.util.Log;
 
 /**
- * A collection of async tasks to deal with record query, export & delete operations. 
+ * A collection of async tasks to deal with record query, export & delete operations.
  * 
  * @author mstevens
  */
@@ -300,10 +300,13 @@ public final class RecordsTasks
 		protected void onPostExecute(List<Record> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			if(failure != null)
-				callback.deleteFailure(failure);
-			else
-				callback.deleteSuccess(result);
+			if(callback != null)
+			{
+				if(failure != null)
+					callback.deleteFailure(failure);
+				else
+					callback.deleteSuccess(result);
+			}
 		}
 		
 	}

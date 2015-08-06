@@ -25,15 +25,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
+
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -41,8 +46,9 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 
 /**
+ * A collection of async tasks to deal with loading, removed projects and handling their data.
+ * 
  * @author mstevens
- *
  */
 public final class ProjectTasks
 {
@@ -163,7 +169,7 @@ public final class ProjectTasks
 				}
 				// Scan for attachments:
 				final List<File> attachments = new ArrayList<File>();		
-				FileStorageProvider fileSP = owner.getCollectorApp().getFileStorageProvider();
+				FileStorageProvider fileSP = owner.getFileStorageProvider();
 				for(Form form : recordsByForm.keySet())
 					for(Record record : recordsByForm.get(form))
 						for(Field field : form.getFields())
@@ -206,6 +212,117 @@ public final class ProjectTasks
 		public void mediaQuerySuccess(List<File> mediaFiles);
 		
 		public void mediaQueryFailure(Exception reason);
+		
+	}
+	
+	static private abstract class ProjectStoreTask<I, O> extends AsyncTaskWithWaitingDialog<I, O>
+	{
+		
+		protected final BaseActivity owner;
+		protected final ProjectStore projectStore;
+		
+		@SuppressWarnings("unused")
+		public ProjectStoreTask(BaseActivity owner, ProjectStore projectStore)
+		{
+			this(owner, projectStore, null);
+		}
+		
+		public ProjectStoreTask(BaseActivity owner, ProjectStore projectStore, String waitingMsg)
+		{
+			super(owner, waitingMsg);
+			this.owner = owner;
+			this.projectStore = projectStore;
+		}		
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public class ReloadProjectTask extends ProjectStoreTask<ProjectDescriptor, Project>
+	{
+		
+		private ReloadProjectCallback callback;
+		
+		public ReloadProjectTask(BaseActivity owner, ProjectStore projectStore, ReloadProjectCallback callback)
+		{
+			super(owner, projectStore, owner.getString(R.string.projectLoading));
+			this.callback = callback;
+		}
+
+		@Override
+		protected Project doInBackground(ProjectDescriptor... params)
+		{
+			return projectStore.retrieveProject(params[0]);
+		}
+
+		@Override
+		protected void onPostExecute(Project project)
+		{
+			super.onPostExecute(project); // dismiss dialog
+			if(callback != null)
+				callback.projectReloaded(project);
+		}
+
+	}
+	
+	public interface ReloadProjectCallback
+	{
+		
+		public void projectReloaded(Project project);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public class RemoveProjectTask extends ProjectStoreTask<ProjectDescriptor, Void>
+	{
+	
+		private final RemoveProjectCallback callback;
+		
+		public RemoveProjectTask(BaseActivity owner, ProjectStore projectStore, RemoveProjectCallback callback)
+		{
+			super(owner, projectStore, owner.getString(R.string.projectRemoving));
+			this.callback = callback;
+		}
+
+		@Override
+		protected Void doInBackground(ProjectDescriptor... params)
+		{
+			ProjectDescriptor projDescr = params[0];
+			if(projDescr != null)
+			{
+				// Remove project from store:
+				projectStore.delete(projDescr);
+				
+				// Remove installation folder:
+				FileUtils.deleteQuietly(owner.getFileStorageProvider().getProjectInstallationFolder(projDescr, false));
+				
+				// Remove shortcut:
+				ProjectRunHelpers.removeShortcut(owner, projDescr);
+				
+				// Remove as active project
+				if(owner.getCollectorApp().getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
+					owner.getCollectorApp().getPreferences().clearActiveProjectSignature();
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+			if(callback != null)
+				callback.projectRemoved();
+		}
+
+	}
+	
+	public interface RemoveProjectCallback
+	{
+		
+		public void projectRemoved();
 		
 	}
 	
