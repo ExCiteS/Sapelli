@@ -1,7 +1,7 @@
 package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 
-import uk.ac.ucl.excites.sapelli.collector.services.DataSendingService;
-import uk.ac.ucl.excites.sapelli.util.Debug;
+import uk.ac.ucl.excites.sapelli.sender.DataSenderService;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;

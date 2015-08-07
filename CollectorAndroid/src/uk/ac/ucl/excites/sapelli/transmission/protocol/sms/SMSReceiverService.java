@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.util.DeviceControl;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;

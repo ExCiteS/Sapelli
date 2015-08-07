@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.util.ViewHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;

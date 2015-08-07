@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateExcepti
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
@@ -130,6 +131,14 @@ public abstract class ProjectStore extends Store
 	public abstract List<Project> retrieveProjects();
 	
 	/**
+	 * Retrieves all projects as ProjectDescriptor or Project instances.
+	 * If the ProjectStore implements a caching mechanism than any cached Project objects will be returned as such (rather than as ProjectDescriptors).
+	 * 
+	 * @return
+	 */
+	public abstract <P extends ProjectDescriptor> List<P> retrieveProjectsOrDescriptors();
+	
+	/**
 	 * Retrieves specific Project
 	 * 
 	 * @return null if project was not found
@@ -156,6 +165,14 @@ public abstract class ProjectStore extends Store
 	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
 	
 	/**
+	 * Retrieves specific Project, identified by ProjectDescriptor
+	 * 
+	 * @param descriptor
+	 * @return
+	 */
+	public abstract Project retrieveProject(ProjectDescriptor descriptor);
+	
+	/**
 	 * For backwards compatibility only
 	 * 
 	 * @param id
@@ -175,7 +192,7 @@ public abstract class ProjectStore extends Store
 	/**
 	 * Delete specific project
 	 * 
-	 * @return
+	 * @param project
 	 */
 	public abstract void delete(Project project);
 	
@@ -184,6 +201,13 @@ public abstract class ProjectStore extends Store
 	public abstract SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
 	
 	public abstract void deleteSendSchedule(SendingSchedule schedule);
+
+	/**
+	 * Delete specific Project, identified by ProjectDescriptor
+	 * 
+	 * @param projectDescriptor
+	 */
+	public abstract void delete(ProjectDescriptor projectDescriptor);
 	
 	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	

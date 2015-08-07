@@ -22,8 +22,8 @@ import java.math.BigInteger;
 import java.util.zip.CRC32;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.DeviceControl;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -94,6 +94,7 @@ public class DeviceID
 	 * @param separator
 	 * @return
 	 */
+	@SuppressWarnings("deprecation")
 	static public String getHardwareInfo(String separator)
 	{
 		StringBuilder bldr = new StringBuilder();

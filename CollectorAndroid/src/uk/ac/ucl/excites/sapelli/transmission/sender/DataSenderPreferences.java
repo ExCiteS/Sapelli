@@ -20,8 +20,14 @@ package uk.ac.ucl.excites.sapelli.transmission.sender;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.R;
+<<<<<<< HEAD:CollectorAndroid/src/uk/ac/ucl/excites/sapelli/transmission/sender/DataSenderPreferences.java
 import uk.ac.ucl.excites.sapelli.transmission.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.sapelli.util.Debug;
+=======
+import uk.ac.ucl.excites.sapelli.sender.util.Constants;
+import uk.ac.ucl.excites.sapelli.sender.util.ServiceChecker;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+>>>>>>> master:CollectorAndroid/src/uk/ac/ucl/excites/sapelli/sender/DataSenderPreferences.java
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;

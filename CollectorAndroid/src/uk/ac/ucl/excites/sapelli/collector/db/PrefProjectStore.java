@@ -28,6 +28,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
@@ -356,7 +357,25 @@ public class PrefProjectStore extends ProjectStore
 	public void deleteSendSchedule(SendingSchedule schedule)
 	{
 		// TODO Auto-generated method stub
-		
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Project> retrieveProjectsOrDescriptors()
+	{
+		return retrieveProjects();
+	}
+
+	@Override
+	public Project retrieveProject(ProjectDescriptor descriptor)
+	{
+		return retrieveProject(descriptor.getID(), descriptor.getFingerPrint());
+	}
+
+	@Override
+	public void delete(ProjectDescriptor projectDescriptor)
+	{
+		delete(retrieveProject(projectDescriptor));
 	}
 
 }

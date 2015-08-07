@@ -31,9 +31,9 @@
 	<properties>
 		<!-- Android & support libs version -->
 		<!--	Always change Android version & API level together!: -->
-		<android.version>4.4.2_r4</android.version>
-		<android.api-level>19</android.api-level>
-		<android.support.libs.version>20.0.0</android.support.libs.version>
+		<android.version>5.1.1_r2</android.version>
+		<android.api-level>22</android.api-level>
+		<android.support.libs.version>22.2.1</android.support.libs.version>
 		
 		<!-- Build info generation: -->
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
@@ -106,14 +106,10 @@
 				 This makes such builds unsuitable for release on Play store because different beta's/rc's
 				 of a given version will all get same versionCode. -->
 			<dependencies>
-				<dependency>
-					<groupId>android.support</groupId>
-					<artifactId>compatibility-v4</artifactId>
-					<version>${android.support.libs.version}</version>
-					<type>jar</type>
-				</dependency>
 				<!-- The CollectorAndroid Eclipse project depends (see project.properties) on these Android
 					 Library projects (all in ../Dependencies/) which must opened in the Eclipse workspace: 
+						- appcompat-v7
+						- materialtabstrip-library
 						- afilechooser-library
 					Important: All Android Library projects which depend on android-support-v4.jar must have
 							   the *same* version it in their 'libs' folder. -->
@@ -165,10 +161,22 @@
 					<type>aar</type>
 				</dependency>
 				<dependency>
+					<groupId>com.android.support</groupId>
+					<artifactId>appcompat-v7</artifactId>
+					<version>${android.support.libs.version}</version>
+					<type>aar</type>
+				</dependency>
+				<dependency>
 					<groupId>com.ipaulpro</groupId>
 					<artifactId>afilechooser-library</artifactId>
 					<version>2.4</version>
 					<type>apklib</type>
+				</dependency>
+				<dependency>
+					<groupId>com.jpardogo.materialtabstrip</groupId>
+					<artifactId>library</artifactId>
+					<version>1.0.9</version>
+					<type>aar</type>
 				</dependency>
 			</dependencies>
 			<build>

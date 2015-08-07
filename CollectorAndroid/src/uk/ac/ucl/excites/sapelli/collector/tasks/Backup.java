@@ -20,17 +20,21 @@ package uk.ac.ucl.excites.sapelli.collector.tasks;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.view.ContextThemeWrapper;
+import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFormatFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folder;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
@@ -38,19 +42,11 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.util.Debug;
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnDismissListener;
-import android.content.Intent;
-import android.net.Uri;
-import android.view.ContextThemeWrapper;
 
 /**
  * Sapelli Collector Back-up procedure 
@@ -64,20 +60,20 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	static public final Folder[] BACKUPABLE_FOLDERS = { Folder.Attachments, Folder.Crashes, Folder.Export, Folder.Logs, Folder.Projects };
 	static public final String EMPTY_FILE = ".empty";
 	
-	static private String getFolderString(Context context, Folder folder)
+	static private int getFolderStringID(Folder folder)
 	{
 		switch(folder)
 		{
 			case Crashes:
-				return context.getString(R.string.folderCrashes);
+				return R.string.folderCrashes;
 			case Export:
-				return context.getString(R.string.folderExports);
+				return R.string.folderExports;
 			case Logs:
-				return context.getString(R.string.folderLogs);
+				return R.string.folderLogs;
 			case Attachments:
-				return context.getString(R.string.folderAttachments);
+				return R.string.folderAttachments;
 			case Projects:
-				return context.getString(R.string.folderProjects);
+				return R.string.folderProjects;
 			// Not back-upable:
 			case Downloads:
 			case Temp:
@@ -118,8 +114,6 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	private final FileStorageProvider fileStorageProvider;
 	private final Set<Folder> foldersToExport;
 	
-	private List<Record> recordsToExport;
-	private ExportFormatFragment frgFormat;
 	private final Runnable runBackup;
 	
 	private Backup(BaseActivity activity, FileStorageProvider fileStorageProvider)
@@ -144,27 +138,27 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	private void showSelectionDialog()
 	{
 		// Initialise folder selection:
-		List<String> checkboxItems = new ArrayList<String>();
-		List<Boolean> checkedItems = new ArrayList<Boolean>();
+		CharSequence[] checkboxItems = new CharSequence[BACKUPABLE_FOLDERS.length];
+		boolean[] checkedItems = new boolean[BACKUPABLE_FOLDERS.length];
+		int f = 0;
 		for(Folder folder : BACKUPABLE_FOLDERS)
 		{
-			checkboxItems.add(getFolderString(activity, folder));
-			boolean selected = isFolderDefaultSelected(folder);
-			checkedItems.add(selected);
-			if(selected)
+			checkboxItems[f] = activity.getString(getFolderStringID(folder));
+			if(checkedItems[f] = isFolderDefaultSelected(folder))
 				foldersToExport.add(folder);
+			f++;
 		}
 		
 		// Get dialog builder & configure the dialog...
-		new AlertDialog.Builder(new ContextThemeWrapper(activity, R.style.AppTheme))
+		AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(activity, R.style.AppTheme))
+		//	Set icon:
+		.setIcon(R.drawable.ic_content_save_black_36dp)
 		//	Set title:
-		.setTitle(R.string.selectForBackup)
-		//	Set multiple choice:0
+		.setTitle(R.string.backup)
+		//	Set multiple choice:
 		.setMultiChoiceItems(
-			// Transform checkboxItems to a CharSequence[]
-			checkboxItems.toArray(new CharSequence[checkboxItems.size()]),
-			// Transform checkedItems to a boolean[] -> items to be pre-selected
-			ArrayUtils.toPrimitive(checkedItems.toArray(new Boolean[checkedItems.size()])),
+			checkboxItems,
+			checkedItems,
 			// Choice click event handler:
 			new DialogInterface.OnMultiChoiceClickListener()
 			{
@@ -192,14 +186,23 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			}
 		})
 		// Set Cancel button:
-		.setNegativeButton(android.R.string.cancel, null)
-		// Create & show the dialog:
-		.create().show();
+		.setNegativeButton(android.R.string.cancel, null);
+		// Create the dialog:
+		AlertDialog dialog = builder.create();
+		// Add message above list:
+		TextView lblMsg = new TextView(activity);
+		int lrPadding = ViewHelpers.getDefaultDialogPaddingPx(activity);
+		lblMsg.setPadding(lrPadding, 0, lrPadding, 0);
+		lblMsg.setTextAppearance(activity, android.R.style.TextAppearance_Medium);
+		lblMsg.setText(R.string.selectForBackup);
+		dialog.getListView().addHeaderView(lblMsg);
+		// Show the dialog:
+		dialog.show();
 	}
 	
-	@SuppressLint("InflateParams")
 	private void showExportYesNoDialog()
 	{
+		// TODO query _before_ asking!?
 		// Get dialog builder & configure the dialog...
 		new AlertDialog.Builder(new ContextThemeWrapper(activity, R.style.AppTheme))
 		//	Set title:
@@ -230,12 +233,24 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	}
 	
 	@Override
-	public void querySuccess(List<Record> result)
+	public void querySuccess(final List<Record> result)
 	{
 		if(result != null && !result.isEmpty())
 		{
-			recordsToExport = result;
-			showExportFormatDialog();
+			String title = activity.getString(R.string.preBackupExportTitle); 
+			ExportFragment.ShowChoseFormatDialog(
+				activity,
+				title,
+				activity.getString(R.string.preBackupExportFormatMsg, result.size()),
+				false,
+				new ExportFragment.FormatDialogCallback()
+				{
+					@Override
+					public void onFormatChosen(ExportFragment formatFragment)
+					{
+						RecordsTasks.runExportTask(result, formatFragment, fileStorageProvider.getExportFolder(true), activity.getString(R.string.backup), Backup.this);
+					}
+				});
 		}
 		else
 		{
@@ -254,43 +269,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 								false,
 								runBackup);
 	}
-	
-	@SuppressLint("InflateParams")
-	private void showExportFormatDialog()
-	{
-		// Create the dialog
-		AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(activity, R.style.AppTheme));
-		// Set the title:
-		builder.setTitle(R.string.preBackupExportTitle);
-		// Set msg:
-		builder.setMessage(activity.getString(R.string.preBackupExportFormatMsg, recordsToExport.size()));
-		// Set UI:
-		builder.setView(activity.getLayoutInflater().inflate(R.layout.dialog_prebackup_export_format, null));
-		frgFormat = (ExportFormatFragment) activity.getSupportFragmentManager().findFragmentById(R.id.frgExportFormatPreBackup);
-		// Set OK button:
-		builder.setPositiveButton(android.R.string.ok, new Dialog.OnClickListener()
-		{
-			@Override
-			public void onClick(DialogInterface dialog, int which)
-			{
-				frgFormat.runExportTask(recordsToExport, activity, fileStorageProvider.getExportFolder(true), activity.getString(R.string.backup), Backup.this);
-			}
-		});
-		// Create the dialog
-		Dialog dialog = builder.create();
-		// Add onDismiss listener:
-		dialog.setOnDismissListener(new OnDismissListener()
-		{
-			@Override
-			public void onDismiss(DialogInterface dialog)
-			{
-				frgFormat.forget(); // necessary to avoid duplicate id error when dialog is shown again later
-			}
-		});
-		// Show the dialog:
-		dialog.show();
-	}
-	
+
 	@Override
 	public void exportDone(ExportResult result)
 	{

@@ -33,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.util.AndroidLogger;
+import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 
 /**
  * 

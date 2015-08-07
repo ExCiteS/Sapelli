@@ -25,6 +25,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -43,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.util.Log;
 
 /**
- * A collection of async tasks to deal with record query, export & delete operations. 
+ * A collection of async tasks to deal with record query, export & delete operations.
  * 
  * @author mstevens
  */
@@ -109,6 +110,22 @@ public final class RecordsTasks
 		
 		public void queryFailure(Exception reason);
 		
+	}
+	
+	@SuppressWarnings("unchecked")
+	static public void runExportTask(List<Record> records, ExportFragment exportFragment, File exportFolder, String exportDesc, ExportCallback callback)
+	{
+		switch(exportFragment.getSelectedFormat())
+		{
+			case CSV:
+				new CSVExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getCSVSeparator(), exportDesc, callback).execute(records);
+				break;
+			case XML:
+				new RecordsTasks.XMLExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getXMLCompositeMode(), exportDesc, callback).execute(records);
+				break;
+			default:
+				throw new IllegalStateException("Unknown export format: " + exportFragment.getSelectedFormat().toString());
+		}
 	}
 	
 	static public class ExportTask extends AsyncTaskWithWaitingDialog<List<Record>, ExportResult>
@@ -238,7 +255,7 @@ public final class RecordsTasks
 		
 	}
 	
-	static public class DeleteTask extends AsyncTaskWithWaitingDialog<List<Record>, Void> implements StoreUser
+	static public class DeleteTask extends AsyncTaskWithWaitingDialog<List<Record>, List<Record>> implements StoreUser
 	{
 
 		private final CollectorClient client;
@@ -253,7 +270,7 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected Void doInBackground(List<Record>... params)
+		protected List<Record> doInBackground(List<Record>... params)
 		{
 			List<Record> recordsToDelete = params[0];
 			try
@@ -270,22 +287,26 @@ public final class RecordsTasks
 				e.printStackTrace(System.err);
 				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
+				return null;
 			}
 			finally
 			{
 				client.recordStoreHandle.doneUsing(this);
 			}
-			return null;
+			return recordsToDelete;
 		}
 		
 		@Override
-		protected void onPostExecute(Void result)
+		protected void onPostExecute(List<Record> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			if(failure != null)
-				callback.deleteFailure(failure);
-			else
-				callback.deleteSuccess();
+			if(callback != null)
+			{
+				if(failure != null)
+					callback.deleteFailure(failure);
+				else
+					callback.deleteSuccess(result);
+			}
 		}
 		
 	}
@@ -293,7 +314,7 @@ public final class RecordsTasks
 	public interface DeleteCallback
 	{
 		
-		public void deleteSuccess();
+		public void deleteSuccess(List<Record> deletedRecords);
 		
 		public void deleteFailure(Exception reason);
 		
