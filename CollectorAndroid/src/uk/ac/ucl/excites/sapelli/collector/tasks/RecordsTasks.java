@@ -53,35 +53,44 @@ public final class RecordsTasks
 	
 	private RecordsTasks() { /* should never be instantiated */ }
 
-	static public class QueryTask extends AsyncTaskWithWaitingDialog<RecordsQuery, List<Record>> implements StoreUser
+	/**
+	 * @author mstevens
+	 *
+	 * @param <I>
+	 * @param <O>
+	 */
+	static protected abstract class RecordStoreTask<I, O> extends AsyncTaskWithWaitingDialog<I, O> implements StoreUser
 	{
 
-		private final CollectorClient client;
-		private final QueryCallback callback;
-		private Exception failure = null;
+		protected final CollectorClient client;
+		protected Exception failure = null;
 		
-		public QueryTask(BaseActivity owner, QueryCallback callback)
+		public RecordStoreTask(BaseActivity owner)
 		{
-			super(owner, owner.getString(R.string.exportFetching));
+			this(owner, null);
+		}
+		
+		public RecordStoreTask(BaseActivity owner, String waitingMsg)
+		{
+			super(owner, waitingMsg);
 			this.client = owner.getCollectorApp().collectorClient;
-			this.callback = callback;
 		}
 
 		@Override
-		protected List<Record> doInBackground(RecordsQuery... query)
+		protected O doInBackground(I... params)
 		{
 			try
 			{
 				// Get RecordStore instance:
 				RecordStore recordStore = client.recordStoreHandle.getStore(this);
 				
-				// Retrieve by query:
-				return recordStore.retrieveRecords(query[0]);
+				// Do the real work:
+				return doInBackgroundWith(recordStore, params);
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace(System.err);
-				Log.d("QueryTask", ExceptionHelpers.getMessageAndCause(e));
+				//e.printStackTrace(System.err);
+				Log.d(getClass().getSimpleName(), ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
 				return null;
 			}
@@ -89,6 +98,27 @@ public final class RecordsTasks
 			{
 				client.recordStoreHandle.doneUsing(this);
 			}
+		}
+		
+		protected abstract O doInBackgroundWith(RecordStore recordStore, I... params) throws Exception;
+		
+	}
+	
+	static public class QueryTask extends RecordStoreTask<RecordsQuery, List<Record>>
+	{
+
+		private final QueryCallback callback;
+		
+		public QueryTask(BaseActivity owner, QueryCallback callback)
+		{
+			super(owner, owner.getString(R.string.exportFetching));
+			this.callback = callback;
+		}
+
+		@Override
+		protected List<Record> doInBackgroundWith(RecordStore recordStore, RecordsQuery... query) throws Exception
+		{
+			return recordStore.retrieveRecords(query[0]); // Retrieve by query
 		}
 		
 		@Override
@@ -100,7 +130,7 @@ public final class RecordsTasks
 			else
 				callback.querySuccess(result);
 		}
-		
+
 	}
 	
 	public interface QueryCallback
@@ -126,6 +156,96 @@ public final class RecordsTasks
 			default:
 				throw new IllegalStateException("Unknown export format: " + exportFragment.getSelectedFormat().toString());
 		}
+	}
+	
+	static public class DeleteTask extends RecordStoreTask<List<Record>, List<Record>>
+	{
+
+		private final DeleteCallback callback;
+		
+		public DeleteTask(BaseActivity owner, DeleteCallback callback)
+		{
+			super(owner);
+			this.callback = callback;
+		}
+
+		@Override
+		protected List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
+		{
+			// Delete records:
+			List<Record> recordsToDelete = params[0];
+			publishProgress(context.getString(R.string.deletingXRecords, recordsToDelete.size()));
+			recordStore.delete(recordsToDelete);
+			return recordsToDelete;
+		}
+		
+		@Override
+		protected void onPostExecute(List<Record> result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+			if(callback != null)
+			{
+				if(failure != null)
+					callback.deleteFailure(failure);
+				else
+					callback.deleteSuccess(result);
+			}
+		}
+		
+	}
+	
+	public interface DeleteCallback
+	{
+		
+		public void deleteSuccess(List<Record> deletedRecords);
+		
+		public void deleteFailure(Exception reason);
+		
+	}
+	
+	static public class StoreTask extends RecordStoreTask<List<Record>, List<Record>>
+	{
+
+		private final StoreCallback callback;
+		
+		public StoreTask(BaseActivity owner, StoreCallback callback)
+		{
+			super(owner);
+			this.callback = callback;
+		}
+
+		@Override
+		protected List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
+		{
+			// Delete records:
+			List<Record> recordsToStore = params[0];
+			publishProgress(context.getString(R.string.storingXRecords, recordsToStore.size()));
+			recordStore.store(recordsToStore);
+			return recordsToStore;
+		}
+		
+		@Override
+		protected void onPostExecute(List<Record> result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+			if(callback != null)
+			{
+				if(failure != null)
+					callback.storeFailure(failure);
+				else
+					callback.storeSuccess(result);
+			}
+		}
+		
+	}
+	
+	public interface StoreCallback
+	{
+		
+		public void storeSuccess(List<Record> storedRecords);
+		
+		public void storeFailure(Exception reason);
+		
 	}
 	
 	static public class ExportTask extends AsyncTaskWithWaitingDialog<List<Record>, ExportResult>
@@ -252,71 +372,6 @@ public final class RecordsTasks
 		 * @param reason see {@link Importer#importFrom(File)} for possible Exception types
 		 */
 		public void importFailure(Exception reason);
-		
-	}
-	
-	static public class DeleteTask extends AsyncTaskWithWaitingDialog<List<Record>, List<Record>> implements StoreUser
-	{
-
-		private final CollectorClient client;
-		private final DeleteCallback callback;
-		private Exception failure = null;
-		
-		public DeleteTask(BaseActivity owner, DeleteCallback callback)
-		{
-			super(owner);
-			this.client = owner.getCollectorApp().collectorClient;
-			this.callback = callback;
-		}
-
-		@Override
-		protected List<Record> doInBackground(List<Record>... params)
-		{
-			List<Record> recordsToDelete = params[0];
-			try
-			{
-				// Get RecordStore instance:
-				RecordStore recordStore = client.recordStoreHandle.getStore(this);
-				
-				// Delete records:
-				publishProgress(context.getString(R.string.exportDeletingX, recordsToDelete.size()));
-				recordStore.delete(recordsToDelete);
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
-				failure = e;
-				return null;
-			}
-			finally
-			{
-				client.recordStoreHandle.doneUsing(this);
-			}
-			return recordsToDelete;
-		}
-		
-		@Override
-		protected void onPostExecute(List<Record> result)
-		{
-			super.onPostExecute(result); // dismiss dialog
-			if(callback != null)
-			{
-				if(failure != null)
-					callback.deleteFailure(failure);
-				else
-					callback.deleteSuccess(result);
-			}
-		}
-		
-	}
-	
-	public interface DeleteCallback
-	{
-		
-		public void deleteSuccess(List<Record> deletedRecords);
-		
-		public void deleteFailure(Exception reason);
 		
 	}
 	

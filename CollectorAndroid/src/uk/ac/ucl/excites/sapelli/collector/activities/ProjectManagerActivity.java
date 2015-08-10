@@ -79,7 +79,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -669,6 +668,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void importSuccess(List<Record> records, List<String> warnings)
 	{
@@ -681,24 +681,21 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				bldr.append(" - " + warning);
 			showWarningDialog(bldr.toString());
 		}
-		
-		// Store the records (TODO make async)
-		try
+		// Store the records:
+		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
 		{
-			RecordStore recordStore = app.collectorClient.recordStoreHandle.getStore(this);
-			recordStore.store(records);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Error upon storing imported records: " + e.getMessage(), false);
-		}
-		finally
-		{
-			app.collectorClient.recordStoreHandle.doneUsing(this);
-		}
-		
-		//User feedback:
-		showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
+			@Override
+			public void storeSuccess(List<Record> storedRecords)
+			{
+				showInfoDialog("Succesfully imported " + storedRecords.size() + " records."); // TODO report skipped duplicates
+			}
+			
+			@Override
+			public void storeFailure(Exception reason)
+			{
+				showErrorDialog("Error upon storing imported records: " + reason.getMessage(), false);
+			}
+		}).execute(records);
 	}
 
 	@Override
