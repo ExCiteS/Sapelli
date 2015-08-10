@@ -15,7 +15,8 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- --><resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+ -->
+ <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collector</string>
@@ -145,9 +146,10 @@
     <string name="exportFailureMsg">Failed to export any records to %1$s, due to: %2$s.</string>
     <string name="exportDeleteFailureMsg">Failed to delete (some of) the records, due to: %s.</string>
     <string name="exportNothing">There was nothing to export.</string>
-    <string name="exportDeletingX">Deleting %d records …</string>
     <string name="exporting_data">Exporting data …</string>
     <string name="importFromX">Importing records from %s …</string>
+    <string name="storingXRecords">Storing %d records …</string>
+    <string name="deletingXRecords">Deleting %d records …</string>
     <string name="mediaScanning">Scanning for media files</string>
     <string name="deleteNoRecordsFound">No records found.</string>
     <string name="deleteRecordsConfirmation">Are you sure you want to delete all %1$d records associated with project %2$s?</string>

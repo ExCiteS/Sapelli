@@ -657,6 +657,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void importSuccess(List<Record> records, List<String> warnings)
 	{
@@ -669,13 +670,22 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				bldr.append(" - " + warning);
 			showWarningDialog(bldr.toString());
 		}
-		
-		//Store the records:
-		//for(Record r : records)
-		//	dao.store(r); //TODO avoid duplicates!
-		
-		//User feedback:
-		showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
+
+		// Store the records:
+		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
+		{
+			@Override
+			public void storeSuccess(List<Record> storedRecords)
+			{
+				showInfoDialog("Succesfully imported " + storedRecords.size() + " records."); // TODO report skipped duplicates
+			}
+			
+			@Override
+			public void storeFailure(Exception reason)
+			{
+				showErrorDialog("Error upon storing imported records: " + reason.getMessage(), false);
+			}
+		}).execute(records);
 	}
 
 	@Override
