@@ -29,8 +29,10 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 public class SendingSchedule
 {
 	
-	private Project project;
+	private final Project project;
 	private Correspondent receiver;
+	
+	private Integer id;
 	
 	/**
 	 * Amount of seconds between transmission attempts
@@ -39,12 +41,32 @@ public class SendingSchedule
 	
 	private boolean encrypt;
 	
-	public SendingSchedule(Project project, Correspondent receiver, int retransmitIntervalMillis, boolean encrypt)
+	private boolean enabled;
+	
+	public SendingSchedule(Project project, boolean enabled)
 	{
 		this.project = project;
+		this.enabled = enabled;
+	}
+	
+	/**
+	 * Used upon database retrieval
+	 * 
+	 * @param project
+	 * @param id
+	 * @param receiver
+	 * @param transmitIntervalS
+	 * @param encrypt
+	 * @param enabled
+	 */
+	public SendingSchedule(Project project, int id, Correspondent receiver, int transmitIntervalS, boolean encrypt, boolean enabled)
+	{
+		this.project = project;
+		this.id = id;
 		this.receiver = receiver;
-		this.transmitIntervalS = retransmitIntervalMillis;
+		this.transmitIntervalS = transmitIntervalS;
 		this.encrypt = encrypt;
+		this.enabled = enabled;
 	}
 
 	/**
@@ -56,13 +78,47 @@ public class SendingSchedule
 	}
 
 	/**
+	 * @return the id
+	 */
+	public int getID()
+	{
+		if(id == null)
+			throw new IllegalStateException("ID has not been set yet");
+		return id.intValue();
+	}
+
+	/**
+	 * @param id the id to set
+	 */
+	public void setID(int id)
+	{
+		if(this.id != null && this.id.intValue() != id)
+			throw new IllegalStateException("A different id value has already been set (existing: " + this.id + "; new: " + id + ")!");
+		this.id = id;
+	}
+	
+	public boolean isIDSet()
+	{
+		return id != null;
+	}
+
+	/**
 	 * @return the receiver
 	 */
 	public Correspondent getReceiver()
 	{
 		return receiver;
 	}
-	
+
+	/**
+	 * @param receiver the receiver to set
+	 */
+	public SendingSchedule setReceiver(Correspondent receiver)
+	{
+		this.receiver = receiver;
+		return this;
+	}
+
 	/**
 	 * @return the transmitIntervalS
 	 */
@@ -73,10 +129,12 @@ public class SendingSchedule
 
 	/**
 	 * @param transmitIntervalS seconds between transmission attempts
+	 * @return 
 	 */
-	public void setTransmitIntervalS(int transmitIntervalS)
+	public SendingSchedule setTransmitIntervalS(int transmitIntervalS)
 	{
 		this.transmitIntervalS = transmitIntervalS;
+		return this;
 	}
 
 	/**
@@ -89,10 +147,30 @@ public class SendingSchedule
 
 	/**
 	 * @param encrypt the encrypt to set
+	 * @return 
 	 */
-	public void setEncrypt(boolean encrypt)
+	public SendingSchedule setEncrypt(boolean encrypt)
 	{
 		this.encrypt = encrypt;
+		return this;
+	}
+	
+	/**
+	 * @return the enabled
+	 */
+	public boolean isEnabled()
+	{
+		return enabled;
+	}
+
+	/**
+	 * @param enabled the enabled to set
+	 * @return 
+	 */
+	public SendingSchedule setEnabled(boolean enabled)
+	{
+		this.enabled = enabled;
+		return this;
 	}
 	
 }

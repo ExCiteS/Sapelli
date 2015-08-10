@@ -60,12 +60,10 @@ import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.collector.ui.ProjectManagerPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
@@ -81,9 +79,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
@@ -431,7 +426,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			pager.setVisibility(View.GONE);
 			addProjects.setVisibility(View.VISIBLE);
 		}
-
 		// Remember current project:
 		app.getPreferences().setActiveProjectSignature(currentProject);
 		// Refresh menus:
@@ -514,11 +508,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 */
 	public boolean openAboutDialog(MenuItem item)
 	{
-		// TODO START HACK HACK
-		Log.d(TAG, "Starting alarm scheduler...");
-		DataSendingSchedulingService.ScheduleAll(getApplicationContext());
-		/// TODO END HACK HACK
-		
 		openAboutDialog();
 		return true;
 	}
@@ -768,21 +757,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		
 		// Update project list:
 		updateProjectList(true);
-
-		// TODO ---------------- delete below
-		try
-		{
-			// once project loading done, store a dummy schedule:
-			Correspondent receiver = new SMSCorrespondent("Matthias Belgium", "+32486170492", false);
-			TransmissionStore sentTxStore = ((CollectorApp)this.getApplication()).collectorClient.transmissionStoreHandle.getStore(this);
-			sentTxStore.store(receiver);
-			projectStore.storeSendSchedule(new SendingSchedule(project, receiver, 60 /*seconds*/, false), sentTxStore);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		// TODO ---------------- delete above
 	}
 
 	@Override
@@ -794,6 +768,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Report problem:
 		Log.e(TAG, "Could not load/store Sapelli file", cause);
 		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
+	}
+
+	/**
+	 * @return the projectStore
+	 */
+	public ProjectStore getProjectStore()
+	{
+		return projectStore;
 	}
 
 }

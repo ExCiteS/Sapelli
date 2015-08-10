@@ -247,7 +247,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		// Check/set it on the object:
 		if(correspondent.isLocalIDSet()) // if the object already had a local transmissionID...
 		{	// then it should match the ID on the record, so let's verify:
-			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(rec))
+			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(rec).intValue())
 				throw new IllegalStateException("Non-matching correspodent ID"); // this should never happen
 		}
 		else
@@ -290,6 +290,18 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	{
 		// Query for record and convert to Correspondent object:
 		return correspondentFromRecord(recordStore.retrieveRecord(recordQuery));
+	}
+	
+	/**
+	 * @param includeUnknownSenders
+	 * @return
+	 */
+	public List<Correspondent> retrieveCorrespondents(boolean includeUnknownSenders)
+	{
+		List<Correspondent> correspondents = new ArrayList<Correspondent>();
+		for(Record record : recordStore.retrieveRecords(new RecordsQuery(Source.From(CORRESPONDENT_SCHEMA), !includeUnknownSenders ? new EqualityConstraint(CORRESPONDENT_COLUMN_NAME, Correspondent.UNKNOWN_SENDER_NAME, false) : null)))
+			CollectionUtils.addIgnoreNull(correspondents, correspondentFromRecord(record)); // convert to Correspondent objects
+		return correspondents;
 	}
 
 	/**
@@ -360,7 +372,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		// Check/set it on the object:
 		if(transmission.isLocalIDSet()) // if the object already had a local transmissionID...
 		{	// then it should match the ID on the record, so let's verify:
-			if(transmission.getLocalID() != TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord))
+			if(transmission.getLocalID() != TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord).intValue())
 				throw new IllegalStateException("Non-matching transmission ID"); // this should never happen
 		}
 		else

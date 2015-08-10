@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
@@ -198,7 +199,7 @@ public abstract class ProjectStore extends Store
 	
 	public abstract void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore);
 	
-	public abstract SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
+	public abstract SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore) throws DBException;
 	
 	public abstract void deleteSendSchedule(SendingSchedule schedule);
 

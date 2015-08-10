@@ -52,21 +52,63 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@layout/drop_shadow_bottom"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:visibility="gone" >
+        
+		<TableLayout
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="15dp"
+            android:paddingStart="15dp"
+            android:paddingRight="5dp"
+            android:paddingEnd="5dp"
+            android:paddingTop="5dp" >
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="@string/phone_number" />
+			<TableRow
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
 
-        <EditText
-            android:id="@+id/editPhone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="phone" />
+			    <TextView
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:gravity="end"
+					android:paddingLeft="0dp"
+					android:paddingStart="0dp"
+			        android:paddingEnd="7dp"
+			        android:paddingRight="7dp"
+			        android:text="Receiver:" />
+				
+				<Spinner
+		            android:id="@+id/spinSendReceiver"
+		            android:layout_width="0dp"
+		            android:layout_height="wrap_content"
+		            android:layout_weight="1" />                
+
+            </TableRow>
+
+            <TableRow
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+
+			    <TextView
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:gravity="end"
+					android:paddingLeft="0dp"
+					android:paddingStart="0dp"
+			        android:paddingEnd="7dp"
+			        android:paddingRight="7dp"
+			        android:text="Interval:" />
+				
+					<EditText
+			            android:id="@+id/txtSendInterval"
+			            android:layout_width="0dp"
+			            android:layout_height="wrap_content"
+			            android:layout_weight="1"
+			            android:inputType="number" />
+            </TableRow>
+            
+		</TableLayout>
     </LinearLayout>
 
     <LinearLayout
