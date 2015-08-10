@@ -102,7 +102,8 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 	@Override
 	public void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
-		// add tings here...
+		// add things here...
+		
 		// </Configuration>
 		/*else */if(qName.equals(TAG_CONFIGURATION))
 		{
