@@ -681,6 +681,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				bldr.append(" - " + warning);
 			showWarningDialog(bldr.toString());
 		}
+		
 		// Store the records:
 		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
 		{
@@ -820,7 +821,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Deal with downloaded file...
 		if(Patterns.WEB_URL.matcher(sourceURI).matches())
 			org.apache.commons.io.FileUtils.deleteQuietly(sapelliFile);
-		
+				
 		// Report problem:
 		Log.e(TAG, "Could not load/store Sapelli file", cause);
 		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
