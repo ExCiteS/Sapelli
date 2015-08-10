@@ -185,7 +185,7 @@ public class Project extends ProjectDescriptor
 		else
 			return null;
 	}
-
+	
 	/**
 	 * @return the logging
 	 */

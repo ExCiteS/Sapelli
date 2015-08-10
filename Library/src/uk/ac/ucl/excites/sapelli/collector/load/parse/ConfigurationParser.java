@@ -38,9 +38,15 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 	 * @deprecated
 	 */
 	static private final String TAG_TRANSMISSION = "Transmission";
+	static private final String TAG_DROPBOX_UPLOAD = "DropboxUpload";
+	static private final String TAG_HTTP_UPLOAD = "HTTPUpload";
+	static private final String TAG_SMS_UPLOAD = "SMSUpload";
+	static private final String TAG_ENCRYPTION = "Encryption";
 
 	// ATTRIBUTES
 	static private final String ATTRIBUTE_ENABLED = "enabled";
+	static protected final String ATTRIBUTE_MOBILE_DATA = "allowMobileData";
+	static protected final String ATTRIBUTE_ROAMING = "allowRoaming";
 
 	// DYNAMICS-------------------------------------------------------
 	private Project project;
@@ -70,7 +76,12 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 			// <Transmission> (deprecated)
 			else if(qName.equals(TAG_TRANSMISSION))
 			{
-				addWarning("Use of the <" + TAG_TRANSMISSION + "> tag has been deprecated and it is being ignore. Use the UI to configure transmission settings.");
+				addWarning("<" + TAG_TRANSMISSION + "> tag and contents are deprecated. Use UI to configure data transmission.");
+			}
+			// <DropboxUpload>, <HTTPUpload>, <SMSUpload>, <Encryption>
+			else if(qName.equals(TAG_DROPBOX_UPLOAD) || qName.equals(TAG_HTTP_UPLOAD) || qName.equals(TAG_SMS_UPLOAD) || qName.equals(TAG_ENCRYPTION))
+			{
+				// ignore...
 			}
 
 			// Add future configuration elements here...
@@ -92,7 +103,6 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 	public void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
 		// add tings here...
-		
 		// </Configuration>
 		/*else */if(qName.equals(TAG_CONFIGURATION))
 		{

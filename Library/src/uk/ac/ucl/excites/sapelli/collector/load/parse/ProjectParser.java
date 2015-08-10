@@ -268,6 +268,7 @@ public class ProjectParser extends DocumentParser
 		if(qName.equals(TAG_PROJECT) || qName.equals(TAG_PROJECT_V1X))
 		{
 			clearSubtreeParsers();
+
 			if(project.getForms().size() == 0)
 				throw new SAXException("A project such have at least 1 form!");
 			else
