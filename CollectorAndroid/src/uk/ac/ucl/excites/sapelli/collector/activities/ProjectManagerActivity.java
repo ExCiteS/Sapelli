@@ -428,7 +428,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 		// Remember current project:
 		app.getPreferences().setActiveProjectSignature(currentProject);
-		
+		// Refresh menus:
 		supportInvalidateOptionsMenu();
 	}
 	
@@ -487,35 +487,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// super:
 		super.onDestroy();
 	}
-	
-//	@Override
-//	public boolean onOptionsItemSelected(MenuItem item)
-//	{
-//		/* 	Note:
-//		 * 	the android:onClick attribute in the XML only works on Android >= v3.0,
-//		 *	so we need to direct the handling of menu clicks manually here for things
-//		 *	to work on earlier versions. */
-//		switch(item.getItemId())
-//		{
-//			case R.id.sender_settings_menuitem :
-//				return openSenderSettings(item);
-//			case R.id.export_records_menuitem :
-//				return exportRecords(item);
-//			//case R.id.import_records_menuitem :
-//				//return importRecords(item);
-//			case R.id.delete_records_menuitem :
-//				return deleteRecords(item);
-//			case R.id.create_shortcut :
-//				return createShortcut(item);
-//			case R.id.remove_shortcut :
-//				return removeShortcut(item);
-//			case R.id.backup:
-//				return backupSapelli(item);
-//			case R.id.about_menuitem :
-//				return openAboutDialog(item);
-//		}
-//		return true;
-//	}
 	
 	public void closeDrawer(View view)
 	{
@@ -670,7 +641,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				bldr.append(" - " + warning);
 			showWarningDialog(bldr.toString());
 		}
-
 		// Store the records:
 		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
 		{
@@ -795,7 +765,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Deal with downloaded file...
 		if(Patterns.WEB_URL.matcher(sourceURI).matches())
 			org.apache.commons.io.FileUtils.deleteQuietly(sapelliFile);
-		
 		// Report problem:
 		Log.e(TAG, "Could not load/store Sapelli file", cause);
 		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
