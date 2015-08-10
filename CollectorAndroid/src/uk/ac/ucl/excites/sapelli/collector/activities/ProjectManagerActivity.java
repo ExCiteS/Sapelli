@@ -765,5 +765,13 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			}, false, null, false);
 		}
 	}
-	
+
+	/**
+	 * @return the projectStore
+	 */
+	public ProjectStore getProjectStore()
+	{
+		return projectStore;
+	}
+
 }
