@@ -27,7 +27,6 @@ import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
@@ -111,7 +110,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	private TextView addProjects;
 	private PagerSlidingTabStrip tabs;
 	private ViewPager pager;
-	private Dialog encryptionDialog;
 	private TextView lblAvailableProjects;
 	private ListView projectList;
 	private Toolbar mainToolbar;
@@ -206,7 +204,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		getMenuInflater().inflate(R.menu.projectload, menu.findItem(R.id.action_load).getSubMenu());
 		
 		// Dis/enable remove action:
-		menu.findItem(R.id.action_remove).setVisible(projectListAdaptor != null && projectListAdaptor.getCount() > 0);
+		menu.findItem(R.id.action_remove).setVisible(currentProject != null);
 
 		// Force displaying of icons in overflow menu:
 		MenuHelpers.forceMenuIcons(menu);
@@ -331,10 +329,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			// Set/switch to current project
 			if(currentProject != null)
 			{	// look for current project in result list:
+				boolean found = false;
 				for(int i = 0; i < result.size(); i++)
 					if(result.get(i).equalDescription(currentProject))
-						// (Re)select current project:
-						projectList.setItemChecked(i, true); // no need to call switchToProject(), project is already the current one
+					{	// (Re)select current project:
+						projectList.setItemChecked(i, true);
+						found = true;
+						break;
+					}
+				if(!found) // the currentProject is no longer available
+					switchToProject(null);
 			}
 			else if(app.getPreferences().getActiveProjectSignature() != null)
 			{	// Reselect previously active project:
@@ -586,6 +590,65 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 	}
 	
+	@Override
+	public void downloadSuccess(String downloadUrl, File downloadedFile)
+	{
+		new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(downloadedFile, downloadUrl, this);
+	}
+
+	@Override
+	public void downloadFailure(String downloadUrl, Exception cause)
+	{
+		showErrorDialog(R.string.downloadError, false);
+	}
+	
+	@Override
+	public void projectLoadStoreSuccess(File sapelliFile, String sourceURI, Project project, List<String> warnings)
+	{
+		// Deal with downloaded file...
+		if(Patterns.WEB_URL.matcher(sourceURI).matches())
+			// Change temporary name to proper one:
+			sapelliFile.renameTo(new File(sapelliFile.getParentFile().getAbsolutePath() + File.separator + FileHelpers.makeValidFileName(project.toString(false) + ".sapelli")));
+		
+		// Warnings...
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+		//	Parser/loader warnings: 
+		if(!warnings.isEmpty())
+		{
+			bldr.append(getString(R.string.projectLoadingWarnings) + ":");
+			for(String warning : warnings)
+				bldr.append(" - " + warning);
+		}
+		//	Check file dependencies:
+		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
+		if(!missingFiles.isEmpty())
+		{
+			bldr.append(getString(R.string.missingFiles) + ":");
+			for(String missingFile : missingFiles)
+				bldr.append(" - " + missingFile);
+		}
+		//	Show warnings dialog:
+		if(!bldr.isEmpty())
+			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
+		
+		// Select project:
+		setCurrentProject(project);
+		
+		// Update project list:
+		updateProjectList(true);
+	}
+
+	@Override
+	public void projectLoadStoreFailure(File sapelliFile, String sourceURI, Exception cause)
+	{
+		// Deal with downloaded file...
+		if(Patterns.WEB_URL.matcher(sourceURI).matches())
+			org.apache.commons.io.FileUtils.deleteQuietly(sapelliFile);
+		// Report problem:
+		Log.e(TAG, "Could not load/store Sapelli file", cause);
+		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
+	}
+	
 	public void scanQR(MenuItem item)
 	{
 		// Start the Intent to Scan a QR code
@@ -701,73 +764,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				}
 			}, false, null, false);
 		}
-	}
-	
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		if(encryptionDialog != null)
-			encryptionDialog.dismiss();
-	}
-	
-	@Override
-	public void downloadSuccess(String downloadUrl, File downloadedFile)
-	{
-		new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(downloadedFile, downloadUrl, this);
-	}
-
-	@Override
-	public void downloadFailure(String downloadUrl, Exception cause)
-	{
-		showErrorDialog(R.string.downloadError, false);
-	}
-	
-	@Override
-	public void projectLoadStoreSuccess(File sapelliFile, String sourceURI, Project project, List<String> warnings)
-	{
-		// Deal with downloaded file...
-		if(Patterns.WEB_URL.matcher(sourceURI).matches())
-			// Change temporary name to proper one:
-			sapelliFile.renameTo(new File(sapelliFile.getParentFile().getAbsolutePath() + File.separator + FileHelpers.makeValidFileName(project.toString(false) + ".sapelli")));
-		
-		// Warnings...
-		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
-		//	Parser/loader warnings: 
-		if(!warnings.isEmpty())
-		{
-			bldr.append(getString(R.string.projectLoadingWarnings) + ":");
-			for(String warning : warnings)
-				bldr.append(" - " + warning);
-		}
-		//	Check file dependencies:
-		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
-		if(!missingFiles.isEmpty())
-		{
-			bldr.append(getString(R.string.missingFiles) + ":");
-			for(String missingFile : missingFiles)
-				bldr.append(" - " + missingFile);
-		}
-		//	Show warnings dialog:
-		if(!bldr.isEmpty())
-			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
-		
-		// Select project:
-		setCurrentProject(project);
-		
-		// Update project list:
-		updateProjectList(true);
-	}
-
-	@Override
-	public void projectLoadStoreFailure(File sapelliFile, String sourceURI, Exception cause)
-	{
-		// Deal with downloaded file...
-		if(Patterns.WEB_URL.matcher(sourceURI).matches())
-			org.apache.commons.io.FileUtils.deleteQuietly(sapelliFile);
-		// Report problem:
-		Log.e(TAG, "Could not load/store Sapelli file", cause);
-		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
 	}
 
 	/**
