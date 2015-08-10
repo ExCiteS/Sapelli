@@ -33,7 +33,6 @@ import uk.ac.ucl.excites.sapelli.collector.load.FormSchemaInfoProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
@@ -269,11 +268,6 @@ public class ProjectParser extends DocumentParser
 		if(qName.equals(TAG_PROJECT) || qName.equals(TAG_PROJECT_V1X))
 		{
 			clearSubtreeParsers();
-						if(project.getTransmissionSettings() == null)
-			{
-				project.setTransmissionSettings(new TransmissionSettings());
-				addWarning("No transmission settings found, defaults are used");
-			}
 			
 			if(project.getForms().size() == 0)
 				throw new SAXException("A project such have at least 1 form!");
