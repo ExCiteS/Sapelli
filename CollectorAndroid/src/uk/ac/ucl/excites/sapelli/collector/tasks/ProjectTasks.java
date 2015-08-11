@@ -148,7 +148,8 @@ public final class ProjectTasks
 		}
 
 		@Override
-		protected List<File> doInBackground(List<Record>... params)
+		@SafeVarargs
+		protected final List<File> doInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			try
@@ -303,8 +304,8 @@ public final class ProjectTasks
 				ProjectRunHelpers.removeShortcut(owner, projDescr);
 				
 				// Remove as active project
-				if(owner.getCollectorApp().getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
-					owner.getCollectorApp().getPreferences().clearActiveProjectSignature();
+				if(owner.getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
+					owner.getPreferences().clearActiveProjectSignature();
 			}
 			return null;
 		}

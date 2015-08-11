@@ -73,11 +73,11 @@ public final class RecordsTasks
 		public RecordStoreTask(BaseActivity owner, String waitingMsg)
 		{
 			super(owner, waitingMsg);
-			this.client = owner.getCollectorApp().collectorClient;
+			this.client = owner.getCollectorClient();
 		}
 
 		@Override
-		protected O doInBackground(I... params)
+		protected O doInBackground(@SuppressWarnings("unchecked") I... params)
 		{
 			try
 			{
@@ -100,7 +100,7 @@ public final class RecordsTasks
 			}
 		}
 		
-		protected abstract O doInBackgroundWith(RecordStore recordStore, I... params) throws Exception;
+		protected abstract O doInBackgroundWith(RecordStore recordStore, @SuppressWarnings("unchecked") I... params) throws Exception;
 		
 	}
 	
@@ -170,7 +170,8 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
+		@SafeVarargs
+		protected final List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
 		{
 			// Delete records:
 			List<Record> recordsToDelete = params[0];
@@ -215,7 +216,8 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
+		@SafeVarargs
+		protected final List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
 		{
 			// Delete records:
 			List<Record> recordsToStore = params[0];
@@ -264,7 +266,8 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected ExportResult doInBackground(List<Record>... params)
+		@SafeVarargs
+		protected final ExportResult doInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			onProgressUpdate(context.getString(R.string.exportXRecords, records.size()));
@@ -358,7 +361,7 @@ public final class RecordsTasks
 		
 		public XMLImportTask(BaseActivity owner, ImportCallback callback)
 		{
-			super(owner, new XMLRecordsImporter(owner.getCollectorApp().collectorClient), callback);
+			super(owner, new XMLRecordsImporter(owner.getCollectorClient()), callback);
 		}
 		
 	}

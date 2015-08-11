@@ -22,9 +22,10 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.ContextThemeWrapper;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
@@ -32,14 +33,14 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 /**
  * Abstract super class for our activities.
  * 
- * Provides dialog methods.
+ * Provides dialog methods & other shared behaviour.
  * 
  * @author mstevens
  */
 public abstract class BaseActivity extends AppCompatActivity
 {
 	
-	private static final int HIDE_BUTTON = -1;
+	static private final int HIDE_BUTTON = -1;
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_OK = false;
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_CANCEL = false;
 	
@@ -56,6 +57,16 @@ public abstract class BaseActivity extends AppCompatActivity
 	public CollectorApp getCollectorApp()
 	{
 		return app;
+	}
+	
+	public CollectorClient getCollectorClient()
+	{
+		return app.collectorClient;
+	}
+	
+	public CollectorPreferences getPreferences()
+	{
+		return app.getPreferences();
 	}
 	
 	@Override
@@ -78,7 +89,7 @@ public abstract class BaseActivity extends AppCompatActivity
 				public void run()
 				{
 					// Clear the setting before restart
-					app.getPreferences().clearSapelliFolder();
+					getPreferences().clearSapelliFolder();
 				}
 			};
 			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.drawable.sapelli_logo, R.string.useAlternativeStorage, useAlternativeStorage, true, R.string.insertSDcard, null, true);
@@ -312,7 +323,7 @@ public abstract class BaseActivity extends AppCompatActivity
 	private void showDialog(String title, String message, Integer iconId, int postiveButtonId, final Runnable positiveTask, final boolean finishOnPositive, int negativeButtonId, final Runnable negativeTask, final boolean finishOnNegative)
 	{
 		// Builder:
-		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
+		AlertDialog.Builder bldr = new AlertDialog.Builder(this);
 		// set title:
 		bldr.setTitle(title);
 		// set message:

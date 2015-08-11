@@ -282,7 +282,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	public void onDestroy()
 	{
 		// clean up:
-		getOwner().getCollectorApp().collectorClient.transmissionStoreHandle.doneUsing(this);
+		getOwner().getCollectorClient().transmissionStoreHandle.doneUsing(this);
 		// super:
 		super.onDestroy();
 	}

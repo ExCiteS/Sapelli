@@ -340,9 +340,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				if(!found) // the currentProject is no longer available
 					switchToProject(null);
 			}
-			else if(app.getPreferences().getActiveProjectSignature() != null)
+			else if(getPreferences().getActiveProjectSignature() != null)
 			{	// Reselect previously active project:
-				String prevActiveProjectSign = app.getPreferences().getActiveProjectSignature();
+				String prevActiveProjectSign = getPreferences().getActiveProjectSignature();
 				for(int i = 0; i < result.size(); i++)
 					if(result.get(i).getSignatureString().equals(prevActiveProjectSign))
 					{
@@ -431,7 +431,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			addProjects.setVisibility(View.VISIBLE);
 		}
 		// Remember current project:
-		app.getPreferences().setActiveProjectSignature(currentProject);
+		getPreferences().setActiveProjectSignature(currentProject);
 		// Refresh menus:
 		supportInvalidateOptionsMenu();
 	}

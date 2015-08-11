@@ -80,8 +80,7 @@
         </activity>
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity"
-            android:launchMode="singleInstance"
-            android:theme="@style/Theme.AppCompat.Light" >
+            android:launchMode="singleInstance" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>

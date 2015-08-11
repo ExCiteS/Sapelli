@@ -78,7 +78,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 		final Project project = getProject(false);
 		if(project != null)
 			// Set shortcut icon:
-			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getCollectorApp().getFileStorageProvider(), project));
+			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), project));
 		btnAddShortcut.setEnabled(project != null);
 		btnRemoveShortcut.setEnabled(project != null);
 	}
