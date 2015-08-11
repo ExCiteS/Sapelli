@@ -71,12 +71,10 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 		if(onPage)
 			throw new IllegalStateException("Pages cannot be nested!");
 		
-		Context context = collectorUI.getContext();
-		
 		// Create or recycle view:
 		if(view == null)
 		{
-			view = new PageView(context);
+			view = new PageView(collectorUI.getContext());
 			newRecord = true; // force update of new view
 		}
 		

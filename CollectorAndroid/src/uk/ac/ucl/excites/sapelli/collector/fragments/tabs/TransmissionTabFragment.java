@@ -168,7 +168,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			((ImageView) ((ViewGroup) sendDataHeader).getChildAt(1)).setVisibility(View.VISIBLE);
 		if(checkReceive.isChecked())
 			((ImageView) ((ViewGroup) receiveDataHeader).getChildAt(1)).setVisibility(View.VISIBLE);
-
 	}
 
 	@Override

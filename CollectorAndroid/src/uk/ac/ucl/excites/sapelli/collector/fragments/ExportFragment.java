@@ -195,7 +195,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		}
 		
 		// Output destination:
-		exportFolder = getOwner().getCollectorApp().getFileStorageProvider().getExportFolder(true);
+		exportFolder = getOwner().getFileStorageProvider().getExportFolder(true);
 		if(isFormatChosingMode() || true) // for now we always hide the output destination
 			rootLayout.findViewById(R.id.groupExportDestination).setVisibility(View.GONE);
 		else

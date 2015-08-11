@@ -126,7 +126,11 @@ public class CollectorActivity extends ProjectActivity
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
 		// Hide the action bar regardless of API level:
-		getSupportActionBar().hide();
+		try
+		{
+			getSupportActionBar().hide(); // throws NPE when using a "NoActionBar" theme (which we do now, but we'll keep this code just in case that changes)
+		}
+		catch(Exception ignore) {}
 
 		// Set-up root layout
 		collectorView = new CollectorView(this);
