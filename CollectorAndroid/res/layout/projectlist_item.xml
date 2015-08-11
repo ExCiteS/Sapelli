@@ -23,7 +23,9 @@
     android:drawableLeft="?android:attr/listChoiceIndicatorSingle"
     android:drawableStart="?android:attr/listChoiceIndicatorSingle"
     android:gravity="center_vertical"
-    android:paddingLeft="10dp"
-    android:paddingRight="10dp"
+    android:paddingLeft="5dp"
+    android:paddingStart="5dp"
+    android:paddingRight="5dp"
+    android:paddingEnd="5dp"
     android:textAppearance="?android:attr/textAppearanceSmall"
     android:textColor="@color/black" />
