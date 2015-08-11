@@ -95,7 +95,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	static public void ShowChoseFormatDialog(AppCompatActivity owner, String title, String msg, boolean showCancel, FormatDialogCallback callback)
 	{		
 		ShowDialog(	owner,
-				new ExportFragment(callback), // only to chose format
+				new ExportFragment(callback), // only to choose format
 				title,
 				msg,
 				showCancel);
