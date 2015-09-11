@@ -36,12 +36,14 @@ import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
@@ -93,20 +95,18 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	//	Correspondent schemas:
 	static final public Schema CORRESPONDENT_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Correspondent");
 	//	Correspondent columns:
-	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID", false, false); // unsigned 32 bits
-	static final public StringColumn CORRESPONDENT_COLUMN_NAME = StringColumn.ForCharacterCount("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_CHARS);
-	static final public IntegerColumn CORRESPONDENT_COLUMN_TRANSMISSION_TYPE = new IntegerColumn("TransmissionType", false);
-	static final public StringColumn CORRESPONDENT_COLUMN_ADDRESS = StringColumn.ForCharacterCount("Address", true, Correspondent.CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS);
-	//static final public StringColumn CORRESPONDENT_COLUMN_ENCRYPTION_KEY = new StringColumn("Key", false, Correspondent.CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES);
-	//	Add columns and index to Correspondent Schema & seal it:
+	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = CORRESPONDENT_SCHEMA.addColumn(new IntegerColumn("ID", false, false)); // unsigned 32 bits
+	static final public StringColumn CORRESPONDENT_COLUMN_NAME = CORRESPONDENT_SCHEMA.addColumn(StringColumn.ForCharacterCount("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_CHARS));
+	static final public IntegerColumn CORRESPONDENT_COLUMN_TRANSMISSION_TYPE = CORRESPONDENT_SCHEMA.addColumn(new IntegerColumn("TransmissionType", false));
+	static final public StringColumn CORRESPONDENT_COLUMN_ADDRESS = CORRESPONDENT_SCHEMA.addColumn(StringColumn.ForCharacterCount("Address", true, Correspondent.CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS));
+	//static final public StringColumn CORRESPONDENT_COLUMN_ENCRYPTION_KEY = CORRESPONDENT_SCHEMA.addColumn(new StringColumn("Key", false, Correspondent.CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES));
+	static final public BooleanColumn CORRESPONDENT_COLUMN_USER_DELETED = CORRESPONDENT_SCHEMA.addColumn(new BooleanColumn("UserDeleted", false));
+	//	Set primary key, add indexes & seal schema:
 	static
 	{
-		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_ID);
-		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_NAME);
-		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_TRANSMISSION_TYPE);
-		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_ADDRESS);
-		//CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_ENCRYPTION_KEY);
 		CORRESPONDENT_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey(CORRESPONDENT_SCHEMA.getName() + "_PK", CORRESPONDENT_COLUMN_ID));
+		CORRESPONDENT_SCHEMA.addIndex(new Index(CORRESPONDENT_COLUMN_TRANSMISSION_TYPE, false));
+		CORRESPONDENT_SCHEMA.addIndex(new Index(CORRESPONDENT_COLUMN_USER_DELETED, false));
 		CORRESPONDENT_SCHEMA.seal();
 	}
 	//	Transmission schemas:
@@ -122,7 +122,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT = new IntegerColumn("SentResendRequests", false, Integer.SIZE); // only used on receiving side
 	static final public TimeStampColumn TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT = TimeStampColumn.JavaMSTime("LastResendReqSentAt", true, false); // only used on receiving side
-	//	Columns shared with Transmision Part schema:
+	//	Columns shared with Transmission Part schema:
 	static final public TimeStampColumn COLUMN_SENT_AT = TimeStampColumn.JavaMSTime("SentAt", true, false);
 	static final public TimeStampColumn COLUMN_RECEIVED_AT = TimeStampColumn.JavaMSTime("ReceivedAt", true, false);
 	//	Add columns and index to Transmission schemas & seal them:
@@ -267,17 +267,24 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		String name = CORRESPONDENT_COLUMN_NAME.retrieveValue(cRec);
 		String address = CORRESPONDENT_COLUMN_ADDRESS.retrieveValue(cRec);
 		Transmission.Type ttype = Transmission.Type.values()[CORRESPONDENT_COLUMN_TRANSMISSION_TYPE.retrieveValue(cRec).intValue()];
+		Correspondent corr;
 		switch(ttype)
 		{
 			case BINARY_SMS:
-				return new SMSCorrespondent(localID, name, address, true);
+				corr = new SMSCorrespondent(localID, name, address, true);
+				break;
 			case TEXTUAL_SMS:
-				return new SMSCorrespondent(localID, name, address, false);
+				corr = new SMSCorrespondent(localID, name, address, false);
+				break;
 			case HTTP:
-				return null; // TODO !!!
+				corr = null; // TODO !!!
+				break;
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
 		}
+		if(CORRESPONDENT_COLUMN_USER_DELETED.retrieveValue(cRec))
+			corr.markAsUserDeleted();
+		return corr;
 	}
 	
 	/**
@@ -682,6 +689,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 			CORRESPONDENT_COLUMN_NAME.storeValue(rec, correspondent.getName());
 			CORRESPONDENT_COLUMN_TRANSMISSION_TYPE.storeValue(rec, correspondent.getTransmissionType().ordinal());
 			CORRESPONDENT_COLUMN_ADDRESS.storeValue(rec, correspondent.getAddress());
+			CORRESPONDENT_COLUMN_USER_DELETED.storeValue(rec, correspondent.isUserDeleted());
 			
 			// Use double dispatch for subclass-specific work:
 			correspondent.handle(this);

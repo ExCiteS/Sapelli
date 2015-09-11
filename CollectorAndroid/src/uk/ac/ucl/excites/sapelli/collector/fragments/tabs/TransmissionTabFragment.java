@@ -18,55 +18,56 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-
-import java.util.List;
-
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
-import android.widget.ImageView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
-import android.widget.TextView;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.SMSReceiverFragment;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
  * 
  * @author Julia, mstevens
  */
-public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener, StoreUser
+public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener, OnItemSelectedListener, StoreUser
 {
 
 	// Views
-	private LinearLayout sendDataHeader;
-	private LinearLayout sendDataView;
-	private LinearLayout receiveDataHeader;
-	private TextView receiveDataView;
-	private CheckBox checkSend;
-	private CheckBox checkReceive;
-	private ImageView expandSend;
-	private ImageView expandReceive;
-	private Spinner spinSendReceiver;
-	private ReceiverAdapter spinSendReceiverAdapter;
+	//	Sending...
+	private LinearLayout sendHeader;	
+	private SwitchCompat switchSend;
+	private LinearLayout sendSettings;
+	private Spinner spinReceiver;
+	private Button btnAddReceiver;
+	private Button btnEditReceiver;
+	private Button btnDeleteReceiver;
+	private EditText txtSendIntervalMin;
+	//	Receiving...
+	private LinearLayout receiveHeader;
+	private SwitchCompat switchReceive;
+	private LinearLayout receiveSettings;
+	
+	// Adapter:
+	private ArrayAdapter<Correspondent> spinReceiverAdapter;
 	
 	// DOA:
 	private TransmissionStore transmissionStore;
@@ -78,16 +79,15 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
 		try
 		{
 			// Get transmission store object:
-			transmissionStore = getOwner().getCollectorApp().collectorClient.transmissionStoreHandle.getStore(this);
+			transmissionStore = getOwner().getCollectorClient().transmissionStoreHandle.getStore(this);
 		}
-		catch(DBException dbE)
+		catch(Exception e)
 		{
-			Log.e(getClass().getSimpleName(), "Could not get TransmissionStore object", dbE);
-			throw new IllegalStateException(dbE);
+			Log.e(getClass().getSimpleName(), "Could not get TransmissionStore object", e);
+			throw new IllegalStateException(e);
 		}
 	}
 
@@ -100,113 +100,43 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	@Override
 	protected void setupUI(View rootLayout)
 	{
-		sendDataHeader = (LinearLayout) rootLayout.findViewById(R.id.sendHeader);
-		sendDataView = (LinearLayout) rootLayout.findViewById(R.id.sendSettings);
-		sendDataHeader.setOnClickListener(this);
-
-		receiveDataHeader = (LinearLayout) rootLayout.findViewById(R.id.receiveHeader);
-		receiveDataView = (TextView) rootLayout.findViewById(R.id.receiveSettings);
-		receiveDataHeader.setOnClickListener(this);
-
-		checkSend = (CheckBox) rootLayout.findViewById(R.id.checkSend);
-		checkSend.setOnClickListener(this);
-		checkReceive = (CheckBox) rootLayout.findViewById(R.id.checkReceive);
-		checkReceive.setOnClickListener(this);
-
-		// on old Android versions the label overlaps the checkbox
-		if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN_MR1)
-		{
-			addChbxPadding(checkSend);
-			addChbxPadding(checkReceive);
-		}
-
-		expandSend = (ImageView) rootLayout.findViewById(R.id.expandSend);
-		expandReceive = (ImageView) rootLayout.findViewById(R.id.expandReceive);
+		// Sending config...
+		sendHeader = (LinearLayout) rootLayout.findViewById(R.id.sendHeader);
+		switchSend = (SwitchCompat) rootLayout.findViewById(R.id.switchSend);
+		switchSend.setOnClickListener(this);
+		sendSettings = (LinearLayout) rootLayout.findViewById(R.id.sendSettings);
+		spinReceiver = (Spinner) rootLayout.findViewById(R.id.spinSendReceiver);
+		spinReceiver.setOnItemSelectedListener(this);
+		btnAddReceiver = (Button) rootLayout.findViewById(R.id.btnAddReceiver);
+		btnAddReceiver.setOnClickListener(this);
+		btnEditReceiver = (Button) rootLayout.findViewById(R.id.btnEditReceiver);
+		btnEditReceiver.setOnClickListener(this);
+		btnDeleteReceiver = (Button) rootLayout.findViewById(R.id.btnDeleteReceiver);
+		btnDeleteReceiver.setOnClickListener(this);
+		txtSendIntervalMin = (EditText) rootLayout.findViewById(R.id.txtSendIntervalMin);
 		
-		spinSendReceiver = (Spinner) rootLayout.findViewById(R.id.spinSendReceiver);
+		// Receiving config...
+		receiveHeader = (LinearLayout) rootLayout.findViewById(R.id.receiveHeader);
+		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
+		switchReceive.setOnClickListener(this);
+		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
 	}
-
-	/**
-	 * Handles layout changes when views are expanded
-	 * 
-	 * @param clickview
-	 * @param expandview
-	 */
-	private void toggleView(View clickview, View expandview)
+	
+	private void toggleConfigGroup(View clickview, View expandview, boolean show)
 	{
-		expandview.setVisibility(expandview.isShown() ? View.GONE : View.VISIBLE);
-		clickview.setBackgroundResource(expandview.isShown() ? R.layout.drop_shadow_top : R.layout.drop_shadow);
-		((ImageView) ((ViewGroup) clickview).getChildAt(1)).setImageResource(expandview.isShown() ? R.drawable.ic_action_collapse : R.drawable.ic_action_expand);
-	}
-
-	/**
-	 * Makes view non-expandable
-	 * 
-	 * @param clickview
-	 * @param expandview
-	 */
-	private void disableToggle(View clickview, View expandview)
-	{
-		expandview.setVisibility(View.GONE);
-		clickview.setBackgroundResource(R.layout.drop_shadow);
-		((ImageView) ((ViewGroup) clickview).getChildAt(1)).setVisibility(View.GONE); // TODO hackish
-	}
-
-	@Override
-	public void onClick(View v)
-	{
-		switch(v.getId())
-		{
-			case R.id.sendHeader:
-				toggleView(sendDataHeader, sendDataView);
-				break;
-			case R.id.receiveHeader:
-				toggleView(receiveDataHeader, receiveDataView);
-				break;
-			case R.id.checkSend:
-				if(checkSend.isChecked())
-				{
-					expandSend.setVisibility(View.VISIBLE);
-					toggleView(sendDataHeader, sendDataView);
-				}
-				else
-				{
-					disableToggle(sendDataHeader, sendDataView);
-				}
-				break;
-			case R.id.checkReceive:
-				if(checkReceive.isChecked())
-				{
-					expandReceive.setVisibility(View.VISIBLE);
-					toggleView(receiveDataHeader, receiveDataView);
-				}
-				else
-				{
-					disableToggle(receiveDataHeader, receiveDataView);
-				}
-				break;
-		}
-	}
-
-	/**
-	 * @param checkbox
-	 * @see http://stackoverflow.com/questions/4037795/android-spacing-between-checkbox-and-text
-	 */
-	private void addChbxPadding(CheckBox checkbox)
-	{
-		checkbox.setPadding(checkbox.getPaddingLeft() + (int) (30.0f * this.getResources().getDisplayMetrics().density + 0.5f), checkbox.getPaddingTop(), checkbox.getPaddingRight(), checkbox.getPaddingBottom());
+		expandview.setVisibility(show ? View.VISIBLE : View.GONE);
+		clickview.setBackgroundResource(show ? R.layout.drop_shadow_top : R.layout.drop_shadow);
 	}
 
 	@Override
 	public void onResume()
 	{
 		super.onResume();
-		
-		if(checkSend.isChecked())
-			((ImageView) ((ViewGroup) sendDataHeader).getChildAt(1)).setVisibility(View.VISIBLE);
-		if(checkReceive.isChecked())
-			((ImageView) ((ViewGroup) receiveDataHeader).getChildAt(1)).setVisibility(View.VISIBLE);
-		
+		update();
+	}
+	
+	private void update()
+	{
 		Project project = getProject(false);
 		if(project == null)
 			return;
@@ -215,43 +145,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		{
 			// Get current schedule:
 			sendingSchedule = getOwner().getProjectStore().retrieveSendScheduleForProject(project, transmissionStore);
-			if(sendingSchedule == null)
-				sendingSchedule = new SendingSchedule(project, false);
-			
-			// Update sending config UI parts:
-			checkSend.setEnabled(sendingSchedule.isEnabled());
-			
-			
-			// once project loading done, store a dummy schedule:
-//			Correspondent receiver = new SMSCorrespondent("Matthias Belgium", "+32486170492", false);
-//			TransmissionStore tStore = ((CollectorApp)this.getApplication()).collectorClient.transmissionStoreHandle.getStore(this);
-//			tStore.store(receiver);
-//			if(projectStore.retrieveSendScheduleForProject(currentProject, tStore) == null)
-//				projectStore.storeSendSchedule(new SendingSchedule(currentProject, true).setReceiver(receiver).setTransmitIntervalS(60 /*1min*/), tStore);
-			
-			spinSendReceiverAdapter = new ReceiverAdapter(getOwner(), transmissionStore.retrieveCorrespondents(false));
-			spinSendReceiver.setAdapter(spinSendReceiverAdapter);
-			
-			// Select current receiver
-			if(sendingSchedule.getReceiver() != null)
-				spinSendReceiver.setSelection(spinSendReceiverAdapter.getPosition(sendingSchedule.getReceiver()));
-			spinSendReceiver.setOnItemSelectedListener(new OnItemSelectedListener()
-			{
-
-				@Override
-				public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
-				{
-					saveSettings();
-				}
-
-				@Override
-				public void onNothingSelected(AdapterView<?> parent)
-				{
-					// TODO Auto-generated method stub
-					
-				}
-			});
-			
 		}
 		catch(DBException e)
 		{
@@ -259,22 +152,111 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			e.printStackTrace();
 		}
 		
+		if(sendingSchedule == null)
+			sendingSchedule = new SendingSchedule(project, false);
+		
+		// Update sending config UI parts:
+		switchSend.setChecked(sendingSchedule.isEnabled());
+		toggleConfigGroup(sendHeader, sendSettings, sendingSchedule.isEnabled());
+		if(sendingSchedule.isEnabled() || true) // TODO hack hack
+		{
+			// Load receivers:
+			spinReceiverAdapter =
+				new AdvancedSpinnerAdapter<Correspondent>(getOwner(), getOwner().getString(R.string.lstPleaseSelect), "None", transmissionStore.retrieveCorrespondents(false))
+				{
+					@Override
+					protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
+					{
+						if(receiver == null)
+							return null;
+						//else:
+						ReceiverDrawableProvider provider = new ReceiverDrawableProvider();
+						receiver.handle(provider);
+						return provider.drawableResourceId;
+					}
+				};
+			spinReceiver.setAdapter(spinReceiverAdapter);
+
+			// Select current receiver:
+			if(sendingSchedule.getReceiver() != null)
+				spinReceiver.setSelection(spinReceiverAdapter.getPosition(sendingSchedule.getReceiver()));
+			
+			// Set interval:
+			txtSendIntervalMin.setText(Float.valueOf((float) sendingSchedule.getTransmitIntervalS() / 60.0f).toString()); 
+		}
+	}
+	
+	private Correspondent getReceiver()
+	{
+		return spinReceiverAdapter.getItem(spinReceiver.getSelectedItemPosition());
+	}
+	
+	@Override
+	public void onClick(View v)
+	{
+		switch(v.getId())
+		{
+			case R.id.switchSend :
+				toggleConfigGroup(sendHeader, sendSettings, switchSend.isChecked());
+				break;
+			case R.id.switchReceive :
+				toggleConfigGroup(receiveHeader, receiveSettings, switchReceive.isChecked());
+				break;
+			case R.id.btnAddReceiver :
+				SMSReceiverFragment.ShowAddDialog(getOwner());
+				break;
+			case R.id.btnEditReceiver :
+				if(getReceiver() != null)
+					getReceiver().handle(new Correspondent.Handler()
+					{
+						@Override
+						public void handle(SMSCorrespondent smsCorrespondent)
+						{
+							SMSReceiverFragment.ShowEditDialog(getOwner(), smsCorrespondent);
+						}
+					});
+				break;
+			case R.id.btnDeleteReceiver :
+				if(getReceiver() != null)
+				{
+					// TODO
+				}
+				break;
+		}
+	}
+	
+	@Override
+	public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
+	{
+		btnEditReceiver.setEnabled(spinReceiverAdapter.getItem(position) != null);
+		btnDeleteReceiver.setEnabled(spinReceiverAdapter.getItem(position) != null);
+	}
+
+	@Override
+	public void onNothingSelected(AdapterView<?> parent)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 	
 	public void saveSettings()
 	{
 		//TODO detect actual changes
 		
-		sendingSchedule.setEnabled(checkSend.isChecked());
-		sendingSchedule.setReceiver(spinSendReceiverAdapter.getItem(spinSendReceiver.getSelectedItemPosition()));
+		sendingSchedule.setEnabled(switchSend.isChecked());
+		
+		sendingSchedule.setReceiver(getReceiver());
+			
 		//sendingSchedule.setTransmitIntervalS(transmitIntervalS)
+		
+		// TODO input validation
 		
 		// Store new/updated schedule:
 		getOwner().getProjectStore().storeSendSchedule(sendingSchedule, transmissionStore);
 		
+		// TODO schedule (and unschedule old?)
 		//Log.d(getClass().getSimpleName(), "Starting alarm scheduler...");
 		//DataSendingSchedulingService.ScheduleAll(getOwner().getApplicationContext());
-
 		
 	}
 	
@@ -293,12 +275,15 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		return context.getString(R.string.tab_transmission);
 	}
 	
-	private class ReceiverAdapter extends ArrayAdapter<Correspondent>
+	private class ReceiverDrawableProvider implements Correspondent.Handler
 	{
-
-		public ReceiverAdapter(Context context, List<Correspondent> receivers)
+		
+		Integer drawableResourceId = null;
+		
+		@Override
+		public void handle(SMSCorrespondent smsCorrespondent)
 		{
-			super(context, android.R.layout.simple_spinner_item, receivers.toArray(new Correspondent[receivers.size()]));
+			drawableResourceId = R.drawable.ic_sms_black_24dp;
 		}
 		
 	}

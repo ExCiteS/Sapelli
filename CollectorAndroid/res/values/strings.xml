@@ -30,7 +30,8 @@
     <string name="info">Info</string>
     <string name="add">Add</string>
     <string name="addEtc">Add&#8230;</string>
-    <string name="edit">Edit&#8230;</string>
+    <string name="edit">Edit</string>
+    <string name="editEtc">Edit&#8230;</string>
     <string name="remove">Remove</string>
     <string name="delete">Delete</string>
     <string name="project_manager">Project Manager</string>
@@ -184,11 +185,16 @@
     <string name="backup_in">You can find your backup in:</string>
     <string name="backupFailDueTo">Failed to backup database(s), due to: %s</string>
     <string name="share">Share&#8230;</string>
+    <string name="receiver">Receiver:</string>
+    <string name="interval">Interval:</string>
+    <string name="minutes">minutes</string>
     <string name="selectReceiver">Select receiver:</string>
     <string name="manageReceivers">Manage&#8230;</string>
-    <string name="addReceiver">Add receiver&#8230;</string>
-    <string name="editReceiver">Edit receiver&#8230;</string>
+    <string name="addReceiver">Add receiver</string>
+    <string name="editReceiver">Edit receiver</string>
     <string name="receiverName">Name:</string>
     <string name="receiverPhoneNumber">Phone number:</string>
-    <string name="useBinarySMS">Use binary SMS</string>    
+    <string name="useBinarySMS">Use binary SMS</string>
+    <string name="emptyReceiverName">Please enter a name.</string>
+    <string name="invalidPhoneNumber">Please enter a valid phone number.</string>
 </resources>

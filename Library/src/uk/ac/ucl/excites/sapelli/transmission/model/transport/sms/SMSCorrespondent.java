@@ -44,12 +44,19 @@ public class SMSCorrespondent extends Correspondent
 	{
 		try
 		{
-			return PhoneNumberUtil.getInstance().parse(phoneNumber, defaultCountryISOCode);
+			return PhoneNumberUtil.getInstance().parse(phoneNumber, defaultCountryISOCode != null ? defaultCountryISOCode.toUpperCase() : null);
 		}
 		catch(NumberParseException e)
 		{
 			throw new IllegalArgumentException("Error parsing phone number", e);
 		}
+	}
+	
+	static public int findCountryCode(String countryISOCode)
+	{
+		if(countryISOCode == null)
+			throw new NullPointerException("countryISOCode cannot be null!");
+	    return PhoneNumberUtil.getInstance().getCountryCodeForRegion(countryISOCode.toUpperCase());
 	}
 	
 	/**
@@ -90,7 +97,7 @@ public class SMSCorrespondent extends Correspondent
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private PhoneNumber phoneNumber;
+	private final PhoneNumber phoneNumber;
 	
 	/**
 	 * @param name

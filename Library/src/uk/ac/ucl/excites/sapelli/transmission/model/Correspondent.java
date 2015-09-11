@@ -29,6 +29,8 @@ public abstract class Correspondent
 	
 	static public final String UNKNOWN_SENDER_NAME = "anonymous_sender";
 	
+	static public final boolean DEFAULT_USER_DELETED = false;
+	
 	static public final int CORRESPONDENT_NAME_MAX_LENGTH_CHARS = 128;
 	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS = 512;
 	static public final int CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES = 32;
@@ -43,9 +45,17 @@ public abstract class Correspondent
 	}
 	
 	private Integer localID;
-	private final String name; // name
+	private final String name;
 	private final Transmission.Type transmissionType;
-	//private String key; // encryption key TODO ??
+	//private String key; TODO ??
+	// encryption key TODO ??
+	
+	/**
+	 * If {@code true} the correspondent is marked as deleted by the user.
+	 * This way it won't show up in the transmssion config UIs, but is
+	 * still kept around in the db such that old transmissions can still point to it. 
+	 */
+	private boolean userDeleted = DEFAULT_USER_DELETED;
 	
 	/**
 	 * @param name
@@ -105,7 +115,7 @@ public abstract class Correspondent
 	 */
 	public abstract String getAddress();
 	
-	public abstract void handle(Handler handle);
+	public abstract void handle(Handler handler);
 	
 	@Override
 	public String toString()
@@ -113,6 +123,22 @@ public abstract class Correspondent
 		return name + " [" + getAddress() + "]";
 	}
 	
+	/**
+	 * @return the userDeleted
+	 */
+	public boolean isUserDeleted()
+	{
+		return userDeleted;
+	}
+
+	/**
+	 * Mark the correspondent as deleted by the (local) user
+	 */
+	public void markAsUserDeleted()
+	{
+		this.userDeleted = true;
+	}
+
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -123,7 +149,8 @@ public abstract class Correspondent
 			Correspondent that = (Correspondent) obj;
 			return	this.name.equals(that.name) &&
 					this.transmissionType == that.transmissionType &&
-					(this.getAddress() != null ? this.getAddress().equals(that.getAddress()) : that.getAddress() == null);
+					(this.getAddress() != null ? this.getAddress().equals(that.getAddress()) : that.getAddress() == null) &&
+					this.userDeleted == that.userDeleted;
 		}
 		return false;
 	}
@@ -135,6 +162,7 @@ public abstract class Correspondent
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + transmissionType.ordinal();
 		hash = 31 * hash + (getAddress() == null ? 0 : getAddress().hashCode());
+		hash = 31 * hash + (userDeleted ? 0 : 1);
 		return hash;
 	}
 	

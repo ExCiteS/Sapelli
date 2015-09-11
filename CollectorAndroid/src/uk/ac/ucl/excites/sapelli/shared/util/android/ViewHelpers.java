@@ -18,13 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.shared.util.android;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.TextView;
 
 /**
  * @author mstevens
@@ -56,7 +59,7 @@ public final class ViewHelpers
 	{
 		view.setBackgroundDrawable(background);
 	}
-
+	
 	/**
 	 * Method which returns the View representing the home button ("hamburger") on activities with an Action/Toolbar.
 	 * 
@@ -87,4 +90,64 @@ public final class ViewHelpers
 		return (int) TypedValue.complexToDimensionPixelSize(typedValue.data, activity.getResources().getDisplayMetrics());
 	}
 
+	static public int getStartGravity()
+	{
+		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH /* = 14 */)
+			return getStartGravityICS();
+		else
+			return getStartGravityPreICS();
+	}
+	
+	@SuppressLint("RtlHardcoded")
+	static private int getStartGravityPreICS()
+	{
+		return Gravity.LEFT;
+	}
+	
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+	static private int getStartGravityICS()
+	{
+		return Gravity.START;
+	}
+	
+	static public void setCompoundDrawablesRelativeWithIntrinsicBounds(TextView textView, int start, int top, int end, int bottom)
+	{
+		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 /* = 17 */)
+			setCompoundDrawablesRelativeWithIntrinsicBoundsJBMR1(textView, start, top, end, bottom);
+		else
+			setCompoundDrawablesRelativeWithIntrinsicBoundsPreJBMR1(textView, start, top, end, bottom);
+	}
+	
+	@SuppressLint("RtlHardcoded")
+	static public void setCompoundDrawablesRelativeWithIntrinsicBoundsPreJBMR1(TextView textView, int left, int top, int right, int bottom)
+	{
+		textView.setCompoundDrawablesWithIntrinsicBounds(left, top, right, bottom);
+	}
+	
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
+	static private void setCompoundDrawablesRelativeWithIntrinsicBoundsJBMR1(TextView textView, int start, int top, int end, int bottom)
+	{
+		textView.setCompoundDrawablesRelativeWithIntrinsicBounds(start, top, end, bottom);
+	}
+	
+	static public void setCompoundDrawablesRelativeWithIntrinsicBounds(TextView textView, Drawable start, Drawable top, Drawable end, Drawable bottom)
+	{
+		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 /* = 17 */)
+			setCompoundDrawablesRelativeWithIntrinsicBoundsJBMR1(textView, start, top, end, bottom);
+		else
+			setCompoundDrawablesRelativeWithIntrinsicBoundsPreJBMR1(textView, start, top, end, bottom);
+	}
+	
+	@SuppressLint("RtlHardcoded")
+	static public void setCompoundDrawablesRelativeWithIntrinsicBoundsPreJBMR1(TextView textView, Drawable left, Drawable top, Drawable right, Drawable bottom)
+	{
+		textView.setCompoundDrawablesWithIntrinsicBounds(left, top, right, bottom);
+	}
+	
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
+	static private void setCompoundDrawablesRelativeWithIntrinsicBoundsJBMR1(TextView textView, Drawable start, Drawable top, Drawable end, Drawable bottom)
+	{
+		textView.setCompoundDrawablesRelativeWithIntrinsicBounds(start, top, end, bottom);
+	}
+	
 }
