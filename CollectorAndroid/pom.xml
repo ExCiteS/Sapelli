@@ -28,13 +28,7 @@
 		<version>2.0.0-SNAPSHOT</version>
 	</parent>
 	
-	<properties>
-		<!-- Android & support libs version -->
-		<!--	Always change Android version & API level together!: -->
-		<android.version>5.1.1_r2</android.version>
-		<android.api-level>22</android.api-level>
-		<android.support.libs.version>22.2.1</android.support.libs.version>
-		
+	<properties>		
 		<!-- Build info generation: -->
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
 		

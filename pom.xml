@@ -42,6 +42,12 @@
 		<url>https://github.com/ExCiteS/Sapelli</url>
 	</scm>
 	<properties>
+		<!-- Android & support libs version -->
+		<!--	Always change Android version & API level together!: -->
+		<android.version>5.1.1_r2</android.version>
+		<android.api-level>22</android.api-level>
+		<android.support.libs.version>22.2.1</android.support.libs.version>
+		
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
