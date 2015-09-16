@@ -31,11 +31,6 @@
 	</parent>
 
 	<properties>
-		<!-- Android & support libs version -->
-		<!--	Always change Android version & API level together!: -->
-		<android.version>5.1_r1</android.version>
-		<android.api-level>22</android.api-level>
-		<android.support.libs.version>22.0.0</android.support.libs.version>
 	</properties>
 
 	<dependencies>
