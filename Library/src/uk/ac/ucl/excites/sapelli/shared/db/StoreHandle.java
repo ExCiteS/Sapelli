@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHandle;
 
 /**
  * 
@@ -73,6 +74,62 @@ public class StoreHandle<S extends Store>
 	}
 	
 	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * Any exception occurring upon getting the Store or executing the operation will be passed to the given {@link ExceptionHandle} (if not null).
+	 * 
+	 * @param operation
+	 * @param exceptionHandle (may be null, but then there is no way to access inner exceptions)
+	 */
+	public void execute(StoreOperation<S> operation, ExceptionHandle exceptionHandle)
+	{
+		try
+		{
+			operation.execute(getStore(operation));
+		}
+		catch(Exception e)
+		{
+			if(exceptionHandle != null)
+				exceptionHandle.setError(e);
+			else
+				e.printStackTrace(System.err);
+		}
+		finally
+		{
+			doneUsing(operation);
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * Any exception occurring upon getting the Store or executing the operation will be passed to the given {@link ExceptionHandle} (if not null).
+	 * 
+	 * @param operation
+	 * @param exceptionHandle (may be null, but then there is no way to access inner exceptions)
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or null in case an exception occurs
+	 */
+	public <R> R executeWithReturn(StoreOperationWithReturn<S, R> operation, ExceptionHandle exceptionHandle)
+	{
+		try
+		{
+			return operation.execute(getStore(operation));
+		}
+		catch(Exception e)
+		{
+			if(exceptionHandle != null)
+				exceptionHandle.setError(e);
+			else
+				e.printStackTrace(System.err);
+			return null;
+		}
+		finally
+		{
+			doneUsing(operation);
+		}
+	}
+	
+	/**
 	 * Called by a Store user to signal that will no longer use the Store
 	 * 
 	 * @param user
@@ -118,11 +175,35 @@ public class StoreHandle<S extends Store>
 	 * To be implemented by classes that will request access to a Store managed by a StoreHandle.
 	 * The implicit contract is that the StoreUser class will call {@link StoreHandle#doneUsing(StoreUser)} when it is done using the Store object.
 	 * 
-	 * 
 	 * @author mstevens
 	 */
 	public interface StoreUser
 	{
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 */
+	static public abstract class StoreOperation<S> implements StoreUser
+	{
+		
+		public abstract void execute(final S store) throws Exception;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @parem <R> return type
+	 */
+	static public abstract class StoreOperationWithReturn<S, R> implements StoreUser
+	{
+		
+		public abstract R execute(final S store) throws Exception;
 		
 	}
 
