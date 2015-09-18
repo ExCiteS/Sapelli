@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.commons.io.FileUtils;
+
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -311,14 +313,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected void advance(boolean requestedByUser, boolean allowJump)
 	{
 		if(handlingUserGoBackRequest && !requestedByUser)
-		{
-			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
-			return;
+		{	// We are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
+			goBack(false);
 		}
-		if(currFormSession.atField())
-			goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
 		else
-			openFormSession(currFormSession); // this shouldn't happen really...
+		{	// Normal going forward:
+			if(currFormSession.atField())
+				goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
+			else
+				openFormSession(currFormSession); // this shouldn't happen really...
+		}
 	}
 
 	/**
@@ -345,11 +349,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	}
 	
 	/**
-	 * Return whether the controller is moving backwards or forwards
+	 * Return whether the controller is moving backwards (or forwards), by user request.
 	 * 
 	 * @return true if going back and false otherwise
 	 */
-	public boolean isGoBack()
+	public boolean isGoingBack()
 	{
 		return handlingUserGoBackRequest;
 	}
@@ -483,19 +487,9 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			return;
 		}
 	
-		// Move attachments from temp to data folder:
-		try
-		{
-			File dataFolder = fileStorageProvider.getProjectAttachmentFolder(project, true);
-			for(File attachment : currFormSession.getMediaAttachments())
-				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(e));
-			return;
-		}
+		// Persist attachments (which are already in the correct folder) by forgetting about them,
+		//	so they are not deleted when the controller is stopped (e.g. upon activity destroy).
+		currFormSession.getMediaAttachments().clear(); // !!!
 	
 		// Signal the successful storage of the currentRecord
 		// Vibration
@@ -528,8 +522,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		
 		// Delete any attachments:
 		for(File attachment : currFormSession.getMediaAttachments())
-			if(attachment.exists())
-				attachment.delete();
+			FileUtils.deleteQuietly(attachment);
 		currFormSession.getMediaAttachments().clear();
 	}
 	
@@ -960,6 +953,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	public Field getCurrentField()
 	{
 		return currFormSession.getCurrentField();
+	}
+	
+	/**
+	 * @return the current FieldArguments
+	 */
+	public FieldParameters getCurrentFieldArguments()
+	{
+		return currFormSession.getCurrentFieldArguments();
 	}
 	
 	public void addLogLine(String... fields)

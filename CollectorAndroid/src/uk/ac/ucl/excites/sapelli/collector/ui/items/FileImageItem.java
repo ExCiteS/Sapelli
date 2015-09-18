@@ -21,12 +21,14 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
-import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.BitmapUtils;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
 import android.widget.ImageView;
+
+
 
 //import com.caverock.androidsvg.SVG;
 import com.larvalabs.svgandroid.SVG;
@@ -38,7 +40,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * 
  * @author mstevens
  */
-public class FileImageItem extends ImageItem
+public class FileImageItem extends ImageItem<FileImageItem>
 {
 	
 	static private final String TAG = "FileImageItem";

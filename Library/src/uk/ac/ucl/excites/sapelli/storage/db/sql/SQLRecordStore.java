@@ -35,19 +35,19 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
@@ -85,8 +85,11 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
+	// STATIC ------------------------------------------------------------
 	static protected final String SPACE = " ";
 	
+	// DYNAMIC -----------------------------------------------------------
+	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
 	
@@ -103,11 +106,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 
 	/**
 	 * @param client
+	 * @param version current (targetted) version of the database, if existing database is older it will be upgrader (see {@link #initialise(boolean, int, Upgrader)}).
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
-	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
+	public SQLRecordStore(StorageClient client, int version, String valuePlaceHolder)
 	{
 		super(client, true); // make use of roll-back tasks
+		this.version = version;
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
 	}
@@ -118,7 +123,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @param newDB whether or not the database file is new (i.e. empty)
 	 * @throws DBException
 	 */
-	protected void initialise(boolean newDB) throws DBException
+	protected void initialise(boolean newDB, int dbVersion, Upgrader upgrader) throws DBException
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
 		if(newDB)
@@ -127,6 +132,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
 			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
+			
+			// Upgrade if necessary:
+			if(dbVersion < version && upgrader != null)
+				upgrader.upgrade(this, dbVersion, version);
 		}
 		catch(DBException e)
 		{
@@ -142,6 +151,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract int executeSQLReturnAffectedRows(String sql) throws DBException;
 	
 	protected abstract String sanitiseIdentifier(String identifier);
+	
+	protected String getTableName(Schema schema)
+	{
+		return sanitiseIdentifier(client.getTableName(schema));
+	}
+	
+	/**
+	 * Checks whether a table for the given schema exists in the database.
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	protected boolean doesTableExist(Schema schema)
+	{
+		return doesTableExist(getTableName(schema));
+	}
 	
 	/**
 	 * Checks whether a table with the given name exists in the database.
@@ -359,6 +384,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 	}
 	
+	/**
+	 * Returns a Schema object that corresponds to the stored version of the given schema.
+	 * Only to be used for upgrade purposes.
+	 * 
+	 * @param schema
+	 * @return the stored version of the schema, or null if no records of this schema are currently stored
+	 */
+	protected Schema getStoredVersion(Schema schema)
+	{
+		try
+		{
+			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
+			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
+			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+	
 	protected abstract TableFactory getTableFactory();
 	
 	protected Collection<Schema> getSchemata(Source source)
@@ -416,7 +464,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		STable table = getTable(recordRef.getReferencedSchema(), false); // no need to create the table in the db if it isn't there!
 		if(table.isInDB() && table.delete(recordRef))
-			client.recordDeleted(recordRef); // inform client
+			client.storageEvent(RecordOperation.Deleted, recordRef); // inform client
 	}
 	
 	/**
@@ -570,7 +618,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public SQLTable(Schema schema)
 		{
-			this.tableName = sanitiseIdentifier(client.getTableName(schema));
+			this.tableName = getTableName(schema);
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>(); // we use a LHP to preserve column order!
@@ -592,7 +640,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			sqlColumns.put(sourceCP, sqlColumn);
 			
 			// Deal with AutoIncr...
-			if(sourceCP.getColumn().equals(autoIncrementKeySapColumn, true, true))
+			if(sourceCP.getColumn() == autoIncrementKeySapColumn)
 				this.autoIncrementKeySQLColumn = sqlColumn;
 			
 			// Deal with composites...
@@ -706,21 +754,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * Checks if the given {@link Record} instance already exists in the database table.
-		 * Also works for recordReferences to records of this table's schema!
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param record
+		 * @param recordOrReference
 		 * @return
 		 * @throws NullPointerException
 		 * @throws DBException
 		 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 		 */
-		public boolean isRecordInDB(RecordValueSet<?> record) throws DBException, IllegalStateException
+		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
 		{
 			return	isInDB() &&
-					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(record)) ? 
-						select(record.getRecordQuery()) != null :
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(recordOrReference)) ? 
+						select(recordOrReference.getRecordQuery()) != null :
 						false;
 		}
 		
@@ -777,14 +824,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param valueSet a {@link ValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
+		 * @param recordOrReference a {@link RecordValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
 		 * @return whether the record was really deleted
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public boolean delete(ValueSet<?> valueSet) throws DBException
+		public boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			return executeSQLReturnAffectedRows(new RecordDeleteHelper((STable) this, valueSet).getQuery()) == 1;
+			return executeSQLReturnAffectedRows(new RecordDeleteHelper((STable) this, recordOrReference).getQuery()) == 1;
 		}
 		
 		/**
@@ -1006,34 +1053,34 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param valueSet
+		 * @param recordOrReference
 		 * @param quotedIfNeeded
 		 * @return
 		 */
-		public String retrieveAsLiteral(ValueSet<?> valueSet, boolean quotedIfNeeded)
+		public String retrieveAsLiteral(RecordValueSet<?> recordOrReference, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(retrieve(valueSet), quotedIfNeeded);
+			return sqlToLiteral(retrieve(recordOrReference), quotedIfNeeded);
 		}
 		
 		/**
-		 * @param valueSet
+		 * @param record
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		public SQLType retrieve(ValueSet<?> valueSet)
+		public SQLType retrieve(RecordValueSet<?> recordOrReference)
 		{
-			SapType value = (SapType) sourceColumnPointer.retrieveValue(valueSet);
+			SapType value = (SapType) sourceColumnPointer.retrieveValue(recordOrReference);
 			return value != null ? mapping.toSQLType(value) : null;
 		}
 		
 		/**
-		 * @param valueSet
+		 * @param record
 		 * @param value
 		 */
-		public void store(ValueSet<?> valueSet, SQLType value)
+		public void store(Record record, SQLType value)
 		{
 			if(value != null)
-				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(valueSet, true), mapping.toSapelliType(value));
+				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(record, true), mapping.toSapelliType(value));
 		}
 		
 		/**
@@ -1355,13 +1402,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// Columns:
-			int c = 0;
 			for(SColumn sqlCol : table.sqlColumns.values())
 			{
 				bldr.openTransaction(SPACE);
 				bldr.append(sqlCol.name);
 				bldr.append(sqlCol.type);
-				bldr.append(colConstraints.get(c++));
+				bldr.append(colConstraints.get(sqlCol));
 				bldr.commitTransaction();
 			}
 			// Table constraints:
@@ -1548,7 +1594,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * @param a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
 		 */
-		protected void appendWhereClause(ValueSet<?> valueSet)
+		protected void appendWhereClause(RecordValueSet<?> recordOrReference)
 		{
 			bldr.append("WHERE");
 			if(keyPartSqlCols.size() > 1)
@@ -1567,7 +1613,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					addParameterColumn(keyPartSqlCol);
 				}
 				else
-					bldr.append(keyPartSqlCol.retrieveAsLiteral(valueSet, true));
+					bldr.append(keyPartSqlCol.retrieveAsLiteral(recordOrReference, true));
 				bldr.commitTransaction();
 			}
 			if(keyPartSqlCols.size() > 1)
@@ -1655,9 +1701,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 * @param valueSet a {@link ValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
+		 * @param recordOrReference a {@link RecordValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
 		 */
-		public RecordDeleteHelper(STable table, ValueSet<?> valueSet)
+		public RecordDeleteHelper(STable table, RecordValueSet<?> recordOrReference)
 		{
 			// Initialise
 			super(table);
@@ -1666,7 +1712,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("DELETE FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
-			appendWhereClause(valueSet);
+			appendWhereClause(recordOrReference);
 			bldr.append(";", false);
 		}
 		
@@ -1926,6 +1972,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			Order order = recordsQuery.getOrder();
 			if(order.isDefined())
 			{
+				bldr.append("ORDER BY");
 				bldr.append(table.getSQLColumn(order.getBy()).name);
 				bldr.append(order.isAsc() ? "ASC" : "DESC");
 			}

@@ -22,7 +22,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 
 /**
  * Abstract class representing a SQLite prepared (or compiled) statement.
@@ -51,16 +51,16 @@ public abstract class SapelliSQLiteStatement
 	}
 	
 	/**
-	 * @param valueSet
+	 * @param recordOrReference
 	 * @throws DBException
 	 */
-	public void retrieveAndBindAll(ValueSet<?> valueSet) throws DBException
+	public void retrieveAndBindAll(RecordValueSet<?> recordOrReference) throws DBException
 	{
 		if(paramCols != null)
 		{
 			int p = 0;
 			for(SQLiteColumn<?, ?> sqliteCol : paramCols)
-				sqliteCol.retrieveAndBind(this, p++, valueSet);
+				sqliteCol.retrieveAndBind(this, p++, recordOrReference);
 		}
 	}
 	
@@ -68,7 +68,7 @@ public abstract class SapelliSQLiteStatement
 	 * @param arguments
 	 * @throws DBException
 	 */
-	public void bindAll(List<Object> arguments) throws DBException
+	public void bindAll(List<? extends Object> arguments) throws DBException
 	{
 		if(paramCols != null)
 		{

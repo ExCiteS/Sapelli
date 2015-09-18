@@ -38,7 +38,7 @@ public class GZipCompressor extends Compressor
 {
 
 	@Override
-	public OutputStream getOutputStream(OutputStream sink) throws IOException
+	protected OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes) throws IOException
 	{
 		return new GZIPOutputStream(sink);
 	}

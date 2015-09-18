@@ -20,7 +20,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<prerequisites>
-		<maven>3.2.5</maven>
+		<maven>3.3.1</maven>
 	</prerequisites>
 	<groupId>uk.ac.ucl.excites</groupId>
 	<artifactId>sapelli</artifactId>
@@ -42,6 +42,12 @@
 		<url>https://github.com/ExCiteS/Sapelli</url>
 	</scm>
 	<properties>
+		<!-- Android & support libs version -->
+		<!--	Always change Android version & API level together!: -->
+		<android.version>5.1.1_r2</android.version>
+		<android.api-level>22</android.api-level>
+		<android.support.libs.version>22.2.1</android.support.libs.version>
+		
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
@@ -60,7 +66,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-dependency-plugin</artifactId>
-					<version>2.9</version>
+					<version>2.10</version>
 				</plugin>
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
@@ -70,7 +76,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.2</version>
+					<version>3.3</version>
 					<configuration>
 						<encoding>UTF-8</encoding>
 					</configuration>
@@ -83,7 +89,7 @@
 						<dependency>
 							<groupId>org.apache.ant</groupId>
 							<artifactId>ant</artifactId>
-							<version>[1.9.4,)</version>
+							<version>[1.9.6,)</version>
 						</dependency>
 						<dependency>
 							<groupId>ant-contrib</groupId>
@@ -93,7 +99,7 @@
 						<dependency>
 							<groupId>org.codehaus.groovy</groupId>
 							<artifactId>groovy-all</artifactId>
-							<version>2.4.0-beta-3</version>
+							<version>2.4.4</version>
 						</dependency>
 					</dependencies>
 				</plugin>
@@ -125,5 +131,6 @@
 		<module>CollectorAndroid</module>
 		<module>Library+DB4O</module>
 		<module>Library+SQLite4Java</module>
+		<module>CollectorCmdLn</module>
 	</modules>
 </project>

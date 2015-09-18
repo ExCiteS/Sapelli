@@ -146,7 +146,7 @@ public class Model implements Serializable
 	 */
 	static public RecordReference GetModelRecordReference(Model model)
 	{
-		return new RecordReference(MODEL_SCHEMA, model.id);
+		return GetModelRecordReference(model.id);
 	}
 	
 	/**
@@ -229,6 +229,30 @@ public class Model implements Serializable
 	}
 	
 	/**
+	 * Returns "model record" which describes the model (and contains a serialised version of it)
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @see #GetModelRecord(Model)
+	 */
+	public Record getModelRecord() throws IOException
+	{
+		return GetModelRecord(this);
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) model record, describing the given model,
+	 * but avoids actually instantiating the whole model record itself. 
+	 * 
+	 * @return
+	 * @see #GetModelRecordReference(Model)
+	 */
+	public RecordReference getModelRecordReference()
+	{
+		return GetModelRecordReference(this);
+	}
+	
+	/**
 	 * Adds a given schema to the model (provided it is not sealed, nor full)
 	 * 
 	 * @param schema the schema to add
@@ -266,11 +290,12 @@ public class Model implements Serializable
 	/**
 	 * @param schemaNumber
 	 * @return
+	 * @throws IndexOutOfBoundsException
 	 */
-	public Schema getSchema(int schemaNumber)
+	public Schema getSchema(int schemaNumber) throws IndexOutOfBoundsException
 	{
 		if(schemaNumber < 0 || schemaNumber > schemata.size())
-			throw new IndexOutOfBoundsException("Invalid schemaNumber (" + schemaNumber + "), must be in range [0, " + (schemata.size() - 1) + "].");
+			throw new IndexOutOfBoundsException("Invalid schemaNumber (" + schemaNumber + ") for model , must be in range [0, " + (schemata.size() - 1) + "].");
 		return schemata.get(schemaNumber);
 	}
 	

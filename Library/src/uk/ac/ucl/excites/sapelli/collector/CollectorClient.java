@@ -28,13 +28,11 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnNoException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
@@ -48,6 +46,13 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 {
 	
 	// STATICS-------------------------------------------------------
+	/**
+	 * Version used in all Sapelli Collector v2.0 pre-releases up to and including Beta 14:
+	 */
+	static public final int COLLECTOR_RECORDSTORE_V2 = 2;
+	
+	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;
+	
 	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
 	
 	//static public final Source ALL_COLLECTOR_RECORDS = Source.NotFrom(Transmission.)
@@ -128,20 +133,16 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 * @param modelID
 	 * @return the project corresponding to the given modelID, or null if no such project was found or if no projectStore is available
 	 */
-	public Project getProject(long modelID)
+	public Project getProject(final long modelID)
 	{
-		try
+		return projectStoreHandle.executeWithReturnNoDBEx(new StoreOperationWithReturnNoException<ProjectStore, Project>()
 		{
-			return projectStoreHandle.getStore(this).retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
-		}
-		catch(Exception e)
-		{
-			return null;
-		}
-		finally
-		{
-			projectStoreHandle.doneUsing(this);
-		}
+			@Override
+			public Project execute(ProjectStore store)
+			{
+				return store.retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
+			}
+		});
 	}
 	
 	/**
@@ -156,7 +157,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 			for(Form f : project.getForms())
 				if(f.getSchema().equals(schema))
 					return f;
-		throw new UnknownModelException(schema.getModelID());
+		throw new UnknownModelException(schema.getModelID(), schema.getModel().getName());
 	}
 	
 	/* (non-Javadoc)
@@ -170,7 +171,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		if(project != null)
 			return project.getModel();
 		else
-			throw new UnknownModelException(modelID);
+			throw new UnknownModelException(modelID, null);
 	}
 	
 	/* (non-Javadoc)
@@ -193,44 +194,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		{
 			projectStoreHandle.doneUsing(this);
 		}
-	}
-
-	@Override
-	public void recordInserted(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void recordUpdated(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void recordDeleted(Record record)
-	{
-		// TODO Auto-generated method stub
-
-	}
-	
-	@Override
-	public void recordDeleted(RecordReference recordReference)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#recordsDeleted(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery, int)
-	 */
-	@Override
-	public void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords)
-	{
-		// TODO Auto-generated method stub
-		
 	}
 
 	/* (non-Javadoc)
@@ -267,6 +230,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	@Override
 	public Set<Column<?>> getNonTransmittableColumns(Schema schema)
 	{
+		// TODO get rid of this
 		return Collections.<Column<?>>emptySet(); // TODO pass transmission & export related columns
 	}
 

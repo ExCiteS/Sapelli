@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
@@ -151,10 +152,10 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		return projRec;
 	}
 	
-	private RecordReference getProjectRecordReference(Project project)
+	private RecordReference getProjectRecordReference(ProjectDescriptor projDescr)
 	{
-		return PROJECT_SCHEMA.createRecordReference(project.getID(),
-													project.getFingerPrint());
+		return PROJECT_SCHEMA.createRecordReference(projDescr.getID(),
+													projDescr.getFingerPrint());
 	}
 	
 	private Record getFSIRecord(Form form)
@@ -176,47 +177,71 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public List<String> getByPassableFieldIDs(Form form)
 	{
-		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form).getRecordQuery());
+		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form));
 		if(fsiRec == null)
 			return null;
 		else
 			return FSI_BYPASSABLE_FIELD_IDS_COLUMN.retrieveValue(fsiRec);
 	}
 	
-	private Project getProject(Record projRec)
+	private ProjectDescriptor getProjectOrDescriptor(Record projRec)
 	{
 		if(projRec == null)
 			return null;
 		
+		// Create ProjectDescriptor:
+		int id = PROJECT_ID_COLUMN.retrieveValue(projRec).intValue();
+		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValueSet(projRec);
+		ProjectDescriptor projDescr = new ProjectDescriptor(v1x ? ProjectDescriptor.PROJECT_ID_V1X_TEMP : id,
+															PROJECT_NAME_COLUMN.retrieveValue(projRec),
+															PROJECT_VARIANT_COLUMN.retrieveValue(projRec), // "" is treated as null,
+															PROJECT_VERSION_COLUMN.retrieveValue(projRec),
+															PROJECT_FINGERPRINT_COLUMN.retrieveValue(projRec).intValue());
+		if(v1x)
+			projDescr.setV1XSchemaInfo(id, PROJECT_V1X_SCHEMA_VERSION_COLUMN.retrieveValue(projRec).intValue());
+		
+		// If the full project is cached return it instead of the descriptor:
+		Project project = cache.get(getCacheKey(projDescr.getID(), projDescr.getFingerPrint()));
+		if(project != null)
+			return project;
+		
+		return projDescr;
+	}
+	
+	private Project getProject(Record projRec)
+	{
+		return loadProject(getProjectOrDescriptor(projRec));
+	}
+	
+	private Project loadProject(ProjectDescriptor projDescr)
+	{
+		if(projDescr == null)
+			return null;
+		
+		// If the ProjectDescriptor is a full Project:
+		if(projDescr instanceof Project)
+			return (Project) projDescr;
+		
+		// Load project...
 		Project project = null;
 		
-		// Check cache first:
-		project = cache.get(getCacheKey(PROJECT_ID_COLUMN.retrieveValue(projRec).intValue(), PROJECT_FINGERPRINT_COLUMN.retrieveValue(projRec).intValue()));
+		// First check the cache:
+		project = cache.get(getCacheKey(projDescr.getID(), projDescr.getFingerPrint()));
 		
 		// Parse project if we didn't get it from the cache: 
 		if(project == null)
-		{			
-			String variant = PROJECT_VARIANT_COLUMN.retrieveValue(projRec);
-			project = ProjectLoader.ParseProject(	fileStorageProvider.getProjectInstallationFolder(	PROJECT_NAME_COLUMN.retrieveValue(projRec),
-																										variant.isEmpty() ? null : variant, 
-																										PROJECT_VERSION_COLUMN.retrieveValue(projRec),
+		{
+			project = ProjectLoader.ParseProject(	fileStorageProvider.getProjectInstallationFolder(	projDescr.getName(),
+																										projDescr.getVariant(), 
+																										projDescr.getVersion(),
 																										false),
 													this); // pass this as FormSchemaInfoProvider
 			// Check if we have a project:
 			if(project == null)
-			{
-				try
-				{
-					recordStore.delete(projRec);
-				}
-				catch(DBException e)
-				{
-					e.printStackTrace();
-				}
-			}
+				delete(projDescr);
 			else
 				// Add to cache:
-				cacheProject(project);
+				cacheProject((Project) project);
 		}
 		return project;
 	}
@@ -235,9 +260,9 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		if(projRecs.isEmpty())
 			return Collections.<Project> emptyList();
-		List<Project> projects = new ArrayList<Project>();
+		List<Project> projects = new ArrayList<Project>(projRecs.size());
 		for(Record projRec : projRecs)
-			CollectionUtils.addIgnoreNull(projects, getProject(projRec));
+			CollectionUtils.addIgnoreNull(projects, loadProject(getProjectOrDescriptor(projRec)));
 		return projects;
 	}
 	
@@ -299,7 +324,25 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		return getProjects(recordStore.retrieveRecords(PROJECT_SCHEMA));
 	}
+	
+	@Override
+	public List<ProjectDescriptor> retrieveProjectsOrDescriptors()
+	{
+		List<Record> projRecs = recordStore.retrieveRecords(PROJECT_SCHEMA);
+		if(projRecs.isEmpty())
+			return Collections.<ProjectDescriptor> emptyList();
+		List<ProjectDescriptor> projDescrs = new ArrayList<ProjectDescriptor>(projRecs.size());
+		for(Record projRec : projRecs)
+			CollectionUtils.addIgnoreNull(projDescrs, getProjectOrDescriptor(projRec));
+		return projDescrs;
+	}
 
+	@Override
+	public Project retrieveProject(ProjectDescriptor descriptor)
+	{
+		return loadProject(descriptor);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(java.lang.String, java.lang.String, java.lang.String)
 	 */
@@ -349,16 +392,25 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public void delete(Project project)
 	{
+		delete((ProjectDescriptor) project);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#delete(uk.ac.ucl.excites.sapelli.collector.model.Project)
+	 */
+	@Override
+	public void delete(ProjectDescriptor projectDescriptor)
+	{
 		try
 		{
-			Constraint projectMatchConstraint = getProjectRecordReference(project).getRecordQueryConstraint();
+			Constraint projectMatchConstraint = getProjectRecordReference(projectDescriptor).getRecordQueryConstraint();
 			// Delete project record:
 			recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
 			// Delete associated FSI & HFK records:
 			recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
 			recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
 			// Remove project from cache:
-			cache.remove(getCacheKey(project.getID(), project.getFingerPrint()));
+			cache.remove(getCacheKey(projectDescriptor.getID(), projectDescriptor.getFingerPrint()));
 		}
 		catch(DBException e)
 		{
@@ -406,7 +458,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		Record hfkRecord = null;
 		try
 		{
-			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
+			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship));
 			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
 		}
 		catch(Exception e)

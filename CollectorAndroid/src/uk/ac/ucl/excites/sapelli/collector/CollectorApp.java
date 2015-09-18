@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -34,10 +35,10 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
@@ -65,7 +66,6 @@ public class CollectorApp extends Application
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
 	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT"; // used as a System property as well as on Crashlytics
-	
 	public static enum StorageStatus
 	{
 		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
@@ -73,6 +73,8 @@ public class CollectorApp extends Application
 	
 	// DYNAMICS-----------------------------------------------------------
 	private BuildInfo buildInfo;
+	
+	private CollectorPreferences preferences;
 	
 	public final CollectorClient collectorClient = new AndroidCollectorClient();
 	
@@ -98,9 +100,11 @@ public class CollectorApp extends Application
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 		
+		// Get collector preferences:
+		preferences = new CollectorPreferences(getApplicationContext());
+		
 		// Initialise file storage:
-		try
-		{
+		try {
 			this.fileStorageProvider = initialiseFileStorage(); // throws FileStorageException
 		}
 		catch(FileStorageException fse)
@@ -113,14 +117,12 @@ public class CollectorApp extends Application
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
 
 		// Create shortcut to Sapelli Collector on Home Screen:
-		// Get collector preferences:
-		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
-		if(pref.isFirstInstallation())
+		if(preferences.isFirstInstallation())
 		{
 			// Create shortcut
 			ProjectRunHelpers.createCollectorShortcut(getApplicationContext());
 			// Set first installation to false
-			pref.setFirstInstallation(false);
+			preferences.setFirstInstallation(false);
 		}
 	}
 	
@@ -132,13 +134,10 @@ public class CollectorApp extends Application
 	{
 		File sapelliFolder = null;
 		
-		// Get collector preferences:
-		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
-		
 		// Try to get Sapelli folder path from preferences:
 		try
 		{
-			sapelliFolder = new File(pref.getSapelliFolderPath());
+			sapelliFolder = new File(preferences.getSapelliFolderPath());
 		}
 		catch(NullPointerException npe) {}
 
@@ -162,7 +161,7 @@ public class CollectorApp extends Application
 			// Do we have a path?
 			if(sapelliFolder != null)
 				// Yes: store it in the preferences:
-				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
+				preferences.setSapelliFolder(sapelliFolder.getAbsolutePath());
 			else
 				// No :-(
 				throw new FileStorageUnavailableException();
@@ -202,6 +201,14 @@ public class CollectorApp extends Application
 			throw new FileStorageUnavailableException(); // this shouldn't happen
 	}
 	
+	/**
+	 * @return the preferences
+	 */
+	public CollectorPreferences getPreferences()
+	{
+		return preferences;
+	}
+
 	/**
 	 * Check if a directory is on a mounted storage and writable/readable
 	 * 
@@ -291,7 +298,7 @@ public class CollectorApp extends Application
 		@Override
 		protected RecordStore createRecordStore() throws DBException
 		{
-			return new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			return new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorRecordStoreUpgrader(this));
 			//return new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 		}
 

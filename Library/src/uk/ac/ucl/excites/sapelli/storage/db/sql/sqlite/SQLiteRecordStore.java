@@ -44,7 +44,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -99,10 +98,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	/**
 	 * @param client
+	 * @param version
 	 */
-	public SQLiteRecordStore(StorageClient client)
+	public SQLiteRecordStore(StorageClient client, int version)
 	{
-		super(client, PARAM_PLACEHOLDER);
+		super(client, version, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
 	}
 
@@ -189,7 +189,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
 									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null)),
-									Collections.<Object> singletonList(tableName));
+									Collections.<String> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
 		catch(DBException e)
@@ -238,7 +238,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return an cursor to iterate over the results
 	 * @throws DBException
 	 */
-	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
+	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
 
 	@Override
 	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
@@ -321,10 +321,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
 		 */
 		@Override
-		public boolean isRecordInDB(RecordValueSet<?> record) throws DBException
+		public synchronized boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
 		{
 			// Check if table itself exists in db:
 			if(!isInDB())
@@ -332,7 +332,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			
 			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
 			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
-			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(record))
+			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(recordOrReference))
 				return false;
 			
 			// Perform actual check by querying...
@@ -345,7 +345,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			else
 				existsStatement.clearAllBindings();
 			//	Bind parameters:
-			existsStatement.retrieveAndBindAll(record);
+			existsStatement.retrieveAndBindAll(recordOrReference);
 			//	Execute:
 			return existsStatement.executeLongQuery() != null;
 		}
@@ -354,7 +354,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#insert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void insert(Record record) throws DBException
+		public synchronized void insert(Record record) throws DBException
 		{
 			if(insertStatement == null)
 			{
@@ -389,7 +389,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public boolean update(Record record) throws DBException
+		public synchronized boolean update(Record record) throws DBException
 		{
 			if(updateStatement == null)
 			{
@@ -406,17 +406,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return updateStatement.executeUpdate() == 1;
 		}
 		
-		public void upsert(Record record) throws DBException
+		public synchronized void upsert(Record record) throws DBException
 		{
 			// TODO first read http://stackoverflow.com/questions/3634984/insert-if-not-exists-else-update 
 			// and http://stackoverflow.com/questions/418898/sqlite-upsert-not-insert-or-replace
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
 		 */
 		@Override
-		public boolean delete(ValueSet<?> valueSet) throws DBException
+		public synchronized boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -427,7 +427,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				deleteStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			deleteStatement.retrieveAndBindAll(valueSet);
+			deleteStatement.retrieveAndBindAll(recordOrReference);
 			
 			// Execute:
 			return deleteStatement.executeDelete() == 1;
@@ -436,7 +436,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
 		 */
-		public int delete(RecordsQuery query) throws DBException
+		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
 			SapelliSQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
@@ -458,7 +458,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordSelectHelper)
 		 */
 		@Override
-		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
+		protected synchronized List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
 			ISQLiteCursor cursor = null;
 			try
@@ -494,7 +494,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#getRecordCount()
 		 */
 		@Override
-		public long getRecordCount() throws DBException
+		public synchronized long getRecordCount() throws DBException
 		{
 			if(countStatement == null)
 				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
@@ -502,7 +502,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		@Override
-		public void release()
+		public synchronized void release()
 		{
 			if(existsStatement != null)
 				existsStatement.close();
@@ -553,12 +553,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		/**
 		 * @param statement
 		 * @param paramIdx
-		 * @param valueSet
+		 * @param recordOrReference
 		 * @throws DBException
 		 */
-		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, ValueSet<?> valueSet) throws DBException
+		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, RecordValueSet<?> recordOrReference) throws DBException
 		{
-			bind(statement, paramIdx, retrieve(valueSet));
+			bind(statement, paramIdx, retrieve(recordOrReference));
 		}
 		
 		/**

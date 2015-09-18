@@ -82,6 +82,8 @@ public class Form implements WarningKeeper
 	public static final boolean DEFAULT_CLICK_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
+	static public final boolean DEFAULT_SHOW_IMAGE_SIZES = false;
+	
 	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
 	public static final TimeStampColumn COLUMN_TIMESTAMP_START = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false, true);
 	public static final String COLUMN_TIMESTAMP_END_NAME = "EndTime";
@@ -120,25 +122,44 @@ public class Form implements WarningKeeper
 	private final List<Field> fields;
 	private List<Trigger> triggers;
 	
-	// Form language:
+	/**
+	 * Default form language 
+	 */
 	private String defaultLanguage; // null by default (because project language should be used if form language not specified)
 
-	// Android shortcut:
+	/**
+	 * Android shortcut 
+	 */
 	private String shortcutImageRelativePath;
 
-	// Click Animation:
+	/**
+	 * Click animation 
+	 */
 	private boolean clickAnimation = DEFAULT_CLICK_ANIMATION;
 	
-	// ScreenTransition:
+	/**
+	 * ScreenTransition mode 
+	 */
 	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
 
-	// Obfuscate Media Files:
+	/**
+	 * AudioFeedback mode 
+	 */
 	private AudioFeedback audioFeedback = DEFAULT_AUDIO_FEEDBACK;
 
-	// Obfuscate Media Files:
+	/**
+	 * Obfuscate Media Files 
+	 */
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
 
-	// Timestamps
+	/**
+	 * Show dimensions of images (form design testing feature) 
+	 */
+	private boolean showImageSizes = DEFAULT_SHOW_IMAGE_SIZES;
+
+	/**
+	 * Store end timestamp
+	 */
 	private boolean storeEndTime;
 
 	// End action:
@@ -452,6 +473,22 @@ public class Form implements WarningKeeper
 	public void setShortcutImageRelativePath(String shortcutImageRelativePath)
 	{
 		this.shortcutImageRelativePath = shortcutImageRelativePath;
+	}
+
+	/**
+	 * @return the showImageSizes
+	 */
+	public boolean isShowImageSizes()
+	{
+		return showImageSizes;
+	}
+
+	/**
+	 * @param showImageSizes the showImageSizes to set
+	 */
+	public void setShowImageSizes(boolean showImageSizes)
+	{
+		this.showImageSizes = showImageSizes;
 	}
 
 	/**

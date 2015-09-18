@@ -33,12 +33,12 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.BitmapUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -290,7 +290,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			protected void addButtons()
 			{
 				// Capture button:
-				Item captureButton = null;
+				Item<?> captureButton = null;
 				File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(captureImgFile))
 					captureButton = new FileImageItem(captureImgFile);
@@ -323,7 +323,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			protected void addButtons()
 			{
 				// Approve button:
-				Item approveButton = null;
+				Item<?> approveButton = null;
 				File approveImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
@@ -333,7 +333,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				addButton(approveButton);
 				
 				// Discard button:
-				Item discardButton = null;
+				Item<?> discardButton = null;
 				File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
@@ -383,7 +383,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				setAdapter(getAdapter()); // this is supposedly needed on Android v2.3.x (TODO test it)
 			}
 			
-			protected void addButton(Item button)
+			protected void addButton(Item<?> button)
 			{
 				button.setPaddingDip(CollectorView.PADDING_DIP * 3);
 				button.setBackgroundColor(buttonBackColor);

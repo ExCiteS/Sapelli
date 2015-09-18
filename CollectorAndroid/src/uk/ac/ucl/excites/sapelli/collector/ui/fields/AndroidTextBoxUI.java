@@ -26,7 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.DiagonalCross;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.sapelli.collector.util.ViewHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.content.res.ColorStateList;

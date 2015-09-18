@@ -63,7 +63,7 @@ public class ItemPickerView extends GridView
 		setAdapter(new PickerAdapter());
 		
 		// This is needed to hide the border when an picker item is pressed and to calculate the borders more appropriately
-		setSelector(R.drawable.picker_view_selector);
+		setSelector(R.drawable.projectlist_selector);
 	}
 	
 	public PickerAdapter getAdapter()
@@ -103,14 +103,14 @@ public class ItemPickerView extends GridView
 	public class PickerAdapter extends BaseAdapter
 	{
 
-		private final List<Item> items;
+		private final List<Item<?>> items;
 		
 		public PickerAdapter()
 		{
-			this.items = new ArrayList<Item>();
+			this.items = new ArrayList<Item<?>>();
 		}
 		
-		public void addItem(Item item)
+		public void addItem(Item<?> item)
 		{
 			items.add(item);
 			notifyDataSetChanged();
@@ -129,7 +129,7 @@ public class ItemPickerView extends GridView
 		}
 
 		@Override
-		public Item getItem(int position)
+		public Item<?> getItem(int position)
 		{
 			if(position < 0 || position >= items.size())
 				return null; // prevent IndexOutOfBoundsException (should never happen)
@@ -139,7 +139,7 @@ public class ItemPickerView extends GridView
 		@Override
 		public long getItemId(int position)
 		{
-			Item item = getItem(position);
+			Item<?> item = getItem(position);
 			if(item != null && item.hasID())
 				return (long) item.getID();
 			return position;
@@ -152,7 +152,7 @@ public class ItemPickerView extends GridView
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
 			// Get item:
-			Item item = getItem(position); // should never be null, but we check anyway below
+			Item<?> item = getItem(position); // should never be null, but we check anyway below
 			
 			// Try recycling convertView:
 			if(item != null && recycleViews && convertView != null && convertView.getId() == getItemId(position))

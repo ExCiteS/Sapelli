@@ -69,9 +69,10 @@ public abstract class Parameters
 	 * @param trim
 	 * @param allowEmpty
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalStateException	when no matching attribute is found
+	 * @throws IllegalStateException when the attribute has an empty valeu but {@code allowEmpty} is {@code true}.
 	 */
-	public String getRequiredString(String qName, String attributeName, boolean trim, boolean allowEmpty) throws Exception
+	public String getRequiredString(String qName, String attributeName, boolean trim, boolean allowEmpty) throws IllegalStateException
 	{
 		return getRequiredString(qName, attributeName, null, trim, allowEmpty);
 	}
@@ -84,9 +85,10 @@ public abstract class Parameters
 	 * @param allowEmpty
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalStateException	when no matching attribute is found
+	 * @throws IllegalStateException when the attribute has an empty valeu but {@code allowEmpty} is {@code true}.
 	 */
-	public String getRequiredString(String qName, boolean trim, boolean allowEmpty, String... attributeNames) throws Exception
+	public String getRequiredString(String qName, boolean trim, boolean allowEmpty, String... attributeNames) throws IllegalStateException
 	{
 		return getRequiredString(qName, null, trim, allowEmpty, attributeNames);
 	}
@@ -101,9 +103,10 @@ public abstract class Parameters
 	 * @param trim
 	 * @param allowEmpty
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
+	 * @throws IllegalStateException when the attribute has an empty valeu but {@code allowEmpty} is {@code true}.
 	 */
-	public String getRequiredString(String qName, String attributeName, String reason, boolean trim, boolean allowEmpty) throws Exception
+	public String getRequiredString(String qName, String attributeName, String reason, boolean trim, boolean allowEmpty) throws IllegalArgumentException
 	{
 		return getRequiredString(qName, reason, trim, allowEmpty, attributeName);
 	}
@@ -118,9 +121,10 @@ public abstract class Parameters
 	 * @param allowEmpty
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
+	 * @throws IllegalStateException when the attribute has an empty valeu but {@code allowEmpty} is {@code true}. 
 	 */
-	public String getRequiredString(String qName, String reason, boolean trim, boolean allowEmpty, String... attributeNames) throws Exception
+	public String getRequiredString(String qName, String reason, boolean trim, boolean allowEmpty, String... attributeNames) throws IllegalArgumentException, IllegalStateException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -130,11 +134,11 @@ public abstract class Parameters
 				if(allowEmpty || !"".equals(trim ? value.trim() : value))
 					return trim ? value.trim() : value;
 				else
-					throw new Exception("Required attribute " + attributeName + " on tag <" + qName + "> is present but has an empty value."); // don't try next alternative because attribute was present
+					throw new IllegalStateException("Required attribute " + attributeName + " on tag <" + qName + "> is present but has an empty value."); // don't try next alternative because attribute was present
 			}
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
-		throw new Exception("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag <" + qName + ">" + (reason != null ? " (" + reason + ")" : "") + ".");
+		throw new IllegalArgumentException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag <" + qName + ">" + (reason != null ? " (" + reason + ")" : "") + ".");
 	}
 	
 	/**
@@ -234,10 +238,10 @@ public abstract class Parameters
 	 * @param qName
 	 * @param attributeName
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public int getRequiredInteger(String qName, String attributeName) throws Exception, NumberFormatException
+	public int getRequiredInteger(String qName, String attributeName) throws IllegalArgumentException, NumberFormatException
 	{
 		return getRequiredInteger(qName, attributeName, (String) null);
 	}
@@ -248,10 +252,10 @@ public abstract class Parameters
 	 * @param qName
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public int getRequiredInteger(String qName, String... attributeNames) throws Exception, NumberFormatException
+	public int getRequiredInteger(String qName, String... attributeNames) throws IllegalArgumentException, NumberFormatException
 	{
 		return getRequiredInteger(qName, null, attributeNames);
 	}
@@ -264,10 +268,10 @@ public abstract class Parameters
 	 * @param attributeName
 	 * @param reason
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public int getRequiredInteger(String qName, String attributeName, String reason) throws Exception, NumberFormatException
+	public int getRequiredInteger(String qName, String attributeName, String reason) throws IllegalArgumentException, NumberFormatException
 	{
 		return getRequiredInteger(qName, reason, new String[] { attributeName });
 	}
@@ -280,10 +284,10 @@ public abstract class Parameters
 	 * @param reason
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public int getRequiredInteger(String qName, String reason, String... attributeNames) throws Exception, NumberFormatException
+	public int getRequiredInteger(String qName, String reason, String... attributeNames) throws IllegalArgumentException, NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -292,7 +296,7 @@ public abstract class Parameters
 				return Integer.parseInt(strVal.trim()); // throws NumberFormatException
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
-		throw new Exception("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+		throw new IllegalArgumentException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
 	}
 	
 	/**
@@ -343,10 +347,10 @@ public abstract class Parameters
 	 * @param qName
 	 * @param attributeName
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public long getRequiredLong(String qName, String attributeName) throws Exception, NumberFormatException
+	public long getRequiredLong(String qName, String attributeName) throws IllegalArgumentException, NumberFormatException
 	{
 		return getRequiredLong(qName, attributeName, (String) null);
 	}
@@ -357,10 +361,10 @@ public abstract class Parameters
 	 * @param qName
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public long getRequiredLong(String qName, String... attributeNames) throws Exception, NumberFormatException
+	public long getRequiredLong(String qName, String... attributeNames) throws IllegalArgumentException, NumberFormatException
 	{
 		return getRequiredLong(qName, null, attributeNames);
 	}
@@ -373,10 +377,10 @@ public abstract class Parameters
 	 * @param attributeName
 	 * @param reason
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public long getRequiredLong(String qName, String attributeName, String reason) throws Exception, NumberFormatException
+	public long getRequiredLong(String qName, String attributeName, String reason) throws IllegalArgumentException, NumberFormatException
 	{
 		return getRequiredLong(qName, reason, new String[] { attributeName });
 	}
@@ -389,10 +393,10 @@ public abstract class Parameters
 	 * @param reason
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
-	 * @throws Exception	when no matching attribute is found
+	 * @throws IllegalArgumentException	when no matching attribute is found
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	public long getRequiredLong(String qName, String reason, String... attributeNames) throws Exception, NumberFormatException
+	public long getRequiredLong(String qName, String reason, String... attributeNames) throws NumberFormatException, IllegalArgumentException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -401,7 +405,7 @@ public abstract class Parameters
 				return Long.parseLong(strVal.trim()); // throws NumberFormatException
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
-		throw new Exception("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+		throw new IllegalArgumentException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
 	}
 	
 	/**

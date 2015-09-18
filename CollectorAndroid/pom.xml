@@ -28,13 +28,7 @@
 		<version>2.0.0-SNAPSHOT</version>
 	</parent>
 	
-	<properties>
-		<!-- Android & support libs version -->
-		<!--	Always change Android version & API level together!: -->
-		<android.version>4.4.2_r4</android.version>
-		<android.api-level>19</android.api-level>
-		<android.support.libs.version>20.0.0</android.support.libs.version>
-		
+	<properties>		
 		<!-- Build info generation: -->
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
 		
@@ -106,14 +100,13 @@
 				 This makes such builds unsuitable for release on Play store because different beta's/rc's
 				 of a given version will all get same versionCode. -->
 			<dependencies>
-				<dependency>
-					<groupId>android.support</groupId>
-					<artifactId>compatibility-v4</artifactId>
-					<version>${android.support.libs.version}</version>
-					<type>jar</type>
-				</dependency>
-				<!-- appcompat-v7 to be included as Android Library project in Eclipse -->
-				<!-- afilechooser-library to be included as Android Library project in Eclipse -->
+				<!-- The CollectorAndroid Eclipse project depends (see project.properties) on these Android
+					 Library projects (all in ../Dependencies/) which must opened in the Eclipse workspace: 
+						- appcompat-v7
+						- materialtabstrip-library
+						- afilechooser-library
+					Important: All Android Library projects which depend on android-support-v4.jar must have
+							   the *same* version it in their 'libs' folder. -->
 			</dependencies>
 			<build>
 				<plugins>
@@ -129,7 +122,7 @@
 						</configuration>
 					</plugin>
 					<plugin>
-						<!-- This does not seem to work properly. Possibly we need to disable to fabrik eclipse plugin -->
+						<!-- This does not seem to work properly. Possibly we need to disable to fabric eclipse plugin -->
 						<groupId>com.crashlytics</groupId>
 						<artifactId>crashlytics-maven</artifactId>
 						<configuration>
@@ -161,28 +154,23 @@
 					<version>${android.support.libs.version}</version>
 					<type>aar</type>
 				</dependency>
-				<!--<dependency>
+				<dependency>
 					<groupId>com.android.support</groupId>
 					<artifactId>appcompat-v7</artifactId>
 					<version>${android.support.libs.version}</version>
 					<type>aar</type>
-					<exclusions>-->
-						<!-- 	The exclusion below is needed due to appcompat-v7-21.0.3.pom not
-							specifying the packaging type of support-v4 is aar (instead of jar),
-							which causes mvn to look for com.android.support:support-v4:jar:*.
-							See: https://github.com/simpligility/maven-android-sdk-deployer/issues/246
-						-->
-					<!--	<exclusion>
-							<groupId>com.android.support</groupId>
-							<artifactId>support-v4</artifactId>
-						</exclusion>
-					</exclusions>
-				</dependency>-->
+				</dependency>
 				<dependency>
 					<groupId>com.ipaulpro</groupId>
 					<artifactId>afilechooser-library</artifactId>
 					<version>2.4</version>
 					<type>apklib</type>
+				</dependency>
+				<dependency>
+					<groupId>com.jpardogo.materialtabstrip</groupId>
+					<artifactId>library</artifactId>
+					<version>1.0.9</version>
+					<type>aar</type>
 				</dependency>
 			</dependencies>
 			<build>
@@ -444,7 +432,7 @@
 						</goals>
 						<configuration>
 							<target>
-								<ant antfile="${buildinfo.antfile}" target="generateBuildInfoIfNeeded"/>
+								<ant antfile="${buildinfo.antfile}" target="generateBuildInfo"/>
 							</target>
 						</configuration>
 					</execution>
@@ -454,15 +442,15 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.7</source>
+					<target>1.7</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>com.simpligility.maven.plugins</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.1.1</version>
+				<version>4.3.0</version>
 				<configuration>
 					<!-- General config: -->
 					<sdk>
@@ -559,7 +547,7 @@
 									</pluginExecutionFilter>
 									<action>
 										<execute>
-											<runOnIncremental>true</runOnIncremental>
+											<runOnIncremental>false</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>

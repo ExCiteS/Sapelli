@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
  * A class representing records of a certain Schema
@@ -57,7 +58,7 @@ public class Record extends RecordValueSet<Schema>
 	 * Creates an initialised record
 	 * 
 	 * @param schema
-	 * @param values to initialise record, number of values must match number of (real) columns in the schema and each value must be valid for the corresponding column
+	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column
 	 */
 	protected Record(Schema schema, Object... values)
 	{
@@ -148,8 +149,9 @@ public class Record extends RecordValueSet<Schema>
 	 * 
 	 * @return a {@link RecordReference} instance pointing to this record
 	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
+	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
 	 */
-	public RecordReference getReference() throws NullPointerException
+	public RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException
 	{
 		return new RecordReference(this);
 	}
@@ -193,7 +195,7 @@ public class Record extends RecordValueSet<Schema>
 	/**
 	 * @param obj
 	 * @param checkSchema
-	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
 	public boolean equals(Object obj, boolean checkSchema, boolean asStoredBinary)

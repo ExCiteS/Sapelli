@@ -61,7 +61,7 @@ public class Schema extends ColumnSet implements Serializable
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
 	/**
-	 * Returns "meta" record which describes the given schema (and contains a serialised version of it)
+	 * Returns a "meta" record which describes the given schema (and contains a serialised version of it)
 	 * 
 	 * @param schema
 	 * @return
@@ -136,6 +136,29 @@ public class Schema extends ColumnSet implements Serializable
 	public int getModelSchemaNumber()
 	{
 		return modelSchemaNumber;
+	}
+
+	/**
+	 * Returns a "meta" record which describes the schema (and contains a serialised version of it)
+	 * 
+	 * @return meta Record
+	 * @see #GetMetaRecord(Schema)
+	 */
+	public Record getMetaRecord()
+	{
+		return GetMetaRecord(this);
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) meta record of given schema,
+	 * but avoids actually instantiating the whole meta record itself. 
+	 * 
+	 * @return meta RecordReference
+	 * @see #GetMetaRecordReference(Schema)
+	 */
+	public RecordReference getMetaRecordReference()
+	{
+		return GetMetaRecordReference(this);
 	}
 	
 	/**
@@ -289,8 +312,10 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	/**
-	 * @param values
+	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column
 	 * @return
+	 * 
+	 * @see Record#Record(Schema, Object...)
 	 */
 	public Record createRecord(Object... values)
 	{

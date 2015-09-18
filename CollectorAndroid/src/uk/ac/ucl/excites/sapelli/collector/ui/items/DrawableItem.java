@@ -28,7 +28,7 @@ import android.widget.ImageView;
  * 
  * @author mstevens
  */
-public class DrawableItem extends Item
+public class DrawableItem extends Item<DrawableItem>
 {
 	
 	private Drawable drawable;

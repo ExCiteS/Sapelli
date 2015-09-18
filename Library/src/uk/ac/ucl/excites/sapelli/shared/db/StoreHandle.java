@@ -73,6 +73,87 @@ public class StoreHandle<S extends Store>
 	}
 	
 	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @throws T Throwable type of the operation
+	 */
+	public <T extends Throwable> void executeNoDBEx(StoreOperation<S, T> operation) throws T
+	{
+		try
+		{
+			execute(operation);
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err); // not re-thrown
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @throws DBException
+	 * @throws T Throwable type of the operation
+	 */
+	public <T extends Throwable> void execute(StoreOperation<S, T> operation) throws DBException, T
+	{
+		try
+		{
+			operation.execute(getStore(operation));
+		}
+		finally
+		{
+			doneUsing(operation);
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or {@code null} in case an exception occurs
+	 * @throws T Throwable type of the operation
+	 */
+	public <R, T extends Throwable> R executeWithReturnNoDBEx(StoreOperationWithReturn<S, R, T> operation) throws T
+	{
+		try
+		{
+			return executeWithReturn(operation);
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err); // not re-thrown
+			return null;
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}
+	 * @throws DBException
+	 * @throws T Throwable type of the operation
+	 */
+	public <R, T extends Throwable> R executeWithReturn(StoreOperationWithReturn<S, R, T> operation) throws DBException, T
+	{
+		try
+		{
+			return operation.execute(getStore(operation));
+		}
+		finally
+		{
+			doneUsing(operation);
+		}
+	}
+	
+	/**
 	 * Called by a Store user to signal that will no longer use the Store
 	 * 
 	 * @param user
@@ -118,11 +199,62 @@ public class StoreHandle<S extends Store>
 	 * To be implemented by classes that will request access to a Store managed by a StoreHandle.
 	 * The implicit contract is that the StoreUser class will call {@link StoreHandle#doneUsing(StoreUser)} when it is done using the Store object.
 	 * 
-	 * 
 	 * @author mstevens
 	 */
 	public interface StoreUser
 	{
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <T> Throwable type
+	 */
+	static public abstract class StoreOperation<S, T extends Throwable> implements StoreUser
+	{
+		
+		public abstract void execute(final S store) throws T;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 */
+	static public abstract class StoreOperationNoException<S> extends StoreOperation<S, RuntimeException>
+	{
+		
+		public abstract void execute(final S store);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <R> return type
+	 * @param <T> Throwable type
+	 */
+	static public abstract class StoreOperationWithReturn<S, R, T extends Throwable> implements StoreUser
+	{
+		
+		public abstract R execute(final S store) throws T;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <R> return type
+	 */
+	static public abstract class StoreOperationWithReturnNoException<S, R> extends StoreOperationWithReturn<S, R, RuntimeException>
+	{
+		
+		public abstract R execute(final S store);
 		
 	}
 

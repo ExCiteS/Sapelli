@@ -109,16 +109,16 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		{
 			long rowID = androidSQLiteSt.executeInsert();
 			if(rowID == -1)
-				throw new DBException("Execution of INSERT statement failed (returned ROWID = -1)");
+				throw new DBException("Execution of INSERT statement (" + getSQL() + ") failed (returned ROWID = -1)");
 			return rowID;
 		}
 		catch(SQLiteConstraintException sqliteConstrE)
 		{
 			String msg = sqliteConstrE.getMessage();
 			if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
-				throw new DBPrimaryKeyException("Failed to execute INSERT statement due to existing record with same primary key", sqliteConstrE);
+				throw new DBPrimaryKeyException("Failed to execute INSERT statement (" + getSQL() + ") due to existing record with same primary key", sqliteConstrE);
 			else
-				throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", sqliteConstrE);
+				throw new DBConstraintException("Failed to execute INSERT statement (" + getSQL() + ") due to constraint violation", sqliteConstrE);
 		}
 		catch(SQLException sqlE)
 		{
@@ -138,7 +138,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute UPDATE statement", sqlE);
+			throw new DBException("Failed to execute UPDATE statement (" + getSQL() + ")", sqlE);
 		}
 	}
 
@@ -154,7 +154,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute DELETE statement", sqlE);
+			throw new DBException("Failed to execute DELETE statement (" + getSQL() + ")", sqlE);
 		}
 	}
 	
@@ -193,6 +193,15 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	public void close()
 	{
 		androidSQLiteSt.close();
+	}
+	
+	/**
+	 * @return SQL expression
+	 * @see android.database.sqlite.SQLiteStatement#toString()
+	 */
+	private String getSQL()
+	{
+		return androidSQLiteSt.toString().substring("SQLiteProgram: ".length());
 	}
 	
 }

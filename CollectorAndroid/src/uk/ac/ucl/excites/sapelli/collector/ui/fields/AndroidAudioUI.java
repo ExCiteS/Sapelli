@@ -31,8 +31,8 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
@@ -149,7 +149,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			
 			// Adapter & button images:
 			// Start rec button:
-			Item startButton = null;
+			Item<?> startButton = null;
 			File startRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(startRecImageFile))
 				startButton = new FileImageItem(startRecImageFile);
@@ -159,7 +159,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			addButton(startButton); // add start button
 
 			// Stop rec button:
-			Item stopButton = null;
+			Item<?> stopButton = null;
 			File stopRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopRecImageFile))
 				stopButton = new FileImageItem(stopRecImageFile);
@@ -172,7 +172,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			setOnItemClickListener(this);
 		}
 		
-		private void addButton(Item button)
+		private void addButton(Item<?> button)
 		{
 			button.setPaddingDip(CollectorView.PADDING_DIP);
 			button.setBackgroundColor(buttonBackColor);
@@ -226,7 +226,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		public void setStartVisibility(boolean visible)
 		{
 			PickerAdapter adapter = getAdapter();
-			Item startItem = adapter.getItem(BUTTON_INDEX_START);
+			Item<?> startItem = adapter.getItem(BUTTON_INDEX_START);
 			if(startItem != null)
 				startItem.setVisibility(visible);
 			setAdapter(adapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
@@ -235,7 +235,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		public void setStopVisibility(boolean visible)
 		{
 			PickerAdapter adapter = getAdapter();
-			Item stopItem = adapter.getItem(BUTTON_INDEX_STOP);
+			Item<?> stopItem = adapter.getItem(BUTTON_INDEX_STOP);
 			if(stopItem != null)
 				stopItem.setVisibility(visible);
 			setAdapter(adapter); // this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
