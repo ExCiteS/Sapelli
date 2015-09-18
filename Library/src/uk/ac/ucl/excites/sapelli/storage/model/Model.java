@@ -80,7 +80,7 @@ public class Model implements Serializable
 	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
 	
 	// Model Schema: a "meta" schema for records that describe a Model
-	static public final Schema MODEL_SCHEMA = new Schema(InternalKind.Model);
+	static public final Schema MODEL_SCHEMA = new Schema(InternalKind.Model, InternalKind.Model.name() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = new IntegerColumn("ID", false, Model.MODEL_ID_FIELD);
 	static private final StringColumn MODEL_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
 	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("compressedSerialisedObject", false);
@@ -96,7 +96,7 @@ public class Model implements Serializable
 	}
 	
 	// Meta Schema: a Schema to describe other Schema's
-	static public final Schema META_SCHEMA = new Schema(InternalKind.MetaSchema);
+	static public final Schema META_SCHEMA = new Schema(InternalKind.MetaSchema, "Schemata");
 	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn(Model.MODEL_SCHEMA, false);
 	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
 	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
