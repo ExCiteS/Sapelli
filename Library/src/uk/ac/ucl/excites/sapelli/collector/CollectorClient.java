@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnNoException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -132,20 +133,16 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 * @param modelID
 	 * @return the project corresponding to the given modelID, or null if no such project was found or if no projectStore is available
 	 */
-	public Project getProject(long modelID)
+	public Project getProject(final long modelID)
 	{
-		try
+		return projectStoreHandle.executeWithReturnNoDBEx(new StoreOperationWithReturnNoException<ProjectStore, Project>()
 		{
-			return projectStoreHandle.getStore(this).retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
-		}
-		catch(Exception e)
-		{
-			return null;
-		}
-		finally
-		{
-			projectStoreHandle.doneUsing(this);
-		}
+			@Override
+			public Project execute(ProjectStore store)
+			{
+				return store.retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
+			}
+		});
 	}
 	
 	/**
