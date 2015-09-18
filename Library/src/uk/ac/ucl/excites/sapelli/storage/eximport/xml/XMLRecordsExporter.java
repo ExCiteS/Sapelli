@@ -155,8 +155,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			tabs = 1;
 			for(Record r : records)
 			{
-				if(r.getSchema().isInternal())
-					continue; // we do not export records of internal schemata
 				writer.openTransaction(); // output will be buffered
 				try
 				{				

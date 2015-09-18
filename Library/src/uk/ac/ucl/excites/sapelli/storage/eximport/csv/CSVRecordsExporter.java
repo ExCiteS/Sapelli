@@ -205,8 +205,6 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				// Write records:
 				for(Record r : entry.getValue())
 				{
-					if(r.getSchema().isInternal())
-						continue; // we do not export records of internal schemata
 					writer.openTransaction(); // output will be buffered
 					try
 					{	

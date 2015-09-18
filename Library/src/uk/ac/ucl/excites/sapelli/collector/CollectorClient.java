@@ -29,7 +29,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -152,8 +151,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	public Form getForm(Schema schema) throws UnknownModelException
 	{
-		if(schema.isInternal())
-			throw new IllegalArgumentException("Internal schema cannot be associated with a Form");
 		Project project = getProject(schema.getModelID());
 		if(project != null)
 			for(Form f : project.getForms())

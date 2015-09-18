@@ -45,19 +45,6 @@ public class Schema extends ColumnSet implements Serializable
 	
 	static public final String COLUMN_AUTO_KEY_NAME = "AutoKey";
 	
-	/**
-	 * Identification of "internal" schemata (not part of a Model)
-	 * 
-	 * The ordinal position (x) within the enum is made negative (formula: -x - 1) and used as the schema ID.
-	 * This allows to differentiate "internal" schemata (& their records) from "external"/"client" schemata (& records).
-	 */
-	static public enum InternalKind
-	{
-		MetaSchema,
-		Model,
-		// more later?
-	}
-	
 	// XML attributes (for record exports):
 	static public final String ATTRIBUTE_MODEL_ID = "modelID";
 	static public final String ATTRIBUTE_MODEL_SCHEMA_NUMBER = "modelSchemaNumber";
@@ -81,8 +68,6 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public Record GetMetaRecord(Schema schema)
 	{
-		if(schema.isInternal())
-			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
 		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
 	}
 	
@@ -95,15 +80,12 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public RecordReference GetMetaRecordReference(Schema schema)
 	{
-		if(schema.isInternal())
-			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
 		return new RecordReference(Model.META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
 	// Dynamics-----------------------------------------------------------
 	public final Model model;
 	public final int modelSchemaNumber;
-	public final InternalKind internal;
 	
 	private PrimaryKey primaryKey;
 	
@@ -111,32 +93,6 @@ public class Schema extends ColumnSet implements Serializable
 	 * List of indexes, also includes the primary key
 	 */
 	private List<Index> indexes;
-	
-	/**
-	 * Make a schema instance of an internal kind
-	 * 
-	 * @param internal
-	 */
-	public Schema(InternalKind internal)
-	{
-		this(internal, internal.name());
-	}
-	
-	/**
-	 * Make a schema instance of an internal kind
-	 * 
-	 * @param internal
-	 * @param name
-	 */
-	public Schema(InternalKind internal, String name)
-	{
-		super(name, false);
-		if(internal == null)
-			throw new NullPointerException("Please specify an non-null Internal");
-		this.internal = internal;
-		this.model = null; // internal schemata never have a model
-		this.modelSchemaNumber = -1;
-	}
 	
 	/**
 	 * Create a new (external/client) schema instance which will be add to the provided {@link Model}.
@@ -151,7 +107,6 @@ public class Schema extends ColumnSet implements Serializable
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
 		this.model = model;
-		this.internal = null; // external/client never have an "internal"
 		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 	}
 	
@@ -160,17 +115,7 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public Model getModel()
 	{
-		if(isInternal())
-			throw new IllegalStateException("Internal schemata do not belong to a model.");
 		return model;
-	}
-	
-	/**
-	 * @return whether this is an "internal" (true) or "external"/"client" schema instance 
-	 */
-	public boolean isInternal()
-	{
-		return internal != null;
 	}
 	
 	/**
@@ -190,8 +135,6 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public int getModelSchemaNumber()
 	{
-		if(isInternal())
-			throw new IllegalStateException("Internal schemata do not belong to a model.");
 		return modelSchemaNumber;
 	}
 	
@@ -254,7 +197,7 @@ public class Schema extends ColumnSet implements Serializable
 	public void seal()
 	{
 		// Add automatic primary key to "external/client" schemata that don't have one yet:
-		if(!isInternal() && !hasPrimaryKey())
+		if(!hasPrimaryKey())
 		{
 			IntegerColumn autoKeyCol = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
 			addColumn(autoKeyCol, false);
@@ -454,13 +397,12 @@ public class Schema extends ColumnSet implements Serializable
 			if(!super.equals(that, checkNames, checkColumns))
 				return false;
 			// Model/Internal
-			boolean idMatch = isInternal() ?	(that.isInternal() && this.internal.ordinal() == that.internal.ordinal()) :
-												(!that.isInternal() && (this.model.getID() == that.model.getID() && this.modelSchemaNumber == that.modelSchemaNumber));
+			boolean idMatch = (this.model.getID() == that.model.getID() && this.modelSchemaNumber == that.modelSchemaNumber);
 			// Note: for internal enum comparison we compare the enum ordinals instead of the enum objects! This is needed when one Schema comes out of DB4O, but probably a good practice in general.
 			if(!idMatch || !(checkNames || checkColumns || checkIndexes))
 				return idMatch;
 			// Model name (schema is name already checked at ColumnSet level):
-			if(checkNames && !this.isInternal() && !this.model.getName().equals(that.model.getName()))
+			if(checkNames && !this.model.getName().equals(that.model.getName()))
 				return false;
 			// Columns are already checked at ColumnSet level
 			// Check indexes:
@@ -488,7 +430,6 @@ public class Schema extends ColumnSet implements Serializable
 		int hash = super.hashCode();
 		hash = 31 * hash + (model == null ? 0 : (int)(model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
 		hash = 31 * hash + modelSchemaNumber;
-		hash = 31 * hash + (internal == null ? 0 : internal.ordinal());
 		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
 		return hash;
 	}
