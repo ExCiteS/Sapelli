@@ -177,7 +177,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public List<String> getByPassableFieldIDs(Form form)
 	{
-		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form).getRecordQuery());
+		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form));
 		if(fsiRec == null)
 			return null;
 		else
@@ -458,7 +458,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		Record hfkRecord = null;
 		try
 		{
-			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
+			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship));
 			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
 		}
 		catch(Exception e)
