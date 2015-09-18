@@ -198,14 +198,14 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	public Object convert(Object value)
+	public Long convert(Object value)
 	{
 		// Null:
 		if(value == null)
 			return null;
 		// Already a Long:
 		if(value instanceof Long)
-			return value;
+			return (Long) value;
 		// Enum:
 		if(value instanceof Enum)
 			return Long.valueOf(((Enum<?>) value).ordinal());
