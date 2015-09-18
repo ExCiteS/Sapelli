@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHandle;
 
 /**
  * 
@@ -76,23 +75,35 @@ public class StoreHandle<S extends Store>
 	/**
 	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
 	 * The Store is released after running the operation.
-	 * Any exception occurring upon getting the Store or executing the operation will be passed to the given {@link ExceptionHandle} (if not null).
 	 * 
 	 * @param operation
-	 * @param exceptionHandle (may be null, but then there is no way to access inner exceptions)
+	 * @throws T Throwable type of the operation
 	 */
-	public void execute(StoreOperation<S> operation, ExceptionHandle exceptionHandle)
+	public <T extends Throwable> void executeNoDBEx(StoreOperation<S, T> operation) throws T
+	{
+		try
+		{
+			execute(operation);
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err); // not re-thrown
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @throws DBException
+	 * @throws T Throwable type of the operation
+	 */
+	public <T extends Throwable> void execute(StoreOperation<S, T> operation) throws DBException, T
 	{
 		try
 		{
 			operation.execute(getStore(operation));
-		}
-		catch(Exception e)
-		{
-			if(exceptionHandle != null)
-				exceptionHandle.setError(e);
-			else
-				e.printStackTrace(System.err);
 		}
 		finally
 		{
@@ -103,25 +114,38 @@ public class StoreHandle<S extends Store>
 	/**
 	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
 	 * The Store is released after running the operation.
-	 * Any exception occurring upon getting the Store or executing the operation will be passed to the given {@link ExceptionHandle} (if not null).
 	 * 
 	 * @param operation
-	 * @param exceptionHandle (may be null, but then there is no way to access inner exceptions)
-	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or null in case an exception occurs
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or {@code null} in case an exception occurs
+	 * @throws T Throwable type of the operation
 	 */
-	public <R> R executeWithReturn(StoreOperationWithReturn<S, R> operation, ExceptionHandle exceptionHandle)
+	public <R, T extends Throwable> R executeWithReturnNoDBEx(StoreOperationWithReturn<S, R, T> operation) throws T
+	{
+		try
+		{
+			return executeWithReturn(operation);
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err); // not re-thrown
+			return null;
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}
+	 * @throws DBException
+	 * @throws T Throwable type of the operation
+	 */
+	public <R, T extends Throwable> R executeWithReturn(StoreOperationWithReturn<S, R, T> operation) throws DBException, T
 	{
 		try
 		{
 			return operation.execute(getStore(operation));
-		}
-		catch(Exception e)
-		{
-			if(exceptionHandle != null)
-				exceptionHandle.setError(e);
-			else
-				e.printStackTrace(System.err);
-			return null;
 		}
 		finally
 		{
@@ -186,11 +210,12 @@ public class StoreHandle<S extends Store>
 	 * @author mstevens
 	 *
 	 * @param <S>
+	 * @param <T> Throwable type
 	 */
-	static public abstract class StoreOperation<S> implements StoreUser
+	static public abstract class StoreOperation<S, T extends Throwable> implements StoreUser
 	{
 		
-		public abstract void execute(final S store) throws Exception;
+		public abstract void execute(final S store) throws T;
 		
 	}
 	
@@ -198,12 +223,38 @@ public class StoreHandle<S extends Store>
 	 * @author mstevens
 	 *
 	 * @param <S>
-	 * @parem <R> return type
 	 */
-	static public abstract class StoreOperationWithReturn<S, R> implements StoreUser
+	static public abstract class StoreOperationNoException<S> extends StoreOperation<S, RuntimeException>
 	{
 		
-		public abstract R execute(final S store) throws Exception;
+		public abstract void execute(final S store);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <R> return type
+	 * @param <T> Throwable type
+	 */
+	static public abstract class StoreOperationWithReturn<S, R, T extends Throwable> implements StoreUser
+	{
+		
+		public abstract R execute(final S store) throws T;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <R> return type
+	 */
+	static public abstract class StoreOperationWithReturnNoException<S, R> extends StoreOperationWithReturn<S, R, RuntimeException>
+	{
+		
+		public abstract R execute(final S store);
 		
 	}
 
