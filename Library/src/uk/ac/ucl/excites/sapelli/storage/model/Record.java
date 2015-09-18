@@ -41,6 +41,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
  * A class representing records of a certain Schema
@@ -81,7 +82,7 @@ public class Record implements Serializable
 	 * Creates an initialised record
 	 * 
 	 * @param schema
-	 * @param values to initialise record, number of values must match number of (real) columns in the schema and each value must be valid for the corresponding column
+	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column
 	 */
 	protected Record(Schema schema, Object... values)
 	{
@@ -276,8 +277,9 @@ public class Record implements Serializable
 	 * 
 	 * @return a {@link RecordReference} instance pointing to this record
 	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
+	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
 	 */
-	public RecordReference getReference() throws NullPointerException
+	public RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException
 	{
 		return new RecordReference(this);
 	}

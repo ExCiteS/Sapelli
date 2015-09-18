@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
  * Class representing a reference to another {@link Record}, identified by the value(s) of its primary key.
@@ -101,8 +102,9 @@ public class RecordReference extends Record
 	 * 
 	 * @param record the Record to be referenced ("pointed to"), also called the "foreign" record
 	 * @throws NullPointerException	if the Schema of the given Record does not have a primary key
+	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
 	 */
-	public RecordReference(Record record) throws NullPointerException
+	public RecordReference(Record record) throws NullPointerException, IncompletePrimaryKeyException
 	{
 		this(record.schema); // !!!
 		
@@ -111,7 +113,7 @@ public class RecordReference extends Record
 		{
 			Object keyPartValue = keyPartCol.retrieveValueCopy(record);
 			if(keyPartValue == null)
-				throw new IllegalArgumentException("Cannot construct RecordReference from record because key part \"" + keyPartCol.getName() + "\" has not been set");
+				throw new IncompletePrimaryKeyException("Cannot construct RecordReference from record because key part \"" + keyPartCol.getName() + "\" has not been set");
 			setValue(keyPartCol, keyPartValue);
 		}
 	}
@@ -148,10 +150,10 @@ public class RecordReference extends Record
 	 * Returns a {@link SingleRecordQuery} which can be used to find the referenced record in a RecordStore or Collection.
 	 * 
 	 * @return a query that looks for the record this reference points to
-	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
+	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQuery()
 	 */
-	public SingleRecordQuery getRecordQuery() throws IllegalStateException
+	public SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException
 	{
 		return new FirstRecordQuery(Source.From(referencedSchema), Order.UNDEFINED, getRecordQueryConstraint());
 	}
@@ -159,13 +161,13 @@ public class RecordReference extends Record
 	/**
 	 * Returns a {@link Constraint} that matches on the referenced record's primary key values.
 	 * 
-	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
+	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQueryConstraint()
 	 */
-	public Constraint getRecordQueryConstraint() throws IllegalStateException
+	public Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException
 	{
 		if(!isFilled())
-			throw new IllegalStateException("All values of the key must be set before a record selecting constraint/query can be created!");
+			throw new IncompletePrimaryKeyException("All values of the key must be set before a record selecting constraint/query can be created!");
 		
 		// Match for key parts:
 		AndConstraint constraints = new AndConstraint();
