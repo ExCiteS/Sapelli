@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 
@@ -248,23 +249,23 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public void visit(ColumnPointer leafColumnPointer)
 	{
-		Record record = leafColumnPointer.getValueSet(currentRecord, false);
+		ValueSet<?> valueSet = leafColumnPointer.getValueSet(currentRecord, false);
 		
 		// If in nested or flat tags mode and subrecord is null: return
-		if(record == null && compositeMode != CompositeMode.String)
+		if(valueSet == null && compositeMode != CompositeMode.String)
 			return;
 		
 		// Write column value or null value comment:
 		Column<?> leafColumn = leafColumnPointer.getColumn();
 		String columnName = (compositeMode == CompositeMode.Flat ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName());
-		if(record != null && leafColumn.isValueSet(record))
+		if(valueSet != null && leafColumn.isValueSet(valueSet))
 		{
 			/* 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target), then
 				we use the raw (i.e. unquoted) String value. We can do this because the difference between null and the empty string
 				is preserved due to the fact that we do not put a tag (only an XML comment) in case the value is null.
 				See XMLRecordsImporter#characters(char[], int, int) for the corresponding import logic.
 				*/
-			String valueString = (leafColumn.getType() == String.class ? (String) leafColumn.retrieveValue(record) : leafColumn.retrieveValueAsString(record));
+			String valueString = (leafColumn.getType() == String.class ? (String) leafColumn.retrieveValue(valueSet) : leafColumn.retrieveValueAsString(valueSet));
 			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + (USES_XML_VERSION_11 ? StringEscapeUtils.escapeXml11(valueString) : StringEscapeUtils.escapeXml10(valueString)) + "</" + columnName + ">", tabs));
 		}
 		else

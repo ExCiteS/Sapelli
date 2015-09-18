@@ -44,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public abstract class RecordColumn<R extends ValueSet<?>> extends Column<R>
+public abstract class RecordColumn<VC extends ValueSet<?>> extends Column<VC>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -174,14 +174,14 @@ public abstract class RecordColumn<R extends ValueSet<?>> extends Column<R>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
-	public R parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
+	public VC parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		return parse(recordStr, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
 	}
 	
-	public R parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public VC parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		R record = getNewRecord();
+		VC record = getNewRecord();
 		record.parse(recordStr, includeVirtual, skipColumns);
 		return record;
 	}
@@ -190,18 +190,18 @@ public abstract class RecordColumn<R extends ValueSet<?>> extends Column<R>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
-	public String toString(R record)
+	public String toString(VC record)
 	{
 		return toString(record, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
 	}
 	
-	public String toString(R record, boolean includeVirtual, Set<Column<?>> skipColumns)
+	public String toString(VC record, boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		return record.serialise(includeVirtual, skipColumns);
 	}
 
 	@Override
-	protected void write(R record, BitOutputStream bitStream) throws IOException
+	protected void write(VC record, BitOutputStream bitStream) throws IOException
 	{
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(!isColumnSkipped(subCol))
@@ -211,12 +211,12 @@ public abstract class RecordColumn<R extends ValueSet<?>> extends Column<R>
 	/**
 	 * @return new "subrecord" instance
 	 */
-	public abstract R getNewRecord();
+	public abstract VC getNewRecord();
 
 	@Override
-	protected R read(BitInputStream bitStream) throws IOException
+	protected VC read(BitInputStream bitStream) throws IOException
 	{
-		R record = getNewRecord();
+		VC record = getNewRecord();
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(!isColumnSkipped(subCol))
 				subCol.storeObject(record, getBinaryColumn(subCol).readValue(bitStream));
@@ -230,7 +230,7 @@ public abstract class RecordColumn<R extends ValueSet<?>> extends Column<R>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(R record) throws IllegalArgumentException
+	protected void validate(VC record) throws IllegalArgumentException
 	{
 		// does nothing
 	}
@@ -257,11 +257,11 @@ public abstract class RecordColumn<R extends ValueSet<?>> extends Column<R>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
 	 */
 	@Override
-	protected boolean equalRestrictions(Column<R> otherColumn)
+	protected boolean equalRestrictions(Column<VC> otherColumn)
 	{
 		if(otherColumn instanceof RecordColumn)
 		{
-			RecordColumn<R> other = (RecordColumn<R>) otherColumn;
+			RecordColumn<?> other = (RecordColumn<?>) otherColumn;
 			return	this.columnSet.equals(other.columnSet) &&
 					(this.skipColumnPositions == null ? other.skipColumnPositions == null :
 												this.skipColumnPositions.equals(other.skipColumnPositions)) &&

@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
@@ -34,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
  * 
  * @author mstevens
  */
-public class Record extends ValueSet<Schema> implements Serializable
+public class Record extends RecordValueSet<Schema>
 {
 	
 	// Statics-------------------------------------------------------
@@ -160,7 +159,10 @@ public class Record extends ValueSet<Schema> implements Serializable
 	 * 
 	 * @return a query that looks for this record
 	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQuery()
 	 */
+	@Override
 	public SingleRecordQuery getRecordQuery() throws IllegalStateException
 	{
 		return new FirstRecordQuery(Source.From(columnSet), Order.UNDEFINED, getRecordQueryConstraint());
@@ -171,7 +173,10 @@ public class Record extends ValueSet<Schema> implements Serializable
 	 * 
 	 * @return
 	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQueryConstraint()
 	 */
+	@Override
 	public Constraint getRecordQueryConstraint() throws IllegalStateException
 	{
 		if(!isFilled(columnSet.getPrimaryKey()))

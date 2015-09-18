@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
@@ -214,14 +215,14 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 							if(!writer.isTransactionBufferEmpty())
 								writer.write(separator.getSeparatorChar());
 							Column<?> col = cp.getColumn();
-							Record rec = cp.getValueSet(r, false);
-							if(rec != null && col.isValueSet(rec)) // do write nothing when the value is not set (i.e. null is represented by an empty String)
+							ValueSet<?> valueSet = cp.getValueSet(r, false);
+							if(valueSet != null && col.isValueSet(valueSet)) // do write nothing when the value is not set (i.e. null is represented by an empty String)
 							{
 								/* Get String representing the column value...
 								 * 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target),
 								 * 	then we use the raw String value returned by StringColumn#retrieveValue() instead of the singe-quoted String returned
 								 * 	by StringColumn#retrieveValueAsString(). */
-								String valueString = (col.getType() == String.class ? (String) col.retrieveValue(rec) : col.retrieveValueAsString(rec));
+								String valueString = (col.getType() == String.class ? (String) col.retrieveValue(valueSet) : col.retrieveValueAsString(valueSet));
 								/* Write value and escape/quote if necessary or required...
 								 * 	We force (double) quotes on StringColumns in order to maintain ability to differentiate null and empty String.
 								 * 	We don't need to do this on VirtualColumns with target type String because their values will get quoted when needed

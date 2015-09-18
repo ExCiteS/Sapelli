@@ -55,7 +55,6 @@ public class Schema extends ColumnSet implements Serializable
 	{
 		MetaSchema,
 		Model,
-		Anonymous,
 		// more later?
 	}
 	
