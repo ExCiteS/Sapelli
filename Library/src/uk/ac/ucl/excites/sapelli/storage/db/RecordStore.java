@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -257,9 +258,9 @@ public abstract class RecordStore extends Store
 		if(insert == null)
 			return; // record was unchanged
 		else if(insert)
-			client.recordInserted(record);
+			client.storageEvent(RecordOperation.Inserted, record.getReference());
 		else
-			client.recordUpdated(record);
+			client.storageEvent(RecordOperation.Updated, record.getReference());
 	}
 	
 	/**
@@ -290,7 +291,7 @@ public abstract class RecordStore extends Store
 		}
 		// Inform client if a real insert happened:
 		if(inserted)
-			client.recordInserted(record);
+			client.storageEvent(RecordOperation.Inserted, record.getReference());
 	}
 	
 	/**
@@ -328,9 +329,9 @@ public abstract class RecordStore extends Store
 			if(insert[r] == null)
 				return; // record was unchanged
 			else if(insert[r])
-				client.recordInserted(record);
+				client.storageEvent(RecordOperation.Inserted, record.getReference());
 			else
-				client.recordUpdated(record);
+				client.storageEvent(RecordOperation.Updated, record.getReference());
 			r++;
 		}
 	}
@@ -427,6 +428,8 @@ public abstract class RecordStore extends Store
 	 */
 	public void delete(Record record) throws DBException
 	{
+		if(!isStorable(record))
+			return;
 		try
 		{
 			doDelete(record);
@@ -437,7 +440,7 @@ public abstract class RecordStore extends Store
 			throw e;
 		}
 		// Inform client:
-		client.recordDeleted(record);
+		client.storageEvent(RecordOperation.Deleted, record.getReference());
 	}
 	
 	/**
@@ -455,7 +458,7 @@ public abstract class RecordStore extends Store
 	}
 	
 	/**
-	 * Deletes all records that match the query
+	 * Deletes all records that match the query.
 	 * 
 	 * Default implementation, may be overridden.
 	 * 
@@ -494,8 +497,11 @@ public abstract class RecordStore extends Store
 		try
 		{
 			for(Record record : records)
-				if(doDelete(record))
-					deleted.add(record);
+				if(isStorable(record))
+				{
+					if(doDelete(record))
+						deleted.add(record);
+				}
 		}
 		catch(DBException e)
 		{
@@ -505,7 +511,7 @@ public abstract class RecordStore extends Store
 		commitTransaction();
 		// Inform client:
 		for(Record record : deleted)
-			client.recordDeleted(record);
+			client.storageEvent(RecordOperation.Deleted, record.getReference());
 	}
 	
 	/**

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
@@ -26,7 +27,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -37,10 +37,20 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
  * 
  * @author mstevens
  */
-public abstract class StorageClient
+public abstract class StorageClient implements StorageObserver
 {
+
+	// STATICS ------------------------------------------------------
+	static public enum RecordOperation
+	{
+		Inserted,
+		Updated,
+		Deleted
+	}
 	
-	// DYNAMICS------------------------------------------------------
+	// DYNAMICS -----------------------------------------------------
+	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
+	
 	public final StoreHandle<RecordStore> recordStoreHandle = new StoreHandle<RecordStore>(new StoreCreator<RecordStore>()
 	{
 		@Override
@@ -64,6 +74,23 @@ public abstract class StorageClient
 		// Get client model:
 		return getClientModel(modelID);
 	}
+	
+	/**
+	 * Subclasses can override this but *must* return at least the same models returned by the super implementation.
+	 * 
+	 * @return
+	 */
+	public List<Model> getReservedModels()
+	{
+		return new ArrayList<Model>();
+	}
+	
+	/**
+	 * @param modelID
+	 * @return
+	 * @throws UnknownModelException
+	 */
+	protected abstract Model getClientModel(long modelID) throws UnknownModelException;
 	
 	/**
 	 * @param modelID
@@ -98,16 +125,6 @@ public abstract class StorageClient
 	}
 	
 	/**
-	 * Subclasses can override this but *must* return at least the same models returned by the super implementation.
-	 * 
-	 * @return
-	 */
-	public List<Model> getReservedModels()
-	{
-		return new ArrayList<Model>();
-	}
-	
-	/**
 	 * Returns the name to be used for a table which will contain records of the given schema in
 	 * back-end (relational) database storage (i.e. through a RecordStore implementation).
 	 * 
@@ -128,13 +145,6 @@ public abstract class StorageClient
 		else
 			return schema.internal.name(); // unlikely to ever used as a table name because records of "internal" schemata cannot be stored directly by RecordStore implementations
 	}
-		
-	/**
-	 * @param modelID
-	 * @return
-	 * @throws UnknownModelException
-	 */
-	protected abstract Model getClientModel(long modelID) throws UnknownModelException;
 	
 	/**
 	 * @param schemaID
@@ -144,15 +154,25 @@ public abstract class StorageClient
 	 */
 	public abstract Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException;
 	
-	public abstract void recordInserted(Record record);
+	public final void addObserver(StorageObserver observer)
+	{
+		if(observer != null)
+			this.observers.add(observer);
+	}
 	
-	public abstract void recordUpdated(Record record);
+	@Override
+	public final void storageEvent(RecordOperation operation, RecordReference recordRef)
+	{
+		// Forward to all observers (if any):
+		for(StorageObserver observer : observers)
+			observer.storageEvent(operation, recordRef);
+	}
 	
-	public abstract void recordDeleted(Record record);
-	
-	public abstract void recordDeleted(RecordReference recordReference);
-	
-	public abstract void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords);
+	/**
+	 * TODO this can be problematic, Transmission client needs to know which records...
+	 * TODO remove
+	 */
+	public void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords) {};
 	
 	/**
 	 * Returns a new RecordStore instance
