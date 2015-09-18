@@ -33,8 +33,9 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
+ * TODO upwards error logging mechanism 
+ * 
  * @author mstevens
- *
  */
 public abstract class StorageClient
 {
@@ -54,7 +55,7 @@ public abstract class StorageClient
 	 * @return
 	 * @throws UnknownModelException
 	 */
-	public Model getModel(long modelID) throws UnknownModelException
+	public final Model getModel(long modelID) throws UnknownModelException
 	{
 		// First check reserved models:
 		for(Model model : getReservedModels())
@@ -111,6 +112,8 @@ public abstract class StorageClient
 	 * back-end (relational) database storage (i.e. through a RecordStore implementation).
 	 * 
 	 * May be overridden by subclasses to add additional exceptional cases.
+	 * 
+	 * TODO replace this and the overriding methods by a more elegant mechanism using the Schema.name (and perhaps making it plural)
 	 * 
 	 * @return
 	 */
