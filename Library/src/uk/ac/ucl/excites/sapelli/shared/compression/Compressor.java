@@ -32,11 +32,25 @@ import org.apache.commons.io.IOUtils;
  */
 public abstract class Compressor
 {
+	
+	static public final long UNKNOWN_UNCOMPRESSED_SIZE = -1;
 
 	public abstract CompressorFactory.Compression getMode();
 
-	public abstract OutputStream getOutputStream(OutputStream sink) throws IOException;
-
+	public final OutputStream getOutputStream(OutputStream sink) throws IOException
+	{
+		return getOutputStream(sink, UNKNOWN_UNCOMPRESSED_SIZE);
+	}
+	
+	public OutputStream getOutputStream(OutputStream sink, long uncompressedSizeBytes) throws IOException, IllegalArgumentException
+	{
+		if(uncompressedSizeBytes < UNKNOWN_UNCOMPRESSED_SIZE)
+			throw new IllegalArgumentException("Invalid uncompressed size (must be >= 0 when known or == -1 when unknown).");
+		return _getOutputStream(sink, uncompressedSizeBytes);
+	}
+	
+	protected abstract OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes) throws IOException;
+	
 	/**
 	 * @param data
 	 * @return
@@ -48,7 +62,7 @@ public abstract class Compressor
 		OutputStream out = null;
 		try
 		{
-			out = getOutputStream(byteArraySink);
+			out = getOutputStream(byteArraySink, data.length);
 			out.write(data);
 			out.flush();
 			out.close();
@@ -70,7 +84,7 @@ public abstract class Compressor
 			}
 		}
 	}
-
+	
 	public abstract InputStream getInputStream(InputStream source) throws IOException;
 
 	/**
@@ -113,6 +127,12 @@ public abstract class Compressor
 			{
 			}
 		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		return getMode().name() + Compressor.class.getSimpleName();
 	}
 
 	// public class CompressorCallable implements Callable<CompressorResult>

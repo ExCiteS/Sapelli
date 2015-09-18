@@ -30,9 +30,10 @@ import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compressio
 
 /**
  * LZMA2 compressor.
- * Uses the "XZ for Java" library (public domain).
+ * Uses the "XZ for Java" library by Lasse Collin (public domain).
  * 
  * @author mstevens
+ * 
  * @see <a href="http://en.wikipedia.org/wiki/LZMA#LZMA2_format">http://en.wikipedia.org/wiki/LZMA#LZMA2_format</a>
  * @see <a href="http://tukaani.org/xz/java.html">http://tukaani.org/xz/java.html</a>
  */
@@ -56,7 +57,7 @@ public class LZMA2Compressor extends Compressor
 	}
 	
 	@Override
-	public OutputStream getOutputStream(OutputStream sink)
+	protected OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes)
 	{
 		return options.getOutputStream(new WrappedOutputStream(sink));
 	}
