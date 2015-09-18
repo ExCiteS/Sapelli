@@ -35,6 +35,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -462,7 +463,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		STable table = getTable(recordRef.getReferencedSchema(), false); // no need to create the table in the db if it isn't there!
 		if(table.isInDB() && table.delete(recordRef))
-			client.recordDeleted(recordRef); // inform client
+			client.storageEvent(RecordOperation.Deleted, recordRef); // inform client
 	}
 	
 	/**

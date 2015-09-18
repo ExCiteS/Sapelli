@@ -31,10 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
@@ -204,44 +201,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		}
 	}
 
-	@Override
-	public void recordInserted(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void recordUpdated(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void recordDeleted(Record record)
-	{
-		// TODO Auto-generated method stub
-
-	}
-	
-	@Override
-	public void recordDeleted(RecordReference recordReference)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#recordsDeleted(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery, int)
-	 */
-	@Override
-	public void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.TransmissionClient#getEncryptionSettingsFor(Model)
 	 */
@@ -276,6 +235,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	@Override
 	public Set<Column<?>> getNonTransmittableColumns(Schema schema)
 	{
+		// TODO get rid of this
 		return Collections.<Column<?>>emptySet(); // TODO pass transmission & export related columns
 	}
 
