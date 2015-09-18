@@ -1,4 +1,4 @@
-/**
+/**'
  * Sapelli data collection platform: http://sapelli.org
  * 
  * Copyright 2012-2014 University College London - ExCiteS group
@@ -23,13 +23,17 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.StorageObserver;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 
 /**
@@ -51,6 +55,11 @@ public abstract class TransmissionClient extends StorageClient
 			return new TransmissionStore(TransmissionClient.this);
 		}
 	});
+	
+	public TransmissionClient()
+	{
+		new TransmissionStorageObserver(); // no need to hold a reference to it, the object will register itself as a StorageObserver
+	}
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
@@ -79,6 +88,8 @@ public abstract class TransmissionClient extends StorageClient
 			return "Received_Transmission_Parts";
 		if(schema == TransmissionStore.CORRESPONDENT_SCHEMA)
 			return "Correspondents";
+		if(schema == TransmissionStore.TRANSMITTABLE_RECORDS_SCHEMA)
+			return "TransmitableRecords";
 		return super.getTableName(schema);
 	}
 	
@@ -100,6 +111,8 @@ public abstract class TransmissionClient extends StorageClient
 		return null;
 	}
 	
+	public abstract List<Correspondent> getReceiversFor(Schema schema);
+	
 	/**
 	 * Returns columns from ther given schema that should not be transmitted.
 	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
@@ -108,5 +121,67 @@ public abstract class TransmissionClient extends StorageClient
 	 * @return
 	 */
 	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
+	
+	/**
+	 * Helper class to receive store event updates and let TransmissionStore update its "TransmitableRecords" table accordingly. 
+	 * 
+	 * @author mstevens
+	 */
+	private final class TransmissionStorageObserver implements StorageObserver, StoreUser
+	{
+		
+		private final TransmissionStore tStore;
+		
+		public TransmissionStorageObserver()
+		{
+			// Get TransmissionStore object:
+			TransmissionStore tStore = null;
+			try
+			{
+				tStore = transmissionStoreHandle.getStore(this);
+			}
+			catch(DBException e)
+			{
+				e.printStackTrace(System.err); // TODO proper upwards (to android) error logging
+			}
+			finally
+			{
+				this.tStore = tStore;
+			}
+			
+			// Register ourself as an observer to receive updates about storage events:
+			if(this.tStore != null)
+				addObserver(this);
+		}
+		
+		@Override
+		public void storageEvent(RecordOperation operation, RecordReference recordRef)
+		{
+			// TODO if(/*check if transmittable*/true)
+			
+			receiverLoop : for(Correspondent receiver : getReceiversFor(recordRef.getReferencedSchema()))
+			{
+				switch(operation)
+				{
+					case Inserted :
+					case Updated :
+						tStore.storeTransmittableRecord(receiver, recordRef, null); // will this wipe tosend rec's for same rec that already had a transmission?
+						break;
+					case Deleted :
+						tStore.deleteTransmittableRecord(recordRef); // record will be forgotten about for each receiver ...
+						break receiverLoop; // ... so we are done here
+					default :
+						throw new IllegalArgumentException("Unknown " + RecordOperation.class.getSimpleName());
+				}
+			}
+		}
+		
+		@Override
+		public void finalize()
+		{
+			transmissionStoreHandle.doneUsing(this);
+		}
+		
+	}
 
 }

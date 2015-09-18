@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
@@ -50,10 +51,12 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
@@ -181,6 +184,21 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 			schema.seal();
 		}
 	}
+	//	Transmittable Records schema:
+	static final public Schema TRANSMITTABLE_RECORDS_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmitableRecords");
+	//		Columns:
+	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_RECEIVER = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(CORRESPONDENT_SCHEMA, false));
+	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_SCHEMA = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(Model.META_SCHEMA, false));
+	static public final ByteArrayColumn TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ByteArrayColumn("PKValueBytes", false));
+	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION = new ForeignKeyColumn(SENT_TRANSMISSION_SCHEMA, true);
+	//		Set PK and seal:
+	static
+	{
+		TRANSMITTABLE_RECORDS_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(TRANSMITTABLE_RECORDS_RECEIVER, TRANSMITTABLE_RECORDS_COLUMN_SCHEMA, TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES));
+		TRANSMITTABLE_RECORDS_SCHEMA.seal();
+	}
+	//		ColumnPointer (helper):
+	static public final ColumnPointer TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer(TRANSMITTABLE_RECORDS_SCHEMA, Model.META_SCHEMA_NUMBER_COLUMN);
 	//	Seal the model:
 	static
 	{
@@ -221,40 +239,61 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	}
 	
 	/**
-	 * Note: this method is public because it is called from ProjectRecordStore
-	 * 
 	 * @param correspondent
 	 * @return
 	 */
-	public Record getCorrespondentRecord(Correspondent correspondent)
+	private Record getCorrespondentRecord(Correspondent correspondent)
 	{
 		return new CorrespondentRecordGenerator(correspondent).rec; 
 	}
 	
 	/**
+	 * 
+	 * 
 	 * @param correspondent
-	 * @return
-	 * @throws Exception
+	 * @return a RecordReference to the (now stored/updated) Correspondent Record
+	 * @throws DBException
 	 */
-	private RecordReference doStoreCorrespondent(Correspondent correspondent) throws Exception
+	private RecordReference doStoreCorrespondent(Correspondent correspondent) throws DBException
 	{
-		Record rec = getCorrespondentRecord(correspondent);
+		Record cRec = getCorrespondentRecord(correspondent);
 		
 		// Store the correspondent record:
-		recordStore.store(rec);
+		recordStore.store(cRec);
 		//	local ID should now be set in the record...
 		
 		// Check/set it on the object:
 		if(correspondent.isLocalIDSet()) // if the object already had a local transmissionID...
 		{	// then it should match the ID on the record, so let's verify:
-			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(rec).intValue())
+			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(cRec).intValue())
 				throw new IllegalStateException("Non-matching correspodent ID"); // this should never happen
 		}
 		else
 			// Set local transmissionID in object as on the record: 
-			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(rec).intValue());
+			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(cRec).intValue());
 		
-		return rec.getReference();
+		return cRec.getReference();
+	}
+	
+	/**
+	 * Note: this method is public because it is called from ProjectRecordStore
+	 * 
+	 * @param correspondent may be null (in which case this method just returns null as well)
+	 * @param storeIfNeeded whether to store the Correspondent if it isn't already
+	 * @param forceUpdate forces the Correspondent to be updated in the database
+	 * @return a RecordReference pointing to the Record representing the Correspondent in thr database, or null if it has never been stored (or is null itself)
+	 * @throws DBException
+	 */
+	public RecordReference getCorrespondentRecordReference(Correspondent correspondent, boolean storeIfNeeded, boolean forceUpdate) throws DBException
+	{
+		if(correspondent == null)
+			return null;
+		else if(correspondent.isLocalIDSet() && !forceUpdate)
+			return CORRESPONDENT_SCHEMA.createRecordReference(CORRESPONDENT_COLUMN_ID.convert(correspondent.getLocalID()));
+		else if(storeIfNeeded || forceUpdate)
+			return doStoreCorrespondent(correspondent);
+		else
+			return null;
 	}
 	
 	private Correspondent correspondentFromRecord(Record cRec)
@@ -407,9 +446,10 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 						
 			// Store part records:
 			ForeignKeyColumn tCol = transmission.received ? TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION : TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION;
+			RecordReference tRecRef = generator.tRec.getReference();
 			for(Record tPartRec : generator.tPartRecs)
 			{
-				tCol.storeValue(tPartRec, generator.tRec.getReference()); // set foreign key!
+				tCol.storeValue(tPartRec, tRecRef); // set foreign key!
 				recordStore.store(tPartRec);
 			}
 		}
@@ -453,12 +493,6 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 			(payloadHash != null ? new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash) : null),
 			// number of parts:
 			(numberOfParts != null ? new RuleConstraint(TRANSMISSION_COLUMN_NUMBER_OF_PARTS, Comparison.EQUAL, numberOfParts) : null));
-	}
-	
-	protected Transmission<?> retrieveTransmissionByQuery(SingleRecordQuery recordQuery)
-	{
-		// Query for record and convert to Transmission object:
-		return transmissionFromRecord(recordStore.retrieveRecord(recordQuery));
 	}
 	
 	/**
@@ -506,7 +540,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		TimeStamp lastResendReqSentAt =	received ? TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
 		
 		// Query for correspondent record:
-		Record cRec = recordStore.retrieveRecord(TRANSMISSION_COLUMN_CORRESPONDENT.retrieveValue(tRec).getRecordQuery());
+		Record cRec = recordStore.retrieveRecord(TRANSMISSION_COLUMN_CORRESPONDENT.retrieveValue(tRec));
 		SMSCorrespondent corr = (SMSCorrespondent) correspondentFromRecord(cRec);
 		
 		// Query for part records:		
@@ -560,7 +594,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	 */
 	public Transmission<?> retrieveTransmission(boolean received, int localID) throws Exception
 	{
-		return retrieveTransmissionByQuery(getTransmissionSchema(received).createRecordReference(localID).getRecordQuery());
+		return transmissionFromRecord(recordStore.retrieveRecord(getTransmissionSchema(received).createRecordReference(localID)));
 	}
 	
 	/**
@@ -605,7 +639,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	}
 
 	/**
-	 * Returns a list of recived but incomplete SMSTransmissions.
+	 * Returns a list of received but incomplete SMSTransmissions.
 	 * 
 	 * Note: this only deals with SMSTransmissions as an HTTPTransmission cannot (yet) be incomplete.
 	 * 
@@ -652,6 +686,144 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		}
 	}
 
+	/**
+	 * Registers that a Record, indicated by the given RecordReference, is transmittable to the given Correspondent,
+	 * and optionally that a transmission (attempt) will take or has taken place using the given Transmission object. 
+	 * 
+	 * @param correspondent
+	 * @param recordReference a RecordReference pointing to the Record which we are told is transmittable
+	 * @param transmission may be null, but if it isn't it must have been stored before
+	 */
+	public void storeTransmittableRecord(Correspondent correspondent, RecordReference recordReference, Transmission<?> transmission)
+	{
+		if(transmission != null && !transmission.isLocalIDSet())
+			throw new IllegalArgumentException("Transmission must have been stored before being associated with records to need sending or have been sent.");
+		try
+		{
+			recordStore.store(TRANSMITTABLE_RECORDS_SCHEMA.createRecord(
+				// Receiver column (first store/update the Correspondent if necessary):
+				getCorrespondentRecordReference(correspondent, true, false),
+				// Schema column (= Model ID + Schema#):
+				recordReference.getReferencedSchema().getMetaRecordReference(),
+				// PKValues column:
+				recordReference.toBytes(),
+				// Transmission column:
+				transmission != null ? getTransmissionSchema(false).createRecordReference(transmission.getLocalID()) : null));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err); // TODO
+		}
+	}
+	
+	/**
+	 * Removes all entries relating to the referenced Record from the TransmittableRecords table (possibly for multiple receivers). 
+	 * 
+	 * @param recordReference
+	 */
+	public void deleteTransmittableRecord(RecordReference recordReference)
+	{
+		try
+		{
+			recordStore.delete(new RecordsQuery(	TRANSMITTABLE_RECORDS_SCHEMA, 
+													// Schema column (= Model ID + Schema#):
+													recordReference.getReferencedSchema().getMetaRecordReference().getRecordQueryConstraint(),
+													// PKValueBytes column:
+													new EqualityConstraint(TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES, recordReference.toBytes())));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err); // TODO
+		}
+	}
+	
+	/**
+	 * Retrieves all records, with Schemata from the given Model, that are marked for transmission
+	 * to the given Correspondent and which are not (yet) associated with a Transmission.
+	 * 
+	 * @param correspondent
+	 * @param model
+	 * @return
+	 */
+	public List<Record> retrieveTransmittableRecordsWithoutTransmission(Correspondent correspondent, Model model)
+	{
+		return retrieveTransmittableRecords(correspondent, model, EqualityConstraint.IsNull(TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION));
+	}
+	
+	/**
+	 * Retrieves all records, with Schemata from the given Model, that are marked for transmission
+	 * to the given Correspondent and which are (already) associated with a Transmission. 
+	 * 
+	 * @param correspondent
+	 * @param model
+	 * @return
+	 */
+	public List<Record> retrieveTransmittableRecordsWithTransmission(Correspondent correspondent, Model model)
+	{
+		return retrieveTransmittableRecords(correspondent, model, EqualityConstraint.IsNotNull(TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION));
+	}
+	
+	/**
+	 * Retrieves all records that are marked for transmission and which are associated with the given Transmission
+	 * (and therefore intended for its receiver).
+	 * Note that the result should be the (bar order) as getting the records from the Transmission's RecordsPayload.
+	 * 
+	 * TODO will we really need this?
+	 * 
+	 * @param correspondent
+	 * @param model
+	 * @param transmission
+	 * @return
+	 */
+	public List<Record> retrieveTransmittableRecordsWithTransmission(Model model, Transmission<?> transmission)
+	{
+		return retrieveTransmittableRecords(transmission.getCorrespondent(), model, getTransmissionSchema(false).createRecordReference(transmission.getLocalID()).getRecordQueryConstraint());
+	}
+	
+	/**
+	 * @param correspondent
+	 * @param model
+	 * @param tranmissionConstraint may be null (when querying for ToSend records regardless of whether or not they are associated with a transmission)
+	 * @return
+	 */
+	private List<Record> retrieveTransmittableRecords(Correspondent correspondent, Model model, Constraint transmissionConstraint)
+	{
+		RecordReference cRecRef = null;
+		try
+		{
+			cRecRef = getCorrespondentRecordReference(correspondent, false, false);
+		}
+		catch(Exception ignore) {}
+		if(cRecRef == null) // this means it has never been stored so there can also be no ToSend records for it
+			return Collections.<Record> emptyList();
+		
+		// Query for ToSend records:
+		List<Record> toSendRecs = recordStore.retrieveRecords(
+			new RecordsQuery(	TRANSMITTABLE_RECORDS_SCHEMA,
+								Order.By(TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER),
+								cRecRef.getRecordQueryConstraint(),
+								model.getModelRecordReference().getRecordQueryConstraint(),
+								transmissionConstraint));
+		
+		// Query for the actual records being referred to:
+		List<Record> recs = new ArrayList<Record>(toSendRecs.size());
+		for(Record toSendRec : toSendRecs)
+		{
+			int schemaNumber = ((Long) TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER.retrieveValue(toSendRec)).intValue();
+			try
+			{
+				CollectionUtils.addIgnoreNull(recs, recordStore.retrieveRecord(model.getSchema(schemaNumber).createRecordReference(TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES.retrieveValue(toSendRec))));
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+			}
+		}
+		
+		// Return result:
+		return recs;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */

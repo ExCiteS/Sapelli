@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnNoException;
@@ -36,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 
@@ -235,7 +237,33 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	@Override
 	public List<Correspondent> getReceiversFor(final Schema schema)
 	{
-		return Collections.<Correspondent> emptyList(); // TODO
+		try
+		{
+			// Get project:
+			final Project project = getForm(schema).getProject(); // throws UnknownModelException
+			
+			// Get stores:
+			TransmissionStore tStore = transmissionStoreHandle.getStore(this);
+			ProjectStore pStore = projectStoreHandle.getStore(this);
+		
+			// Get schedule (currently we support only 1 per project):
+			SendingSchedule schedule = pStore.retrieveSendScheduleForProject(project, tStore);
+			
+			// Get receiving correspondent and return as list:
+			return schedule != null && schedule.getReceiver() != null /*just in case*/ ?
+				Collections.singletonList(schedule.getReceiver()) :
+				Collections.<Correspondent> emptyList();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err); // TODO log error
+			return Collections.<Correspondent> emptyList();
+		}	
+		finally
+		{
+			transmissionStoreHandle.doneUsing(this);
+			projectStoreHandle.doneUsing(this);
+		}
 	}
 
 	@Override

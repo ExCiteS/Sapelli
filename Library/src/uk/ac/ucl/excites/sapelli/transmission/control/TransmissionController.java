@@ -37,8 +37,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
@@ -142,8 +140,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	public void sendRecords(Model model, Correspondent receiver) throws Exception
 	{
-		// Query for unsent records:
-		List<Record> recsToSend = recordStore.retrieveRecords(new RecordsQuery(Source.From(model))); //TODO constraints!!
+		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
+		List<Record> recsToSend = transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model);
 		addLogLine("Records to send: " + recsToSend.size());
 		// while we still have records to send...
 		while(!recsToSend.isEmpty())

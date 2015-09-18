@@ -529,27 +529,21 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 			e.printStackTrace();
 		}
 	}
-	
-	private Record getSendScheduleRecord(SendingSchedule schedule, TransmissionStore transmissionStore)
-	{
-		Record record = SEND_RECORDS_SCHEDULE_SCHEMA.createRecord();
-		if(schedule.isIDSet())
-			SEND_RECORDS_SCHEDULE_COLUMN_ID.storeValue(record, schedule.getID());
-		SEND_RECORDS_SCHEDULE_COLUMN_PROJECT.storeValue(record, getProjectRecordReference(schedule.getProject()));
-		SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.storeValue(record, transmissionStore.getCorrespondentRecord(schedule.getReceiver()).getReference());
-		SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(record, schedule.getTransmitIntervalS());
-		SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.storeValue(record, schedule.isEncrypt());
-		SEND_RECORDS_SCHEDULE_COLUMN_ENABLED.storeValue(record, schedule.isEnabled());
-		return record;
-	}
-	
+
 	@Override
 	public void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore)
 	{
 		try
 		{
 			// Get record representation:
-			Record rec = getSendScheduleRecord(schedule, transmissionStore);
+			Record rec = SEND_RECORDS_SCHEDULE_SCHEMA.createRecord();
+			if(schedule.isIDSet())
+				SEND_RECORDS_SCHEDULE_COLUMN_ID.storeValue(rec, schedule.getID());
+			SEND_RECORDS_SCHEDULE_COLUMN_PROJECT.storeValue(rec, getProjectRecordReference(schedule.getProject()));
+			SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.storeValue(rec, transmissionStore.getCorrespondentRecordReference(schedule.getReceiver(), true, false));
+			SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(rec, schedule.getTransmitIntervalS());
+			SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.storeValue(rec, schedule.isEncrypt());
+			SEND_RECORDS_SCHEDULE_COLUMN_ENABLED.storeValue(rec, schedule.isEnabled());
 			
 			// Store/update the record in the db:
 			recordStore.store(rec);
