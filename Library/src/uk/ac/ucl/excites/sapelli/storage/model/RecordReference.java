@@ -155,6 +155,7 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	/**
 	 * Returns a {@link Constraint} that matches on the referenced record's primary key values.
 	 * 
+	 * @return a Constraint
 	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQueryConstraint()

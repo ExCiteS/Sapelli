@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 {
@@ -58,12 +59,18 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
+	 * 
+	 * @return a query that looks for this record
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public abstract SingleRecordQuery getRecordQuery() throws IllegalStateException;
+	public abstract SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException;
 
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
+	 * 
+	 * @return a Constraint
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public abstract Constraint getRecordQueryConstraint() throws IllegalStateException;
+	public abstract Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException;
 
 }

@@ -160,12 +160,12 @@ public class Record extends RecordValueSet<Schema>
 	 * Returns a {@link SingleRecordQuery} which can be used to find this record in a RecordStore or Collection, by matching the primary key (and no other columns!).
 	 * 
 	 * @return a query that looks for this record
-	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQuery()
 	 */
 	@Override
-	public SingleRecordQuery getRecordQuery() throws IllegalStateException
+	public SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException
 	{
 		return new FirstRecordQuery(Source.From(columnSet), Order.UNDEFINED, getRecordQueryConstraint());
 	}
@@ -173,16 +173,16 @@ public class Record extends RecordValueSet<Schema>
 	/**
 	 * Returns a {@link Constraint} that matches on the Record's primary key values.
 	 * 
-	 * @return
-	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 * @return a Constraint
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQueryConstraint()
 	 */
 	@Override
-	public Constraint getRecordQueryConstraint() throws IllegalStateException
+	public Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException
 	{
 		if(!isFilled(columnSet.getPrimaryKey()))
-			throw new IllegalStateException("All values of the key must be set before a record selecting contraint/query can be created!");
+			throw new IncompletePrimaryKeyException("All values of the key must be set before a record selecting contraint/query can be created!");
 		
 		// Match for key parts:
 		AndConstraint constraints = new AndConstraint();
