@@ -221,7 +221,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public List<String> getByPassableFieldIDs(Form form)
 	{
-		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form).getRecordQuery());
+		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form));
 		if(fsiRec == null)
 			return null;
 		else
@@ -502,7 +502,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		Record hfkRecord = null;
 		try
 		{
-			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
+			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship));
 			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
 		}
 		catch(Exception e)
@@ -593,7 +593,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		if(sendScheduleRecord == null)
 			return null;
-		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(new FirstRecordQuery(TransmissionStore.CORRESPONDENT_SCHEMA, SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQueryConstraint()));
+		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQuery());
 		if(receiver == null)
 			throw new DBException("Could not find receiver");
 		return new SendingSchedule(	project,

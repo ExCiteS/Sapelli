@@ -407,6 +407,17 @@ public abstract class RecordStore extends Store
 	public abstract Record retrieveRecord(SingleRecordQuery query);
 
 	/**
+	 * Retrieve a single record pointed to by the given RecordReference.
+	 * 
+	 * @param recordReference
+	 * @return the resulting record or {@code null} if no matching record was found
+	 */
+	public Record retrieveRecord(RecordReference recordReference)
+	{
+		return retrieveRecord(recordReference.getRecordQuery());
+	}
+	
+	/**
 	 * Deletes a single record.
 	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
 	 * However, if an error occurs any open transaction will be rolled back!
