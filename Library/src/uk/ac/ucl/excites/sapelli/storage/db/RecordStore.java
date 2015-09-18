@@ -326,13 +326,13 @@ public abstract class RecordStore extends Store
 		r = 0;
 		for(Record record : records)
 		{
-			if(insert[r] == null)
-				return; // record was unchanged
-			else if(insert[r])
+			Boolean inserted = insert[r++];
+			if(inserted == null)
+				continue; // record was unchanged
+			else if(inserted)
 				client.storageEvent(RecordOperation.Inserted, record.getReference());
 			else
 				client.storageEvent(RecordOperation.Updated, record.getReference());
-			r++;
 		}
 	}
 	
