@@ -26,6 +26,7 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
@@ -421,7 +422,7 @@ public class Record implements Serializable
 			out = new BitWrapOutputStream(rawOut);
 				
 			// Write record:
-			this.writeToBitStream(out, false, Collections.<Column<?>> emptySet());
+			this.writeToBitStream(out, schema.getColumns(false));
 			
 			// Flush & close the stream and get bytes:
 			out.flush();
@@ -453,10 +454,35 @@ public class Record implements Serializable
 	 */
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
 	{
+		writeToBitStream(bitStream, schema.getColumns(includeVirtual), skipColumns);
+	}
+	
+	/**
+	 * Write record values of the given columns (in given order) to the given bitStream
+	 * 
+	 * @param bitStream
+	 * @param columns columns to include the values of
+	 * @throws IOException
+	 */
+	public void writeToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns) throws IOException
+	{
+		writeToBitStream(bitStream, columns, Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Write record values of the given columns (possibly including virtual ones and except the skipped ones) to the given bitStream
+	 * 
+	 * @param bitStream
+	 * @param columns columns to include the values of
+	 * @param skipColumns columns no to include the values of
+	 * @throws IOException
+	 */
+	public void writeToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns/*, boolean includeVirtual*/, Set<? extends Column<?>> skipColumns) throws IOException
+	{
 		try
 		{	//write fields:
-			for(Column<?> c : schema.getColumns(includeVirtual))
-				if(!skipColumns.contains(c))
+			for(Column<?> c : columns)
+				if(/*(includeVirtual || !(c instanceof VirtualColumn)) && */!skipColumns.contains(c))
 					c.retrieveAndWriteValue(this, bitStream);
 		}
 		catch(Exception e)
