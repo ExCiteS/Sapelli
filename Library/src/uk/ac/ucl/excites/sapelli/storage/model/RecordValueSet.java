@@ -24,6 +24,13 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
+/**
+ * Abstract superclass for Record and RecordReference
+ * 
+ * @author mstevens
+ *
+ * @param <CS>
+ */
 public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 {
 

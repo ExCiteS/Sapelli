@@ -28,11 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * An ordered set of columns, possibly with virtual versions
+ * An ordered set of {@link Column}s, possibly with virtual versions.
+ * Super class for {@link Schema}, {@link Index}, etc.
  * 
  * @author mstevens
  */
@@ -77,7 +79,7 @@ public class ColumnSet implements Serializable
 	private transient List<Column<?>> allColumns;
 	
 	/**
-	 * Add a series of new, non-virtual columns to the schema
+	 * Add a series of new, non-virtual columns to the ColumnSet
 	 * 
 	 * @param columns the columns to add, cannot include {@link VirtualColumn}s
 	 * @throws DuplicateColumnException in case of a name-clash
@@ -90,7 +92,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Add a new, non-virtual column to the schema
+	 * Add a new, non-virtual column to the ColumnSet
 	 * 
 	 * @param column the column to add, cannot be a {@link VirtualColumn}
 	 * @return the added column
@@ -135,7 +137,7 @@ public class ColumnSet implements Serializable
 	}
 
 	/**
-	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
+	 * Seals the ColumnSet. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
 	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
 	 */
 	public void seal()
@@ -144,7 +146,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * @return whether or not this schema is sealed
+	 * @return whether or not this ColumnSet is sealed
 	 */
 	public boolean isSealed()
 	{

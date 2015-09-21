@@ -35,11 +35,15 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
- * Abstract superclass for Record, RecordReference, Location, etc.
+ * An ordered set of values, each corresponding to a (non-virtual) {@link Column} of a {@link ColumnSet}.
+ * Abstract superclass for {@link Record}, {@link RecordReference}, {@link Location}, etc.
  * 
  * @author mstevens
+ *
+ * @param <CS> the {@link ColumnSet} type
  */
 public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 {
@@ -56,7 +60,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	protected Object[] values;
 	
 	/**
-	 * Creates a new "empty" record of the given schema
+	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet
 	 * 
 	 * @param columnSet
 	 */
@@ -71,10 +75,10 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Creates an initialised record
+	 * Creates an initialised ValueSet
 	 * 
 	 * @param columnSet
-	 * @param values to initialise record, number of values must match number of (real) columns in the schema and each value must be valid for the corresponding column
+	 * @param values to initialise the ValueSet with, number of values must match number of (real) columns in the ColumnSet and each value must be valid for the corresponding Column
 	 */
 	protected ValueSet(CS columnSet, Object... values)
 	{
@@ -96,10 +100,10 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Creates an initialised record
+	 * Creates an initialised ValueSet
 	 * 
 	 * @param columnSet
-	 * @param serialisedValues String to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
+	 * @param serialisedValues String to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
 	 * @throws Exception 
 	 */
 	protected ValueSet(CS columnSet, String serialisedValues) throws Exception
@@ -109,10 +113,10 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 
 	/**
-	 * Creates an initialised record
+	 * Creates an initialised ValueSet
 	 * 
 	 * @param columnSet
-	 * @param serialisedValues byte array to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
+	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
 	 * @throws NullPointerException when schema is null
 	 * @throws IOException when reading serialisedValues fails
 	 */
@@ -199,7 +203,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 
 	/**
-	 * Checks whether all non-optional columns have been assigned a (non-null) value in this record.
+	 * Checks whether all non-optional columns have been assigned a (non-null) value in this ValueSet.
 	 * 
 	 * @return whether of the all non-optional columns are filled
 	 */
@@ -212,13 +216,13 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether all non-optional columns from the given schema have been assigned a (non-null) value in this record.
+	 * Checks whether all non-optional columns from the given schema have been assigned a (non-null) value in this ValueSet.
 	 * The given schema must be a subset of the record's schema or the record's schema itself.
 	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
 	 * 
 	 * @param columnSet (subset of) the record's schema
 	 * @return whether of the all non-optional columns are filled
-	 * @throws IllegalArgumentException when the given schema contains a column(s) which is not part of the record's schema
+	 * @throws IllegalArgumentException when the given schema contains a column(s) which is not part of the ColumnSet
 	 */
 	protected boolean isFilled(ColumnSet columnSet) throws IllegalStateException
 	{
@@ -244,7 +248,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Serialise the Record to a String, excluding virtual columns
+	 * Serialise the ValueSet to a String, excluding virtual columns
 	 * 
 	 * @return
 	 */
@@ -254,7 +258,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Serialise the Record to a String
+	 * Serialise the ValueSet to a String
 	 * 
 	 * @param includeVirtual
 	 * @param skipColumns
@@ -282,7 +286,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Deserialise the values of a Record from a String, not expecting virual columns
+	 * Deserialise the values of a ValueSet from a String, not expecting virtual columns
 	 * 
 	 * @param serialisedRecord
 	 * @throws Exception
@@ -294,7 +298,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Deserialise the values of a Record from a String
+	 * Deserialise the values of a ValueSet from a String
 	 * 
 	 * @param serialisedRecord
 	 * @param includeVirtual
@@ -320,7 +324,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Serialise the Record to a byte array, excluding virtual columns
+	 * Serialise the ValueSet to a byte array, excluding virtual columns
 	 * 
 	 * @return
 	 * @throws IOException
@@ -358,7 +362,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Write record values to the given bitStream
+	 * Write ValueSet values to the given bitStream
 	 * 
 	 * @param bitStream
 	 * @param includeVirtual whether or not to include the values corresponding to virtual columns
@@ -371,7 +375,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Write record values of the given columns (in given order) to the given bitStream
+	 * Write ValueSet values of the given columns (in given order) to the given bitStream
 	 * 
 	 * @param bitStream
 	 * @param columns columns to include the values of
@@ -383,7 +387,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Write record values of the given columns (possibly including virtual ones and except the skipped ones) to the given bitStream
+	 * Write ValueSet values of the given columns (possibly including virtual ones and except the skipped ones) to the given bitStream
 	 * 
 	 * @param bitStream
 	 * @param columns columns to include the values of
@@ -405,7 +409,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Deserialise the Record from a byte array, excluding virtual columns
+	 * Deserialise the ValueSet from a byte array, excluding virtual columns
 	 * 
 	 * @param bytes
 	 * @return the record itself
@@ -440,7 +444,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Read record values from the given bitStream
+	 * Read ValueSet values from the given bitStream
 	 * 
 	 * @param bitStream
 	 * @param includeVirtual whether or not to expect, and if so skip(!), the values corresponding to virtual columns
@@ -467,7 +471,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Gets the size of this record in number of bits
+	 * Gets the size of this ValueSet in number of bits
 	 * 
 	 * @return
 	 */
@@ -543,7 +547,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Compare the values of this record with those of another.
+	 * Compare the values of this ValueSet with those of another.
 	 * 
 	 * @param other
 	 * @return
@@ -554,7 +558,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Compare the values of this record with those of another.
+	 * Compare the values of this ValueSet with those of another.
 	 * 
 	 * @param other
 	 * @param skipColumns ignore these columns
@@ -566,10 +570,10 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Compare the values of this record with those of another.
-	 * If {@code asStoredBinary} is {@code true} the records must be of the same schema, otherwise an exception will be thrown.
+	 * Compare the values of this ValueSet with those of another.
+	 * If {@code asStoredBinary} is {@code true} the ValueSets must be of the same schema, otherwise an exception will be thrown.
 	 * 
-	 * @param other
+	 * @param other another ValueSet
 	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
@@ -579,10 +583,10 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 
 	/**
-	 * Compare the values of this record with those of another.
+	 * Compare the values of this ValueSet with those of another.
 	 * If {@code asStoredBinary} is {@code true} the records must be of the same schema, otherwise an exception will be thrown.
 	 * 
-	 * @param other
+	 * @param other another ValueSet
 	 * @param skipColumns ignore these columns
 	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
@@ -596,10 +600,10 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Compare the values of this record with those of another, across the given collection of columns.
+	 * Compare the values of this ValueSet with those of another, across the given collection of columns.
 	 * This and the other record as assumed to have schemata that are the same or at least each share the given columns (or equivalents).
 	 * 
-	 * @param other
+	 * @param other another ValueSet
 	 * @param columns the columns that will be checked, unless they appear in skipColumns
 	 * @param skipColumns
 	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
