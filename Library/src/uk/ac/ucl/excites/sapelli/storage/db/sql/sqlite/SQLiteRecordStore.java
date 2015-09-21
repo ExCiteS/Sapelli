@@ -42,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -320,10 +321,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
 		 */
 		@Override
-		public synchronized boolean isRecordInDB(Record record) throws DBException
+		public synchronized boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
 		{
 			// Check if table itself exists in db:
 			if(!isInDB())
@@ -331,7 +332,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			
 			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
 			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
-			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(record))
+			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(recordOrReference))
 				return false;
 			
 			// Perform actual check by querying...
@@ -344,7 +345,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			else
 				existsStatement.clearAllBindings();
 			//	Bind parameters:
-			existsStatement.retrieveAndBindAll(record);
+			existsStatement.retrieveAndBindAll(recordOrReference);
 			//	Execute:
 			return existsStatement.executeLongQuery() != null;
 		}
@@ -412,10 +413,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
 		 */
 		@Override
-		public synchronized boolean delete(Record record) throws DBException
+		public synchronized boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -426,7 +427,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				deleteStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			deleteStatement.retrieveAndBindAll(record);
+			deleteStatement.retrieveAndBindAll(recordOrReference);
 			
 			// Execute:
 			return deleteStatement.executeDelete() == 1;
@@ -552,12 +553,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		/**
 		 * @param statement
 		 * @param paramIdx
-		 * @param record
+		 * @param recordOrReference
 		 * @throws DBException
 		 */
-		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, Record record) throws DBException
+		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, RecordValueSet<?> recordOrReference) throws DBException
 		{
-			bind(statement, paramIdx, retrieve(record));
+			bind(statement, paramIdx, retrieve(recordOrReference));
 		}
 		
 		/**

@@ -44,6 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
@@ -754,21 +755,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * Checks if the given {@link Record} instance already exists in the database table.
-		 * Also works for recordReferences to records of this table's schema!
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param record
+		 * @param recordOrReference
 		 * @return
 		 * @throws NullPointerException
 		 * @throws DBException
 		 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 		 */
-		public boolean isRecordInDB(Record record) throws DBException, IllegalStateException
+		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
 		{
 			return	isInDB() &&
-					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(record)) ? 
-						select(record.getRecordQuery()) != null :
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(recordOrReference)) ? 
+						select(recordOrReference.getRecordQuery()) != null :
 						false;
 		}
 		
@@ -820,20 +820,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Delete existing record (identified by a Record or RecordReference) in database table.
+		 * Delete existing record (given as a Record or RecordReference) in database table.
 		 * Assumes the table exists in the database!
-		 * Also works for recordReferences to records of this table's schema!
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param record a {@link Record} or {@link RecordReference} instance
+		 * @param recordOrReference a {@link RecordValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
 		 * @return whether the record was really deleted
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public boolean delete(Record record) throws DBException
+		public boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			return executeSQLReturnAffectedRows(new RecordDeleteHelper((STable) this, record).getQuery()) == 1;
+			return executeSQLReturnAffectedRows(new RecordDeleteHelper((STable) this, recordOrReference).getQuery()) == 1;
 		}
 		
 		/**
@@ -1055,13 +1054,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param record
+		 * @param recordOrReference
 		 * @param quotedIfNeeded
 		 * @return
 		 */
-		public String retrieveAsLiteral(Record record, boolean quotedIfNeeded)
+		public String retrieveAsLiteral(RecordValueSet<?> recordOrReference, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(retrieve(record), quotedIfNeeded);
+			return sqlToLiteral(retrieve(recordOrReference), quotedIfNeeded);
 		}
 		
 		/**
@@ -1069,9 +1068,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		public SQLType retrieve(Record record)
+		public SQLType retrieve(RecordValueSet<?> recordOrReference)
 		{
-			SapType value = (SapType) sourceColumnPointer.retrieveValue(record);
+			SapType value = (SapType) sourceColumnPointer.retrieveValue(recordOrReference);
 			return value != null ? mapping.toSQLType(value) : null;
 		}
 		
@@ -1082,7 +1081,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void store(Record record, SQLType value)
 		{
 			if(value != null)
-				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getRecord(record, true), mapping.toSapelliType(value));
+				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(record, true), mapping.toSapelliType(value));
 		}
 		
 		/**
@@ -1600,9 +1599,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param a record instance (when the statement is not parameterised) or null (when it is parameterised)
+		 * @param a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
 		 */
-		protected void appendWhereClause(Record record)
+		protected void appendWhereClause(RecordValueSet<?> recordOrReference)
 		{
 			bldr.append("WHERE");
 			if(keyPartSqlCols.size() > 1)
@@ -1621,7 +1620,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					addParameterColumn(keyPartSqlCol);
 				}
 				else
-					bldr.append(keyPartSqlCol.retrieveAsLiteral(record, true));
+					bldr.append(keyPartSqlCol.retrieveAsLiteral(recordOrReference, true));
 				bldr.commitTransaction();
 			}
 			if(keyPartSqlCols.size() > 1)
@@ -1709,9 +1708,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 * @param record a {@link Record} or {@link RecordReference} instance
+		 * @param recordOrReference a {@link RecordValueSet} instance, either the {@link Record} itself or a {@link RecordReference} pointing to it
 		 */
-		public RecordDeleteHelper(STable table, Record record)
+		public RecordDeleteHelper(STable table, RecordValueSet<?> recordOrReference)
 		{
 			// Initialise
 			super(table);
@@ -1720,7 +1719,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("DELETE FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
-			appendWhereClause(record);
+			appendWhereClause(recordOrReference);
 			bldr.append(";", false);
 		}
 		

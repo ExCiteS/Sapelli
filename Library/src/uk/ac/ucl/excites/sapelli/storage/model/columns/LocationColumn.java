@@ -53,7 +53,7 @@ public class LocationColumn extends RecordColumn<Location>
 	 */
 	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		super(name, Location.SCHEMA, optional);
+		super(name, Location.COLUMN_SET, optional);
 		// "Skip columns": skip the things we don't want to store binary:
 		if(!storeAltitude)
 			addSkipColumn(Location.COLUMN_ALTITUDE);

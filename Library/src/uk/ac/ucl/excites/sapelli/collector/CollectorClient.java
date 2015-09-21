@@ -157,8 +157,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	public Form getForm(Schema schema) throws UnknownModelException
 	{
-		if(schema.isInternal())
-			throw new IllegalArgumentException("Internal schema cannot be associated with a Form");
 		Project project = getProject(schema.getModelID());
 		if(project != null)
 			for(Form f : project.getForms())

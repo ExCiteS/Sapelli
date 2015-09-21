@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -225,8 +226,10 @@ public abstract class RecordStore extends Store
 	 */
 	public boolean isStorable(Record record)
 	{
-		return 	record != null &&					// obviously it makes no sense to store null records
-				!record.getSchema().isInternal();	// records of "internal" schemata cannot be stored directly
+		return 	// obviously it makes no sense to store null records:
+				record != null &&
+				// meta model or schema records cannot be stored directly:
+				record.getSchema().getModel() != Model.META_MODEL;
 	}
 	
 	/**

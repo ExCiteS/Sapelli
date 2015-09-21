@@ -34,7 +34,7 @@ public class OrientationColumn extends RecordColumn<Orientation>
 	
 	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
-		super(name, Orientation.SCHEMA, optional);
+		super(name, Orientation.COLUMN_SET, optional);
 		if(!storeAzimuth)
 			addSkipColumn(Orientation.COLUMN_AZIMUTH);
 		if(!storePitch)

@@ -140,10 +140,8 @@ public abstract class StorageClient implements StorageObserver
 			return "Models";
 		if(schema == Model.META_SCHEMA)
 			return "Schemata";
-		if(!schema.isInternal())
-			return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
 		else
-			return schema.internal.name(); // unlikely to ever used as a table name because records of "internal" schemata cannot be stored directly by RecordStore implementations
+			return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
 	}
 	
 	/**

@@ -77,7 +77,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 	
 	@Override
-	public void storeValue(Record record, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public void storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("VirtualColumns are read-only!");
 	}
@@ -85,13 +85,13 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	/**
 	 * Overridden to retrieve value from sourceColum and convert it.
 	 *  
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
 	 */
 	@Override
-	public TT retrieveValue(Record record)
+	public TT retrieveValue(ValueSet<?> valueSet)
 	{
 		// Retrieve value from sourceColumn:
-		ST sourceValue = sourceColumn.retrieveValue(record);
+		ST sourceValue = sourceColumn.retrieveValue(valueSet);
 		if(sourceValue == null)
 			return null;
 		// Return converted value:

@@ -35,6 +35,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
@@ -128,7 +129,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 		// Record columns:
 		else if(currentRecord != null)
 		{
-			Record record = currentRecord;
+			ValueSet<?> valueSet = currentRecord;
 			for(String colName : qName.split("\\" + RecordColumn.QUALIFIED_NAME_SEPARATOR))
 			{
 				// Deal with previous (record)column:
@@ -136,15 +137,15 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 				{
 					RecordColumn<?> recCol = ((RecordColumn<?>) columnStack.peek());
 					// Create subrecord instance:
-					if(!recCol.isValueSet(record))
-						recCol.storeObject(record, recCol.getNewRecord());
+					if(!recCol.isValueSet(valueSet))
+						recCol.storeObject(valueSet, recCol.getNewRecord());
 					// Set subrecord as record:
-					record = recCol.retrieveValue(record);
+					valueSet = recCol.retrieveValue(valueSet);
 				}
 				// Deal with current column:
-				Column<?> col = record.getSchema().getColumn(colName, true);
+				Column<?> col = valueSet.getColumnSet().getColumn(colName, true);
 				if(col == null)
-					addWarning("Skipping column " + colName + " because it does not exist in " + record.getSchema().toString());
+					addWarning("Skipping column " + colName + " because it does not exist in " + valueSet.getColumnSet().toString());
 				else if(col instanceof VirtualColumn)
 				{
 					//addWarning("Skipping virtual column " + colName);
@@ -170,10 +171,10 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 			Column<?> column = columnStack.peek();
 			
 			// Get the (sub)record corresponding to the column:
-			Record record = currentRecord;
+			ValueSet<?> valueSet = currentRecord;
 			for(Column<?> col : columnStack)
 				if(col instanceof RecordColumn && col != column)
-					record = ((RecordColumn<?>) col).retrieveValue(record);
+					valueSet = ((RecordColumn<?>) col).retrieveValue(valueSet);
 			
 			// Get string representation of column value:
 			String valueString = new String(ch, start, length);
@@ -191,7 +192,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 			{
 				if(v1xExport && column instanceof LocationColumn)
 					// Backwards compatibility with old location formats:
-					column.storeObject(record, Location.parseV1X(valueString));
+					column.storeObject(valueSet, Location.parseV1X(valueString));
 				else
 				{
 					if(column instanceof StringColumn)
@@ -205,9 +206,9 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 						 * check. This is to deal with virtual columns with a StringColumn as target. Here we
 						 * don't need to bother with that because virtual columns are always skipped upon
 						 * importing (see above). */
-						column.storeObject(record, valueString);
+						column.storeObject(valueSet, valueString);
 					else
-						column.parseAndStoreValue(record, valueString);
+						column.parseAndStoreValue(valueSet, valueString);
 				}
 			}
 			catch(Exception e)

@@ -31,7 +31,6 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -73,14 +72,16 @@ public class Model implements Serializable
 	 */
 	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // [0, 15]
 	
-	
 	/**
 	 * Maximum number of schemata in a model
 	 */
 	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
 	
+	// Meta-Model:
+	static public final Model META_MODEL = new Model(-1, "MetaModel", true);
+	
 	// Model Schema: a "meta" schema for records that describe a Model
-	static public final Schema MODEL_SCHEMA = new Schema(InternalKind.Model, InternalKind.Model.name() + "s");
+	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = new IntegerColumn("ID", false, Model.MODEL_ID_FIELD);
 	static private final StringColumn MODEL_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
 	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("compressedSerialisedObject", false);
@@ -96,7 +97,7 @@ public class Model implements Serializable
 	}
 	
 	// Meta Schema: a Schema to describe other Schema's
-	static public final Schema META_SCHEMA = new Schema(InternalKind.MetaSchema, "Schemata");
+	static public final Schema META_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName() + "ta");
 	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn(Model.MODEL_SCHEMA, false);
 	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
 	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
@@ -111,10 +112,16 @@ public class Model implements Serializable
 	
 	private static Compression OBJECT_COMPRESSION = Compression.DEFLATE;
 	
+	// Seal the Meta-Model:
+	static
+	{
+		META_MODEL.seal();
+	}
+	
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
 	 * 
-	 * @param schema
+	 * @param columnSet
 	 * @return
 	 * @throws IOException
 	 */
@@ -172,7 +179,7 @@ public class Model implements Serializable
 		
 		return model;
 	}
-
+	
 	// Dynamics-----------------------------------------------------------
 	public final long id;
 	private final String name;
@@ -187,7 +194,17 @@ public class Model implements Serializable
 	 */
 	public Model(long id, String name)
 	{
-		if(!MODEL_ID_FIELD.inEffectiveRange(id))
+		this(id, name, false);
+	}
+	
+	/**
+	 * Creates a new model
+	 * 
+	 * @param name
+	 */
+	private Model(long id, String name, boolean meta)
+	{
+		if(!meta && !MODEL_ID_FIELD.inEffectiveRange(id))
 			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
 		if(name == null || name.isEmpty())
 			throw new NullPointerException("Please provide a model name");

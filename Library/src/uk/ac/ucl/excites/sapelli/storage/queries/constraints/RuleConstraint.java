@@ -22,6 +22,7 @@ import java.text.ParseException;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
@@ -253,12 +254,12 @@ public class RuleConstraint extends Constraint
 		// TODO use ColumnPointer#getComparator()?
 		// Get (sub)record(s) and the rhs value:
 		Object theRhsValue = rhsValue;
-		Record lhsRecord = lhsColumnPointer.getRecord(record, false);
+		ValueSet<?> lhsRecord = lhsColumnPointer.getValueSet(record, false);
 		if(lhsRecord == null)
 			return false;
 		if(isRHSColumn())
 		{
-			Record rhsRecord = rhsColumnPointer.getRecord(record, false);
+			ValueSet<?> rhsRecord = rhsColumnPointer.getValueSet(record, false);
 			if(rhsRecord == null)
 				return false;
 			theRhsValue = getRHSCompareColumn().retrieveValue(rhsRecord); // get rhsValue for rhsColumn

@@ -26,7 +26,7 @@ import java.util.Comparator;
  * @param <T>
  * @author mstevens
  */
-public abstract class ComparableColumn<T> extends Column<T> implements Comparator<Record>
+public abstract class ComparableColumn<T> extends Column<T> implements Comparator<ValueSet<?>>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -40,7 +40,7 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
 	 */
 	@Override
-	public int compare(Record lhs, Record rhs)
+	public int compare(ValueSet<?> lhs, ValueSet<?> rhs)
 	{
 		return lhs == null ?
 				(rhs == null ? 0 : Integer.MIN_VALUE) :
@@ -48,29 +48,29 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	}
 	
 	/**
-	 * Alias for {@link #compare(Record, Record)}
+	 * Alias for {@link #compare(ValueSet<?>, ValueSet<?>)}
 	 * 
-	 * @param record1
-	 * @param record2
+	 * @param vs1
+	 * @param vs2
 	 * @return comparison result
 	 */
-	public int retrieveAndCompareValues(Record record1, Record record2)
+	public int retrieveAndCompareValues(ValueSet<?> vs1, ValueSet<?> vs2)
 	{
-		return compare(record1, record2);
+		return compare(vs1, vs2);
 	}
 	
 	/**
-	 * @param record (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
 	 * @param value (may be null if column is optional)
 	 * @return comparison result
 	 */
-	public int retrieveAndCompareToValue(Record record, T value)
+	public int retrieveAndCompareToValue(ValueSet<?> vs, T value)
 	{
-		return compareValues(record != null ? retrieveValue(record) : null, value);
+		return compareValues(vs != null ? retrieveValue(vs) : null, value);
 	}
 	
 	/**
-	 * @param record (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
 	 * @param value (as object, may be null if column is optional)
 	 * @return comparison result
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
@@ -78,9 +78,9 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 */
 	@SuppressWarnings("unchecked")
-	public int retrieveAndCompareToObject(Record record, Object value) throws ClassCastException
+	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
 	{
-		return compareValues(record != null ? retrieveValue(record) : null, (T) convert(value));
+		return compareValues(vs != null ? retrieveValue(vs) : null, (T) convert(value));
 	}
 	
 	/**
