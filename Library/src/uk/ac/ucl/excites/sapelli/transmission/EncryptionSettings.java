@@ -49,7 +49,7 @@ public class EncryptionSettings
 	}
 	
 	/**
-	 * Copy contructor
+	 * Copy constructor
 	 * 
 	 * @param another
 	 */
