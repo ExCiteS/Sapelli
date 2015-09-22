@@ -232,9 +232,7 @@ public class DB4ORecordStore extends RecordStore
 		for(Record r : resultSet)
 		{
 			db4o.activate(r, ACTIVATION_DEPTH);
-			// Filter out records of internal schemas:
-			if(!r.getSchema().isInternal())
-				result.add(r);
+			result.add(r);
 		}
 		return result;
 	}
@@ -254,9 +252,7 @@ public class DB4ORecordStore extends RecordStore
 
 			public boolean match(Record record)
 			{
-				return	// filter out records of internal schemas:
-						!record.getSchema().isInternal() &&
-						// Schema check, but without full comparison, because that is expensive AND requires the record(/schema) object to be activated to a deeper level than it is at this stage:
+				return	// Schema check, but without full comparison, because that is expensive AND requires the record(/schema) object to be activated to a deeper level than it is at this stage:
 						source.isValid(record, false);
 			}
 		});
