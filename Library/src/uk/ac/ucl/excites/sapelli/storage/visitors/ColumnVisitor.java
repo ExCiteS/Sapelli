@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -35,8 +35,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
+ * TODO document: mainly to explain how traversal of valuesetcolumns (and subclasses) works
+ * 
  * @author mstevens
- *
  */
 public interface ColumnVisitor
 {
@@ -69,9 +70,9 @@ public interface ColumnVisitor
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
-	public void enter(RecordColumn<?> recordCol);
+	public void enter(ValueSetColumn<?> recordCol);
 	
-	public void leave(RecordColumn<?> recordCol);
+	public void leave(ValueSetColumn<?> recordCol);
 	
 	public boolean allowLocationSelfTraversal();
 	

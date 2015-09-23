@@ -18,16 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * A column for {@link Location}s, implemented as a {@link RecordColumn} subclass.
+ * A column for {@link Location}s, implemented as a {@link ValueSetColumn} subclass.
  * 
  * @author mstevens
  */
-public class LocationColumn extends RecordColumn<Location>
+public class LocationColumn extends ValueSetColumn<Location>
 {
 
 	//Static---------------------------------------------------------

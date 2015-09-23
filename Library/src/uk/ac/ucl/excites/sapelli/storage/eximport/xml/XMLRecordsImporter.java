@@ -33,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
@@ -130,12 +130,12 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 		else if(currentRecord != null)
 		{
 			ValueSet<?> valueSet = currentRecord;
-			for(String colName : qName.split("\\" + RecordColumn.QUALIFIED_NAME_SEPARATOR))
+			for(String colName : qName.split("\\" + ValueSetColumn.QUALIFIED_NAME_SEPARATOR))
 			{
 				// Deal with previous (record)column:
 				if(!columnStack.isEmpty())
 				{
-					RecordColumn<?> recCol = ((RecordColumn<?>) columnStack.peek());
+					ValueSetColumn<?> recCol = ((ValueSetColumn<?>) columnStack.peek());
 					// Create subrecord instance:
 					if(!recCol.isValueSet(valueSet))
 						recCol.storeObject(valueSet, recCol.getNewRecord());
@@ -173,8 +173,8 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 			// Get the (sub)record corresponding to the column:
 			ValueSet<?> valueSet = currentRecord;
 			for(Column<?> col : columnStack)
-				if(col instanceof RecordColumn && col != column)
-					valueSet = ((RecordColumn<?>) col).retrieveValue(valueSet);
+				if(col instanceof ValueSetColumn && col != column)
+					valueSet = ((ValueSetColumn<?>) col).retrieveValue(valueSet);
 			
 			// Get string representation of column value:
 			String valueString = new String(ch, start, length);
@@ -230,7 +230,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 		// Record columns:
 		else if(currentRecord != null && !columnStack.isEmpty())
 		{
-			for(int c = 0; c <= StringUtils.countOccurances(qName, RecordColumn.QUALIFIED_NAME_SEPARATOR); c++)
+			for(int c = 0; c <= StringUtils.countOccurances(qName, ValueSetColumn.QUALIFIED_NAME_SEPARATOR); c++)
 				columnStack.pop();
 		}
 	}

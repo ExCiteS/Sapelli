@@ -120,7 +120,7 @@ public abstract class Column<T> implements Serializable
 
 	static public boolean IsValidName(String name)
 	{
-		return 	name.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR /* '.' */) == -1 &&
+		return 	name.indexOf(ValueSetColumn.QUALIFIED_NAME_SEPARATOR /* '.' */) == -1 &&
 				name.indexOf(':') == -1 &&
 				XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
 	}

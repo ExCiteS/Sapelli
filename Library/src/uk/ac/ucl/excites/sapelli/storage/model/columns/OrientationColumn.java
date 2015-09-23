@@ -18,16 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * A column for {@link Orientation}s, implemented as a {@link RecordColumn} subclass.
+ * A column for {@link Orientation}s, implemented as a {@link ValueSetColumn} subclass.
  * 
  * @author mstevens
  */
-public class OrientationColumn extends RecordColumn<Orientation>
+public class OrientationColumn extends ValueSetColumn<Orientation>
 {
 	
 	static private final long serialVersionUID = 2L;

@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class FloatColumn extends ComparableColumn<Double>
+public class FloatColumn extends NumberColumn<Double>
 {	
 	
 	static private final long serialVersionUID = 2L;
