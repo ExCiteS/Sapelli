@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -28,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class ForeignKeyColumn extends RecordColumn<RecordReference>
+public class ForeignKeyColumn extends ValueSetColumn<RecordReference>
 {
 	
 	static private final long serialVersionUID = 2L;

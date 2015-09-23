@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * A composite column, consisting of a set of "subcolumns" as specified by a Schema
+ * A composite column, consisting of a set of "subcolumns" as specified by a ColumnSet
  *
  * The "skip columns" mechanism allows certain subcolumns to be skipped when
  * writing/reading records to/from binary storage. Optionally this mechanism can also
@@ -44,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public abstract class RecordColumn<VC extends ValueSet<?>> extends Column<VC>
+public abstract class ValueSetColumn<VC extends ValueSet<?>> extends Column<VC>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -65,7 +65,7 @@ public abstract class RecordColumn<VC extends ValueSet<?>> extends Column<VC>
 	 * @param columnSet
 	 * @param optional
 	 */
-	public RecordColumn(String name, ColumnSet columnSet, boolean optional)
+	public ValueSetColumn(String name, ColumnSet columnSet, boolean optional)
 	{
 		this(name, columnSet, optional, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
 	}
@@ -77,7 +77,7 @@ public abstract class RecordColumn<VC extends ValueSet<?>> extends Column<VC>
 	 * @param includeSkipColsInStringSerialisation whether serialisation/deserialisation to/from String should include the subcolumns in skipColumns
 	 * @param includeVirtualColsInStringSerialisation whether serialisation/deserialisation to/from String should include virtual subcolumns
 	 */
-	public RecordColumn(String name, ColumnSet columnSet, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
+	public ValueSetColumn(String name, ColumnSet columnSet, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
 		super(name, optional);
 		if(columnSet == null || !columnSet.isSealed())
@@ -259,9 +259,9 @@ public abstract class RecordColumn<VC extends ValueSet<?>> extends Column<VC>
 	@Override
 	protected boolean equalRestrictions(Column<VC> otherColumn)
 	{
-		if(otherColumn instanceof RecordColumn)
+		if(otherColumn instanceof ValueSetColumn)
 		{
-			RecordColumn<?> other = (RecordColumn<?>) otherColumn;
+			ValueSetColumn<?> other = (ValueSetColumn<?>) otherColumn;
 			return	this.columnSet.equals(other.columnSet) &&
 					(this.skipColumnPositions == null ? other.skipColumnPositions == null :
 												this.skipColumnPositions.equals(other.skipColumnPositions)) &&

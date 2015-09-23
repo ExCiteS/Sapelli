@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -56,7 +56,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	static public final boolean USES_XML_VERSION_11 = false; // whether to use XML v1.0 (false) or XML v1.1 (true)
 
 	/**
-	 * Different ways of representing composite columns (i.e. {@link RecordColumn}s)
+	 * Different ways of representing composite columns (i.e. {@link ValueSetColumn}s)
 	 */
 	static public enum CompositeMode
 	{
@@ -209,7 +209,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 
 	@Override
-	public void enter(RecordColumn<?> recordCol)
+	public void enter(ValueSetColumn<?> recordCol)
 	{
 		if(compositeMode == CompositeMode.String)
 			return; //this should never happen
@@ -228,7 +228,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 	
 	@Override
-	public void leave(RecordColumn<?> recordCol)
+	public void leave(ValueSetColumn<?> recordCol)
 	{
 		if(compositeMode == CompositeMode.String)
 			return; //this should never happen

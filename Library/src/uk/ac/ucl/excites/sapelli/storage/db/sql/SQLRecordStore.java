@@ -43,7 +43,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -609,7 +609,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Mapping of composite Sapelli columns to a list of SQLColumns which they correspond to.
 		 * E.g. Location --> (Lat, Lon, ...) 
 		 */
-		public final Map<RecordColumn<?>, List<SColumn>> composite2SqlColumns;
+		public final Map<ValueSetColumn<?>, List<SColumn>> composite2SqlColumns;
 		
 		/**
 		 * The auto-incrementing primary key column as (a Sapelli Column, not an S/SQLColumn), will be null if there is none
@@ -623,7 +623,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>(); // we use a LHP to preserve column order!
-			composite2SqlColumns = new HashMap<RecordColumn<?>, List<SColumn>>();
+			composite2SqlColumns = new HashMap<ValueSetColumn<?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
 		}
@@ -648,7 +648,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			while(sourceCP.isSubColumn())
 			{
 				ColumnPointer parentCP = sourceCP.getParentPointer();
-				RecordColumn<?> parentCol = (RecordColumn<?>) parentCP.getColumn();
+				ValueSetColumn<?> parentCol = (ValueSetColumn<?>) parentCP.getColumn();
 				List<SColumn> subSQLCols;
 				if(composite2SqlColumns.containsKey(parentCol))
 					subSQLCols = composite2SqlColumns.get(parentCol);
@@ -724,8 +724,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public List<SColumn> getSQLColumns(Column<?> sapColumn)
 		{
-			if(sapColumn instanceof RecordColumn)
-				return composite2SqlColumns.get((RecordColumn<?>) sapColumn);
+			if(sapColumn instanceof ValueSetColumn)
+				return composite2SqlColumns.get((ValueSetColumn<?>) sapColumn);
 			else
 				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
@@ -1308,13 +1308,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		@Override
-		public void enter(RecordColumn<?> recordCol)
+		public void enter(ValueSetColumn<?> recordCol)
 		{
 			// does nothing
 		}
 		
 		@Override
-		public void leave(RecordColumn<?> recordCol)
+		public void leave(ValueSetColumn<?> recordCol)
 		{
 			// does nothing
 		}
@@ -1854,9 +1854,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(getNullString()); // "NULL"
 				}
 			}
-			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
+			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
 			{	// Equality constraint on composite column...
-				List<SColumn> subSqlCols = table.getSQLColumns((RecordColumn<?>) cp.getColumn());
+				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?>) cp.getColumn());
 				if(subSqlCols != null)
 				{	// ...  which is split up in the SQLTable...
 					Record valueRecord = (Record) equalityConstr.getValue();

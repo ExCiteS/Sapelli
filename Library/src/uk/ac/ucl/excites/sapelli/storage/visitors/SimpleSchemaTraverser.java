@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -54,7 +54,7 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.RecordColumn)
 	 */
 	@Override
-	public void enter(RecordColumn<?> recordCol)
+	public void enter(ValueSetColumn<?> recordCol)
 	{
 		columnStack.push(recordCol);
 	}
@@ -63,7 +63,7 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.RecordColumn)
 	 */
 	@Override
-	public void leave(RecordColumn<?> recordCol)
+	public void leave(ValueSetColumn<?> recordCol)
 	{
 		columnStack.pop();
 	}

@@ -28,12 +28,14 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 
 /**
  * Helper class to locate & point to (sub)Columns in Schemas and RecordColumns
+ * 
+ * TODO add generic type?
  * 
  * @author mstevens
  */
@@ -85,9 +87,9 @@ public class ColumnPointer
 			if(!columnStack.isEmpty())
 			{
 				Column<?> prevCol = columnStack.peek(); 
-				if(!(prevCol instanceof RecordColumn))
+				if(!(prevCol instanceof ValueSetColumn))
 					throw new IllegalArgumentException("Column \"" + prevCol.getName() + "\" is expected to be a RecordColumn but it is not.");
-				if(!((RecordColumn<?>) prevCol).getColumnSet().containsColumn(col))
+				if(!((ValueSetColumn<?>) prevCol).getColumnSet().containsColumn(col))
 					throw new IllegalArgumentException("Column \"" + col.getName() + "\" is not a subcolumn of RecordColumn \"" + prevCol.getName() + "\".");
 			}
 			columnStack.push(col);
@@ -124,18 +126,18 @@ public class ColumnPointer
 			throw new IllegalArgumentException("columnName cannot be null or empty");
 		
 		// Build up stack:
-		if(columnName.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR) == -1)
+		if(columnName.indexOf(ValueSetColumn.QUALIFIED_NAME_SEPARATOR) == -1)
 			columnStack = constructPathTo(topLevelCS, columnName, true); // Find by columnName (recursive, depth-first search; columnName will be sanitised if not found as is)
 		else
 		{
 			columnStack = new Stack<Column<?>>();
 			// Find by qualified name:
 			ColumnSet columnSet = topLevelCS;
-			for(String colName : columnName.split("\\" + RecordColumn.QUALIFIED_NAME_SEPARATOR))
+			for(String colName : columnName.split("\\" + ValueSetColumn.QUALIFIED_NAME_SEPARATOR))
 			{
 				// Deal with previous (record)column:
 				if(!columnStack.isEmpty())
-					columnSet = ((RecordColumn<?>) columnStack.peek()).getColumnSet();
+					columnSet = ((ValueSetColumn<?>) columnStack.peek()).getColumnSet();
 				// Deal with current column:
 				Column<?> col = columnSet.getColumn(colName, true);
 				// If not found...
@@ -176,9 +178,9 @@ public class ColumnPointer
 		// Get the right (sub)record:
 		ValueSet<?> vs = topLevelVS;
 		for(Column<?> col : path)
-			if(col instanceof RecordColumn && col != path.peek())
+			if(col instanceof ValueSetColumn && col != path.peek())
 			{
-				RecordColumn<?> recCol = ((RecordColumn<?>) col);
+				ValueSetColumn<?> recCol = ((ValueSetColumn<?>) col);
 				if(!recCol.isValueSet(vs))
 				{
 					if(create)
@@ -257,7 +259,7 @@ public class ColumnPointer
 	 */
 	public String getQualifiedColumnName()
 	{
-		return getQualifiedColumnName(null, RecordColumn.QUALIFIED_NAME_SEPARATOR);
+		return getQualifiedColumnName(null, ValueSetColumn.QUALIFIED_NAME_SEPARATOR);
 	}
 
 	/**
@@ -276,7 +278,7 @@ public class ColumnPointer
 	 */
 	public String getQualifiedColumnName(Schema topLevelSchema) throws IllegalArgumentException
 	{
-		return getQualifiedColumnName(topLevelSchema, RecordColumn.QUALIFIED_NAME_SEPARATOR);
+		return getQualifiedColumnName(topLevelSchema, ValueSetColumn.QUALIFIED_NAME_SEPARATOR);
 	}
 	
 	/**
@@ -471,10 +473,10 @@ public class ColumnPointer
 		else
 		{	// Try to find the column as a subcolumn...
 			for(Column<?> c : columnSet.getColumns(false))
-				if(c instanceof RecordColumn)
+				if(c instanceof ValueSetColumn)
 				{
 					path.push(c);
-					if(constructPath(path, ((RecordColumn<?>) c).getColumnSet(), matcher) != null)
+					if(constructPath(path, ((ValueSetColumn<?>) c).getColumnSet(), matcher) != null)
 						return path;
 					else
 						path.pop();
