@@ -546,16 +546,15 @@ public abstract class Column<T> implements Serializable
 
 	public String toString()
 	{
-		return	getTypeString() + "Column";
+		return	getTypeString() + "Column:" + name;
 	}
 
 	public String getSpecification()
 	{
-		return toString() + " [" +
-		    				name + "; "
-		    				+ (optional ? "optional" : "required") + "; "
-		    				+ (this instanceof VirtualColumn ? "virtual; " : "")
-		    				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
+		return toString() 	+ " ["	+ (optional ? "optional" : "required") + "; "
+									+ (this instanceof VirtualColumn ? "virtual; " : "")
+									+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits"
+							+ "]";
 	}
 
 	public String getTypeString()
