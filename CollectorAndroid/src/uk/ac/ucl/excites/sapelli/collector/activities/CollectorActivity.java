@@ -157,8 +157,8 @@ public class CollectorActivity extends ProjectActivity
 		super.onStart();
 		
 		// Show demo disclaimer if needed:
-		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getNameAndVersion() + ".\nFor demonstration purposes only.");
+		if(getCollectorApp().getBuildInfo().isDemoBuild())
+			showOKDialog("Disclaimer", "This is " + getCollectorApp().getBuildInfo().getNameAndVersion() + ".\nFor demonstration purposes only.");
 	}
 
 	@Override
@@ -228,7 +228,7 @@ public class CollectorActivity extends ProjectActivity
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
-			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
+			controller = new CollectorController(project, collectorView, projectStore, recordStore, getFileStorageProvider(), this);
 			collectorView.initialise(controller); // (re)initialise the UI !!!
 			
 			// Start project:
@@ -237,7 +237,7 @@ public class CollectorActivity extends ProjectActivity
 			// Set activity title & task description with project name
 			String activityTitle = getString(R.string.sapelli) + ": " + project.toString();
 			setTitle(activityTitle);
-			ActivityHelpers.setTaskDescription(this, activityTitle, ProjectRunHelpers.getShortcutBitmap(this, fileStorageProvider, project), Color.WHITE);
+			ActivityHelpers.setTaskDescription(this, activityTitle, ProjectRunHelpers.getShortcutBitmap(this, getFileStorageProvider(), project), Color.WHITE);
 		}
 	}
 
@@ -371,7 +371,7 @@ public class CollectorActivity extends ProjectActivity
 			try
 			{
 				// Set up temp file (in the projects data folder)
-				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, fileStorageProvider.getTempFolder(true));
+				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, getFileStorageProvider().getTempFolder(true));
 				// Set-up intent:
 				Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 				takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
@@ -406,7 +406,7 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(fileStorageProvider, controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(getFileStorageProvider(), controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
 					photoUI.mediaDone(newPhoto, true);
 				}

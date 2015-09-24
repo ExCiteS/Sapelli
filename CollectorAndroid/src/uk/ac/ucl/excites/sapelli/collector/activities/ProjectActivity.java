@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -58,6 +59,7 @@ public abstract class ProjectActivity extends BaseActivity implements StoreHandl
 		// Get project store:
 		try
 		{
+			CollectorApp app = getCollectorApp();
 			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			recordStore = app.collectorClient.recordStoreHandle.getStore(this);
 		}
@@ -103,6 +105,7 @@ public abstract class ProjectActivity extends BaseActivity implements StoreHandl
 	protected void onDestroy()
 	{
 		// Signal that the activity no longer needs the Store objects:
+		CollectorApp app = getCollectorApp();
 		app.collectorClient.projectStoreHandle.doneUsing(this);
 		app.collectorClient.recordStoreHandle.doneUsing(this);
 		// super:

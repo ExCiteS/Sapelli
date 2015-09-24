@@ -122,7 +122,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	{
 		super.onCreate(savedInstanceState);
 		
-		if(app.getBuildInfo().isDemoBuild())
+		if(getCollectorApp().getBuildInfo().isDemoBuild())
 			return;
 		//else ...
 		// Only if not in demo mode:
@@ -223,7 +223,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Get ProjectStore instance:
 		try
 		{
-			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
+			projectStore = getCollectorApp().collectorClient.projectStoreHandle.getStore(this);
 		}
 		catch(Exception e)
 		{
@@ -497,7 +497,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	protected void onDestroy()
 	{
 		// clean up:
-		app.collectorClient.projectStoreHandle.doneUsing(this); // signal that the activity no longer needs the DAO
+		getCollectorApp().collectorClient.projectStoreHandle.doneUsing(this); // signal that the activity no longer needs the DAO
 		// super:
 		super.onDestroy();
 	}
@@ -566,7 +566,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 */
 	public boolean backupSapelli(MenuItem item)
 	{
-		Backup.Run(this, fileStorageProvider);
+		Backup.Run(this, getFileStorageProvider());
 		return true;
 	}
 
@@ -586,7 +586,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Download Sapelli file if path is a URL
 		if(Patterns.WEB_URL.matcher(location).matches())
 			// Location is a (remote) URL: download Sapelli file:
-			AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
+			AsyncDownloader.Download(this, getFileStorageProvider().getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
 		else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
 			// Warn about bare XML file (no longer supported):
 			showErrorDialog(R.string.noBareXMLProjects);
@@ -594,7 +594,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		{	// loading project from local file:
 			File localFile = new File(location);
 			if(ProjectLoader.HasSapelliFileExtension(localFile))
-				new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
+				new AndroidProjectLoaderStorer(this, getFileStorageProvider(), projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
 			else
 				showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
 		}
@@ -603,7 +603,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	public void downloadSuccess(String downloadUrl, File downloadedFile)
 	{
-		new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(downloadedFile, downloadUrl, this);
+		new AndroidProjectLoaderStorer(this, getFileStorageProvider(), projectStore).loadAndStore(downloadedFile, downloadUrl, this);
 	}
 
 	@Override
@@ -630,7 +630,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				bldr.append(" - " + warning);
 		}
 		//	Check file dependencies:
-		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
+		List<String> missingFiles = project.getMissingFilesRelativePaths(getFileStorageProvider());
 		if(!missingFiles.isEmpty())
 		{
 			bldr.append(getString(R.string.missingFiles) + ":");
