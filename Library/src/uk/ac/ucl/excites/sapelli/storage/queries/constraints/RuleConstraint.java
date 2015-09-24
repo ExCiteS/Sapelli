@@ -97,7 +97,7 @@ public class RuleConstraint extends Constraint
 	 */
 	public static RuleConstraint FromString(ComparableColumn<?> compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
 	{
-		return FromString(new ColumnPointer(compareColumn), comparison, valueString);
+		return FromString(new ColumnPointer<ComparableColumn<?>>(compareColumn), comparison, valueString);
 	}
 	
 	/**
@@ -109,16 +109,16 @@ public class RuleConstraint extends Constraint
 	 * @throws NullPointerException
 	 * @throws ParseException
 	 */
-	public static RuleConstraint FromString(ColumnPointer columnPointer, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+	public static RuleConstraint FromString(ColumnPointer<ComparableColumn<?>> columnPointer, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
 	{
 		return new RuleConstraint(columnPointer, comparison, columnPointer.getColumn().parse(valueString));
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	private ColumnPointer lhsColumnPointer;
+	private ColumnPointer<ComparableColumn<?>> lhsColumnPointer;
 	private Comparison comparison;
 	private Object rhsValue;
-	private ColumnPointer rhsColumnPointer;
+	private ColumnPointer<ComparableColumn<?>> rhsColumnPointer;
 	
 	/**
 	 * @param compareColumn must be a top-level column
@@ -127,7 +127,7 @@ public class RuleConstraint extends Constraint
 	 */
 	public RuleConstraint(ComparableColumn<?> compareColumn, Comparison comparison, Object rhsValue)
 	{
-		this(new ColumnPointer(compareColumn), comparison, rhsValue);
+		this(new ColumnPointer<ComparableColumn<?>>(compareColumn), comparison, rhsValue);
 	}
 	
 	/**
@@ -135,7 +135,7 @@ public class RuleConstraint extends Constraint
 	 * @param comparison
 	 * @param rhsValue the value at the right-hand-side of the comparison
 	 */
-	public RuleConstraint(ColumnPointer lhsColumnPointer, Comparison comparison, Object rhsValue)
+	public RuleConstraint(ColumnPointer<ComparableColumn<?>> lhsColumnPointer, Comparison comparison, Object rhsValue)
 	{
 		if(!(lhsColumnPointer.getColumn() instanceof ComparableColumn))
 			throw new IllegalArgumentException("Rules can only be applied to " + ComparableColumn.class.getSimpleName() + "s!");
@@ -155,10 +155,10 @@ public class RuleConstraint extends Constraint
 	 */
 	public <C> RuleConstraint(ComparableColumn<C> lhsColumn, ComparableColumn<C> rhsColumn, Comparison comparison)
 	{
-		this(new ColumnPointer(lhsColumn), new ColumnPointer(rhsColumn), comparison);
+		this(new ColumnPointer<ComparableColumn<?>>(lhsColumn), new ColumnPointer<ComparableColumn<?>>(rhsColumn), comparison);
 	}
 	
-	private RuleConstraint(ColumnPointer lhsColumnPointer, ColumnPointer rhsColumnPointer, Comparison comparison)
+	private RuleConstraint(ColumnPointer<ComparableColumn<?>> lhsColumnPointer, ColumnPointer<ComparableColumn<?>> rhsColumnPointer, Comparison comparison)
 	{
 		this.lhsColumnPointer = lhsColumnPointer;
 		this.comparison = comparison;
@@ -184,7 +184,7 @@ public class RuleConstraint extends Constraint
 	/**
 	 * @return the left-hand-side columnPointer
 	 */
-	public ColumnPointer getLHSColumnPointer()
+	public ColumnPointer<ComparableColumn<?>> getLHSColumnPointer()
 	{
 		return lhsColumnPointer;
 	}
@@ -194,13 +194,13 @@ public class RuleConstraint extends Constraint
 	 */
 	public ComparableColumn<?> getLHSCompareColumn()
 	{
-		return (ComparableColumn<?>) lhsColumnPointer.getColumn();
+		return lhsColumnPointer.getColumn();
 	}
 	
 	/**
 	 * @return the right-hand-side columnPointer
 	 */
-	public ColumnPointer getRHSColumnPointer()
+	public ColumnPointer<ComparableColumn<?>> getRHSColumnPointer()
 	{
 		return rhsColumnPointer;
 	}
@@ -210,7 +210,7 @@ public class RuleConstraint extends Constraint
 	 */
 	public ComparableColumn<?> getRHSCompareColumn()
 	{
-		return isRHSColumn() ? (ComparableColumn<?>) rhsColumnPointer.getColumn() : null;
+		return isRHSColumn() ? rhsColumnPointer.getColumn() : null;
 	}
 
 	/**

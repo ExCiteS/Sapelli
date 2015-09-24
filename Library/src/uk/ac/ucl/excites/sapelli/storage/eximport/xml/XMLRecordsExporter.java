@@ -245,7 +245,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 	
 	@Override
-	public void visit(ColumnPointer leafColumnPointer)
+	public void visit(ColumnPointer<?> leafColumnPointer)
 	{
 		ValueSet<?> valueSet = leafColumnPointer.getValueSet(currentRecord, false);
 		

@@ -110,7 +110,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getTableFactory()
 	 */
 	@Override
-	protected TableFactory getTableFactory()
+	protected TableFactory<SQLiteTable> getTableFactory()
 	{
 		return factory;
 	}
@@ -188,7 +188,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		try
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null)),
+									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null)),
 									Collections.<String> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
@@ -528,26 +528,14 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 
 		/**
+		 * @param name may be null only if sourceColumnPointer is not
 		 * @param type
-		 * @param sourceSchema
-		 * @param sourceColumn
+		 * @param sourceColumnPointer
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLiteColumn(String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLiteColumn(String name, String type, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
 		{
-			super(type, sourceSchema, sourceColumn, mapping);
-		}
-
-		/**
-		 * @param name
-		 * @param type
-		 * @param sourceSchema
-		 * @param sourceColumn
-		 * @param mapping - may be null in case SQLType = SapType
-		 */
-		public SQLiteColumn(String name, String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
-		{
-			super(name, type, sourceSchema, sourceColumn, mapping);
+			super(name, type, sourceColumnPointer, mapping);
 		}
 		
 		/**
@@ -648,13 +636,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, table.schema, boolCol));
+			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, getColumnPointer(boolCol)));
 		}
 		
 		@Override
 		public void visit(final TimeStampColumn timeStampCol)
 		{
-			table.addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, table.schema, timeStampCol, new TypeMapping<String, TimeStamp>()
+			table.addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, getColumnPointer(timeStampCol), new TypeMapping<String, TimeStamp>()
 			{
 
 				@Override
@@ -675,25 +663,25 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, table.schema, byteArrayCol, null));
+			table.addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, getColumnPointer(byteArrayCol), null));
 		}
 		
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			table.addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, table.schema, stringCol, null));
+			table.addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, getColumnPointer(stringCol), null));
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			table.addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, table.schema, intCol, null));
+			table.addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, getColumnPointer(intCol), null));
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, table.schema, floatCol, null));
+			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, getColumnPointer(floatCol), null));
 		}
 		
 		/**
@@ -704,7 +692,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, table.schema, listCol, new TypeMapping<byte[], L>()
+			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, getColumnPointer(listCol), new TypeMapping<byte[], L>()
 			{
 
 				@Override
@@ -754,7 +742,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		@Override
-		public String getColumnConstraint(ColumnPointer sourceCP, List<Index> indexesToProcess)
+		public String getColumnConstraint(ColumnPointer<?> sourceCP, List<Index> indexesToProcess)
 		{
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 		
@@ -795,7 +783,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 
 			// Optionality:
 			boolean optional = false;
-			ColumnPointer cp = sourceCP;
+			ColumnPointer<?> cp = sourceCP;
 			while(cp != null)
 				cp = (optional = cp.getColumn().optional) ? null : cp.getParentPointer();
 			//	If the (sub)column is not optional, and neither is one of its parents, then the DB column should not accept null values:

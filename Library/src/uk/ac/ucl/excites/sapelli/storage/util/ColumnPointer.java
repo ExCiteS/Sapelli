@@ -18,7 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.storage.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
@@ -28,98 +30,65 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 
 /**
  * Helper class to locate & point to (sub)Columns in Schemas and RecordColumns
  * 
- * TODO add generic type?
- * 
  * @author mstevens
+ *
+ * @param <C> the Column type
  */
-public class ColumnPointer
+public class ColumnPointer<C extends Column<?>>
 {
 	
-	private final Stack<Column<?>> columnStack;
-	
+	// STATIC ---------------------------------------------------------------------------
 	/**
-	 * Note: in absence of a topLevelSchema we cannot check if this is a top level column
-	 * 
-	 * @param column
-	 */
-	public ColumnPointer(Column<?> column)
-	{
-		this(new Column<?>[] { column });
-	}
-	
-	/**
-	 * If more than one column is passed all but the last one must be RecordColumns. The first
+	 * If more than one column is passed all but the last one must be ValueSetColumns. The first
 	 * column that is passed is assumed to be a top-level column but this cannot be checked in
-	 * absence of a schema. Each subsequent column must be a part of the schema of the previous
-	 * (Record)Column.
+	 * absence of a schema. Each subsequent column must be a part of the ColumnSet of the previous
+	 * ValueSetColumn.
 	 * 
 	 * @param columns
 	 */
-	public ColumnPointer(Column<?>... columns)
+	static public ColumnPointer<?> FromArray(Column<?>... columns)
 	{
-		this(Arrays.asList(columns));
+		return FromList(Arrays.asList(columns));
 	}
 	
 	/**
-	 * If more than one column is passed all but the last one must be RecordColumns. The first
+	 * If more than one column is passed all but the last one must be ValueSetColumns. The first
 	 * column that is passed is assumed to be a top-level column but this cannot be checked in
-	 * absence of a schema. Each subsequent column must be a part of the schema of the previous
-	 * (Record)Column.
+	 * absence of a schema. Each subsequent column must be a part of the ColumnSet of the previous
+	 * ValueSetColumn.
 	 * 
 	 * Note: in absence of a topLevelSchema we cannot check if the first column is a top level one
 	 * 
 	 * @param columns
 	 */
-	public ColumnPointer(List<Column<?>> columns)
+	static public ColumnPointer<?> FromList(List<Column<?>> columns)
 	{
-		columnStack = new Stack<Column<?>>();
-		for(Column<?> col : columns)
-		{
-			if(col == null)
-				throw new NullPointerException("Column cannot be null");
-			if(!columnStack.isEmpty())
-			{
-				Column<?> prevCol = columnStack.peek(); 
-				if(!(prevCol instanceof ValueSetColumn))
-					throw new IllegalArgumentException("Column \"" + prevCol.getName() + "\" is expected to be a RecordColumn but it is not.");
-				if(!((ValueSetColumn<?>) prevCol).getColumnSet().containsColumn(col))
-					throw new IllegalArgumentException("Column \"" + col.getName() + "\" is not a subcolumn of RecordColumn \"" + prevCol.getName() + "\".");
-			}
-			columnStack.push(col);
-		}
+		if(columns == null || columns.isEmpty())
+			throw new IllegalArgumentException("At least column must be given!");
+		// Make parents list:
+		List<ValueSetColumn<?>> parents = new ArrayList<>(columns.size() - 1);
+		int c = 0;
+		for(; c < columns.size() - 1; c++)
+			if(columns.get(c) instanceof ValueSetColumn)
+				parents.add((ValueSetColumn<?>) columns.get(c));
+			else
+				throw new IllegalArgumentException("Parent columns must be " + ValueSetColumn.class.getSimpleName() + "s!");
+		// Return new cp:
+		return new ColumnPointer<Column<?>>(parents, columns.get(c));
 	}
 	
 	/**
-	 * @param topLevelSchema
-	 * @param column
+	 * @param topLevelCS the top-level ColumnSet or Schema
+	 * @param columnName the name of the pointed-at column
 	 */
-	public ColumnPointer(Schema topLevelSchema, Column<?> column)
-	{
-		this(topLevelSchema, column, false);
-	}
-	
-	/**
-	 * @param topLevelSchema
-	 * @param column
-	 * @param allowEquivalent whether to allow pointing to a column equivalent to the given one (reachable from the topLevelSchema), or only the exact given column
-	 */
-	public ColumnPointer(Schema topLevelSchema, Column<?> column, boolean allowEquivalent)
-	{
-		columnStack = constructPathTo(topLevelSchema, column, allowEquivalent);
-	}
-	
-	/**
-	 * @param topLevelCS
-	 * @param columnName
-	 */
-	public ColumnPointer(ColumnSet topLevelCS, String columnName)
+	static public ColumnPointer<?> FromName(ColumnSet topLevelCS, String columnName)
 	{	
 		// Null & empty check:
 		if(columnName == null || columnName.isEmpty())
@@ -127,10 +96,10 @@ public class ColumnPointer
 		
 		// Build up stack:
 		if(columnName.indexOf(ValueSetColumn.QUALIFIED_NAME_SEPARATOR) == -1)
-			columnStack = constructPathTo(topLevelCS, columnName, true); // Find by columnName (recursive, depth-first search; columnName will be sanitised if not found as is)
+			return new ColumnPointer<Column<?>>(ConstructPathTo(topLevelCS, columnName, true)); // Find by columnName (recursive, depth-first search; columnName will be sanitised if not found as is)
 		else
 		{
-			columnStack = new Stack<Column<?>>();
+			Stack<Column<?>> columnStack = new Stack<Column<?>>();
 			// Find by qualified name:
 			ColumnSet columnSet = topLevelCS;
 			for(String colName : columnName.split("\\" + ValueSetColumn.QUALIFIED_NAME_SEPARATOR))
@@ -149,11 +118,196 @@ public class ColumnPointer
 				// Found:
 				columnStack.push(col);
 			}
+			return new ColumnPointer<Column<?>>(columnStack);
 		}
 	}
 	
 	/**
-	 * Copy constructor
+	 * Constructs a new path to the given column, or an equivalent one if allowEquivalent is true.
+	 * 
+	 * @param topLevelCS
+	 * @param column
+	 * @param allowEquivalent whether to allow pointing to a column equivalent to the given one (reachable from the topLevelSchema), or only the exact given column
+	 * @return a path to the column
+	 * @throws IllegalArgumentException when no path could be constructed
+	 */
+	static private Stack<Column<?>> ConstructPathTo(ColumnSet topLevelCS, final Column<?> column, boolean allowEquivalent) throws IllegalArgumentException
+	{
+		// Find column & construct path to it:
+		Stack<Column<?>> path = ConstructPath(
+			new Stack<Column<?>>(),
+			topLevelCS,
+			allowEquivalent ?
+				new ColumnMatcher()
+				{
+					@Override
+					public Column<?> findColumnIn(ColumnSet columnSet)
+					{
+						return columnSet.getEquivalentColumn(column);
+					}
+				} :
+				new ColumnMatcher()
+				{
+					@Override
+					public Column<?> findColumnIn(ColumnSet columnSet)
+					{
+						if(columnSet.containsColumn(column))
+							return column;
+						else
+							return null;
+					}
+				});
+		// Check if we have a valid path:
+		if(path == null || /*just in case*/ path.isEmpty())
+			throw new IllegalArgumentException("Column \"" + column.getName() + "\" is not part of " + topLevelCS.toString());
+		return path;
+	}
+	
+	/**
+	 * Constructs a new path to a column identified only by a name.
+	 * 
+	 * @param topLevelCS
+	 * @param columnName name of the column to construct a path to
+	 * @param trySanitising
+	 * @return a path to the column
+	 * @throws IllegalArgumentException when no path could be constructed
+	 */
+	static private Stack<Column<?>> ConstructPathTo(ColumnSet topLevelCS, final String columnName, boolean trySanitising) throws IllegalArgumentException
+	{
+		// Find column & construct path to it:
+		Stack<Column<?>> path = ConstructPath(new Stack<Column<?>>(), topLevelCS, new ColumnMatcher()
+		{
+			@Override
+			public Column<?> findColumnIn(ColumnSet columnSet)
+			{
+				return columnSet.getColumn(columnName, true); // we allow virtual columns
+			}
+		});
+		// Check if we have a valid path:
+		if(path == null || /*just in case*/ path.isEmpty())
+		{
+			if(trySanitising) // try again with sanitised name if allowed:
+				try
+				{
+					return ConstructPathTo(topLevelCS, Column.SanitiseName(columnName), false); // pass false to avoid endless sanitation loop ;-)
+				}
+				catch(IllegalArgumentException iae) { /* exception is thrown below */ }
+			throw new IllegalArgumentException("Column \"" + columnName + "\"" + (trySanitising ? " (or \"" + Column.SanitiseName(columnName) + "\")" : "") + " not found in " + topLevelCS.toString());
+		}
+		return path;
+	}
+	
+	/**
+	 * Recursive method to construct a path to a column identified using the given ColumnMatcher
+	 * Uses depth-first traversal.
+	 *   
+	 * @param path Stack to build the path on
+	 * @param columnSet
+	 * @param matcher
+	 * @return a complete path to the column matched by the matcher, or null if it could not be found
+	 */
+	static private Stack<Column<?>> ConstructPath(Stack<Column<?>> path, ColumnSet columnSet, ColumnMatcher matcher)
+	{
+		// Try to find the column in the current schema (as a directly contained column, not a subcolumn):
+		Column<?> col = matcher.findColumnIn(columnSet);
+		if(col != null)
+		{
+			path.push(col);
+			return path;
+		}
+		else
+		{	// Try to find the column as a subcolumn...
+			for(Column<?> c : columnSet.getColumns(false))
+				if(c instanceof ValueSetColumn)
+				{
+					path.push(c);
+					if(ConstructPath(path, ((ValueSetColumn<?>) c).getColumnSet(), matcher) != null)
+						return path;
+					else
+						path.pop();
+				}
+			return null;
+		}
+	}
+	
+	/**
+	 * Helper interface to find a column in a Schema
+	 */
+	private static interface ColumnMatcher
+	{
+		
+		/**
+		 * @param columnSet the columnSet to look in (only looking at directly contained columns)
+		 * @return the matching column, if there was one, or null otherwise
+		 */
+		public Column<?> findColumnIn(ColumnSet columnSet);
+		
+	}
+	
+	// DYNAMIC --------------------------------------------------------------------------
+	private final Stack<Column<?>> columnStack;
+	
+	/**
+	 * Note: in absence of a topLevelSchema we cannot check if this is a top level column
+	 * 
+	 * @param column the pointed-at column
+	 */
+	public ColumnPointer(C column)
+	{
+		this(Collections.<ValueSetColumn<?>> emptyList(), column);
+	}
+	
+	/**
+	 * Creates a ColumnPointer pointing to the given {@code column} following path through the given {@code parents}.
+	 * 
+	 * @param parents
+	 * @param column the pointed-at column
+	 */
+	public ColumnPointer(List<ValueSetColumn<?>> parents, C column)
+	{
+		List<Column<?>> columns = new ArrayList<Column<?>>(parents.size() + 1);
+		columns.addAll(parents);
+		columns.add(column);
+		
+		// Build up stack and perform checks:
+		columnStack = new Stack<Column<?>>();
+		for(Column<?> col : columns)
+		{
+			if(col == null)
+				throw new NullPointerException("Column cannot be null");
+			if(!columnStack.isEmpty())
+			{
+				Column<?> prevCol = columnStack.peek(); 
+				if(!(prevCol instanceof ValueSetColumn))
+					throw new IllegalArgumentException("Column \"" + prevCol.getName() + "\" is expected to be a ValueSetColumn but it is not.");
+				if(!((ValueSetColumn<?>) prevCol).getColumnSet().containsColumn(col))
+					throw new IllegalArgumentException("Column \"" + col.getName() + "\" is not a subcolumn of ValueSetColumn \"" + prevCol.getName() + "\".");
+			}
+			columnStack.push(col);
+		}
+	}
+	
+	/**
+	 * @param topLevelSchema
+	 * @param column the pointed-at column
+	 */
+	public ColumnPointer(Schema topLevelSchema, C column)
+	{
+		this(topLevelSchema, column, false);
+	}
+	
+	/**
+	 * @param topLevelSchema
+	 * @param column the pointed-at column
+	 * @param allowEquivalent whether to allow pointing to a column equivalent to the given one (reachable from the topLevelSchema), or only the exact given column
+	 */
+	public ColumnPointer(Schema topLevelSchema, C column, boolean allowEquivalent)
+	{
+		columnStack = ConstructPathTo(topLevelSchema, column, allowEquivalent);
+	}
+	
+	/**
+	 * For internal use only.
 	 * 
 	 * @param columnStack
 	 */
@@ -196,10 +350,10 @@ public class ColumnPointer
 	}
 	
 	/**
-	 * Get the value stored in the pointed-at column for the given topLevelRecord.
+	 * Get the value stored in the pointed-at column for the given top-Level ValueSet.
 	 * Note: value is returned as an Object.
 	 * 
-	 * @param topLevelRecord
+	 * @param topLevelVS
 	 * @return
 	 */
 	public Object retrieveValue(ValueSet<?> topLevelVS)
@@ -230,17 +384,18 @@ public class ColumnPointer
 	/**
 	 * @return the column this ColumnPointer points to
 	 */
-	public Column<?> getColumn()
+	@SuppressWarnings("unchecked")
+	public C getColumn()
 	{
 		if(columnStack.isEmpty())
 			return null;
-		return columnStack.peek();
+		return (C) columnStack.peek();
 	}
 	
 	/**
 	 * @return a new ColumnPointer pointing to the parent of the column to which this ColumnPoiter points, or null if that column was already top level
 	 */
-	public ColumnPointer getParentPointer()
+	public ColumnPointer<ValueSetColumn<?>> getParentPointer()
 	{
 		if(isSubColumn())
 		{
@@ -248,7 +403,7 @@ public class ColumnPointer
 			for(Column<?> col : columnStack) // (iterates from bottom to top)
 				if(parentStack.size() < columnStack.size() - 1)
 					parentStack.push(col);
-			return new ColumnPointer(parentStack);
+			return new ColumnPointer<ValueSetColumn<?>>(parentStack);
 		}
 		else
 			return null;
@@ -331,7 +486,7 @@ public class ColumnPointer
 			return true; // references to same object
 		if(obj instanceof ColumnPointer)
 		{
-			ColumnPointer that = (ColumnPointer) obj;
+			ColumnPointer<?> that = (ColumnPointer<?>) obj;
 			return columnStack.equals(that.columnStack);
 		}
 		return false;
@@ -358,131 +513,15 @@ public class ColumnPointer
 		
 		// Check if we already have a complete path to the pointed-at column starting from the top-level schema (if one was given):
 		if(topLevelCS != null && !topLevelCS.containsEquivalentColumn(path.firstElement())) // Either the columnStack is missing parent columns, or this record is from another schema...
-			path = constructPathTo(topLevelCS, getColumn(), true); // Try to construct a path to the pointed-at column or an equivalent one
+			path = ConstructPathTo(topLevelCS, getColumn(), true); // Try to construct a path to the pointed-at column or an equivalent one
 		
 		return path;
 	}
 	
-	/**
-	 * Constructs a new path to the given column, or an equivalent one if allowEquivalent is true.
-	 * 
-	 * @param topLevelCS
-	 * @param column
-	 * @param allowEquivalent whether to allow pointing to a column equivalent to the given one (reachable from the topLevelSchema), or only the exact given column
-	 * @return a path to the column
-	 * @throws IllegalArgumentException when no path could be constructed
-	 */
-	private Stack<Column<?>> constructPathTo(ColumnSet topLevelCS, final Column<?> column, boolean allowEquivalent) throws IllegalArgumentException
+	@Override
+	public String toString()
 	{
-		// Find column & construct path to it:
-		Stack<Column<?>> path = constructPath(
-			new Stack<Column<?>>(),
-			topLevelCS,
-			allowEquivalent ?
-				new ColumnMatcher()
-				{
-					@Override
-					public Column<?> findColumnIn(ColumnSet columnSet)
-					{
-						return columnSet.getEquivalentColumn(column);
-					}
-				} :
-				new ColumnMatcher()
-				{
-					@Override
-					public Column<?> findColumnIn(ColumnSet columnSet)
-					{
-						if(columnSet.containsColumn(column))
-							return column;
-						else
-							return null;
-					}
-				});
-		// Check if we have a valid path:
-		if(path == null || /*just in case*/ path.isEmpty())
-			throw new IllegalArgumentException("Column \"" + column.getName() + "\" is not part of " + topLevelCS.toString());
-		return path;
+		return columnStack.toString();
 	}
 	
-	/**
-	 * Constructs a new path to a column identified only by a name.
-	 * 
-	 * @param topLevelCS
-	 * @param columnName name of the column to construct a path to
-	 * @param trySanitising
-	 * @return a path to the column
-	 * @throws IllegalArgumentException when no path could be constructed
-	 */
-	private Stack<Column<?>> constructPathTo(ColumnSet topLevelCS, final String columnName, boolean trySanitising) throws IllegalArgumentException
-	{
-		// Find column & construct path to it:
-		Stack<Column<?>> path = constructPath(new Stack<Column<?>>(), topLevelCS, new ColumnMatcher()
-		{
-			@Override
-			public Column<?> findColumnIn(ColumnSet columnSet)
-			{
-				return columnSet.getColumn(columnName, true); // we allow virtual columns
-			}
-		});
-		// Check if we have a valid path:
-		if(path == null || /*just in case*/ path.isEmpty())
-		{
-			if(trySanitising) // try again with sanitised name if allowed:
-				try
-				{
-					return constructPathTo(topLevelCS, Column.SanitiseName(columnName), false); // pass false to avoid endless sanitation loop ;-)
-				}
-				catch(IllegalArgumentException iae) { /* exception is thrown below */ }
-			throw new IllegalArgumentException("Column \"" + columnName + "\"" + (trySanitising ? " (or \"" + Column.SanitiseName(columnName) + "\")" : "") + " not found in " + topLevelCS.toString());
-		}
-		return path;
-	}
-	
-	/**
-	 * Helper interface to find a column in a Schema
-	 */
-	private static interface ColumnMatcher
-	{
-		
-		/**
-		 * @param columnSet the columnSet to look in (only looking at directly contained columns)
-		 * @return the matching column, if there was one, or null otherwise
-		 */
-		public Column<?> findColumnIn(ColumnSet columnSet);
-		
-	}
-	
-	/**
-	 * Recursive method to construct a path to a column identified using the given ColumnMatcher
-	 * Uses depth-first traversal.
-	 *   
-	 * @param path Stack to build the path on
-	 * @param columnSet
-	 * @param matcher
-	 * @return a complete path to the column matched by the matcher, or null if it could not be found
-	 */
-	private Stack<Column<?>> constructPath(Stack<Column<?>> path, ColumnSet columnSet, ColumnMatcher matcher)
-	{
-		// Try to find the column in the current schema (as a directly contained column, not a subcolumn):
-		Column<?> col = matcher.findColumnIn(columnSet);
-		if(col != null)
-		{
-			path.push(col);
-			return path;
-		}
-		else
-		{	// Try to find the column as a subcolumn...
-			for(Column<?> c : columnSet.getColumns(false))
-				if(c instanceof ValueSetColumn)
-				{
-					path.push(c);
-					if(constructPath(path, ((ValueSetColumn<?>) c).getColumnSet(), matcher) != null)
-						return path;
-					else
-						path.pop();
-				}
-			return null;
-		}
-	}
-
 }

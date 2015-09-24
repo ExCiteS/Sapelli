@@ -43,43 +43,43 @@ public class Order
 
 	static public Order By(ComparableColumn<?> by)
 	{
-		return new Order(new ColumnPointer(by), DEFAULT_DIRECTION);
+		return new Order(new ColumnPointer<ComparableColumn<?>>(by), DEFAULT_DIRECTION);
 	}
 	
-	static public Order By(ColumnPointer by)
+	static public Order By(ColumnPointer<ComparableColumn<?>> by)
 	{
 		return new Order(by, DEFAULT_DIRECTION);
 	}
 	
 	static public Order AscendingBy(ComparableColumn<?> by)
 	{
-		return new Order(new ColumnPointer(by), ASCENDING_DIRECTION);
+		return new Order(new ColumnPointer<ComparableColumn<?>>(by), ASCENDING_DIRECTION);
 	}
 	
-	static public Order AscendingBy(ColumnPointer by)
+	static public Order AscendingBy(ColumnPointer<ComparableColumn<?>> by)
 	{
 		return new Order(by, ASCENDING_DIRECTION);
 	}
 	
 	static public Order DescendingBy(ComparableColumn<?> by)
 	{
-		return new Order(new ColumnPointer(by), DESCENDING_DIRECTION);
+		return new Order(new ColumnPointer<ComparableColumn<?>>(by), DESCENDING_DIRECTION);
 	}
 	
-	static public Order DescendingBy(ColumnPointer by)
+	static public Order DescendingBy(ColumnPointer<ComparableColumn<?>> by)
 	{
 		return new Order(by, DESCENDING_DIRECTION);
 	}
 	
 	// DYNAMICS -----------------------------------------------------
-	public final ColumnPointer by;
+	public final ColumnPointer<ComparableColumn<?>> by;
 	public final boolean direction; // true: ASC, false: DESC
 	
 	/**
 	 * @param by
 	 * @param direction
 	 */
-	private Order(ColumnPointer by, boolean direction)
+	private Order(ColumnPointer<ComparableColumn<?>> by, boolean direction)
 	{
 		if(by != null && !(by.getColumn() instanceof ComparableColumn))
 			throw new IllegalArgumentException("ColumnPointer does not point to a ComparatorColumn");
@@ -111,7 +111,7 @@ public class Order
 	/**
 	 * @return the column to order by
 	 */
-	public ColumnPointer getBy()
+	public ColumnPointer<ComparableColumn<?>> getBy()
 	{
 		return by;
 	}

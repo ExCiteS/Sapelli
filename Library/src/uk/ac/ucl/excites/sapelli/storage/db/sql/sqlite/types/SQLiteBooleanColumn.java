@@ -20,8 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 
 /**
@@ -51,23 +51,21 @@ public class SQLiteBooleanColumn extends SQLiteIntegerColumn<Boolean>
 	
 	/**
 	 * @param store
-	 * @param sourceSchema
-	 * @param sourceColumn
+	 * @param sourceColumnPointer
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, Schema sourceSchema, BooleanColumn sourceColumn)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, ColumnPointer<? extends Column<Boolean>> sourceColumnPointer)
 	{
-		super(store, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
+		this(store, null, sourceColumnPointer);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param sourceSchema
-	 * @param sourceColumn
+	 * @param sourceColumnPointer
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, Schema sourceSchema, BooleanColumn sourceColumn)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, ColumnPointer<? extends Column<Boolean>> sourceColumnPointer)
 	{
-		super(store, name, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
+		super(store, name, sourceColumnPointer, boolIntMapping, SQLITE_DATA_TYPE);
 	}
 	
 }
