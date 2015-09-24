@@ -326,35 +326,42 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			// Set label above list:
 			lblAvailableProjects.setText(result.isEmpty() ? R.string.no_projects : R.string.switch_project);
 			
-			// Set/switch to current project
-			if(currentProject != null)
-			{	// look for current project in result list:
-				boolean found = false;
-				for(int i = 0; i < result.size(); i++)
-					if(result.get(i).equalDescription(currentProject))
-					{	// (Re)select current project:
-						projectList.setItemChecked(i, true);
-						found = true;
-						break;
-					}
-				if(!found) // the currentProject is no longer available
-					switchToProject(null);
+			// Determine which project to switch to:
+			ProjectDescriptor switchTo = null; // if this stays null we will go into "no-project mode"
+			if(!result.isEmpty())
+			{
+				// In case the currentProject and the previously active one are no longer
+				//	available (see below) we switch to the first project in the list list:
+				switchTo = result.get(0);
+				
+				// If there is a currently active project...
+				if(currentProject != null)
+				{	// ... look for it in the result list:
+					for(int i = 0; i < result.size(); i++)
+						if(result.get(i).equalDescription(currentProject))
+						{	// (Re)select current project:
+							switchTo = result.get(i);
+							break;
+						}
+					// if we get here the currentProject is no longer available
+				}
+				// If there is a previously active project...
+				else if(getPreferences().getActiveProjectSignature() != null)
+				{
+					// ... look for it in the result list:
+					String prevActiveProjectSign = getPreferences().getActiveProjectSignature();
+					for(int i = 0; i < result.size(); i++)
+						if(result.get(i).getSignatureString().equals(prevActiveProjectSign))
+						{	// (Re)select previously active project:
+							switchTo = result.get(i);
+							break;
+						}
+					// if we get here the previously active project is no longer available
+				}
 			}
-			else if(getPreferences().getActiveProjectSignature() != null)
-			{	// Reselect previously active project:
-				String prevActiveProjectSign = getPreferences().getActiveProjectSignature();
-				for(int i = 0; i < result.size(); i++)
-					if(result.get(i).getSignatureString().equals(prevActiveProjectSign))
-					{
-						// select in list:
-						projectList.setItemChecked(i, true);
-						// switch to it:
-						switchToProject(result.get(i));
-					}
-			}
-			else
-				// select nothing or first project in list:
-				switchToProject(result.isEmpty() ? null : result.get(0)); 
+			
+			// Switch to the right project:
+			switchToProject(switchTo);
 		}
 
 	}
@@ -378,7 +385,11 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	}
 	
 	private void switchToProject(ProjectDescriptor projDescr)
-	{		
+	{
+		// Select in list:
+		if(projDescr != null && projectListAdaptor.getPosition(projDescr) != -1)
+			projectList.setItemChecked(projectListAdaptor.getPosition(projDescr), true);
+		
 		// If we got null or a Project object (instead of a plain ProjectDesciptor):
 		if(projDescr == null || projDescr instanceof Project)
 			setCurrentProject((Project) projDescr);
@@ -409,7 +420,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	{
 		if(currentProject == project && currentProject != null)
 			return; // this is already the current project
-		
 		//else...
 		currentProject = project;
 		pager.setAdapter(new ProjectManagerPagerAdapter(this, getSupportFragmentManager()));
@@ -745,7 +755,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 */
 	public void removeProject(MenuItem item)
 	{
-		Project project = getCurrentProject(true);
+		final Project project = getCurrentProject(true);
 		if(project != null)
 		{
 			showYesNoDialog(R.string.remove_project, getString(R.string.removeProjectConfirm, project.toString(false)), R.drawable.ic_delete_black_36dp, new Runnable()
@@ -760,7 +770,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 						{
 							updateProjectList(true); // Refresh list
 						}
-					}).execute(getCurrentProject(false));
+					}).execute(project);
 				}
 			}, false, null, false);
 		}
