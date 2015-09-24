@@ -46,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -1829,15 +1830,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(getNullString()); // "NULL"
 				}
 			}
-			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
+			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
 			{	// Equality constraint on composite column...
 				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?>) cp.getColumn());
 				if(subSqlCols != null)
 				{	// ...  which is split up in the SQLTable...
-					Record valueRecord = (Record) equalityConstr.getValue();
+					ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();
 					AndConstraint andConstr = new AndConstraint();
 					for(SColumn subSqlCol : subSqlCols)
-						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueRecord)));
+						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueSet)));
 					andConstr.reduce().accept(this);
 				}
 			}
