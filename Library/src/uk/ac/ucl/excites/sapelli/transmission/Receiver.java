@@ -18,16 +18,11 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
-import java.io.IOException;
-
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
-import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 
 /**
  * @author mstevens

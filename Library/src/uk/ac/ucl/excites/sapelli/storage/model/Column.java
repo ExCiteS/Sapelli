@@ -700,10 +700,15 @@ public abstract class Column<T> implements Serializable
 
 	protected abstract boolean equalRestrictions(Column<T> otherColumn);
 
+	/**
+	 * Accept a ColumnVisitor. The column is excepted to call one of the visitor's visit() methods.
+	 * 
+	 * @param visitor
+	 */
 	public abstract void accept(ColumnVisitor visitor);
 
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + getTypeString().hashCode();
