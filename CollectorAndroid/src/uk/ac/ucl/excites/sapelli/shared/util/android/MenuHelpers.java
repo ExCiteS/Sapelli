@@ -51,7 +51,7 @@ public final class MenuHelpers
 	
 	static private final Class<?> AppCompatMenuItemImplClass = android.support.v7.internal.view.menu.MenuItemImpl.class;
 	
-	static private final Class<?>[] MenuItemImplClasses = { AndroidMenuItemImplClass, AppCompatMenuItemImplClass };
+	static protected final Class<?>[] MenuItemImplClasses = { AndroidMenuItemImplClass, AppCompatMenuItemImplClass };
 	
 	/**
 	 * Method which forces the displaying of action icons in overflow menus (which Android normally shows as text-only).
