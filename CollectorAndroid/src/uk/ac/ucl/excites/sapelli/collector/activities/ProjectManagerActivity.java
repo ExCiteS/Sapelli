@@ -297,7 +297,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			new RetrieveProjectDescriptorsTask().execute();
 	}
 	
-	private class RetrieveProjectDescriptorsTask extends AsyncTaskWithWaitingDialog<Void, List<ProjectDescriptor>>
+	private class RetrieveProjectDescriptorsTask extends AsyncTaskWithWaitingDialog<ProjectManagerActivity, Void, List<ProjectDescriptor>>
 	{
 		
 		public RetrieveProjectDescriptorsTask()

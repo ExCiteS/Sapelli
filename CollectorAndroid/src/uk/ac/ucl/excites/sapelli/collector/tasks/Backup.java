@@ -31,6 +31,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.ContextThemeWrapper;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
@@ -295,7 +296,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	@SuppressWarnings("unchecked")
 	private void doBackup()
 	{
-		new AsyncBackup().execute(foldersToExport);
+		new AsyncBackup(activity).execute(foldersToExport);
 	}
 	
 	private void showSuccessDialog(final File destZipFile)
@@ -334,14 +335,16 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	 * 
 	 * @author Michalis Vitos, mstevens
 	 */
-	private class AsyncBackup extends AsyncTaskWithWaitingDialog<Set<Folder>, File>
+	private class AsyncBackup extends AsyncTaskWithWaitingDialog<BaseActivity, Set<Folder>, File>
 	{
 		
+		private final CollectorApp app;
 		private Exception failure = null;
-	
-		public AsyncBackup()
+		
+		public AsyncBackup(BaseActivity activity)
 		{
 			super(activity);
+			app = activity.getCollectorApp();
 		}
 	
 		@Override
@@ -365,7 +368,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 				// Phase 2: Back-up database(s)
 				publishProgress(activity.getString(R.string.backup_progress_db));
 				// 	Create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labeled as backups):				
-				StoreBackupper.Backup(toZip[z], false, activity.getCollectorApp().getStoreHandlesForBackup());
+				StoreBackupper.Backup(toZip[z], false, app.getStoreHandlesForBackup());
 				
 				// Phase 3: Create ZIP archive
 				publishProgress(activity.getString(R.string.backup_progress_zipping));
