@@ -49,6 +49,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
@@ -1221,6 +1222,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void visit(IntegerListColumn intListCol)
 		{
 			visitListColumn(intListCol);
+		}
+		
+		@Override
+		public void visit(BooleanListColumn boolListCol)
+		{
+			visitListColumn(boolListCol);
 		}
 		
 		@Override

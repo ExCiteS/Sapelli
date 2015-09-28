@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -53,6 +54,8 @@ public interface ColumnVisitor
 	public void visit(StringColumn stringCol);
 	
 	public void visit(IntegerListColumn intListCol);
+	
+	public void visit(BooleanListColumn boolListCol);
 	
 	public void visit(LineColumn lineCol);
 	
