@@ -108,7 +108,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 
 	/**
 	 * @param client
-	 * @param version current (targetted) version of the database, if existing database is older it will be upgrader (see {@link #initialise(boolean, int, Upgrader)}).
+	 * @param version current (targeted) version of the database, if existing database is older it will be upgrader (see {@link #initialise(boolean, int, Upgrader)}).
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
 	public SQLRecordStore(StorageClient client, int version, String valuePlaceHolder)
@@ -334,8 +334,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			
 			// Construct constraint to filter out undesired schemata:
 			AndConstraint filterSkipSchemata = new AndConstraint();
-			for(Schema cachedSchema : skipSchemata)
-				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(cachedSchema).getRecordQueryConstraint().negate());
+			for(Schema skippedSchema : skipSchemata)
+				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
 			
 			// Query schemata table, filtering out the undesired ones:
 			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), filterSkipSchemata));
