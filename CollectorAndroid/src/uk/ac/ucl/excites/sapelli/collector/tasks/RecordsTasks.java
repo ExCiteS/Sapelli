@@ -22,6 +22,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.Context;
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
@@ -37,11 +39,10 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import android.util.Log;
 
 /**
  * A collection of async tasks to deal with record query, export & delete operations.
@@ -59,7 +60,7 @@ public final class RecordsTasks
 	 * @param <I>
 	 * @param <O>
 	 */
-	static protected abstract class RecordStoreTask<I, O> extends AsyncTaskWithWaitingDialog<I, O> implements StoreUser
+	static protected abstract class RecordStoreTask<I, O> extends AsyncTaskWithWaitingDialog<BaseActivity, I, O> implements StoreUser
 	{
 
 		protected final CollectorClient client;
@@ -175,7 +176,7 @@ public final class RecordsTasks
 		{
 			// Delete records:
 			List<Record> recordsToDelete = params[0];
-			publishProgress(context.getString(R.string.deletingXRecords, recordsToDelete.size()));
+			publishProgress(getContext().getString(R.string.deletingXRecords, recordsToDelete.size()));
 			recordStore.delete(recordsToDelete);
 			return recordsToDelete;
 		}
@@ -221,7 +222,7 @@ public final class RecordsTasks
 		{
 			// Delete records:
 			List<Record> recordsToStore = params[0];
-			publishProgress(context.getString(R.string.storingXRecords, recordsToStore.size()));
+			publishProgress(getContext().getString(R.string.storingXRecords, recordsToStore.size()));
 			recordStore.store(recordsToStore);
 			return recordsToStore;
 		}
@@ -250,7 +251,7 @@ public final class RecordsTasks
 		
 	}
 	
-	static public class ExportTask extends AsyncTaskWithWaitingDialog<List<Record>, ExportResult>
+	static public class ExportTask extends AsyncTaskWithWaitingDialog<Context, List<Record>, ExportResult>
 	{
 
 		private Exporter exporter;
@@ -270,7 +271,7 @@ public final class RecordsTasks
 		protected final ExportResult doInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
-			onProgressUpdate(context.getString(R.string.exportXRecords, records.size()));
+			onProgressUpdate(getContext().getString(R.string.exportXRecords, records.size()));
 			return exporter.export(records, selectionDescr);
 		}
 		
@@ -310,7 +311,7 @@ public final class RecordsTasks
 		
 	}
 	
-	static public class ImportTask extends AsyncTaskWithWaitingDialog<File, List<Record>>
+	static public class ImportTask extends AsyncTaskWithWaitingDialog<Context, File, List<Record>>
 	{
 
 		private Importer importer;
@@ -332,7 +333,7 @@ public final class RecordsTasks
 			{
 				for(File file : files)
 				{
-					onProgressUpdate(context.getString(R.string.importFromX, file.getAbsolutePath()));
+					onProgressUpdate(getContext().getString(R.string.importFromX, file.getAbsolutePath()));
 					CollectionUtils.addAllIgnoreNull(result, importer.importFrom(file));
 				}
 			}

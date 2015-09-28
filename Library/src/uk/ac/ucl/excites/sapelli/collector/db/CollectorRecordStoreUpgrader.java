@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.Upgrader;
 public class CollectorRecordStoreUpgrader extends Upgrader implements StoreUser
 {
 	
-	private final CollectorClient client;
+	protected final CollectorClient client;
 
 	public CollectorRecordStoreUpgrader(CollectorClient client)
 	{

@@ -299,11 +299,11 @@ public abstract class ValueSetColumn<VC extends ValueSet<?>> extends Column<VC>
 
 	protected void accept(ColumnVisitor visitor, boolean fullTraverse)
 	{
-		// Enter record column:
+		// Enter valueset column:
 		visitor.enter(this);
 		// Traverse subcolumns:
 		columnSet.accept(visitor, getSkipColumns(fullTraverse));
-		// Leave record column:
+		// Leave valueset column:
 		visitor.leave(this);
 	}
 	

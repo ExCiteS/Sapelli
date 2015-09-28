@@ -19,30 +19,36 @@
 package uk.ac.ucl.excites.sapelli.shared.util.android;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.graphics.Bitmap;
+import android.content.Intent;
 import android.os.Build;
 
 /**
  * @author mstevens
  *
  */
-public final class ActivityHelpers
+public final class IntentHelpers
 {
 	
-	private ActivityHelpers() {}
+	private IntentHelpers() {}
 
-	static public void setTaskDescription(Activity activity, String title, Bitmap icon, int backgroundColor)
+	static public void setFlagActivityCleanWhenTaskReset(Intent intent)
 	{
 		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP /* = 21 */)
-			setTaskDescriptionLollipop(activity, title, icon, backgroundColor);
+			setFlagActivityCleanWhenTaskResetLollipop(intent);
+		else
+			setFlagActivityCleanWhenTaskResetPreLollipop(intent);
+	}
+	
+	@SuppressWarnings("deprecation")
+	static private void setFlagActivityCleanWhenTaskResetPreLollipop(Intent intent)
+	{
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 	}
 
 	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
-	static private void setTaskDescriptionLollipop(Activity activity, String title, Bitmap icon, int backgroundColor)
+	static private void setFlagActivityCleanWhenTaskResetLollipop(Intent intent)
 	{
-		activity.setTaskDescription(new ActivityManager.TaskDescription(title, icon, backgroundColor));
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
 	}
 	
 }

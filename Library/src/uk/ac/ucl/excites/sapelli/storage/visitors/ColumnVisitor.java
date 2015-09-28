@@ -50,7 +50,7 @@ public interface ColumnVisitor
 	public void visit(FloatColumn floatCol);
 	
 	public void visit(IntegerColumn intCol);
-		
+	
 	public void visit(StringColumn stringCol);
 	
 	public void visit(IntegerListColumn intListCol);
@@ -73,9 +73,9 @@ public interface ColumnVisitor
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
-	public void enter(ValueSetColumn<?> recordCol);
+	public void enter(ValueSetColumn<?> valueSetCol);
 	
-	public void leave(ValueSetColumn<?> recordCol);
+	public void leave(ValueSetColumn<?> valueSetCol);
 	
 	public boolean allowLocationSelfTraversal();
 	

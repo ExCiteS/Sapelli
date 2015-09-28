@@ -31,7 +31,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.ContextThemeWrapper;
-import android.widget.TextView;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
@@ -43,7 +43,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
-import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -134,6 +133,13 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	
 	/**
 	 * Brings up the selection dialog (= start of back-up procedure)
+	 * 
+	 * Note:
+	 * 	Due to an Android bug (reported by mstevens: https://code.google.com/p/android/issues/detail?id=187416)
+	 * 	we cannot insert a header into the ListView on this dialog as it causes Android to use incorrect list
+	 * 	item indexes. Therefore we use the message as the title of the dialog (ugly). A future alternative (TODO)
+	 * 	may be to refactor this class as a DialogFragment in which the message is shown in a separate TextView
+	 * 	above the list instead of a headerView "in" the ListView.
 	 */
 	private void showSelectionDialog()
 	{
@@ -154,7 +160,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		//	Set icon:
 		.setIcon(R.drawable.ic_content_save_black_36dp)
 		//	Set title:
-		.setTitle(R.string.backup)
+		.setTitle(R.string.selectForBackup) // R.string.backup)
 		//	Set multiple choice:
 		.setMultiChoiceItems(
 			checkboxItems,
@@ -190,12 +196,12 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		// Create the dialog:
 		AlertDialog dialog = builder.create();
 		// Add message above list:
-		TextView lblMsg = new TextView(activity);
+		/*TextView lblMsg = new TextView(activity);
 		int lrPadding = ViewHelpers.getDefaultDialogPaddingPx(activity);
 		lblMsg.setPadding(lrPadding, 0, lrPadding, 0);
 		lblMsg.setTextAppearance(activity, android.R.style.TextAppearance_Medium);
 		lblMsg.setText(R.string.selectForBackup);
-		dialog.getListView().addHeaderView(lblMsg);
+		dialog.getListView().addHeaderView(lblMsg);*/
 		// Show the dialog:
 		dialog.show();
 	}
@@ -290,7 +296,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	@SuppressWarnings("unchecked")
 	private void doBackup()
 	{
-		new AsyncBackup().execute(foldersToExport);
+		new AsyncBackup(activity).execute(foldersToExport);
 	}
 	
 	private void showSuccessDialog(final File destZipFile)
@@ -329,18 +335,20 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	 * 
 	 * @author Michalis Vitos, mstevens
 	 */
-	private class AsyncBackup extends AsyncTaskWithWaitingDialog<Set<Folder>, File>
+	private class AsyncBackup extends AsyncTaskWithWaitingDialog<BaseActivity, Set<Folder>, File>
 	{
 		
+		private final CollectorApp app;
 		private Exception failure = null;
-	
-		public AsyncBackup()
+		
+		public AsyncBackup(BaseActivity activity)
 		{
 			super(activity);
+			app = activity.getCollectorApp();
 		}
 	
 		@Override
-		protected File doInBackground(Set<Folder>... params)
+		protected File doInBackground(@SuppressWarnings("unchecked") Set<Folder>... params)
 		{
 			File destZipFile = null;
 			File tmpFolder = null;
@@ -360,7 +368,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 				// Phase 2: Back-up database(s)
 				publishProgress(activity.getString(R.string.backup_progress_db));
 				// 	Create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labeled as backups):				
-				StoreBackupper.Backup(toZip[z], false, activity.getCollectorApp().getStoreHandlesForBackup());
+				StoreBackupper.Backup(toZip[z], false, app.getStoreHandlesForBackup());
 				
 				// Phase 3: Create ZIP archive
 				publishProgress(activity.getString(R.string.backup_progress_zipping));

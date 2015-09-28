@@ -44,29 +44,31 @@ public abstract class BaseActivity extends AppCompatActivity
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_OK = false;
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_CANCEL = false;
 	
-	protected CollectorApp app;
-	protected FileStorageProvider fileStorageProvider;
+	private CollectorApp app;
+	private FileStorageProvider fileStorageProvider;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		this.app = (CollectorApp) getApplication();
+		getCollectorApp(); // set app variable
 	}
 	
 	public CollectorApp getCollectorApp()
 	{
+		if(app == null)
+			app = (CollectorApp) getApplication();
 		return app;
 	}
 	
 	public CollectorClient getCollectorClient()
 	{
-		return app.collectorClient;
+		return getCollectorApp().collectorClient;
 	}
 	
 	public CollectorPreferences getPreferences()
 	{
-		return app.getPreferences();
+		return getCollectorApp().getPreferences();
 	}
 	
 	@Override
@@ -74,32 +76,7 @@ public abstract class BaseActivity extends AppCompatActivity
 	{
 		super.onResume();
 
-		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
-		try
-		{
-			fileStorageProvider = app.getFileStorageProvider();
-		}
-		catch(FileStorageRemovedException e)
-		{
-			e.printStackTrace(System.err);
-			// Inform the user and close the application
-			final Runnable useAlternativeStorage = new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					// Clear the setting before restart
-					getPreferences().clearSapelliFolder();
-				}
-			};
-			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.drawable.sapelli_logo, R.string.useAlternativeStorage, useAlternativeStorage, true, R.string.insertSDcard, null, true);
-		}
-		catch(FileStorageUnavailableException e)
-		{
-			e.printStackTrace(System.err);
-			// Inform the user and close the application
-			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
-		}
+		getFileStorageProvider(); // Initialise/check fileStorageProvider
 	}
 
 	/**
@@ -107,6 +84,35 @@ public abstract class BaseActivity extends AppCompatActivity
 	 */
 	public FileStorageProvider getFileStorageProvider()
 	{
+		if(fileStorageProvider == null)
+		{
+			// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
+			try
+			{
+				fileStorageProvider = getCollectorApp().getFileStorageProvider();
+			}
+			catch(FileStorageRemovedException e)
+			{
+				e.printStackTrace(System.err);
+				// Inform the user and close the application
+				final Runnable useAlternativeStorage = new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						// Clear the setting before restart
+						getPreferences().clearSapelliFolder();
+					}
+				};
+				showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.drawable.sapelli_logo, R.string.useAlternativeStorage, useAlternativeStorage, true, R.string.insertSDcard, null, true);
+			}
+			catch(FileStorageUnavailableException e)
+			{
+				e.printStackTrace(System.err);
+				// Inform the user and close the application
+				showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
+			}
+		}
 		return fileStorageProvider;
 	}
 

@@ -124,7 +124,7 @@
     <string name="phone_number">Phone Number</string>
     <string name="send">Send Data</string>
     <string name="receive">Receive Data</string>
-    <string name="add_project">Please add a project by clicking the \"+\" button above</string>
+    <string name="add_project">Please add a project by clicking the \"＋\" above…</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
     <string name="load_projects">Loading projects</string>

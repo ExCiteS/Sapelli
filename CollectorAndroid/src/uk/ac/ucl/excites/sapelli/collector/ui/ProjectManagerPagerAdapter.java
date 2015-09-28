@@ -26,7 +26,6 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.DetailsTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.ExportTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.MainTabFragment;
-import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
 import android.content.Context;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -45,7 +44,7 @@ public class ProjectManagerPagerAdapter extends FragmentPagerAdapter
 		List<Class<? extends ProjectManagerTabFragment>> tabClasses = new ArrayList<Class<? extends ProjectManagerTabFragment>>();
 		tabClasses.add(MainTabFragment.class);
 		tabClasses.add(ExportTabFragment.class);
-		tabClasses.add(TransmissionTabFragment.class);
+		//tabClasses.add(TransmissionTabFragment.class);
 		tabClasses.add(DetailsTabFragment.class);
 		// add more here...
 		TAB_FRAGMENT_CLASSES = Collections.unmodifiableList(tabClasses);

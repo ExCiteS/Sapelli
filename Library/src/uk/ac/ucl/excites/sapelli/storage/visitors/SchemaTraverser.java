@@ -23,9 +23,8 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
@@ -33,10 +32,10 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
  * 
  * @author mstevens
  */
-public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
+public abstract class SchemaTraverser implements ColumnVisitor 
 {
 
-	private final Stack<Column<?>> columnStack = new Stack<Column<?>>();
+	private final Stack<ValueSetColumn<?>> parentStack = new Stack<ValueSetColumn<?>>();
 	
 	public void traverse(Schema schema)
 	{
@@ -45,7 +44,7 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	
 	public void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
 	{
-		columnStack.clear();
+		parentStack.clear();
 		schema.accept(this, skipColumns);
 	}
 	
@@ -55,7 +54,7 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	@Override
 	public void enter(ValueSetColumn<?> recordCol)
 	{
-		columnStack.push(recordCol);
+		parentStack.push(recordCol);
 	}
 
 	/* (non-Javadoc)
@@ -64,38 +63,15 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	@Override
 	public void leave(ValueSetColumn<?> recordCol)
 	{
-		columnStack.pop();
+		parentStack.pop();
 	}
 	
 	/**
-	 * Visit method for VirtualColumns. We treat them like any other column (i.e. we do *not* visit their target column directly). 
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn)
+	 * @return
 	 */
-	@Override
-	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol)
+	protected <C extends Column<?>> ColumnPointer<C> getColumnPointer(C currentColumn)
 	{
-		visit((Column<VT>) virtCol);
+		return new ColumnPointer<C>(parentStack, currentColumn); // checks will be performed to ensure the currentColumn is really a child of the parent(s)
 	}
 	
-	@Override
-	public <T> void visit(Column<T> column)
-	{
-		columnStack.push(column);
-		visit(getColumnPointer());
-		columnStack.pop();
-	}
-	
-	protected ColumnPointer<?> getColumnPointer()
-	{
-		return ColumnPointer.FromList(columnStack);
-	}
-	
-	/**
-	 * Visit leaf column, indicated by a ColumnPointer
-	 * 
-	 * @param leafColumnPointer
-	 */
-	public abstract void visit(ColumnPointer<?> leafColumnPointer);
-
 }

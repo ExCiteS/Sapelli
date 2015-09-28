@@ -111,10 +111,9 @@ public final class ProjectTasks
 	 * 
 	 * @author mstevens
 	 */
-	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<List<Record>, List<File>>
+	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<BaseActivity, List<Record>, List<File>>
 	{
 
-		private final BaseActivity owner;
 		private final MediaFilesQueryCallback callback;
 		private final Map<Schema, Form> schema2Form;
 		private Exception failure = null;
@@ -137,7 +136,6 @@ public final class ProjectTasks
 		public MediaFilesQueryTask(BaseActivity owner, List<Project> projects, MediaFilesQueryCallback callback)
 		{
 			super(owner, owner.getString(R.string.mediaScanning));
-			this.owner = owner;
 			this.callback = callback;
 
 			// Populate schema->form map:
@@ -169,8 +167,8 @@ public final class ProjectTasks
 					formRecs.add(r);
 				}
 				// Scan for attachments:
-				final List<File> attachments = new ArrayList<File>();		
-				FileStorageProvider fileSP = owner.getFileStorageProvider();
+				final List<File> attachments = new ArrayList<File>();	
+				FileStorageProvider fileSP = getContext().getFileStorageProvider();
 				for(Form form : recordsByForm.keySet())
 					for(Record record : recordsByForm.get(form))
 						for(Field field : form.getFields())
@@ -216,10 +214,9 @@ public final class ProjectTasks
 		
 	}
 	
-	static private abstract class ProjectStoreTask<I, O> extends AsyncTaskWithWaitingDialog<I, O>
+	static private abstract class ProjectStoreTask<I, O> extends AsyncTaskWithWaitingDialog<BaseActivity, I, O>
 	{
 		
-		protected final BaseActivity owner;
 		protected final ProjectStore projectStore;
 		
 		@SuppressWarnings("unused")
@@ -231,7 +228,6 @@ public final class ProjectTasks
 		public ProjectStoreTask(BaseActivity owner, ProjectStore projectStore, String waitingMsg)
 		{
 			super(owner, waitingMsg);
-			this.owner = owner;
 			this.projectStore = projectStore;
 		}		
 		
@@ -297,15 +293,19 @@ public final class ProjectTasks
 				// Remove project from store:
 				projectStore.delete(projDescr);
 				
-				// Remove installation folder:
-				FileUtils.deleteQuietly(owner.getFileStorageProvider().getProjectInstallationFolder(projDescr, false));
+				BaseActivity owner = getContext();
+				if(owner != null)
+				{
+					// Remove installation folder:
+					FileUtils.deleteQuietly(owner.getFileStorageProvider().getProjectInstallationFolder(projDescr, false));
+					
+					// Remove shortcut:
+					ProjectRunHelpers.removeShortcut(owner, projDescr);
 				
-				// Remove shortcut:
-				ProjectRunHelpers.removeShortcut(owner, projDescr);
-				
-				// Remove as active project
-				if(owner.getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
-					owner.getPreferences().clearActiveProjectSignature();
+					// Remove as active project
+					if(owner.getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
+						owner.getPreferences().clearActiveProjectSignature();
+				}
 			}
 			return null;
 		}

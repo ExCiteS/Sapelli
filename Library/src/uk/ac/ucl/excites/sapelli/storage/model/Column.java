@@ -546,16 +546,15 @@ public abstract class Column<T> implements Serializable
 
 	public String toString()
 	{
-		return	getTypeString() + "Column";
+		return	getTypeString() + "Column:" + name;
 	}
 
 	public String getSpecification()
 	{
-		return toString() + " [" +
-		    				name + "; "
-		    				+ (optional ? "optional" : "required") + "; "
-		    				+ (this instanceof VirtualColumn ? "virtual; " : "")
-		    				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
+		return toString() 	+ " ["	+ (optional ? "optional" : "required") + "; "
+									+ (this instanceof VirtualColumn ? "virtual; " : "")
+									+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits"
+							+ "]";
 	}
 
 	public String getTypeString()
@@ -700,10 +699,15 @@ public abstract class Column<T> implements Serializable
 
 	protected abstract boolean equalRestrictions(Column<T> otherColumn);
 
+	/**
+	 * Accept a ColumnVisitor. The column is excepted to call one of the visitor's visit() methods.
+	 * 
+	 * @param visitor
+	 */
 	public abstract void accept(ColumnVisitor visitor);
 
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + getTypeString().hashCode();

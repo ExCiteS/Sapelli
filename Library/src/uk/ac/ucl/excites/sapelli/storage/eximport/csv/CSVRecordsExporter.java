@@ -100,7 +100,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	private Separator separator;
 	
 	private FileWriter writer = null;
-	private List<ColumnPointer> columnPointers;
+	private List<ColumnPointer<?>> columnPointers;
 	
 	public CSVRecordsExporter(File exportFolder)
 	{
@@ -113,7 +113,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
 		this.exportFolder = exportFolder;
 		this.separator = separator;
-		this.columnPointers = new ArrayList<ColumnPointer>();
+		this.columnPointers = new ArrayList<ColumnPointer<?>>();
 	}
 	
 	private void openWriter(String description, DateTime timestamp) throws Exception
@@ -187,7 +187,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				try
 				{
 					// Column names (separated by the separator):
-					for(ColumnPointer cp : columnPointers)
+					for(ColumnPointer<?> cp : columnPointers)
 						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorChar() : "") + cp.getQualifiedColumnName());
 					// Postfix: separator+modelID=+...+separator+modelSchemaNumber=+...+separator+schemaName="+...+"separator
 					writer.write(	separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_ID + "=" + schema.getModelID() +
@@ -209,7 +209,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					writer.openTransaction(); // output will be buffered
 					try
 					{	
-						for(ColumnPointer cp : columnPointers)
+						for(ColumnPointer<?> cp : columnPointers)
 						{
 							if(!writer.isTransactionBufferEmpty())
 								writer.write(separator.getSeparatorChar());
@@ -274,7 +274,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 	
 	@Override
-	public void visit(ColumnPointer leafColumnPointer)
+	public void visit(ColumnPointer<?> leafColumnPointer)
 	{
 		columnPointers.add(leafColumnPointer);
 	}

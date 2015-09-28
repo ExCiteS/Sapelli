@@ -43,10 +43,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -73,7 +74,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
-import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
 /**
  * @author mstevens
@@ -408,7 +409,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 	}
 	
-	protected abstract TableFactory getTableFactory();
+	protected abstract TableFactory<STable> getTableFactory();
 	
 	protected Collection<Schema> getSchemata(Source source)
 	{
@@ -603,7 +604,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * Mapping of Sapelli ColumnPointers (usually leaf columns) to corresponding  SQLColumns.
 		 */
-		public final Map<ColumnPointer, SColumn> sqlColumns;
+		public final Map<ColumnPointer<?>, SColumn> sqlColumns;
 		
 		/**
 		 * Mapping of composite Sapelli columns to a list of SQLColumns which they correspond to.
@@ -622,7 +623,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.tableName = getTableName(schema);
 			this.schema = schema;
 			// Init collections:
-			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>(); // we use a LHP to preserve column order!
+			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // we use a LHP to preserve column order!
 			composite2SqlColumns = new HashMap<ValueSetColumn<?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
@@ -633,11 +634,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public void addColumn(SColumn sqlColumn)
 		{
-			ColumnPointer sourceCP = sqlColumn.sourceColumnPointer;
+			ColumnPointer<?> sourceCP = sqlColumn.sourceColumnPointer;
 			if(sourceCP == null || sourceCP.getColumn() == null)
 				throw new IllegalArgumentException("SQLColumn needs a valid sourceColumnPointer in order to be added to a SQLTable instance");
 			
 			// Add SQLColumn:
+			if(sqlColumns.get(sourceCP) != null)
+				throw new IllegalArgumentException("Duplicate source column!");
 			sqlColumns.put(sourceCP, sqlColumn);
 			
 			// Deal with AutoIncr...
@@ -647,15 +650,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Deal with composites...
 			while(sourceCP.isSubColumn())
 			{
-				ColumnPointer parentCP = sourceCP.getParentPointer();
-				ValueSetColumn<?> parentCol = (ValueSetColumn<?>) parentCP.getColumn();
+				ColumnPointer<ValueSetColumn<?>> parentCP = sourceCP.getParentPointer();
 				List<SColumn> subSQLCols;
-				if(composite2SqlColumns.containsKey(parentCol))
-					subSQLCols = composite2SqlColumns.get(parentCol);
+				if(composite2SqlColumns.containsKey(parentCP.getColumn()))
+					subSQLCols = composite2SqlColumns.get(parentCP.getColumn());
 				else
 				{
 					subSQLCols = new ArrayList<SColumn>();
-					composite2SqlColumns.put(parentCol, subSQLCols);
+					composite2SqlColumns.put(parentCP.getColumn(), subSQLCols);
 				}
 				subSQLCols.add(sqlColumn);
 				// Next parent...
@@ -712,14 +714,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		protected abstract TableCreationHelper getTableCreationHelper();
 		
-		public SColumn getSQLColumn(ColumnPointer sapColumnPointer)
+		public SColumn getSQLColumn(ColumnPointer<?> sapColumnPointer)
 		{
-			return getSQLColumn(sapColumnPointer.getColumn());
+			// Try pointer as such (assumes it contains a complete path):
+			SColumn sqlCol = sqlColumns.get(sapColumnPointer);
+			if(sqlCol == null)
+				// Try to find the column:
+				sqlCol = getSQLColumn(sapColumnPointer.getColumn());
+			return sqlCol;
 		}
 		
-		public SColumn getSQLColumn(Column<?> sapColumn)
+		public <C extends Column<?>> SColumn getSQLColumn(C sapColumn)
 		{
-			return sqlColumns.get(new ColumnPointer(schema, sapColumn));
+			return sqlColumns.get(new ColumnPointer<C>(schema, sapColumn));
 		}
 		
 		public List<SColumn> getSQLColumns(Column<?> sapColumn)
@@ -992,31 +999,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public final String name;
 		public final String type;
-		public final ColumnPointer sourceColumnPointer;
+		public final ColumnPointer<? extends Column<SapType>> sourceColumnPointer;
 		protected final TypeMapping<SQLType, SapType> mapping;
-		
-		/**
-		 * @param type
-		 * @param sourceSchema
-		 * @param sourceColumn
-		 * @param mapping - may be null in case SQLType = SapType
-		 */
-		public SQLColumn(String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
-		{
-			this(null, type, sourceSchema, sourceColumn, mapping);
-		}
 
 		/**
-		 * @param name
+		 * @param name may be null only if sourceColumnPointer is not
 		 * @param type
-		 * @param sourceSchema - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
-		 * @param sourceColumn - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
+		 * @param sourceColumnPointer - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
 		@SuppressWarnings("unchecked")
-		public SQLColumn(String name, String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLColumn(String name, String type, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
 		{
-			this.sourceColumnPointer = (sourceSchema != null && sourceColumn != null) ? new ColumnPointer(sourceSchema, sourceColumn) : null;
+			this.sourceColumnPointer = sourceColumnPointer;
 			this.name = sanitiseIdentifier(name != null ? name : (sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR)));
 			this.type = type;
 			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
@@ -1156,7 +1151,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @author mstevens
 	 */
-	public abstract class TableFactory
+	public interface TableFactory<STable>
 	{
 		
 		/**
@@ -1166,7 +1161,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @return
 		 * @throws DBException
 		 */
-		public abstract STable generateTable(Schema schema) throws DBException;
+		public STable generateTable(Schema schema) throws DBException;
 		
 	}
 	
@@ -1182,7 +1177,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @author mstevens
 	 */
-	public abstract class BasicTableFactory extends TableFactory implements ColumnVisitor
+	public abstract class BasicTableFactory extends SchemaTraverser implements TableFactory<STable>
 	{
 		
 		protected STable table;
@@ -1307,18 +1302,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// never called
 		}
 		
-		@Override
-		public void enter(ValueSetColumn<?> recordCol)
-		{
-			// does nothing
-		}
-		
-		@Override
-		public void leave(ValueSetColumn<?> recordCol)
-		{
-			// does nothing
-		}
-		
 	}
 	
 	/**
@@ -1368,7 +1351,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param indexesToProcess indexes which may relate to the column, any which do and which are described entirely by the returned constraint will be removed from the list
 		 * @return an SQL constraint expression for the given column
 		 */
-		protected abstract String getColumnConstraint(ColumnPointer sourceCP, List<Index> indexesToProcess);
+		protected abstract String getColumnConstraint(ColumnPointer<?> sourceCP, List<Index> indexesToProcess);
 		
 		/**
 		 * Generates SQL constraint expressions for the table as a whole and adds them to the tableConstraints list.
@@ -1828,7 +1811,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public void visit(EqualityConstraint equalityConstr)
 		{
-			ColumnPointer cp = equalityConstr.getColumnPointer();
+			ColumnPointer<?> cp = equalityConstr.getColumnPointer();
 			SColumn sqlCol = table.getSQLColumn(cp);
 			if(sqlCol != null)
 			{	// Equality constraint on non-composite (leaf) column...
@@ -1854,15 +1837,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(getNullString()); // "NULL"
 				}
 			}
-			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
+			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
 			{	// Equality constraint on composite column...
 				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?>) cp.getColumn());
 				if(subSqlCols != null)
 				{	// ...  which is split up in the SQLTable...
-					Record valueRecord = (Record) equalityConstr.getValue();
+					ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();
 					AndConstraint andConstr = new AndConstraint();
 					for(SColumn subSqlCol : subSqlCols)
-						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueRecord)));
+						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueSet)));
 					andConstr.reduce().accept(this);
 				}
 			}
