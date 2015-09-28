@@ -137,8 +137,6 @@ public class RuleConstraint extends Constraint
 	 */
 	public RuleConstraint(ColumnPointer<ComparableColumn<?>> lhsColumnPointer, Comparison comparison, Object rhsValue)
 	{
-		if(!(lhsColumnPointer.getColumn() instanceof ComparableColumn))
-			throw new IllegalArgumentException("Rules can only be applied to " + ComparableColumn.class.getSimpleName() + "s!");
 		if(rhsValue == null && comparison != Comparison.EQUAL && comparison != Comparison.NOT_EQUAL)
 			throw new NullPointerException("Value cannot be null unless comparison is equality or inequality.");
 		this.lhsColumnPointer = lhsColumnPointer;
@@ -251,7 +249,6 @@ public class RuleConstraint extends Constraint
 	@Override
 	public boolean _isValid(Record record)
 	{
-		// TODO use ColumnPointer#getComparator()?
 		// Get (sub)record(s) and the rhs value:
 		Object theRhsValue = rhsValue;
 		ValueSet<?> lhsRecord = lhsColumnPointer.getValueSet(record, false);
@@ -262,7 +259,7 @@ public class RuleConstraint extends Constraint
 			ValueSet<?> rhsRecord = rhsColumnPointer.getValueSet(record, false);
 			if(rhsRecord == null)
 				return false;
-			theRhsValue = getRHSCompareColumn().retrieveValue(rhsRecord); // get rhsValue for rhsColumn
+			theRhsValue = getRHSCompareColumn().retrieveValue(rhsRecord); // get rhsValue from rhsColumn
 		}
 		// Compare value:
 		int compResult = getLHSCompareColumn().retrieveAndCompareToObject(lhsRecord, theRhsValue);
