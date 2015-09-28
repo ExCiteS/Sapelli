@@ -50,6 +50,14 @@ public class FirstRecordQuery extends SingleRecordQuery
 		super(new RecordsQuery(source, order, 1, constraints));
 	}
 
+	/**
+	 * @param recordsQuery
+	 */
+	public FirstRecordQuery(RecordsQuery recordsQuery)
+	{
+		super(recordsQuery);
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery#reduce(java.util.List)
 	 */

@@ -107,6 +107,17 @@ public class RecordsQuery
 	}
 	
 	/**
+	 * Query for given schema and constraints
+	 * 
+	 * @param schema
+	 * @param constraints
+	 */
+	public RecordsQuery(Schema schema, Constraint... constraints)
+	{
+		this(Source.From(schema), constraints);
+	}
+	
+	/**
 	 * Query with defined source and constraints
 	 * 
 	 * @param source
