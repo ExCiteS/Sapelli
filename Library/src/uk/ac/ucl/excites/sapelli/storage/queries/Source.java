@@ -170,7 +170,7 @@ public class Source extends Constraint
 	
 	/**
 	 * Alternative isValid() method which allows by-passing the expensive schema comparison and use a cheaper (but less) secure implementation.
-	 * When {@code fullSchemaCompare} is false a  cheaper schema pair comparison will be used, but the search itself is O(n).
+	 * When {@code fullSchemaCompare} is false a cheaper schema pair comparison will be used, but the search itself is O(n).
 	 * 
 	 * @param record
 	 * @param fullSchemaCompare
