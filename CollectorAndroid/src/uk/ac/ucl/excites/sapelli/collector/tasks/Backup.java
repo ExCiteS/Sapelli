@@ -32,6 +32,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.view.ContextThemeWrapper;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
@@ -45,7 +46,9 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * Sapelli Collector Back-up procedure 
@@ -222,7 +225,8 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			public void onClick(DialogInterface dialog, int which)
 			{
 				// Query to see if there are any records to export:
-				new RecordsTasks.QueryTask(activity, Backup.this).execute(RecordsQuery.ALL); // TODO filter out Collector-internal schemas
+				new RecordsTasks.QueryTask(activity, Backup.this).execute(new RecordsQuery(Source.With(CollectorClient.SCHEMA_FLAGS_COLLECTOR_DATA), Order.UNDEFINED)); // TODO order by form, deviceid, timestamp
+				// TODO let Backup & ExportFragment share this code somehow
 			}
 		})
 		// Set "No" button:

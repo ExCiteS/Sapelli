@@ -435,6 +435,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			// TODO Exclude previously exported
 			// Retrieve by query:
 			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
+			// TODO let ExportFragment & Backup share this code somehow
 		}
 		
 		private String getString(int resId)
