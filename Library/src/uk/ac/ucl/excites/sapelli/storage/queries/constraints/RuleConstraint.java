@@ -95,9 +95,9 @@ public class RuleConstraint extends Constraint
 	 * @throws NullPointerException
 	 * @throws ParseException
 	 */
-	public static RuleConstraint FromString(ComparableColumn<?> compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+	public static <CC extends ComparableColumn<?>> RuleConstraint FromString(CC compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
 	{
-		return FromString(new ColumnPointer<ComparableColumn<?>>(compareColumn), comparison, valueString);
+		return FromString(new ColumnPointer<CC>(compareColumn), comparison, valueString);
 	}
 	
 	/**
@@ -109,25 +109,25 @@ public class RuleConstraint extends Constraint
 	 * @throws NullPointerException
 	 * @throws ParseException
 	 */
-	public static RuleConstraint FromString(ColumnPointer<ComparableColumn<?>> columnPointer, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+	public static RuleConstraint FromString(ColumnPointer<? extends ComparableColumn<?>> columnPointer, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
 	{
 		return new RuleConstraint(columnPointer, comparison, columnPointer.getColumn().parse(valueString));
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	private ColumnPointer<ComparableColumn<?>> lhsColumnPointer;
+	private ColumnPointer<? extends ComparableColumn<?>> lhsColumnPointer;
 	private Comparison comparison;
 	private Object rhsValue;
-	private ColumnPointer<ComparableColumn<?>> rhsColumnPointer;
+	private ColumnPointer<? extends ComparableColumn<?>> rhsColumnPointer;
 	
 	/**
 	 * @param compareColumn must be a top-level column
 	 * @param comparison
 	 * @param rhsValue the value at the right-hand-side of the comparison
 	 */
-	public RuleConstraint(ComparableColumn<?> compareColumn, Comparison comparison, Object rhsValue)
+	public <CC extends ComparableColumn<?>> RuleConstraint(CC compareColumn, Comparison comparison, Object rhsValue)
 	{
-		this(new ColumnPointer<ComparableColumn<?>>(compareColumn), comparison, rhsValue);
+		this(new ColumnPointer<CC>(compareColumn), comparison, rhsValue);
 	}
 	
 	/**
@@ -135,7 +135,7 @@ public class RuleConstraint extends Constraint
 	 * @param comparison
 	 * @param rhsValue the value at the right-hand-side of the comparison
 	 */
-	public RuleConstraint(ColumnPointer<ComparableColumn<?>> lhsColumnPointer, Comparison comparison, Object rhsValue)
+	public RuleConstraint(ColumnPointer<? extends ComparableColumn<?>> lhsColumnPointer, Comparison comparison, Object rhsValue)
 	{
 		if(rhsValue == null && comparison != Comparison.EQUAL && comparison != Comparison.NOT_EQUAL)
 			throw new NullPointerException("Value cannot be null unless comparison is equality or inequality.");
@@ -151,12 +151,12 @@ public class RuleConstraint extends Constraint
 	 * @param rhsColumn the column at the right-hand-side of the comparison, must be a top-level column
 	 * @param comparison
 	 */
-	public <C> RuleConstraint(ComparableColumn<C> lhsColumn, ComparableColumn<C> rhsColumn, Comparison comparison)
+	public <CCL extends ComparableColumn<C>, CCR extends ComparableColumn<C>, C> RuleConstraint(CCL lhsColumn, CCR rhsColumn, Comparison comparison)
 	{
-		this(new ColumnPointer<ComparableColumn<?>>(lhsColumn), new ColumnPointer<ComparableColumn<?>>(rhsColumn), comparison);
+		this(new ColumnPointer<CCL>(lhsColumn), new ColumnPointer<CCR>(rhsColumn), comparison);
 	}
 	
-	private RuleConstraint(ColumnPointer<ComparableColumn<?>> lhsColumnPointer, ColumnPointer<ComparableColumn<?>> rhsColumnPointer, Comparison comparison)
+	private <CC extends ComparableColumn<C>, C> RuleConstraint(ColumnPointer<? extends ComparableColumn<?>> lhsColumnPointer, ColumnPointer<? extends ComparableColumn<?>> rhsColumnPointer, Comparison comparison)
 	{
 		this.lhsColumnPointer = lhsColumnPointer;
 		this.comparison = comparison;
@@ -182,7 +182,7 @@ public class RuleConstraint extends Constraint
 	/**
 	 * @return the left-hand-side columnPointer
 	 */
-	public ColumnPointer<ComparableColumn<?>> getLHSColumnPointer()
+	public ColumnPointer<? extends ComparableColumn<?>> getLHSColumnPointer()
 	{
 		return lhsColumnPointer;
 	}
@@ -198,7 +198,7 @@ public class RuleConstraint extends Constraint
 	/**
 	 * @return the right-hand-side columnPointer
 	 */
-	public ColumnPointer<ComparableColumn<?>> getRHSColumnPointer()
+	public ColumnPointer<? extends ComparableColumn<?>> getRHSColumnPointer()
 	{
 		return rhsColumnPointer;
 	}
