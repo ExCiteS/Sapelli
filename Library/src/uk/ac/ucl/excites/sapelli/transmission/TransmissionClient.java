@@ -147,34 +147,39 @@ public abstract class TransmissionClient extends StorageClient
 	private final class TransmissionStorageObserver implements StorageObserver, StoreUser
 	{
 		
-		private final TransmissionStore tStore;
+		private TransmissionStore tStore;
 		
 		public TransmissionStorageObserver()
 		{
-			// Get TransmissionStore object:
-			TransmissionStore tStore = null;
-			try
-			{
-				tStore = transmissionStoreHandle.getStore(this);
-			}
-			catch(DBException e)
-			{
-				e.printStackTrace(System.err); // TODO proper upwards (to android) error logging
-			}
-			finally
-			{
-				this.tStore = tStore;
-			}
+			/* Note:
+			 * Do *not* initialise tStore here as it causes a call to CollectorApp#getFileStorageProvider()
+			 * before CollectorApp#initialiseFileStorage() has been called. */
 			
 			// Register ourself as an observer to receive updates about storage events:
-			if(this.tStore != null)
-				addObserver(this);
+			addObserver(this);
+		}
+		
+		private boolean init()
+		{
+			if(tStore == null)
+			{
+				try
+				{
+					tStore = transmissionStoreHandle.getStore(this);
+				}
+				catch(DBException e)
+				{
+					e.printStackTrace(System.err); // TODO propagate upwards (to android) error logging
+					return false;
+				}
+			}
+			return true;
 		}
 		
 		@Override
 		public void storageEvent(RecordOperation operation, RecordReference recordRef)
 		{
-			if(recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRANSMITTABLE))
+			if(init() /*make sure we have tStore*/ && recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRANSMITTABLE))
 				receiverLoop : for(Correspondent receiver : getReceiversFor(recordRef.getReferencedSchema()))
 				{
 					switch(operation)
