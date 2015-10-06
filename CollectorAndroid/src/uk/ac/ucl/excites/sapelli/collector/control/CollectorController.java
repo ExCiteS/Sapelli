@@ -269,7 +269,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	{
 		// does nothing for now
 	}
-	
+
 	@Override
 	protected void setupKeyPressTrigger(Trigger trigger)
 	{

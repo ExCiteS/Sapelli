@@ -151,7 +151,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	{
 		this(new DateTime(msSinceEpoch, dateTimeZone));
 	}
-
+	
 	/**
 	 * Copy constructor
 	 * 

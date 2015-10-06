@@ -988,7 +988,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	{
 		startLocationListener(Arrays.asList(locField));
 	}
-	
+
 	protected abstract void startOrientationListener();
 	
 	protected abstract void stopOrientationListener();
