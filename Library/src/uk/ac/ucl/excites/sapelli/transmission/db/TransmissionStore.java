@@ -198,7 +198,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		TRANSMITTABLE_RECORDS_SCHEMA.seal();
 	}
 	//		ColumnPointer (helper):
-	static public final ColumnPointer TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer(TRANSMITTABLE_RECORDS_SCHEMA, Model.META_SCHEMA_NUMBER_COLUMN);
+	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.META_SCHEMA_NUMBER_COLUMN);
 	//	Seal the model:
 	static
 	{
