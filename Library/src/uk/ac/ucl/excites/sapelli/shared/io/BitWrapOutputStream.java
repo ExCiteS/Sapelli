@@ -88,17 +88,17 @@ public final class BitWrapOutputStream extends BitOutputStream
 			write(false);
 	}
 
-    /**
-     * Flushes this and the underlying output stream and forces any buffered bits to be written out.
-     * 
-     * @throws IOException if an I/O error occurs
-     * @see java.io.OutputStream#flush()
-     */
-    public void flush() throws IOException
-    {
-    	writePadding();
-    	output.flush();
-    	super.flush();
-    }
+	/**
+	 * Flushes this and the underlying output stream and forces any buffered bits to be written out.
+	 * 
+	 * @throws IOException if an I/O error occurs
+	 * @see java.io.OutputStream#flush()
+	 */
+	public void flush() throws IOException
+	{
+		writePadding();
+		output.flush();
+		super.flush();
+	}
 
 }
