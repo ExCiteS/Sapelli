@@ -86,7 +86,7 @@ public class Model implements Serializable
 	// Model Schema: a "meta" schema for records that describe a Model
 	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
-	static private final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
+	static protected final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
 	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("compressedSerialisedObject", false));
 	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
 	static
@@ -216,7 +216,7 @@ public class Model implements Serializable
 	{
 		if(!meta && !MODEL_ID_FIELD.inEffectiveRange(id))
 			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
-		if(name == null || name.isEmpty() || !MODEL_NAME_COLUMN.fits(name))
+		if(name == null || name.isEmpty() || name.length() > MAX_MODEL_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a model name of maximum " + MAX_MODEL_NAME_LENGTH + " characters");
 		this.id = id;
 		this.name = name;
