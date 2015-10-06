@@ -31,5 +31,10 @@ public class FileStorageUnavailableException extends FileStorageException
 	{
 		super("No accessible SD card or (emulated) external storage medium found!");
 	}
+	
+	public FileStorageUnavailableException(String message)
+	{
+		super(message);
+	}
 
 }
