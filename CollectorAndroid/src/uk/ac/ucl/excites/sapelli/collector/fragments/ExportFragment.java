@@ -433,9 +433,11 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 			// TODO Exclude previously exported
-			// TODO Exclude collector-internal schemas!!!
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
+			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints));
+			// TODO Exclude collector-internal schemas!!!
+			// TODO order by form, deviceid, timestamp
+			// TODO let ExportFragment & Backup share this code somehow
 		}
 		
 		private String getString(int resId)
