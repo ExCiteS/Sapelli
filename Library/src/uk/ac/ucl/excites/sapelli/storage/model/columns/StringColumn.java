@@ -264,7 +264,7 @@ public class StringColumn extends ComparableColumn<String>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + getCharset().hashCode();
