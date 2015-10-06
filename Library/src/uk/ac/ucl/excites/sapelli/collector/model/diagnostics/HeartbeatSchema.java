@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.diagnostics;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -56,7 +57,8 @@ public class HeartbeatSchema extends Schema
 	{
 		// Call Schema constructor (the schema will be added to the project model): 
 		super(	project.getModel(),
-				project.getModel().getName() + ":" + "Heartbeat");
+				project.getModel().getName() + ":" + "Heartbeat",
+				CollectorClient.SCHEMA_FLAGS_COLLECTOR_AUX_DATA );
 		// Add columns:
 		this.addColumn(COLUMN_LOCAL_TIME);
 		this.addColumn(COLUMN_DEVICE_ID);

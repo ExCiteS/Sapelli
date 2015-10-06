@@ -93,7 +93,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	
 	// Transmission storage model:
 	//	Model:
-	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
+	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement", TransmissionClient.SCHEMA_FLAGS_TRANSMISSION_INTERNAL);
 	// Schema(s) & columns:
 	//	Correspondent schemas:
 	static final public Schema CORRESPONDENT_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Correspondent");

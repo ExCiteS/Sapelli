@@ -76,7 +76,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	// STATICS---------------------------------------------
 	// Project storage model:
 	//	Model:
-	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement");
+	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement", CollectorClient.SCHEMA_FLAGS_COLLECTOR_INTERNAL);
 	//	 Project schema:
 	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
 	//		Columns:

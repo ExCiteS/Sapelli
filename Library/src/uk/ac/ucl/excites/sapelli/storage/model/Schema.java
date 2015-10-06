@@ -86,6 +86,7 @@ public class Schema extends ColumnSet implements Serializable
 	// Dynamics-----------------------------------------------------------
 	public final Model model;
 	public final int modelSchemaNumber;
+	public final int flags;
 	
 	private PrimaryKey primaryKey;
 	
@@ -95,19 +96,37 @@ public class Schema extends ColumnSet implements Serializable
 	private List<Index> indexes;
 	
 	/**
-	 * Create a new (external/client) schema instance which will be add to the provided {@link Model}.
+	 * Create a new schema instance which will be add to the provided {@link Model}.
+	 * The Schema will use the default schema flags of the Model, if the model does not have
+	 * default schema flags a NullPointerException will be thrown.
 	 * 
 	 * @param model
 	 * @param name
-	 * @throws ModelFullException 
+	 * @throws ModelFullException if the model is full
+	 * @throws NullPointerException
 	 */
-	public Schema(Model model, String name) throws ModelFullException
+	public Schema(Model model, String name) throws ModelFullException, NullPointerException
+	{
+		this(model, name, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create a new schema instance which will be add to the provided {@link Model}.
+	 * 
+	 * @param model
+	 * @param name
+	 * @param flags
+	 * @throws ModelFullException if the model is full
+	 * @throws NullPointerException
+	 */
+	public Schema(Model model, String name, int flags) throws ModelFullException, NullPointerException
 	{
 		super((name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name), true);
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
 		this.model = model;
 		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
+		this.flags = flags;
 	}
 	
 	/**
@@ -137,7 +156,26 @@ public class Schema extends ColumnSet implements Serializable
 	{
 		return modelSchemaNumber;
 	}
+	
+	/**
+	 * @return the flags
+	 */
+	public int getFlags()
+	{
+		return flags;
+	}
 
+	/**
+	 * Check whether the Schema has the given flags enabled
+	 * 
+	 * @param flags
+	 * @return
+	 */
+	public boolean hasFlags(int flags)
+	{
+		return (this.flags & flags) == flags;
+	}
+	
 	/**
 	 * Returns a "meta" record which describes the schema (and contains a serialised version of it)
 	 * 
@@ -421,11 +459,12 @@ public class Schema extends ColumnSet implements Serializable
 			// Compare as ColumnSets:
 			if(!super.equals(that, checkNames, checkColumns))
 				return false;
-			// Model/Internal
-			boolean idMatch = (this.model.getID() == that.model.getID() && this.modelSchemaNumber == that.modelSchemaNumber);
-			// Note: for internal enum comparison we compare the enum ordinals instead of the enum objects! This is needed when one Schema comes out of DB4O, but probably a good practice in general.
-			if(!idMatch || !(checkNames || checkColumns || checkIndexes))
-				return idMatch;
+			// Check Model id & the schema number of this schema within the model:
+			if(this.model.getID() != that.model.getID() || this.modelSchemaNumber != that.modelSchemaNumber)			
+				return false;
+			// Check flags:
+			if(this.flags != that.flags)
+				return false;
 			// Model name (schema is name already checked at ColumnSet level):
 			if(checkNames && !this.model.getName().equals(that.model.getName()))
 				return false;
@@ -450,12 +489,13 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (model == null ? 0 : (int)(model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
 		hash = 31 * hash + modelSchemaNumber;
 		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
+		hash = 31 * hash + flags;
 		return hash;
 	}
 	

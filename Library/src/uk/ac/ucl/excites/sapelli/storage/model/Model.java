@@ -31,6 +31,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -78,7 +79,7 @@ public class Model implements Serializable
 	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
 	
 	// Meta-Model:
-	static public final Model META_MODEL = new Model(-1, "MetaModel", true);
+	static public final Model META_MODEL = new Model(-1, "MetaModel", true, StorageClient.SCHEMA_FLAGS_STORAGE_INTERNAL);
 	
 	// Model Schema: a "meta" schema for records that describe a Model
 	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
@@ -185,16 +186,29 @@ public class Model implements Serializable
 	private final String name;
 	private final List<Schema> schemata = new ArrayList<Schema>();
 	private boolean sealed = false;
-	
+	private final Integer defaultSchemaFlags;
+
 	/**
-	 * Creates a new model
+	 * Creates a new model, without default Schema flags
 	 * 
 	 * @param id
 	 * @param name
 	 */
 	public Model(long id, String name)
 	{
-		this(id, name, false);
+		this(id, name, false, null);
+	}
+	
+	/**
+	 * Creates a new model
+	 * 
+	 * @param id
+	 * @param name
+	 * @param defaultSchemaFlags
+	 */
+	public Model(long id, String name, int defaultSchemaFlags)
+	{
+		this(id, name, false, defaultSchemaFlags);
 	}
 	
 	/**
@@ -202,7 +216,7 @@ public class Model implements Serializable
 	 * 
 	 * @param name
 	 */
-	private Model(long id, String name, boolean meta)
+	private Model(long id, String name, boolean meta, Integer defaultSchemaFlags)
 	{
 		if(!meta && !MODEL_ID_FIELD.inEffectiveRange(id))
 			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
@@ -210,6 +224,7 @@ public class Model implements Serializable
 			throw new NullPointerException("Please provide a model name");
 		this.id = id;
 		this.name = name;
+		this.defaultSchemaFlags = defaultSchemaFlags;
 	}
 	
 	/**
@@ -228,6 +243,24 @@ public class Model implements Serializable
 		return name;
 	}
 	
+	/**
+	 * @return whether or not the Model provides default Schema flags
+	 */
+	public boolean hasDefaultSchemaFlags()
+	{
+		return defaultSchemaFlags != null;
+	}
+	
+	/**
+	 * @return the defaultSchemaFlags
+	 */
+	public int getDefaultSchemaFlags()
+	{
+		if(!hasDefaultSchemaFlags())
+			throw new NullPointerException("Model has no defaultSchemaFlags");
+		return defaultSchemaFlags;
+	}
+
 	/**
 	 * Returns "model record" which describes the model (and contains a serialised version of it)
 	 * 
@@ -327,7 +360,7 @@ public class Model implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + (int)(id ^ (id >>> 32));
