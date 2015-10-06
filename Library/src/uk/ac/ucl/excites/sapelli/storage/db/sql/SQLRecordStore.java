@@ -64,7 +64,6 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
@@ -73,6 +72,10 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.NotConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceByFlags;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceResolver;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
@@ -235,96 +238,50 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return table;
 	}
 
-	/**
-	 * Finds schema tables that have become empty and drops them, along with
-	 * deleting the corresponding row from the Schemata table.
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
-	 */
-	protected void cleanup() throws DBException
+	protected abstract TableFactory<STable> getTableFactory();
+	
+	protected Collection<Schema> getSchemata(Source source)
 	{
-		// Find empty tables & release all table resources:
-		List<STable> emptyTables = null;
-		for(STable table : tables.values())
-		{
-			try
+		if(source.isNone())
+			return Collections.<Schema> emptyList();
+		else if(source.isAny())
+			return getAllKnownSchemata();
+		else
+			return source.getSchemata(new SourceResolver()
 			{
-				// Check if table is empty:
-				if(table.isInDB() && table.isEmpty())
+				@Override
+				public Collection<Schema> resolve(SourceBySet sourceBySet)
 				{
-					if(emptyTables == null)
-						emptyTables = new ArrayList<STable>();
-					emptyTables.add(table);
+					return	sourceBySet.isByInclusion() ?
+								sourceBySet.getSchemata() :
+								getAllKnownSchemataExcept(sourceBySet.getSchemata());
 				}
-				// Release table resources:
-				table.release();
-			}
-			catch(DBException dbE)
-			{
-				dbE.printStackTrace(System.err);
-				continue;
-			}
-		}
-		// Release resources on "system tables":
-		schemataTable.release();
-		modelsTable.release();
-		
-		// Clean up empty tables:
-		if(emptyTables != null)
-		{
-			startTransaction();
-			try
-			{
-				Set<Model> possiblyRemovableModels = new HashSet<Model>();
-				// Forget schemata & drop tables:
-				for(STable emptyTable : emptyTables)
+
+				@Override
+				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
 				{
-					RecordReference schemaMetaRecordRef = Schema.GetMetaRecordReference(emptyTable.schema);
-					
-					// Unregister (i.e. "forget") the schema (which the table corresponds to) in the schemataTable:
-					schemataTable.delete(schemaMetaRecordRef);
-					
-					// Drop the table itself:
-					emptyTable.drop();
-					
-					// Remember model:
-					possiblyRemovableModels.add(emptyTable.schema.getModel());
-					
-					// Remove from tables map:
-					tables.remove(schemaMetaRecordRef);
+					return sourceByFlags.filterSchemata(getAllKnownSchemata());
 				}
-				// Forget models if none of their schemata correspond to an existing (and at this point non-empty) table in the database:
-				modelLoop : for(Model model : possiblyRemovableModels)
-				{
-					for(Schema schema : model.getSchemata())
-						if(doesTableExist(client.getTableName(schema)))
-							continue modelLoop; // one of the model's schemata corresponds to a table, so we should not forget about this model
-					// None of the model's schemata correspond to a table, so unregister (i.e. "forget") the model in the modelsTable:
-					modelsTable.delete(Model.GetModelRecordReference(model));
-				}
-			}
-			catch(DBException dbE)
-			{
-				try
-				{
-					rollbackTransactions();
-				}
-				catch(DBException dbE2)
-				{
-					dbE2.printStackTrace(System.err);
-				}
-				throw dbE;
-			}
-			commitTransaction();
-		}
+			});
 	}
 	
 	protected List<Schema> getAllKnownSchemata()
 	{
-		return getAllKnownSchemataExcept(Collections.<Schema> emptySet());
+		return getKnownSchemata(null);
 	}
 	
 	protected List<Schema> getAllKnownSchemataExcept(Set<Schema> skipSchemata)
+	{
+		// Construct constraint to filter out undesired schemata:
+		AndConstraint filterSkipSchemata = new AndConstraint();
+		for(Schema skippedSchema : skipSchemata)
+			filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
+		
+		// Query for schemata, filtering out the undisidered ones:
+		return getKnownSchemata(filterSkipSchemata);
+	}
+	
+	protected List<Schema> getKnownSchemata(Constraint constraint)
 	{
 		try
 		{
@@ -332,13 +289,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(schemataTable == null || schemataTable.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
-			// Construct constraint to filter out undesired schemata:
-			AndConstraint filterSkipSchemata = new AndConstraint();
-			for(Schema skippedSchema : skipSchemata)
-				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
-			
-			// Query schemata table, filtering out the undesired ones:
-			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), filterSkipSchemata));
+			// Query schemata table, using the given constraint:
+			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), constraint));
 			if(schemaMetaRecords.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
@@ -384,40 +336,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			e.printStackTrace(System.err);
 			return Collections.<Schema> emptyList();
 		}
-	}
-	
-	/**
-	 * Returns a Schema object that corresponds to the stored version of the given schema.
-	 * Only to be used for upgrade purposes.
-	 * 
-	 * @param schema
-	 * @return the stored version of the schema, or null if no records of this schema are currently stored
-	 */
-	protected Schema getStoredVersion(Schema schema)
-	{
-		try
-		{
-			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
-			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
-			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
-			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			return null;
-		}
-	}
-	
-	protected abstract TableFactory<STable> getTableFactory();
-	
-	protected Collection<Schema> getSchemata(Source source)
-	{
-		return	(source.isAny() ?
-					getAllKnownSchemata() :
-					(source.isByInclusion() ?
-						source.getSchemata() :
-						getAllKnownSchemataExcept(source.getSchemata())));
 	}
 	
 	/**
@@ -560,6 +478,113 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 		}
 		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)
+	}
+	
+	/**
+	 * Finds schema tables that have become empty and drops them, along with
+	 * deleting the corresponding row from the Schemata table.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
+	 */
+	protected void cleanup() throws DBException
+	{
+		// Find empty tables & release all table resources:
+		List<STable> emptyTables = null;
+		for(STable table : tables.values())
+		{
+			try
+			{
+				// Check if table is empty:
+				if(table.isInDB() && table.isEmpty())
+				{
+					if(emptyTables == null)
+						emptyTables = new ArrayList<STable>();
+					emptyTables.add(table);
+				}
+				// Release table resources:
+				table.release();
+			}
+			catch(DBException dbE)
+			{
+				dbE.printStackTrace(System.err);
+				continue;
+			}
+		}
+		// Release resources on "system tables":
+		schemataTable.release();
+		modelsTable.release();
+		
+		// Clean up empty tables:
+		if(emptyTables != null)
+		{
+			startTransaction();
+			try
+			{
+				Set<Model> possiblyRemovableModels = new HashSet<Model>();
+				// Forget schemata & drop tables:
+				for(STable emptyTable : emptyTables)
+				{
+					RecordReference schemaMetaRecordRef = Schema.GetMetaRecordReference(emptyTable.schema);
+					
+					// Unregister (i.e. "forget") the schema (which the table corresponds to) in the schemataTable:
+					schemataTable.delete(schemaMetaRecordRef);
+					
+					// Drop the table itself:
+					emptyTable.drop();
+					
+					// Remember model:
+					possiblyRemovableModels.add(emptyTable.schema.getModel());
+					
+					// Remove from tables map:
+					tables.remove(schemaMetaRecordRef);
+				}
+				// Forget models if none of their schemata correspond to an existing (and at this point non-empty) table in the database:
+				modelLoop : for(Model model : possiblyRemovableModels)
+				{
+					for(Schema schema : model.getSchemata())
+						if(doesTableExist(client.getTableName(schema)))
+							continue modelLoop; // one of the model's schemata corresponds to a table, so we should not forget about this model
+					// None of the model's schemata correspond to a table, so unregister (i.e. "forget") the model in the modelsTable:
+					modelsTable.delete(Model.GetModelRecordReference(model));
+				}
+			}
+			catch(DBException dbE)
+			{
+				try
+				{
+					rollbackTransactions();
+				}
+				catch(DBException dbE2)
+				{
+					dbE2.printStackTrace(System.err);
+				}
+				throw dbE;
+			}
+			commitTransaction();
+		}
+	}
+	
+	/**
+	 * Returns a Schema object that corresponds to the stored version of the given schema.
+	 * Only to be used for upgrade purposes.
+	 * 
+	 * @param schema
+	 * @return the stored version of the schema, or null if no records of this schema are currently stored
+	 */
+	protected Schema getStoredVersion(Schema schema)
+	{
+		try
+		{
+			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
+			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
+			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			return null;
+		}
 	}
 	
 	protected abstract String getNullString();

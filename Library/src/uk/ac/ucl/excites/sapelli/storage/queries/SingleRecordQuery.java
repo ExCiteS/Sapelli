@@ -22,6 +22,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * Query resulting in a single record instance

@@ -19,14 +19,29 @@
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TimePicker;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -41,29 +56,12 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separat
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import android.annotation.SuppressLint;
-import android.app.Dialog;
-import android.content.DialogInterface;
-import android.os.Bundle;
-import android.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.DatePicker;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
-import android.widget.TimePicker;
-import android.widget.AdapterView.OnItemSelectedListener;
 
 /**
  * 
@@ -423,9 +421,11 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		public void run()
 		{
 			// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-			Set<Schema> schemata = new HashSet<Schema>();
+			Source source;
 			if(projectToExport != null)
-				schemata.addAll(projectToExport.getModel().getSchemata());
+				source = Source.From(projectToExport.getModel());
+			else
+				source = Source.With(CollectorClient.SCHEMA_FLAGS_COLLECTOR_DATA);
 			// Date range:
 			AndConstraint constraints = new AndConstraint();
 			if(dateRange[DT_RANGE_IDX_FROM] != null)
@@ -433,9 +433,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 			// TODO Exclude previously exported
-			// TODO Exclude collector-internal schemas!!!
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
+			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
 		}
 		
 		private String getString(int resId)
