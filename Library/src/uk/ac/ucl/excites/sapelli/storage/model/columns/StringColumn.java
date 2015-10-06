@@ -168,7 +168,11 @@ public class StringColumn extends ComparableColumn<String>
 	public String toString(String value)
 	{
 		return SERIALISATION_QUOTE + value + SERIALISATION_QUOTE; // surround with quotes
-		//TODO escape!!!!!
+	}
+	
+	public boolean fits(String value)
+	{
+		return isValidValue(value);
 	}
 	
 	/**
