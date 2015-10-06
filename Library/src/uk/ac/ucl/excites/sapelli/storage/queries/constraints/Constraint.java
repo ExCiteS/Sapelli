@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -38,12 +39,12 @@ public abstract class Constraint
 	}
 	
 	/**
-	 * Filters a list of records based on certain criteria
+	 * Filters a collection of records based on the criteria defined by the constraint
 	 * 
 	 * @param records
 	 * @return
 	 */
-	public List<Record> filter(List<Record> records)
+	public List<Record> filter(Collection<Record> records)
 	{
 		List<Record> result = new ArrayList<Record>();
 		for(Record r : records)
