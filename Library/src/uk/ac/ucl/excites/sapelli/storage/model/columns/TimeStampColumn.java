@@ -351,7 +351,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (timeMapping == null ? 0 : timeMapping.hashCode());

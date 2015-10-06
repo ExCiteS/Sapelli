@@ -274,7 +274,7 @@ public abstract class ValueSetColumn<VC extends ValueSet<?>> extends Column<VC>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + columnSet.hashCode();

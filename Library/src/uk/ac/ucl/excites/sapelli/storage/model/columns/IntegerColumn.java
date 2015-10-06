@@ -364,7 +364,7 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + size;

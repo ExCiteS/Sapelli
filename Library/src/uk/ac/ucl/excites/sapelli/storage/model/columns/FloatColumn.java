@@ -211,7 +211,7 @@ public class FloatColumn extends NumberColumn<Double>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (doublePrecision ? 0 : 1);
