@@ -95,10 +95,10 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	static public void ShowChoseFormatDialog(AppCompatActivity owner, String title, String msg, boolean showCancel, FormatDialogCallback callback)
 	{		
 		ShowDialog(	owner,
-				new ExportFragment(callback), // only to choose format
-				title,
-				msg,
-				showCancel);
+					new ExportFragment(callback), // only to choose format
+					title,
+					msg,
+					showCancel);
 	}
 	
 	static private void ShowDialog(AppCompatActivity owner, ExportFragment fragment, String title, String msg, boolean showCancel)
@@ -459,7 +459,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 				String selectionDesc = "TODO";
 				
 				// Run the right export task:
-				RecordsTasks.runExportTask(result, ExportFragment.this, exportFolder, selectionDesc, this);
+				RecordsTasks.runExportTask(activity, result, ExportFragment.this, exportFolder, selectionDesc, this);
 			}
 		}
 		

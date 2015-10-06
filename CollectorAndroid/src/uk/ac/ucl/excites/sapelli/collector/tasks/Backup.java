@@ -253,7 +253,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 					@Override
 					public void onFormatChosen(ExportFragment formatFragment)
 					{
-						RecordsTasks.runExportTask(result, formatFragment, fileStorageProvider.getExportFolder(true), activity.getString(R.string.backup), Backup.this);
+						RecordsTasks.runExportTask(activity, result, formatFragment, fileStorageProvider.getExportFolder(true), activity.getString(R.string.backup), Backup.this);
 					}
 				});
 		}

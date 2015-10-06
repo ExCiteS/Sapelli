@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
@@ -37,11 +38,10 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import android.util.Log;
 
 /**
  * A collection of async tasks to deal with record query, export & delete operations.
@@ -143,15 +143,15 @@ public final class RecordsTasks
 	}
 	
 	@SuppressWarnings("unchecked")
-	static public void runExportTask(List<Record> records, ExportFragment exportFragment, File exportFolder, String exportDesc, ExportCallback callback)
+	static public void runExportTask(BaseActivity activity, List<Record> records, ExportFragment exportFragment, File exportFolder, String exportDesc, ExportCallback callback)
 	{
 		switch(exportFragment.getSelectedFormat())
 		{
 			case CSV:
-				new CSVExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getCSVSeparator(), exportDesc, callback).execute(records);
+				new CSVExportTask(activity, exportFolder, exportFragment.getCSVSeparator(), exportDesc, callback).execute(records);
 				break;
 			case XML:
-				new RecordsTasks.XMLExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getXMLCompositeMode(), exportDesc, callback).execute(records);
+				new RecordsTasks.XMLExportTask(activity, exportFolder, exportFragment.getXMLCompositeMode(), exportDesc, callback).execute(records);
 				break;
 			default:
 				throw new IllegalStateException("Unknown export format: " + exportFragment.getSelectedFormat().toString());
