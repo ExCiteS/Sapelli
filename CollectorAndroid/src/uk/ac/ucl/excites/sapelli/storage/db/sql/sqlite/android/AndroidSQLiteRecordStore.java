@@ -58,7 +58,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	static private final boolean LOG_QUALIFIED_QUERIES = false;
 	
 	// DYNAMIC---------------------------------------------
-	private SQLiteDatabase db;
+	private final SQLiteDatabase db;
 	
 	/**
 	 * @param client
