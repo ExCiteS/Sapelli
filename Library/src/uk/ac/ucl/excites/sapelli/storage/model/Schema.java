@@ -60,6 +60,8 @@ public class Schema extends ColumnSet implements Serializable
 	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
+	static public final int MAX_SCHEMA_NAME_LENGTH = 256; // chars
+	
 	/**
 	 * Returns a "meta" record which describes the given schema (and contains a serialised version of it)
 	 * 
@@ -104,6 +106,8 @@ public class Schema extends ColumnSet implements Serializable
 	public Schema(Model model, String name) throws ModelFullException
 	{
 		super((name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name), true);
+		if(!Model.META_NAME_COLUMN.fits(this.name))
+			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
 		this.model = model;
@@ -450,7 +454,7 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (model == null ? 0 : (int)(model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!

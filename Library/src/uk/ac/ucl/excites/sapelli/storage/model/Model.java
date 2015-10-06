@@ -77,35 +77,30 @@ public class Model implements Serializable
 	 */
 	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
 	
+	static public final int MAX_MODEL_NAME_LENGTH = 128; // chars
+	
 	// Meta-Model:
 	static public final Model META_MODEL = new Model(-1, "MetaModel", true);
 	
 	// Model Schema: a "meta" schema for records that describe a Model
 	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
-	static public final IntegerColumn MODEL_ID_COLUMN = new IntegerColumn("ID", false, Model.MODEL_ID_FIELD);
-	static private final StringColumn MODEL_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
-	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("compressedSerialisedObject", false);
-	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = new IntegerColumn("hashCode", false, true, Integer.SIZE);
+	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
+	static private final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
+	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("compressedSerialisedObject", false));
+	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
 	static
 	{
-		MODEL_SCHEMA.addColumn(MODEL_ID_COLUMN);
-		MODEL_SCHEMA.addColumn(MODEL_NAME_COLUMN);
-		MODEL_SCHEMA.addColumn(MODEL_OBJECT_SERIALISATION_COLUMN);
-		MODEL_SCHEMA.addColumn(MODEL_OBJECT_HASHCODE_COLUMN);
 		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN));
 		MODEL_SCHEMA.seal();
 	}
 	
 	// Meta Schema: a Schema to describe other Schema's
 	static public final Schema META_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName() + "ta");
-	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn(Model.MODEL_SCHEMA, false);
-	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
-	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
+	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = META_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
+	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = META_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
+	static public final StringColumn META_NAME_COLUMN = META_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
 	static
 	{
-		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
-		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
-		META_SCHEMA.addColumn(META_NAME_COLUMN);
 		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
 		META_SCHEMA.seal();
 	}
@@ -206,8 +201,8 @@ public class Model implements Serializable
 	{
 		if(!meta && !MODEL_ID_FIELD.inEffectiveRange(id))
 			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
-		if(name == null || name.isEmpty())
-			throw new NullPointerException("Please provide a model name");
+		if(name == null || name.isEmpty() || !MODEL_NAME_COLUMN.fits(name))
+			throw new IllegalArgumentException("Please provide a model name of maximum " + MAX_MODEL_NAME_LENGTH + " characters");
 		this.id = id;
 		this.name = name;
 	}
@@ -327,7 +322,7 @@ public class Model implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + (int)(id ^ (id >>> 32));
