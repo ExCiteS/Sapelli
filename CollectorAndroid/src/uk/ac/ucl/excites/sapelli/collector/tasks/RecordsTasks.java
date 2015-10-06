@@ -24,6 +24,7 @@ import java.util.List;
 
 import android.content.Context;
 import android.util.Log;
+
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
@@ -144,15 +145,15 @@ public final class RecordsTasks
 	}
 	
 	@SuppressWarnings("unchecked")
-	static public void runExportTask(List<Record> records, ExportFragment exportFragment, File exportFolder, String exportDesc, ExportCallback callback)
+	static public void runExportTask(BaseActivity activity, List<Record> records, ExportFragment exportFragment, File exportFolder, String exportDesc, ExportCallback callback)
 	{
 		switch(exportFragment.getSelectedFormat())
 		{
 			case CSV:
-				new CSVExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getCSVSeparator(), exportDesc, callback).execute(records);
+				new CSVExportTask(activity, exportFolder, exportFragment.getCSVSeparator(), exportDesc, callback).execute(records);
 				break;
 			case XML:
-				new RecordsTasks.XMLExportTask(exportFragment.getOwner(), exportFolder, exportFragment.getXMLCompositeMode(), exportDesc, callback).execute(records);
+				new RecordsTasks.XMLExportTask(activity, exportFolder, exportFragment.getXMLCompositeMode(), exportDesc, callback).execute(records);
 				break;
 			default:
 				throw new IllegalStateException("Unknown export format: " + exportFragment.getSelectedFormat().toString());
