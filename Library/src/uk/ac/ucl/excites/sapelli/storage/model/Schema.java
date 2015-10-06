@@ -106,7 +106,7 @@ public class Schema extends ColumnSet implements Serializable
 	public Schema(Model model, String name) throws ModelFullException
 	{
 		super((name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name), true);
-		if(!Model.META_NAME_COLUMN.fits(this.name))
+		if(this.name.length() > MAX_SCHEMA_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
