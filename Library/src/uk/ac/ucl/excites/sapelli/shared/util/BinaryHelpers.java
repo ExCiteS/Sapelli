@@ -79,7 +79,16 @@ public final class BinaryHelpers
 			str += ((b & (1 << i)) != 0) ? "1" : "0";
 		return str;
 	}
-
+	
+	public static byte[] hexadecimealStringToByteArray(String s)
+	{
+		int len = s.length();
+		byte[] data = new byte[len / 2];
+		for(int i = 0; i < len; i += 2)
+			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
+		return data;
+	}
+	
 	/**
 	 * Computes the minimum number of bytes needed to fit the given number of bits
 	 * 

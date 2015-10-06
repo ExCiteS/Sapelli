@@ -37,6 +37,8 @@ public final class BitWrapOutputStream extends BitOutputStream
 	 * 
 	 * @param bit bit (true = 1; false = 0) to be written
 	 * @throws IOException if an I/O error occurs
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream#writeBit(boolean, int)
 	 */
 	protected void writeBit(boolean bit) throws IOException
 	{
@@ -51,6 +53,12 @@ public final class BitWrapOutputStream extends BitOutputStream
 			numBitsInCurrentByte = 0;
 		}
 	}
+
+	@Override
+	protected boolean isFull()
+	{
+		return false;
+	}
 	
 	/**
 	 * Closes this stream and the underlying OutputStream.
@@ -61,7 +69,7 @@ public final class BitWrapOutputStream extends BitOutputStream
 	 */
 	public void close() throws IOException
 	{
-		if(!closed)
+		if(!isClosed())
 		{
 			writePadding();
 			output.close();
@@ -80,22 +88,17 @@ public final class BitWrapOutputStream extends BitOutputStream
 			write(false);
 	}
 
-    /**
-     * Flushes this and the underlying output stream and forces any buffered bits to be written out.
-     * 
-     * @throws IOException if an I/O error occurs
-     * @see java.io.OutputStream#flush()
-     */
-    public void flush() throws IOException
-    {
-    	writePadding();
-    	output.flush();
-    	super.flush();
-    }
-    
-    public int getNumberOfBitsWritten()
-    {
-    	return numberOfBitsWritten;
-    }
+	/**
+	 * Flushes this and the underlying output stream and forces any buffered bits to be written out.
+	 * 
+	 * @throws IOException if an I/O error occurs
+	 * @see java.io.OutputStream#flush()
+	 */
+	public void flush() throws IOException
+	{
+		writePadding();
+		output.flush();
+		super.flush();
+	}
 
 }

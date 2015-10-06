@@ -80,7 +80,6 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	
 	private AudioPlayer audioPlayer;
 
-
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
 	{
 		super(project, collectorView, projectStore, recordStore, fileStorageProvider);
@@ -100,7 +99,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 			activity.showErrorDialog("DeviceID has not be initialised!", true);
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.control.Controller#setFieldInUI(uk.ac.ucl.excites.sapelli.collector.model.Field)
 	 */
@@ -146,7 +145,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 			audioPlayer = new AudioPlayer(activity.getBaseContext());
 		audioPlayer.play(soundFile);
 	}
-	
+
 	public void destroyAudio()
 	{
 		// Basic audio player:
@@ -164,14 +163,14 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 			orientationSensor = new OrientationSensor(activity);
 		orientationSensor.start(this); // start listening for orientation updates
 	}
-	
+
 	@Override
 	protected void stopOrientationListener()
 	{
 		if(orientationSensor != null)
 			orientationSensor.stop();
 	}
-	
+
 	public void onOrientationChanged(Orientation orientation)
 	{
 		if(orientation == null)
@@ -319,6 +318,13 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 		return deviceIDHash;
 	}
 
+	@Override
+	protected String getApplicationInfo()
+	{
+		CollectorApp app = (CollectorApp) activity.getApplication();
+		return app.getBuildInfo().getNameAndVersion() + " [" + app.getBuildInfo().getExtraVersionInfo() + "]";
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -329,7 +335,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	{
 		return SystemClock.elapsedRealtime();
 	}
-	
+
 	/**
 	 * Create an Android-specific logger that writes to Logcat as well as to file.
 	 */
@@ -338,5 +344,5 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	{
 		return new AndroidLogger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
 	}
-	
+
 }

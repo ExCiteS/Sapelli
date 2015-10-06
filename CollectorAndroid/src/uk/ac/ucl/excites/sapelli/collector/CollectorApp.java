@@ -284,7 +284,7 @@ public class CollectorApp extends Application
 	public StoreHandle<?>[] getStoreHandlesForBackup()
 	{
 		return new StoreHandle[] { 	collectorClient.recordStoreHandle,
-									// TODO add handle(s) for transmission store(s) here
+									// TODO collectorClient.transmissionStoreHandle,
 									collectorClient.projectStoreHandle };
 	}
 	
