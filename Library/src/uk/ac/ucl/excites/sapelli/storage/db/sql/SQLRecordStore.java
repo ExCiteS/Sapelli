@@ -260,6 +260,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				@Override
 				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
 				{
+					 // TODO more efficient SQL-based implementation: SELECT * FROM Schemata WHERE flags & sourceByFlags.getFlags() = sourceByFlags.getFlags();
 					return sourceByFlags.filterSchemata(getAllKnownSchemata());
 				}
 			});

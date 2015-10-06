@@ -100,6 +100,7 @@ public class Model implements Serializable
 	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = META_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
 	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = META_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
 	static public final StringColumn META_NAME_COLUMN = META_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
+	static public final IntegerColumn META_FLAGS_COLUMN = META_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
 	static
 	{
 		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));

@@ -70,7 +70,7 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public Record GetMetaRecord(Schema schema)
 	{
-		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
+		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name, schema.flags);
 	}
 	
 	/**
