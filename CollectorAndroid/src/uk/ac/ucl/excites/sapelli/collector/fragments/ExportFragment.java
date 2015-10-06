@@ -434,7 +434,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 			// TODO Exclude previously exported
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
+			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
+			// TODO order by form, deviceid, timestamp
 			// TODO let ExportFragment & Backup share this code somehow
 		}
 		

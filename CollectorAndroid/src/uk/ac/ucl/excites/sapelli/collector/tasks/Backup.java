@@ -225,7 +225,8 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			public void onClick(DialogInterface dialog, int which)
 			{
 				// Query to see if there are any records to export:
-				new RecordsTasks.QueryTask(activity, Backup.this).execute(new RecordsQuery(Source.With(CollectorClient.SCHEMA_FLAGS_COLLECTOR_DATA), Order.UNDEFINED)); // TODO order by form, deviceid, timestamp
+				new RecordsTasks.QueryTask(activity, Backup.this).execute(new RecordsQuery(Source.With(CollectorClient.SCHEMA_FLAGS_COLLECTOR_DATA), Order.UNDEFINED));
+				// TODO order by form, deviceid, timestamp
 				// TODO let Backup & ExportFragment share this code somehow
 			}
 		})
