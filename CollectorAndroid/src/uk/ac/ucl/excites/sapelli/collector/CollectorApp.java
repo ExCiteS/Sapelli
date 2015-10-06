@@ -104,7 +104,8 @@ public class CollectorApp extends Application
 		preferences = new CollectorPreferences(getApplicationContext());
 		
 		// Initialise file storage:
-		try {
+		try
+		{
 			this.fileStorageProvider = initialiseFileStorage(); // throws FileStorageException
 		}
 		catch(FileStorageException fse)
@@ -193,12 +194,12 @@ public class CollectorApp extends Application
 	 */
 	public FileStorageProvider getFileStorageProvider() throws FileStorageException
 	{
-		if(fileStorageProvider != null && fileStorageException == null)
+		if(fileStorageProvider != null)
 			return fileStorageProvider;
 		if(fileStorageException != null)
 			throw fileStorageException;
-		else
-			throw new FileStorageUnavailableException(); // this shouldn't happen
+		else //if(fileStorageProvider == null && fileStorageException == null
+			throw new FileStorageUnavailableException("FileStorageProvider has not been initialised yet, please call initialiseFileStorage() first."); // this shouldn't happen
 	}
 	
 	/**
