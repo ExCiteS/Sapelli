@@ -19,8 +19,10 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.xml;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -32,15 +34,16 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
-import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
+import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
 
 
 /**
@@ -48,7 +51,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
  * 
  * @author mstevens
  */
-public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporter
+public class XMLRecordsExporter extends SimpleExporter
 {
 
 	// STATICS-------------------------------------------------------
@@ -101,10 +104,8 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	static public CompositeMode DEFAULT_COMPOSITE_MODE = CompositeMode.Flat;
 	
 	// DYNAMICS------------------------------------------------------
-	private File exportFolder;
 	private CompositeMode compositeMode;
 	
-	private FileWriter writer = null;
 	private int tabs = 0;
 	
 	private Record currentRecord;
@@ -123,9 +124,9 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		this.currentRecord = null;
 	}
 	
-	private void openWriter(String description) throws Exception
+	@Override
+	protected void openWriter(String description, DateTime timestamp) throws IOException
 	{
-		DateTime timestamp = DateTime.now();
 		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), UnicodeHelpers.UTF8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		writer.writeLine(XMLUtils.header(UnicodeHelpers.UTF8.displayName(), USES_XML_VERSION_11));
@@ -133,7 +134,8 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		//TODO add attributes: comment, device(?)
 	}
 	
-	private void closeWriter()
+	@Override
+	protected void closeWriter()
 	{
 		if(writer != null)
 		{
@@ -148,13 +150,31 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	{
 		if(records == null || records.isEmpty())
 			return ExportResult.NothingToExport();
+		
+		// Sort records by Schema (& Model):
+		Collections.sort(records, new Comparator<Record>()
+		{
+			Schema.Comparator schemaComparator = new Schema.Comparator();
+			
+			@Override
+			public int compare(Record r1, Record r2)
+			{
+				return schemaComparator.compare(r1.getSchema(), r2.getSchema());
+			}
+		});
+		
+		// Export:
 		List<Record> exported = new ArrayList<Record>();
 		try
 		{
-			openWriter(description);
+			openWriter(description, DateTime.now());
 			tabs = 1;
 			for(Record r : records)
 			{
+				// Skip unexportable records unless force not to:
+				if(!forceExportUnexportable && !r.getSchema().hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+					continue;
+				
 				writer.openTransaction(); // output will be buffered
 				try
 				{				
@@ -164,7 +184,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 							Schema.ATTRIBUTE_MODEL_ID + "=\"" + r.getSchema().getModelID() + "\" " +
 							Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=\"" + r.getSchema().getModelSchemaNumber() + "\"" +
 							">", tabs));
-							//TODO transmission/sent
 				
 					// Indent: 
 					tabs++;
@@ -178,7 +197,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				
 					//Close tag:
 					writer.writeLine(StringUtils.addTabsFront("</" + Record.TAG_RECORD + ">", tabs));
-				
 				}
 				catch(Exception e)
 				{
@@ -191,8 +209,14 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				exported.add(r);
 				// TODO mark record as exported?
 			}
-			// Result...			
-			return ExportResult.Success(exported, exportFolder, Collections.singletonList(writer.getFile()));
+			// Result...
+			if(exported.size() == records.size())
+				return ExportResult.Success(exported, exportFolder, Collections.singletonList(writer.getFile()));
+			else
+			{
+				int unexportedCount = records.size() - exported.size();
+				return ExportResult.PartialFailure(exported, exportFolder, Collections.singletonList(writer.getFile()), new UnexportableRecordsException(unexportedCount), unexportedCount);
+			}
 		}
 		catch(Exception e)
 		{
