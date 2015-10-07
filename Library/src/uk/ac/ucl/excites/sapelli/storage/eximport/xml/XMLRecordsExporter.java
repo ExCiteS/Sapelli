@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportColumnValueStringProvider;
@@ -177,6 +178,10 @@ public class XMLRecordsExporter extends SimpleExporter
 			tabs = 1;
 			for(Record r : records)
 			{
+				// Skip unexportable records unless force not to:
+				if(!forceExportUnexportable && !r.getSchema().hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+					continue;
+				
 				writer.openTransaction(); // output will be buffered
 				try
 				{				
