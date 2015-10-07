@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.csv;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +32,9 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -40,20 +42,23 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
-import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
+import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
 
 
 /**
  * Class to export {@link Record}s to XML files, which can be re-imported by {@link XMLRecordsImporter}.
  * 
- * Follows the CSV specification outlined in RFC 4180 (i.e. with regardis to escaping/quoting), except for
- * the choice between different separators (tab & semicolon in addition to comma).
- * The CSV will get a header line with the column names separated by the separator, with this postfix: separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
+ * Follows the CSV specification outlined in RFC 4180 (i.e. with regards to escaping/quoting),
+ * except for the choice between different separators (tab & semicolon in addition to comma).
+ * 
+ * The CSV will get a header line with the column names separated by the separator, with this postfix:
+ * 	separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
  * 
  * @author mstevens
+ * 
  * @see <a href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>
  */
-public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporter
+public class CSVRecordsExporter extends SimpleExporter
 {
 
 	// STATICS------------------------------------------------------- 
@@ -96,10 +101,8 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	static public final Separator DEFAULT_SEPARATOR = Separator.COMMA;
 	
 	// DYNAMICS------------------------------------------------------
-	private File exportFolder;
 	private Separator separator;
 	
-	private FileWriter writer = null;
 	private List<ColumnPointer<?>> columnPointers;
 	
 	public CSVRecordsExporter(File exportFolder)
@@ -116,7 +119,8 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		this.columnPointers = new ArrayList<ColumnPointer<?>>();
 	}
 	
-	private void openWriter(String description, DateTime timestamp) throws Exception
+	@Override
+	protected void openWriter(String description, DateTime timestamp) throws IOException
 	{
 		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".csv"), UnicodeHelpers.UTF8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);	
@@ -129,7 +133,8 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		closeWriter();
 	}
 	
-	private void closeWriter()
+	@Override
+	protected void closeWriter()
 	{
 		if(writer != null)
 		{
@@ -153,10 +158,14 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		// Timestamp for filenames:
 		DateTime timestamp = DateTime.now();
 		
-		// Group records by schema:
+		// Group records by schema & filter out records of unexportable schemata:
 		Map<Schema, List<Record>> recordsBySchema = new HashMap<Schema, List<Record>>();
 		for(Record r : records)
 		{
+			// Skip unexportable records unless force not to:
+			if(!forceExportUnexportable && !r.getSchema().hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+				continue;
+			
 			List<Record> recordsForSchema;
 			if(recordsBySchema.containsKey(r.getSchema()))
 				recordsForSchema = recordsBySchema.get(r.getSchema());
@@ -254,8 +263,14 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					return ExportResult.Failure(exportFolder, e, records.size());
 			}
 		}
-		// Success:
-		return ExportResult.Success(exported, exportFolder, csvFiles);
+		// Result...
+		if(exported.size() == records.size())
+			return ExportResult.Success(exported, exportFolder, csvFiles);
+		else
+		{
+			int unexportedCount = records.size() - exported.size();
+			return ExportResult.PartialFailure(exported, exportFolder, csvFiles, new UnexportableRecordsException(unexportedCount), unexportedCount);
+		}
 	}
 	
 	private String escapeAndQuote(String valueString, boolean forceQuotes)
@@ -293,24 +308,6 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 
 	@Override
 	public boolean allowForeignKeySelfTraversal()
-	{
-		return true;
-	}
-
-	@Override
-	public boolean skipNonBinarySerialisedLocationSubColumns()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean skipNonBinarySerialisedOrientationSubColumns()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean includeVirtualColumns()
 	{
 		return true;
 	}
