@@ -31,11 +31,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
-import uk.ac.ucl.excites.sapelli.collector.ui.ProjectManagerPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -48,6 +48,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public class MainTabFragment extends ProjectManagerTabFragment implements OnClickListener
 {
 	
+	private ImageView imgShortcut;
+	private Button btnAddShortcut;
+	private Button btnRemoveShortcut;
 	private TextView lblNumberOfRecords;
 	private TextView lblNumberOfMediaFiles;
 	private Button btnExportData;
@@ -63,10 +66,10 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 	protected void setupUI(final View rootLayout)
 	{
 		// Shortcut icon & buttons:
-		ImageView imgShortcut = (ImageView) rootLayout.findViewById(R.id.imgShortcut);
-		Button btnAddShortcut = (Button) rootLayout.findViewById(R.id.btnAddShortcut);
+		imgShortcut = (ImageView) rootLayout.findViewById(R.id.imgShortcut);
+		btnAddShortcut = (Button) rootLayout.findViewById(R.id.btnAddShortcut);
 		btnAddShortcut.setOnClickListener(this);
-		Button btnRemoveShortcut = (Button) rootLayout.findViewById(R.id.btnRemoveShortcut);
+		btnRemoveShortcut = (Button) rootLayout.findViewById(R.id.btnRemoveShortcut);
 		btnRemoveShortcut.setOnClickListener(this);
 		
 		// Collected data labels & buttons:
@@ -74,54 +77,56 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 		lblNumberOfMediaFiles = ((TextView) rootLayout.findViewById(R.id.lblNumberOfMediaFiles));
 		(btnExportData = (Button) rootLayout.findViewById(R.id.btnExportData)).setOnClickListener(this);
 		(btnDeleteData = (Button) rootLayout.findViewById(R.id.btnDeleteData)).setOnClickListener(this);
-		
-		final Project project = getProject(false);
-		if(project != null)
-			// Set shortcut icon:
-			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), project));
-		btnAddShortcut.setEnabled(project != null);
-		btnRemoveShortcut.setEnabled(project != null);
-	}
-
-	/* (non-Javadoc)
-	 * @see android.support.v4.app.Fragment#onResume()
-	 */
-	@Override
-	public void onResume()
-	{
-		super.onResume();
-		
-		refreshDataStats();
 	}
 	
-	private void refreshDataStats()
+	@Override
+	protected void refresh(Project project)
 	{
-		Project project = getProject(false);
-		if(getProject(false) == null)
-		{	// just in case...
-			btnExportData.setEnabled(false);
-			btnDeleteData.setEnabled(false);
-			return;
-		}
-		// Update records & media stats:
-		ProjectTasks.RunProjectDataQueries(getOwner(), project, new ProjectTasks.ProjectDataCallaback()
+		// Shortcut buttons:
+		btnAddShortcut.setEnabled(project != null);
+		btnRemoveShortcut.setEnabled(project != null);
+		
+		// Disable export/delete buttons (re-enabled below if needed):
+		btnExportData.setEnabled(false);
+		btnDeleteData.setEnabled(false);
+		
+		if(project != null)
 		{
-			@Override
-			public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles)
-			{
-				lblNumberOfRecords.setText("" + records.size());
-				lblNumberOfMediaFiles.setText("" + mediaFiles.size());
-				btnExportData.setEnabled(!records.isEmpty());
-				btnDeleteData.setEnabled(!records.isEmpty());
-			}
+			// Set shortcut icon:
+			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), project));
 			
-			@Override
-			public void projectDataQueryFailure(Exception reason)
+			// Query for project data:
+			ProjectTasks.RunProjectDataQueries(getOwner(), project, new ProjectTasks.ProjectDataCallaback()
 			{
-				lblNumberOfRecords.setText(getString(R.string.error));
-				lblNumberOfMediaFiles.setText(getString(R.string.error));
-			}
-		});
+				@Override
+				public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles)
+				{
+					// Data stats:
+					lblNumberOfRecords.setText("" + records.size());
+					lblNumberOfMediaFiles.setText("" + mediaFiles.size());
+					
+					// Enable export/delete buttons if there is data:
+					btnExportData.setEnabled(!records.isEmpty());
+					btnDeleteData.setEnabled(!records.isEmpty());
+				}
+				
+				@Override
+				public void projectDataQueryFailure(Exception reason)
+				{
+					lblNumberOfRecords.setText(getString(R.string.error));
+					lblNumberOfMediaFiles.setText(getString(R.string.error));
+				}
+			});
+		}
+		else
+		{
+			// Remove shortcut icon:
+			imgShortcut.setImageDrawable(null);
+			
+			// Data stats:
+			lblNumberOfRecords.setText(getString(R.string.not_available));
+			lblNumberOfMediaFiles.setText(getString(R.string.not_available));
+		}
 	}
 	
 	@Override
@@ -140,7 +145,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 					ProjectRunHelpers.removeShortcut(getOwner(), getOwner().getCurrentProject(true));
 					break;
 				case R.id.btnExportData :
-					getOwner().switchToTab(ProjectManagerPagerAdapter.getTabIndex(ExportTabFragment.class));
+					getOwner().switchToTab(ProjectManagerTabFragmentPagerAdapter.getTabIndex(ExportTabFragment.class));
 					break;
 				case R.id.btnDeleteData :
 					deleteData();
@@ -182,14 +187,14 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 									// ... and media files ...
 									for(File mediaFile : mediaFiles)
 										FileUtils.deleteQuietly(mediaFile);
-									refreshDataStats();
+									refresh();
 								}
 								
 								@Override
 								public void deleteFailure(Exception reason)
 								{
 									owner.showErrorDialog(String.format(owner.getString(R.string.exportDeleteFailureMsg), ExceptionHelpers.getMessageAndCause(reason)));
-									refreshDataStats();
+									refresh();
 								}
 							}).execute(records);
 						}
@@ -200,7 +205,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 			@Override
 			public void projectDataQueryFailure(Exception reason)
 			{
-				refreshDataStats();
+				refresh();
 			}
 		});
 	}

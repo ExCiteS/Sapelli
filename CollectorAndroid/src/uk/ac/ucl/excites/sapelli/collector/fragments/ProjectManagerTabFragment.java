@@ -37,4 +37,26 @@ public abstract class ProjectManagerTabFragment extends ProjectManagerFragment
 		return activity != null ? activity.getCurrentProject(errorIfNull) : null;
 	}
 	
+	/* (non-Javadoc)
+	 * @see android.support.v4.app.Fragment#onResume()
+	 */
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		
+		refresh();
+	}
+	
+	public void refresh()
+	{
+		if(isUIReady())
+			refresh(getProject(false));
+	}
+	
+	/**
+	 * @param project the currently active project (shouldn't be null but it is best to check)
+	 */
+	protected abstract void refresh(Project project);
+	
 }

@@ -32,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
-import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
@@ -162,10 +161,6 @@ public class CSVRecordsExporter extends SimpleExporter
 		Map<Schema, List<Record>> recordsBySchema = new HashMap<Schema, List<Record>>();
 		for(Record r : records)
 		{
-			// Skip unexportable records unless force not to:
-			if(!forceExportUnexportable && !r.getSchema().hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
-				continue;
-			
 			List<Record> recordsForSchema;
 			if(recordsBySchema.containsKey(r.getSchema()))
 				recordsForSchema = recordsBySchema.get(r.getSchema());
