@@ -42,14 +42,15 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	static protected final float DIALOG_VIEW_TOP_PADDING_DP = 5.0f;
 
 	private ProjectManagerActivity activity;
+	private boolean uiReady = false;
 
 	@Override
 	public void onAttach(Activity activity)
 	{
-	    // make sure there is no cast exception:
-	    this.activity = ProjectManagerActivity.class.isAssignableFrom(activity.getClass()) ? (ProjectManagerActivity) activity : null;
+		// make sure there is no cast exception:
+		this.activity = ProjectManagerActivity.class.isAssignableFrom(activity.getClass()) ? (ProjectManagerActivity) activity : null;
 
-	    super.onAttach(activity);
+		super.onAttach(activity);
 	}
 
 	public ProjectManagerActivity getOwner()
@@ -63,25 +64,42 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		if(getShowsDialog() || getLayoutID() == null)
 			return super.onCreateView(inflater, container, savedInstanceState); // avoids crash (see stackoverflow link above)
 		else
-		{
-			View rootLayout = inflater.inflate(getLayoutID(), container, false);
-			setupUI(rootLayout);
-			return rootLayout;
-		}
+			return getRootLayout(inflater, container);
 	}
 	
 	protected abstract Integer getLayoutID();
+	
+	protected View getRootLayout()
+	{
+		return getRootLayout(getActivity().getLayoutInflater(), null);
+	}
+	
+	protected View getRootLayout(LayoutInflater inflater, ViewGroup container)
+	{
+		View rootLayout = inflater.inflate(getLayoutID(), container, false);
+		setupUI(rootLayout);
+		uiReady = true;
+		return rootLayout;
+	}
 	
 	protected void setupUI(View rootLayout)
 	{
 		// does nothing by default
 	}
 	
+	/**
+	 * @return the uiReady
+	 */
+	public boolean isUIReady()
+	{
+		return uiReady;
+	}
+
 	@Override
 	public void onDetach()
 	{
-	    activity = null;
-	    super.onDetach();
+		activity = null;
+		super.onDetach();
 	}
 	
 	/**

@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
@@ -88,6 +89,12 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		expandReceive = (ImageView) ((ViewGroup) rootLayout).findViewById(R.id.expandReceive);
 	}
 
+	@Override
+	protected void refresh(Project project)
+	{
+		// TODO
+	}
+	
 	/**
 	 * Handles layout changes when views are expanded
 	 * 

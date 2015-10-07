@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.ui;
+package uk.ac.ucl.excites.sapelli.collector.fragments;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.DetailsTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.ExportTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.MainTabFragment;
@@ -34,7 +33,7 @@ import android.util.Log;
 /**
  * @author Julia, mstevens
  */
-public class ProjectManagerPagerAdapter extends FragmentPagerAdapter
+public class ProjectManagerTabFragmentPagerAdapter extends FragmentPagerAdapter
 {
 	
 	// STATIC -------------------------------------------------------
@@ -59,7 +58,7 @@ public class ProjectManagerPagerAdapter extends FragmentPagerAdapter
 	private final ProjectManagerTabFragment[] tabs = new ProjectManagerTabFragment[TAB_FRAGMENT_CLASSES.size()];
 	private final Context context;
 	
-	public ProjectManagerPagerAdapter(Context context, FragmentManager fm)
+	public ProjectManagerTabFragmentPagerAdapter(Context context, FragmentManager fm)
 	{
 		super(fm);
 		this.context = context;
@@ -92,6 +91,13 @@ public class ProjectManagerPagerAdapter extends FragmentPagerAdapter
 			}
 		}
 		return tabs[position];
+	}
+	
+	public void refresh()
+	{
+		for(int t = 0; t < getCount(); t++)
+			if(tabs[t] != null)
+				tabs[t].refresh();
 	}
 
 }

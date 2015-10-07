@@ -86,14 +86,14 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	static public void ShowExportAllDialog(AppCompatActivity owner, boolean showCancel)
 	{
 		ShowDialog(	owner,
-					new ExportFragment(), // export all projects
+					new ExportFragment(), // will export all projects, 
 					owner.getString(R.string.exportAllProjTitle),
 					owner.getString(R.string.exportAllProjMsg),
 					showCancel);
 	}
 	
 	static public void ShowChoseFormatDialog(AppCompatActivity owner, String title, String msg, boolean showCancel, FormatDialogCallback callback)
-	{		
+	{
 		ShowDialog(	owner,
 					new ExportFragment(callback), // only to choose format
 					title,
@@ -116,7 +116,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	
 	// DYNAMIC ------------------------------------------------------
 	private final Project projectToExport;
-	private final FormatDialogCallback formatDialogCallback;
+	
+	private FormatDialogCallback formatDialogCallback;
 	
 	private final DateTime[] dateRange = new DateTime[2];
 	private String selectionDesc;
@@ -264,10 +265,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		AlertDialog dialog = builder.create();
 
 		// Set view:
-		View rootLayout = getActivity().getLayoutInflater().inflate(getLayoutID(), null);
-		setupUI(rootLayout);
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		dialog.setView(rootLayout, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
 
 		return dialog;
 	}
@@ -385,7 +384,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	/**
 	 * @author mstevens
 	 */
-	public static abstract class FormatDialogCallback
+	public static interface FormatDialogCallback
 	{
 		
 		public abstract void onFormatChosen(ExportFragment formatFragment);
@@ -410,6 +409,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	
 		private final ProjectManagerActivity activity;
 		
+		private ExportResult exportResult = null;
+		
 		/**
 		 * @param activity
 		 */
@@ -422,6 +423,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		
 		public void run()
 		{
+			exportResult = null;
 			// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 			Set<Schema> schemata = new HashSet<Schema>();
 			if(projectToExport != null)
@@ -471,53 +473,72 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			activity.showErrorDialog(getString(R.string.exportQueryFailed, ExceptionHelpers.getMessageAndCause(reason)), true);
 		}
 		
+		private Runnable getDoneExportingCallbackRunnable(final ExportResult result, final boolean dataDeleted)
+		{
+			return new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					activity.onDataExportDone(result, dataDeleted);
+				}
+			};
+		}
+		
 		@Override
 		public void exportDone(final ExportResult result)
 		{
 			if(result == null)
 				return; // just in case (shouldn't happen)
 			
-			// Runnable to delete exported records:
-			Runnable deleteTask = new Runnable()
-			{
-				@SuppressWarnings("unchecked")
-				@Override
-				public void run()
-				{
-					new RecordsTasks.DeleteTask(activity, ExportFragment.ExportRunner.this).execute(result.getExportedRecords());
-				}
-			};
+			// Hold on to result:
+			this.exportResult = result;
 			
 			// Deal with result:
-			if (result.wasSuccessful())
+			if(result.getNumberedOfExportedRecords() > 0)
 			{
-				if (result.getNumberedOfExportedRecords() > 0)
-					// show dialog, OK will run deleteTask:
-					activity.showYesNoDialog(
-						R.string.exportSuccessTitle,
-						getString(R.string.exportSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination()) + '\n' + getString(R.string.exportDeleteConfirm),
-						deleteTask,
-						false, null, false);
-				else
-					// show dialog:
-					activity.showOKDialog(R.string.exportSuccessTitle, getString(R.string.exportNothing), false);
+				// Runnable to delete exported records:
+				Runnable deleteRunnable = new Runnable()
+				{
+					@SuppressWarnings("unchecked")
+					@Override
+					public void run()
+					{
+						new RecordsTasks.DeleteTask(activity, ExportFragment.ExportRunner.this).execute(result.getExportedRecords());
+					}
+				};
+				// show dialog, OK will run deleteRunnable:
+				activity.showYesNoDialog(
+					result.wasSuccessful() ?
+						R.string.exportSuccessTitle :
+						R.string.exportPartialSuccessTitle,
+					result.wasSuccessful() ? 
+							getString(R.string.exportSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination()) + '\n' + getString(R.string.exportDeleteConfirm) :
+							getString(R.string.exportPartialSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination(), result.getNumberOfUnexportedRecords(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())) + '\n' + getString(R.string.exportDeleteConfirm),
+					deleteRunnable,
+					false,
+					getDoneExportingCallbackRunnable(result, false),
+					false);
 			}
 			else
-			{
-				if (result.getNumberedOfExportedRecords() > 0)
-					// show dialog, OK will run deleteTask:
-					activity.showYesNoDialog(
-						R.string.exportPartialSuccessTitle,
-						getString(R.string.exportPartialSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination(), result.getNumberOfUnexportedRecords(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())) + '\n' + getString(R.string.exportDeleteConfirm),
-						deleteTask,
-						false, null, false);
-				else
-					// show dialog:
-					activity.showOKDialog(R.string.exportFailureTitle, getString(R.string.exportFailureMsg, result.getDestination(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())), false);
-			}
-	
+				// show dialog:
+				activity.showOKDialog(
+					result.wasSuccessful() ?
+						R.string.exportSuccessTitle :
+						R.string.exportFailureTitle,
+					result.wasSuccessful() ?
+						getString(R.string.exportNothing) : 
+						getString(R.string.exportFailureMsg, result.getDestination(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())),
+					false,
+					getDoneExportingCallbackRunnable(result, false));
 		}
-	
+		
+		@Override
+		public void deleteSuccess(List<Record> deletedRecords)
+		{
+			getDoneExportingCallbackRunnable(exportResult, true).run();
+		}
+		
 		/**
 		 * @param reason exception that caused record deletion to fail (may be null)
 		 */
@@ -525,15 +546,13 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		public void deleteFailure(Exception reason)
 		{
 			if(reason != null)
-				activity.showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(reason)), true);
+				activity.showOKDialog(
+					R.string.exportFailureTitle,
+					getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(reason)),
+					false,
+					getDoneExportingCallbackRunnable(exportResult, false));
 		}
 	
-		@Override
-		public void deleteSuccess(List<Record> deletedRecords)
-		{
-			// do nothing
-		}
-		
 	}
 	
 }
