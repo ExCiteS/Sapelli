@@ -52,9 +52,9 @@ public class Schema extends ColumnSet implements Serializable
 	
 	// v1.x-style identification (for backwards compatibility only):
 	//	Note: schemaID & schemaVersion are no longer stored in a Schema instance, instead a 1.x Project instance holds them (Project#id = schemaID & Project#schemaVersion = schemaVersion) 
-	static public final int V1X_SCHEMA_ID_SIZE = 24; //bits
-	static public final int V1X_SCHEMA_VERSION_SIZE = 8; //bits
-	static public final IntegerRangeMapping V1X_SCHEMA_VERSION_FIELD = IntegerRangeMapping.ForSize(0, V1X_SCHEMA_VERSION_SIZE);
+	static public final int V1X_SCHEMA_ID_SIZE = 24; // bits
+	static public final int V1X_SCHEMA_VERSION_SIZE = 8; // bits
+	static public final IntegerRangeMapping V1X_SCHEMA_VERSION_FIELD = IntegerRangeMapping.ForSize(0, V1X_SCHEMA_VERSION_SIZE); // unsigned 24 bit integer
 	static public final int V1X_DEFAULT_SCHEMA_VERSION = 0;
 	// 	Note the XML attributes below have inconsistent naming (for everything else we've been using CamelCase instead of dashes), won't fix because no longer used in v2.x
 	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
@@ -517,6 +517,32 @@ public class Schema extends ColumnSet implements Serializable
 			bff.append("\n\t- " + c.getSpecification());
 		// TODO add indexes & primary key to schema specs
 		return bff.toString();
+	}
+	
+	/**
+	 * For sorting Schema collections
+	 * 
+	 * @author mstevens
+	 */
+	static public class Comparator implements java.util.Comparator<Schema> 
+	{
+		
+		/**
+		 * @param Schema
+		 * @return unsigned 60 bit integer
+		 */
+		public long getSortCode(Schema schema)
+		{
+			return	(schema.getModelID() << Model.MODEL_SCHEMA_NO_SIZE) +	// Model ID takes up first 56 bits
+					schema.modelSchemaNumber;								// Model Schema Number takes up next 4 bits
+		}
+
+		@Override
+		public int compare(Schema s1, Schema s2)
+		{
+			return Long.compare(getSortCode(s1), getSortCode(s2));
+		}
+		
 	}
 	
 }
