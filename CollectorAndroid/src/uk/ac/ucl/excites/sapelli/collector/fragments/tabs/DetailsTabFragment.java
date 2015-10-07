@@ -18,12 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 
 /**
  * 
@@ -32,6 +35,19 @@ import android.widget.TextView;
  */
 public class DetailsTabFragment extends ProjectManagerTabFragment
 {
+	
+	static private int[] labelIDs =
+	{
+		R.id.lblProjectName,
+		R.id.lblProjectID,
+		R.id.lblProjectVariant,
+		R.id.lblProjectVersion,
+		R.id.lblProjectFingerPrint,
+		R.id.lblProjectNumberOfForms,
+		R.id.lblProjectModelID
+	};
+
+	private final List<TextView> lblTextViews = new ArrayList<TextView>(labelIDs.length);
 
 	public static DetailsTabFragment newInstance()
 	{
@@ -48,23 +64,42 @@ public class DetailsTabFragment extends ProjectManagerTabFragment
 	@Override
 	protected void setupUI(View rootLayout)
 	{
-		Project project = getOwner().getCurrentProject(false);
-		if(project != null)
-		{
-			((TextView) rootLayout.findViewById(R.id.lblProjectName)).setText(project.getName());
-			((TextView) rootLayout.findViewById(R.id.lblProjectID)).setText(Integer.toString(project.getID()));
-			((TextView) rootLayout.findViewById(R.id.lblProjectVariant)).setText(project.getVariant() != null ? project.getVariant() : "");
-			((TextView) rootLayout.findViewById(R.id.lblProjectVersion)).setText(project.getVersion());
-			((TextView) rootLayout.findViewById(R.id.lblProjectFingerPrint)).setText(Integer.toString(project.getFingerPrint()));
-			((TextView) rootLayout.findViewById(R.id.lblProjectNumberOfForms)).setText(Integer.toString(project.getNumberOfForms()));
-			((TextView) rootLayout.findViewById(R.id.lblProjectModelID)).setText(Long.toString(project.getModel().id));
-		}
+		for(int labelID : labelIDs)
+			lblTextViews.add((TextView) rootLayout.findViewById(labelID));
 	}
 
 	@Override
 	public String getTabTitle(Context context)
 	{
 		return context.getString(R.string.tab_details);
+	}
+
+	@Override
+	protected void refresh(Project project)
+	{
+		if(project != null)
+			for(TextView lblTextView : lblTextViews)
+				switch(lblTextView.getId())
+				{
+					case R.id.lblProjectID :
+						lblTextView.setText(Integer.toString(project.getID()));
+						break;
+					case R.id.lblProjectVariant :
+						lblTextView.setText(project.getVariant() != null ? project.getVariant() : "");
+						break;
+					case R.id.lblProjectVersion :
+						lblTextView.setText(project.getVersion());
+						break;
+					case R.id.lblProjectFingerPrint :
+						lblTextView.setText(Integer.toString(project.getFingerPrint()));
+						break;
+					case R.id.lblProjectNumberOfForms :
+						lblTextView.setText(Integer.toString(project.getNumberOfForms()));
+						break;
+					case R.id.lblProjectModelID :
+						lblTextView.setText(Long.toString(project.getModel().id));
+						break;
+				}
 	}
 
 }

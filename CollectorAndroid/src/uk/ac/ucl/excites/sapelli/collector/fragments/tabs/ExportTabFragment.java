@@ -24,6 +24,7 @@ import android.view.View.OnClickListener;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 
 /**
  * 
@@ -48,6 +49,12 @@ public class ExportTabFragment extends ProjectManagerTabFragment implements OnCl
 		
 		// Export fragment:
 		exportFragment = addChild(R.id.frgExportOnTabContainer, new ExportFragment(getOwner().getCurrentProject(false)));
+	}
+
+	@Override
+	protected void refresh(Project project)
+	{
+		// does nothing (for now)
 	}
 
 	@Override

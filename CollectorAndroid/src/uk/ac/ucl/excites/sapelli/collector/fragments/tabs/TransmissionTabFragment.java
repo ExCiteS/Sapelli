@@ -129,15 +129,8 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	}
 
 	@Override
-	public void onResume()
+	protected void refresh(Project project)
 	{
-		super.onResume();
-		update();
-	}
-	
-	private void update()
-	{
-		Project project = getProject(false);
 		if(project == null)
 			return;
 		

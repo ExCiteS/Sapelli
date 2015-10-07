@@ -28,6 +28,7 @@
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
+    <string name="not_available">n/a</string>
     <string name="add">Add</string>
     <string name="addEtc">Add&#8230;</string>
     <string name="edit">Edit</string>

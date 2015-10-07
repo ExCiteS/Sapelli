@@ -8,12 +8,12 @@ public class ProjectDescriptor implements Comparable<ProjectDescriptor>
 {
 	
 	//STATICS-------------------------------------------------------------
-	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // = 24 bits (kept the same was the v1.x Schema#id, for backwards compatibility)
+	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // unsigned 24 bits integer (kept the same was the v1.x Schema#id, for backwards compatibility)
 	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned(!) 24bit integer (compatible with old schemaID)
 	
 	static public final String DEFAULT_VERSION = "0";
 	
-	static public final int PROJECT_FINGERPRINT_SIZE = 32; // project fingerprints are signed 32bit integer (like Java hashCodes)
+	static public final int PROJECT_FINGERPRINT_SIZE = 32; // project fingerprints are signed 32 bit integer (like Java hashCodes)
 	
 	/**
 	 * Backwards compatibility 
@@ -76,7 +76,7 @@ public class ProjectDescriptor implements Comparable<ProjectDescriptor>
 	}
 	
 	/**
-	 * @return the id
+	 * @return the id (unsigned 24 bits integer)
 	 */
 	public int getID()
 	{
@@ -138,7 +138,7 @@ public class ProjectDescriptor implements Comparable<ProjectDescriptor>
 	}
 	
 	/**
-	 * @return the fingerPrint
+	 * @return the fingerPrint (signed 32 bit integer)
 	 */
 	public int getFingerPrint()
 	{

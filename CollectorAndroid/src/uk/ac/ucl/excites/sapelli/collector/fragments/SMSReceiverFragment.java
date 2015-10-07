@@ -121,11 +121,9 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		DialogHelpers.MakeNonDismissing(dialog, this, DialogInterface.BUTTON_POSITIVE);
 		
 		// Set view:
-		View rootLayout = getActivity().getLayoutInflater().inflate(getLayoutID(), null);
-		setupUI(rootLayout);
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		dialog.setView(rootLayout, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
-
+		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		
 		return dialog;
 	}
 

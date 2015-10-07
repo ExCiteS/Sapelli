@@ -55,6 +55,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.AboutFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.EnterURLFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
@@ -63,7 +64,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
-import uk.ac.ucl.excites.sapelli.collector.ui.ProjectManagerPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
@@ -76,6 +76,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
@@ -108,8 +109,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 
 	// UI
 	private TextView addProjects;
-	private PagerSlidingTabStrip tabs;
+	private ProjectManagerTabFragmentPagerAdapter pagerAdapter;
 	private ViewPager pager;
+	private PagerSlidingTabStrip tabs;
 	private TextView lblAvailableProjects;
 	private ListView projectList;
 	private Toolbar mainToolbar;
@@ -137,14 +139,18 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		mainToolbar = (Toolbar) findViewById(R.id.projMngrToolbar);
 		drawerToolbar = (Toolbar) findViewById(R.id.drawerToolbar);
-		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
+		addProjects = (TextView) findViewById(R.id.addProjects);
+		//	Pager & tabs:
 		pager = (ViewPager) findViewById(R.id.pager);
 		pager.setPageMargin((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, PAGER_MARGIN_DIP, getResources().getDisplayMetrics()));
-		addProjects = (TextView) findViewById(R.id.addProjects);
+		pagerAdapter = new ProjectManagerTabFragmentPagerAdapter(this, getSupportFragmentManager());
+		pager.setAdapter(pagerAdapter);
+		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
+		tabs.setViewPager(pager);
 		
 		// We use a Toolbar as the ActionBar:
 		mainToolbar.setSubtitleTextAppearance(this, R.style.TextAppearance_Sap_ActionBarSubTitleText); // somehow I could specific this at the XML level (see styles.xml)
-	    setSupportActionBar(mainToolbar);
+		setSupportActionBar(mainToolbar);
 		
 		// Enable ActionBar icon to behave as action to toggle drawer
 		ActionBar actionBar = getSupportActionBar();
@@ -422,12 +428,15 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			return; // this is already the current project
 		//else...
 		currentProject = project;
-		pager.setAdapter(new ProjectManagerPagerAdapter(this, getSupportFragmentManager()));
+		
+		// Remember current project:
+		getPreferences().setActiveProjectSignature(currentProject);
+		
+		// Update UI:
 		if(currentProject != null)
 		{
 			getSupportActionBar().setTitle(currentProject.getName());
 			getSupportActionBar().setSubtitle(currentProject.getVariantVersionString());
-			tabs.setViewPager(pager);
 			tabs.setVisibility(View.VISIBLE);
 			pager.setVisibility(View.VISIBLE);
 			addProjects.setVisibility(View.GONE);
@@ -440,9 +449,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			pager.setVisibility(View.GONE);
 			addProjects.setVisibility(View.VISIBLE);
 		}
-		// Remember current project:
-		getPreferences().setActiveProjectSignature(currentProject);
-		// Refresh menus:
+		// 	Refresh tabs:
+		pagerAdapter.refresh();
+		// 	Refresh menus:
 		supportInvalidateOptionsMenu();
 	}
 	
@@ -541,6 +550,29 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	{
 		ExportFragment.ShowExportAllDialog(this, true);
 		return true;
+	}
+
+	/**
+	 * To be called upon completion of a record/data export (and possibly delete) operation
+	 * 
+	 * @param result
+	 * @param exportedDataDeleted
+	 */
+	public void onDataExportDone(ExportResult result, boolean exportedDataDeleted)
+	{
+		if(exportedDataDeleted)
+			onDataDeleteDone();
+	}
+	
+	/**
+	 * To be called upon completion of a record/data delete operation
+	 */
+	public void onDataDeleteDone()
+	{
+		// Refresh all tabs:
+		pagerAdapter.refresh();
+		// Alternative (refresh only main tab):
+		//pagerAdapter.getItem(pagerAdapter.getTabIndex(MainTabFragment.class)).refresh();
 	}
 
 	public boolean importRecords(MenuItem item)

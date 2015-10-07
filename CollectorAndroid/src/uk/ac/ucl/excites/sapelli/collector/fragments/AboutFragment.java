@@ -77,9 +77,7 @@ public class AboutFragment extends ProjectManagerFragment
 		AlertDialog dialog = builder.create();
 		
 		// Set view:
-		View rootLayout = getActivity().getLayoutInflater().inflate(getLayoutID(), null);
-		setupUI(rootLayout);
-		dialog.setView(rootLayout);
+		dialog.setView(getRootLayout());
 
 		return dialog;
 	}
