@@ -41,15 +41,11 @@ import android.util.Log;
  * 
  * @author Michalis Vitos, mstevens
  */
-/**
- * @author mstevens
- *
- */
 public class PrefProjectStore extends ProjectStore
 {
 	
 	// Statics----------------------------------------------
-	static protected final String TAG = "DB4OPrefDataAccess";
+	static protected final String TAG = "PrefProjctStore";
 	private static final String PREFERENCES_NAME = "PROJECT_STORAGE";
 	private static final String PREF_KEY_SEPARATOR = "_";
 	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT";
@@ -356,6 +352,12 @@ public class PrefProjectStore extends ProjectStore
 	public void delete(ProjectDescriptor projectDescriptor)
 	{
 		delete(retrieveProject(projectDescriptor));
+	}
+
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return retrieveProject(projectID, projectFingerPrint);
 	}
 
 }

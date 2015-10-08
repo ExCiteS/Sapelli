@@ -161,6 +161,12 @@ public class DB4OProjectStore extends ProjectStore
 		return null;
 	}
 	
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return retrieveProject(projectID, projectFingerPrint);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#delete(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */

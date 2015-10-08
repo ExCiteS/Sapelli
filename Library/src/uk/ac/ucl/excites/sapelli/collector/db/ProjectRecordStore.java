@@ -43,7 +43,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -51,6 +50,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
@@ -99,7 +99,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//		Columns:
 	static private final ForeignKeyColumn FSI_PROJECT_KEY_COLUMN = FSI_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn FSI_FORM_POSITION_COLUMN = FSI_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));
-	static private final ListColumn.Simple<String> FSI_BYPASSABLE_FIELD_IDS_COLUMN = FSI_SCHEMA.addColumn(new ListColumn.Simple<String>("byPassableFieldIDs", StringColumn.ForCharacterCount("FieldID", false, Field.MAX_ID_LENGTH), true, Form.MAX_FIELDS));
+	static public final StringListColumn FSI_BYPASSABLE_FIELD_IDS_COLUMN = FSI_SCHEMA.addColumn(new StringListColumn("byPassableFieldIDs", StringColumn.ForCharacterCount("FieldID", false, Field.MAX_ID_LENGTH), true, Form.MAX_FIELDS));
 	//		Set primary key & seal schema:
 	static
 	{
@@ -171,17 +171,26 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 												form.getPosition());
 	}
 	
+	private Record retrieveFSIRecord(Form form)
+	{
+		return recordStore.retrieveRecord(getFSIRecordReference(form));
+	}
+	
+	public List<String> getByPassableFieldIDs(Record fsiRec)
+	{
+		if(fsiRec == null)
+			return null;
+		else
+			return FSI_BYPASSABLE_FIELD_IDS_COLUMN.retrieveValue(fsiRec);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.load.FormSchemaInfoProvider#getByPassableFieldIDs(uk.ac.ucl.excites.sapelli.collector.model.Form)
 	 */
 	@Override
 	public List<String> getByPassableFieldIDs(Form form)
 	{
-		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form));
-		if(fsiRec == null)
-			return null;
-		else
-			return FSI_BYPASSABLE_FIELD_IDS_COLUMN.retrieveValue(fsiRec);
+		return getByPassableFieldIDs(retrieveFSIRecord(form));
 	}
 	
 	private ProjectDescriptor getProjectOrDescriptor(Record projRec)
@@ -213,6 +222,14 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		return loadProject(getProjectOrDescriptor(projRec));
 	}
 	
+	private File getProjectFolder(ProjectDescriptor projDescr)
+	{
+		return fileStorageProvider.getProjectInstallationFolder(projDescr.getName(),
+																projDescr.getVariant(), 
+																projDescr.getVersion(),
+																false);
+	}
+	
 	private Project loadProject(ProjectDescriptor projDescr)
 	{
 		if(projDescr == null)
@@ -231,11 +248,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		// Parse project if we didn't get it from the cache: 
 		if(project == null)
 		{
-			project = ProjectLoader.ParseProject(	fileStorageProvider.getProjectInstallationFolder(	projDescr.getName(),
-																										projDescr.getVariant(), 
-																										projDescr.getVersion(),
-																										false),
-													this); // pass this as FormSchemaInfoProvider
+			project = ProjectLoader.ParseProject(getProjectFolder(projDescr), this); // pass this as FormSchemaInfoProvider
 			// Check if we have a project:
 			if(project == null)
 				delete(projDescr);
@@ -355,13 +368,24 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 																			new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
 	}
 
+	private Record queryProjectRecordByIDFingerPrint(int projectID, int projectFingerPrint)
+	{
+		return recordStore.retrieveRecord(PROJECT_SCHEMA.createRecordReference(projectID, projectFingerPrint).getRecordQuery());
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
 	 */
 	@Override
 	public Project retrieveProject(int projectID, int projectFingerPrint)
 	{
-		return getProject(recordStore.retrieveRecord(PROJECT_SCHEMA.createRecordReference(projectID, projectFingerPrint).getRecordQuery()));
+		return getProject(queryProjectRecordByIDFingerPrint(projectID, projectFingerPrint));
+	}
+	
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return getProjectOrDescriptor(queryProjectRecordByIDFingerPrint(projectID, projectFingerPrint));
 	}
 	
 	/* (non-Javadoc)

@@ -20,8 +20,8 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectAlreadyStoredException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -161,6 +161,16 @@ public abstract class ProjectStore extends Store
 	 * @return null if no such project was found
 	 */
 	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
+	
+	/**
+	 * Retrieves specific a project, returned as a ProjectDescriptor or a Project instance.
+	 * If the ProjectStore implements a caching mechanism than any cached Project objects will be returned as such (rather than as ProjectDescriptors).
+	 * 
+	 * @param projectID
+	 * @param projectFingerPrint
+	 * @return null if no such project was found
+	 */
+	public abstract ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint);
 	
 	/**
 	 * Retrieves specific Project, identified by ProjectDescriptor
