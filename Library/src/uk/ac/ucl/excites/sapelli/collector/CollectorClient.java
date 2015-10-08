@@ -58,6 +58,10 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	//static public final Source ALL_COLLECTOR_RECORDS = Source.NotFrom(Transmission.)
 	
 	/**
+	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
+	 * 
+	 * TODO check for clash with reserved models (how? this is a static method!)
+	 * 
 	 * @param project
 	 * @return unsigned 56 bit integer
 	 */
