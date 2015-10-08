@@ -87,7 +87,7 @@ public class Project extends ProjectDescriptor
 		super.initialise(id); // !!!
 		
 		// Initialise Model (important this should remain last):
-		this.model = new Model(CollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
+		this.model = new Model(CollectorClient.GetModelID(this), this.toString(false).replaceAll(" ", "_"));
 		
 		// Heartbeat schema (Important: never put this before the model initialisation!):
 		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
