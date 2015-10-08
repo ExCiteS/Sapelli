@@ -44,7 +44,7 @@ public abstract class TransmissionClient extends StorageClient
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
 	 */
 	@Override
-	public List<Model> getReservedModels()
+	protected List<Model> getReservedModels()
 	{
 		List<Model> reserved = super.getReservedModels();
 		reserved.add(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);

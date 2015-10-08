@@ -107,7 +107,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
 	 */
 	@Override
-	public List<Model> getReservedModels()
+	protected List<Model> getReservedModels()
 	{
 		List<Model> reserved = super.getReservedModels();
 		reserved.add(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);

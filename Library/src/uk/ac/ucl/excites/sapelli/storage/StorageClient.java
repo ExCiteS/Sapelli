@@ -68,11 +68,19 @@ public abstract class StorageClient implements StorageObserver
 	public final Model getModel(long modelID) throws UnknownModelException
 	{
 		// First check reserved models:
+		Model reservedModel = getReservedModel(modelID);
+		if(reservedModel != null)
+			return reservedModel;
+		// Get client model:
+		return getClientModel(modelID);
+	}
+	
+	private Model getReservedModel(long modelID)
+	{
 		for(Model model : getReservedModels())
 			if(model.getID() == modelID)
 				return model;
-		// Get client model:
-		return getClientModel(modelID);
+		return null;
 	}
 	
 	/**
@@ -80,7 +88,7 @@ public abstract class StorageClient implements StorageObserver
 	 * 
 	 * @return
 	 */
-	public List<Model> getReservedModels()
+	protected List<Model> getReservedModels()
 	{
 		return new ArrayList<Model>();
 	}
