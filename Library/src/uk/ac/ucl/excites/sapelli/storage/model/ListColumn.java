@@ -41,6 +41,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 {
 	
+	// STATICS ----------------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
 	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
@@ -54,19 +55,44 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 		return IntegerRangeMapping.ForSize(minLength, sizeBits).highBound().intValue();
 	}
 	
+	// DYNAMICS ---------------------------------------------------------------
 	private final IntegerRangeMapping sizeField;
 	protected final Column<T> singleColumn;
 
+	/**
+	 * Creates a {@link ListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional)
 	{
 		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, DEFAULT_MAXIMUM_LENGTH);
 	}
-	
+
+	/**
+	 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength)
 	{
 		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);
 	}
-	
+
+	/**
+	 * Creates a {@link ListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 	{
 		super(name, optional);
@@ -242,16 +268,40 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 		
 		static private final long serialVersionUID = 2L;
 
+		/**
+		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional)
 		{
 			super(name, singleColumn, optional);
 		}
 		
+		/**
+		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param maxLength
+		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength)
 		{
-			super(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);
+			super(name, singleColumn, optional, maxLength);
 		}
 		
+		/**
+		 * Creates a {@link ListColumn.Simple} with the given minimum and maximum lengths.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param minLength
+		 * @param maxLength
+		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 		{
 			super(name, singleColumn, optional, minLength, maxLength);

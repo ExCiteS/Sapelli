@@ -22,51 +22,52 @@ import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * @author mstevens
- *
+ * @author mstevens, benelliott
  */
-public class IntegerListColumn extends ListColumn.Simple<Long>
+public class ByteArrayListColumn extends ListColumn.Simple<byte[]>
 {
 
-	static private final long serialVersionUID = 2L;
-
+	private static final long serialVersionUID = 2L;
+	
+	private static ByteArrayColumn GetSingleColumn()
+	{
+		return new ByteArrayColumn("ByteArray", false);
+	}
+	
 	/**
-	 * Creates an {@link IntegerListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
+	 * Creates a {@link ByteArrayListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
 	 * 
 	 * @param name
-	 * @param singleColumn
 	 * @param optional
 	 */
-	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional)
+	public ByteArrayListColumn(String name, boolean optional)
 	{
-		super(name, singleColumn, optional);
+		super(name, GetSingleColumn(), optional);
 	}
 
 	/**
-	 * Creates an {@link IntegerListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * Creates a {@link ByteArrayListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
 	 * 
 	 * @param name
-	 * @param singleColumn
 	 * @param optional
 	 * @param maxLength
 	 */
-	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int maxLength)
+	public ByteArrayListColumn(String name, boolean optional, int maxLength)
 	{
-		super(name, singleColumn, optional, maxLength);
+		super(name, GetSingleColumn(), optional, maxLength);
 	}
-
+	
 	/**
-	 * Creates an {@link IntegerListColumn} with the given minimum and maximum lengths.
+	 * Creates a {@link ByteArrayListColumn} with the given minimum and maximum lengths.
 	 * 
 	 * @param name
-	 * @param singleColumn
 	 * @param optional
 	 * @param minLength
 	 * @param maxLength
 	 */
-	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int minLength, int maxLength)
+	public ByteArrayListColumn(String name, boolean optional, int minLength, int maxLength)
 	{
-		super(name, singleColumn, optional, minLength, maxLength);
+		super(name, GetSingleColumn(), optional, minLength, maxLength);
 	}
 
 	@Override

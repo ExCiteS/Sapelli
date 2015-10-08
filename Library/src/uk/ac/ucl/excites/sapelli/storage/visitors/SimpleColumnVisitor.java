@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -33,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
@@ -104,7 +106,7 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	{
 		this.visit((Column<?>) intListCol);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn)
 	 */
@@ -112,6 +114,24 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	public void visit(BooleanListColumn boolListCol)
 	{
 		this.visit((Column<?>) boolListCol);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn)
+	 */
+	@Override
+	public void visit(StringListColumn stringListCol)
+	{
+		this.visit((Column<?>) stringListCol);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn)
+	 */
+	@Override
+	public void visit(ByteArrayListColumn byteArrayListCol)
+	{
+		this.visit((Column<?>) byteArrayListCol);
 	}
 
 	/* (non-Javadoc)
@@ -185,5 +205,5 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	{
 		this.visit((Column<?>) virtCol);
 	}
-	
+
 }

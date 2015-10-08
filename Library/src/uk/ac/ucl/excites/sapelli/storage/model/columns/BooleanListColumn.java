@@ -28,16 +28,52 @@ public class BooleanListColumn extends ListColumn.Simple<Boolean>
 {
 
 	private static final long serialVersionUID = 2L;
+	
+	private static BooleanColumn GetSingleColumn()
+	{
+		return new BooleanColumn(Boolean.class.getSimpleName(), false);
+	}
 
+	/**
+	 * Creates a {@link BooleanListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param optional
+	 */
+	public BooleanListColumn(String name, boolean optional)
+	{
+		super(name, GetSingleColumn(), optional);
+	}
+
+	/**
+	 * Creates a {@link BooleanListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param maxLength
+	 */
+	public BooleanListColumn(String name, boolean optional, int maxLength)
+	{
+		super(name, GetSingleColumn(), optional, maxLength);
+	}
+
+	/**
+	 * Creates a {@link BooleanListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 */
 	public BooleanListColumn(String name, boolean optional, int minLength, int maxLength)
 	{
-		super(name, new BooleanColumn(Boolean.class.getSimpleName(), false), optional, minLength, maxLength);
+		super(name, GetSingleColumn(), optional, minLength, maxLength);
 	}
 
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		visitor.visit(this);		
+		visitor.visit(this);
 	}
 
 }

@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -33,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
@@ -53,9 +55,15 @@ public interface ColumnVisitor
 	
 	public void visit(StringColumn stringCol);
 	
+	public void visit(ByteArrayColumn byteArrayCol);
+	
 	public void visit(IntegerListColumn intListCol);
 	
 	public void visit(BooleanListColumn boolListCol);
+	
+	public void visit(StringListColumn stringListCol);
+	
+	public void visit(ByteArrayListColumn byteArrayListCol);
 	
 	public void visit(LineColumn lineCol);
 	
@@ -66,8 +74,6 @@ public interface ColumnVisitor
 	public void visit(LocationColumn locCol);
 	
 	public void visit(OrientationColumn orCol);
-	
-	public void visit(ByteArrayColumn byteArrayCol);
 	
 	public <T> void visit(ListColumn.Simple<T> simpleListCol);
 	
