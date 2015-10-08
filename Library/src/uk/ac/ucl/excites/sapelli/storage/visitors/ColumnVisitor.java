@@ -38,8 +38,12 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
- * TODO document: mainly to explain how traversal of valuesetcolumns (and subclasses) works
- * 
+ * An interface for visitors that inspect columns.
+ * It has {@code visit(Column)} methods for each type of column.
+ * Additionally the {@code enter(ValueSetColumn)} and an {@code leave(ValueSetColumn)} methods are used to signal
+ * that the visitor is respectively entering or leaving a {@link ValueSetColumn} to inspect its subcolumns. 
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Visitor_pattern">Visitor Design Pattern</a>
  * @author mstevens
  */
 public interface ColumnVisitor

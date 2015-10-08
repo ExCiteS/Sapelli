@@ -28,7 +28,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
- * TODO
+ * A {@link ColumnVisitor} which can traverse all (sub)columns of a Schema and which keeps of stack of parent columns.
+ * 
+ * A {@link ColumnPointer} to the (sub)column currently being visited can be obtained by calling {@link #getColumnPointer(Column)}.
  * 
  * @author mstevens
  */
@@ -63,6 +65,8 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	@Override
 	public void leave(ValueSetColumn<?, ?> valueSetCol)
 	{
+		if(parentStack.peek() != valueSetCol)
+			throw new IllegalStateException("Invalid parent stack state!");
 		parentStack.pop();
 	}
 	
