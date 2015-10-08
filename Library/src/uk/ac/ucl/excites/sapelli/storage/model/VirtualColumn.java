@@ -88,14 +88,14 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
 	 */
 	@Override
-	public TT retrieveValue(ValueSet<?> valueSet)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> TT retrieveValue(VS valueSet)
 	{
 		// Retrieve value from sourceColumn:
 		ST sourceValue = sourceColumn.retrieveValue(valueSet);
 		if(sourceValue == null)
 			return null;
 		// Return converted value:
-		return valueMapper.mapValue(sourceValue);
+		return valueMapper.mapValue(sourceValue, new UnmodifiableValueSet<CS>(valueSet));
 	}
 
 	@Override
@@ -202,10 +202,11 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		/**
 		 * Converts values from source type ST to target type TT
 		 * 
-		 * @param nonNullValue
+		 * @param nonNullSourceValue the source value of type <ST>
+		 * @param valueSet an unmodifiable version of the valueSet in which the sourceValue occurs
 		 * @return
 		 */
-		public abstract TT mapValue(ST nonNullValue);
+		public abstract TT mapValue(ST nonNullSourceValue, UnmodifiableValueSet<?> valueSet);
 		
 		public abstract int hashCode();
 		

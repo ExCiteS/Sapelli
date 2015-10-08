@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.util;
 
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn.ValueMapper;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -47,7 +48,7 @@ public final class StringListMapper extends ValueMapper<String, Long>
 	}
 
 	@Override
-	public String mapValue(Long nonNullValue)
+	public String mapValue(Long nonNullValue, UnmodifiableValueSet<?> valueSet)
 	{
 		return stringList.get(nonNullValue.intValue());
 	}

@@ -215,7 +215,7 @@ public abstract class Column<T> implements Serializable
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's columnSet, nor compatible with a column by the same name that is
 	 */
 	@SuppressWarnings("unchecked")
-	public T retrieveValue(ValueSet<?> valueSet) throws IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws IllegalArgumentException
 	{
 		return (T) valueSet.getValue(this);
 	}
