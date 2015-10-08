@@ -222,7 +222,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA)
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
-						modelsTable.insert(Model.GetModelRecord(schema.getModel()));
+						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
 					schemataTable.insert(Schema.GetMetaRecord(schema));
 				}
 			}
@@ -367,7 +367,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					Model model = modelCache.get(Model.MODEL_ID_COLUMN.retrieveValue(modelRef));
 					if(model == null)
 					{	// model is not in cache, so query the models table:
-						model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
+						model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
 						modelCache.put(model.id, model); // remember model in cache
 					}
 					// Get the schema from the model object:
@@ -401,7 +401,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
 			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
-			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
+			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
 			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
 		}
 		catch(Exception e)
