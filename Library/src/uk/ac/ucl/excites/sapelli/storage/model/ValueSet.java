@@ -60,7 +60,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	protected Object[] values;
 	
 	/**
-	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet
+	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet.
 	 * 
 	 * @param columnSet
 	 */
@@ -75,7 +75,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Creates an initialised ValueSet
+	 * Creates an initialised ValueSet.
 	 * 
 	 * @param columnSet
 	 * @param values to initialise the ValueSet with, number of values must match number of (real) columns in the ColumnSet and each value must be valid for the corresponding Column
@@ -100,7 +100,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Creates an initialised ValueSet
+	 * Creates an initialised ValueSet.
 	 * 
 	 * @param columnSet
 	 * @param serialisedValues String to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
@@ -113,7 +113,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 
 	/**
-	 * Creates an initialised ValueSet
+	 * Creates an initialised ValueSet.
 	 * 
 	 * @param columnSet
 	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
@@ -127,7 +127,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Copy constructor
+	 * Copy constructor. Creates an initialised ValueSet with the values of another ValueSet.
 	 * 
 	 * @param another
 	 */
