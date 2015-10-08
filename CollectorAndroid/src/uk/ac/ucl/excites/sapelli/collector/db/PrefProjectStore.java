@@ -143,7 +143,7 @@ public class PrefProjectStore extends ProjectStore
 		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectFingerPrint), null);
 		if(folderPath != null)
 		{
-			Project p = ProjectLoader.ParseProject(folderPath);
+			Project p = ProjectLoader.ParseProjectXMLInFolder(folderPath);
 			if(p != null)
 			{
 				cacheProject(p); // cache the project (the cache will be initialised if needed)
@@ -195,7 +195,7 @@ public class PrefProjectStore extends ProjectStore
 				int projectFingerPrint = getProjectFingerPrint(entry.getKey());
 				if(getCachedProject(projectID, projectFingerPrint) == null)
 				{	// Parse the project if it is not already in the cache:
-					Project p = ProjectLoader.ParseProject(entry.getValue().toString());
+					Project p = ProjectLoader.ParseProjectXMLInFolder(entry.getValue().toString());
 					if(p != null)
 					{
 						if(p.getFingerPrint() != projectFingerPrint)

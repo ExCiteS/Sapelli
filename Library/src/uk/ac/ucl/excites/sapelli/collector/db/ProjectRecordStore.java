@@ -248,7 +248,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		// Parse project if we didn't get it from the cache: 
 		if(project == null)
 		{
-			project = ProjectLoader.ParseProject(getProjectFolder(projDescr), this); // pass this as FormSchemaInfoProvider
+			project = ProjectLoader.ParseProjectXMLInFolder(getProjectFolder(projDescr), this); // pass this as FormSchemaInfoProvider
 			// Check if we have a project:
 			if(project == null)
 				delete(projDescr);
