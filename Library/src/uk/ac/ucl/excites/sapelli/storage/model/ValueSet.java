@@ -39,13 +39,13 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * An ordered set of values, each corresponding to a (non-virtual) {@link Column} of a {@link ColumnSet}.
- * Abstract superclass for {@link Record}, {@link RecordReference}, {@link Location}, etc.
+ * Superclass for {@link Record}, {@link RecordReference}, {@link Location}, etc.
  * 
  * @author mstevens
  *
  * @param <CS> the {@link ColumnSet} type
  */
-public abstract class ValueSet<CS extends ColumnSet> implements Serializable
+public class ValueSet<CS extends ColumnSet> implements Serializable
 {
 	
 	// Statics-------------------------------------------------------
@@ -64,7 +64,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param columnSet
 	 */
-	protected ValueSet(CS columnSet)
+	public ValueSet(CS columnSet)
 	{
 		if(columnSet == null)
 			throw new NullPointerException("Schema cannot be null!");
@@ -80,7 +80,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param columnSet
 	 * @param values to initialise the ValueSet with, number of values must match number of (real) columns in the ColumnSet and each value must be valid for the corresponding Column
 	 */
-	protected ValueSet(CS columnSet, Object... values)
+	public ValueSet(CS columnSet, Object... values)
 	{
 		this(columnSet);
 		if(values != null)
@@ -106,7 +106,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param serialisedValues String to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
 	 * @throws Exception 
 	 */
-	protected ValueSet(CS columnSet, String serialisedValues) throws Exception
+	public ValueSet(CS columnSet, String serialisedValues) throws Exception
 	{
 		this(columnSet);
 		parse(serialisedValues);
@@ -120,7 +120,7 @@ public abstract class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @throws NullPointerException when schema is null
 	 * @throws IOException when reading serialisedValues fails
 	 */
-	protected ValueSet(CS columnSet, byte[] serialisedValues) throws NullPointerException, IOException
+	public ValueSet(CS columnSet, byte[] serialisedValues) throws NullPointerException, IOException
 	{
 		this(columnSet);
 		fromBytes(serialisedValues);
