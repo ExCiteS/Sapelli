@@ -90,6 +90,7 @@ public final class BitWrapOutputStream extends BitOutputStream
 
 	/**
 	 * Flushes this and the underlying output stream and forces any buffered bits to be written out.
+	 * Write zeros (=false) as padding until a byte boundary is reached.
 	 * 
 	 * @throws IOException if an I/O error occurs
 	 * @see java.io.OutputStream#flush()
