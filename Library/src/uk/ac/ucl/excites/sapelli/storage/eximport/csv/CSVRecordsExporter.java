@@ -51,7 +51,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
  * except for the choice between different separators (tab & semicolon in addition to comma).
  * 
  * The CSV will get a header line with the column names separated by the separator, with this postfix:
- * 	separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
+ * 	separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator+"schemaName="+...+separator+"exportedAt="+...+separator
  * 
  * @author mstevens
  * 
@@ -121,7 +121,7 @@ public class CSVRecordsExporter extends SimpleExporter
 	@Override
 	protected void openWriter(String description, DateTime timestamp) throws IOException
 	{
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".csv"), UnicodeHelpers.UTF8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Export_" + description + ".csv"), UnicodeHelpers.UTF8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);	
 	}
 	
@@ -193,10 +193,11 @@ public class CSVRecordsExporter extends SimpleExporter
 					// Column names (separated by the separator):
 					for(ColumnPointer<?> cp : columnPointers)
 						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorChar() : "") + cp.getQualifiedColumnName());
-					// Postfix: separator+modelID=+...+separator+modelSchemaNumber=+...+separator+schemaName="+...+"separator
+					// Postfix: separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator+"schemaName="+...+separator+"exportedAt="+...+separator
 					writer.write(	separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_ID + "=" + schema.getModelID() +
 									separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=" + schema.getModelSchemaNumber() +
 									separator.getSeparatorChar() + Schema.ATTRIBUTE_SCHEMA_NAME + "=" + escapeAndQuote(schema.getName(), true) +
+									separator.getSeparatorChar() + EXPORTED_AT_ATTRIBUTE + "=" + TimeUtils.getISOTimestamp(timestamp, false) +
 									separator.getSeparatorChar());
 					writer.write('\n');
 				}

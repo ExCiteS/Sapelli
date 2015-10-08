@@ -126,10 +126,10 @@ public class XMLRecordsExporter extends SimpleExporter
 	@Override
 	protected void openWriter(String description, DateTime timestamp) throws IOException
 	{
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), UnicodeHelpers.UTF8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Export_" + description + ".xml"), UnicodeHelpers.UTF8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		writer.writeLine(XMLUtils.header(UnicodeHelpers.UTF8.displayName(), USES_XML_VERSION_11));
-		writer.writeLine("<" + TAG_RECORDS_EXPORT + " exportedAt=\"" + TimeUtils.getISOTimestamp(timestamp, false) + "\">");
+		writer.writeLine("<" + TAG_RECORDS_EXPORT + " " + EXPORTED_AT_ATTRIBUTE + "=\"" + TimeUtils.getISOTimestamp(timestamp, false) + "\">");
 		//TODO add attributes: comment, device(?)
 	}
 	

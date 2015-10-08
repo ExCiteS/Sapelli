@@ -19,9 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -50,6 +48,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExportFilenameProvider;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
@@ -60,9 +60,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 
 /**
@@ -120,7 +120,6 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	private FormatDialogCallback formatDialogCallback;
 	
 	private final DateTime[] dateRange = new DateTime[2];
-	private String selectionDesc;
 	private File exportFolder;
 	
 	// UI Elements
@@ -362,8 +361,13 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	{
 		dateRange[dtRangeIdx] = newDT;
 		Button btn = dtRangeIdx == DT_RANGE_IDX_FROM ? btnFrom : btnTo;
-		btn.setText(getString(	dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo,
-								dateRange[dtRangeIdx] == null ? getString(R.string.exportDateRangeAnytime) : dateTimeFormatter.print(dateRange[dtRangeIdx])));
+		btn.setText(getDateRangeString(dtRangeIdx));
+	}
+	
+	private String getDateRangeString(int dtRangeIdx)
+	{
+		return getString(	dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo,
+							dateRange[dtRangeIdx] == null ? getString(R.string.exportDateRangeAnytime) : dateTimeFormatter.print(dateRange[dtRangeIdx]));
 	}
 	
 	public Format getSelectedFormat()
@@ -410,6 +414,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		private final ProjectManagerActivity activity;
 		
 		private ExportResult exportResult = null;
+		String selectionDescription;
 		
 		/**
 		 * @param activity
@@ -423,21 +428,61 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		
 		public void run()
 		{
+			// Thrown away old state:
 			exportResult = null;
-			// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-			Set<Schema> schemata = new HashSet<Schema>();
+			// Get string builder for description String:
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder("_");
+			
+			
+			new ExportFilenameProvider()
+			{
+				@Override
+				public String getExportFileName(Schema schema)
+				{
+					TransactionalStringBuilder bldr = new TransactionalStringBuilder("_");
+					bldr.append("Export");
+					if(schema == null)
+					{	// mixed schemata in file
+						if(projectToExport != null)
+							bldr.append("[" + projectToExport.toString(false).replace(" ", "_") + "]");
+						else
+							bldr.append("[All_Projects]");
+					}
+					else
+					{
+						
+					}
+					return null;
+				}
+			};
+			
+			
+			// Define query Source:
+			Source source;
 			if(projectToExport != null)
-				schemata.addAll(projectToExport.getModel().getSchemata());
-			// Date range:
+			{
+				source = Source.From(projectToExport.getModel());
+				bldr.append(projectToExport.getModel().getName());
+			}
+			else
+				source = Source.ANY; // TODO Exclude collector-internal schemas!!!
+
+			// Define constraints:
 			AndConstraint constraints = new AndConstraint();
+			// 	Date range:
 			if(dateRange[DT_RANGE_IDX_FROM] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
-			// TODO Exclude previously exported
+			
+			
+			
+			// 	TODO Exclude previously exported
+			
+			
+			
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints));
-			// TODO Exclude collector-internal schemas!!!
+			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
 			// TODO order by form, deviceid, timestamp
 			// TODO let ExportFragment & Backup share this code somehow
 		}
@@ -461,7 +506,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			{
 				// TODO Generate selection description String:
 				String selectionDesc = "TODO";
-				
+								
 				// Run the right export task:
 				RecordsTasks.runExportTask(activity, result, ExportFragment.this, exportFolder, selectionDesc, this);
 			}

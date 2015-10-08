@@ -36,6 +36,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 public abstract class SimpleExporter extends SimpleSchemaTraverser implements Exporter
 {
 
+	static public final String EXPORTED_AT_ATTRIBUTE = "exportedAt";
+	
 	protected File exportFolder;
 	protected boolean forceExportUnexportable = false;
 	
