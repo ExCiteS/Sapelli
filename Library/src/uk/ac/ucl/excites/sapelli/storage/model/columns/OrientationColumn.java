@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -27,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class OrientationColumn extends ValueSetColumn<Orientation>
+public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 {
 	
 	static private final long serialVersionUID = 2L;

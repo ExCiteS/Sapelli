@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 public abstract class SchemaTraverser implements ColumnVisitor 
 {
 
-	private final Stack<ValueSetColumn<?>> parentStack = new Stack<ValueSetColumn<?>>();
+	private final Stack<ValueSetColumn<?, ?>> parentStack = new Stack<ValueSetColumn<?, ?>>();
 	
 	public void traverse(Schema schema)
 	{
@@ -52,16 +52,16 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void enter(ValueSetColumn<?> recordCol)
+	public void enter(ValueSetColumn<?, ?> valueSetCol)
 	{
-		parentStack.push(recordCol);
+		parentStack.push(valueSetCol);
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void leave(ValueSetColumn<?> recordCol)
+	public void leave(ValueSetColumn<?, ?> valueSetCol)
 	{
 		parentStack.pop();
 	}

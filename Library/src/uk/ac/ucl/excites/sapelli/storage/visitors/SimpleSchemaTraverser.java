@@ -53,16 +53,16 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void enter(ValueSetColumn<?> recordCol)
+	public void enter(ValueSetColumn<?, ?> valueSetCol)
 	{
-		columnStack.push(recordCol);
+		columnStack.push(valueSetCol);
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void leave(ValueSetColumn<?> recordCol)
+	public void leave(ValueSetColumn<?, ?> valueSetCol)
 	{
 		columnStack.pop();
 	}

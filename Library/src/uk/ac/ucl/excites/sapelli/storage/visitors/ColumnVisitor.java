@@ -79,9 +79,9 @@ public interface ColumnVisitor
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
-	public void enter(ValueSetColumn<?> valueSetCol);
+	public void enter(ValueSetColumn<?, ?> valueSetCol);
 	
-	public void leave(ValueSetColumn<?> valueSetCol);
+	public void leave(ValueSetColumn<?, ?> valueSetCol);
 	
 	public boolean allowLocationSelfTraversal();
 	

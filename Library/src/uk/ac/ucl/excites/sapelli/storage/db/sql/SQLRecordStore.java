@@ -612,7 +612,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Mapping of composite Sapelli columns to a list of SQLColumns which they correspond to.
 		 * E.g. Location --> (Lat, Lon, ...) 
 		 */
-		public final Map<ValueSetColumn<?>, List<SColumn>> composite2SqlColumns;
+		public final Map<ValueSetColumn<?, ?>, List<SColumn>> composite2SqlColumns;
 		
 		/**
 		 * The auto-incrementing primary key column as (a Sapelli Column, not an S/SQLColumn), will be null if there is none
@@ -626,7 +626,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // we use a LHP to preserve column order!
-			composite2SqlColumns = new HashMap<ValueSetColumn<?>, List<SColumn>>();
+			composite2SqlColumns = new HashMap<ValueSetColumn<?, ?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
 		}
@@ -652,7 +652,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Deal with composites...
 			while(sourceCP.isSubColumn())
 			{
-				ColumnPointer<ValueSetColumn<?>> parentCP = sourceCP.getParentPointer();
+				ColumnPointer<ValueSetColumn<?, ?>> parentCP = sourceCP.getParentPointer();
 				List<SColumn> subSQLCols;
 				if(composite2SqlColumns.containsKey(parentCP.getColumn()))
 					subSQLCols = composite2SqlColumns.get(parentCP.getColumn());
@@ -734,7 +734,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public List<SColumn> getSQLColumns(Column<?> sapColumn)
 		{
 			if(sapColumn instanceof ValueSetColumn)
-				return composite2SqlColumns.get((ValueSetColumn<?>) sapColumn);
+				return composite2SqlColumns.get((ValueSetColumn<?, ?>) sapColumn);
 			else
 				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
@@ -1851,9 +1851,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(getNullString()); // "NULL"
 				}
 			}
-			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
+			else if(cp.getColumn() instanceof ValueSetColumn<?, ?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
 			{	// Equality constraint on composite column...
-				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?>) cp.getColumn());
+				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?, ?>) cp.getColumn());
 				if(subSqlCols != null)
 				{	// ...  which is split up in the SQLTable...
 					ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();

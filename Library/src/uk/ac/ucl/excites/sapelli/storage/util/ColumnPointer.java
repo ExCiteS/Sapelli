@@ -73,11 +73,11 @@ public class ColumnPointer<C extends Column<?>>
 		if(columns == null || columns.isEmpty())
 			throw new IllegalArgumentException("At least column must be given!");
 		// Make parents list:
-		List<ValueSetColumn<?>> parents = new ArrayList<>(columns.size() - 1);
+		List<ValueSetColumn<?, ?>> parents = new ArrayList<>(columns.size() - 1);
 		int c = 0;
 		for(; c < columns.size() - 1; c++)
 			if(columns.get(c) instanceof ValueSetColumn)
-				parents.add((ValueSetColumn<?>) columns.get(c));
+				parents.add((ValueSetColumn<?, ?>) columns.get(c));
 			else
 				throw new IllegalArgumentException("Parent columns must be " + ValueSetColumn.class.getSimpleName() + "s!");
 		// Return new cp:
@@ -106,7 +106,7 @@ public class ColumnPointer<C extends Column<?>>
 			{
 				// Deal with previous (record)column:
 				if(!columnStack.isEmpty())
-					columnSet = ((ValueSetColumn<?>) columnStack.peek()).getColumnSet();
+					columnSet = ((ValueSetColumn<?, ?>) columnStack.peek()).getColumnSet();
 				// Deal with current column:
 				Column<?> col = columnSet.getColumn(colName, true);
 				// If not found...
@@ -221,7 +221,7 @@ public class ColumnPointer<C extends Column<?>>
 				if(c instanceof ValueSetColumn)
 				{
 					path.push(c);
-					if(ConstructPath(path, ((ValueSetColumn<?>) c).getColumnSet(), matcher) != null)
+					if(ConstructPath(path, ((ValueSetColumn<?, ?>) c).getColumnSet(), matcher) != null)
 						return path;
 					else
 						path.pop();
@@ -254,7 +254,7 @@ public class ColumnPointer<C extends Column<?>>
 	 */
 	public ColumnPointer(C column)
 	{
-		this(Collections.<ValueSetColumn<?>> emptyList(), column);
+		this(Collections.<ValueSetColumn<?, ?>> emptyList(), column);
 	}
 	
 	/**
@@ -263,7 +263,7 @@ public class ColumnPointer<C extends Column<?>>
 	 * @param parents
 	 * @param column the pointed-at column
 	 */
-	public ColumnPointer(List<ValueSetColumn<?>> parents, C column)
+	public ColumnPointer(List<ValueSetColumn<?, ?>> parents, C column)
 	{
 		List<Column<?>> columns = new ArrayList<Column<?>>(parents.size() + 1);
 		columns.addAll(parents);
@@ -280,7 +280,7 @@ public class ColumnPointer<C extends Column<?>>
 				Column<?> prevCol = columnStack.peek(); 
 				if(!(prevCol instanceof ValueSetColumn))
 					throw new IllegalArgumentException("Column \"" + prevCol.getName() + "\" is expected to be a ValueSetColumn but it is not.");
-				if(!((ValueSetColumn<?>) prevCol).getColumnSet().containsColumn(col))
+				if(!((ValueSetColumn<?, ?>) prevCol).getColumnSet().containsColumn(col))
 					throw new IllegalArgumentException("Column \"" + col.getName() + "\" is not a subcolumn of ValueSetColumn \"" + prevCol.getName() + "\".");
 			}
 			columnStack.push(col);
@@ -334,7 +334,7 @@ public class ColumnPointer<C extends Column<?>>
 		for(Column<?> col : path)
 			if(col instanceof ValueSetColumn && col != path.peek())
 			{
-				ValueSetColumn<?> recCol = ((ValueSetColumn<?>) col);
+				ValueSetColumn<?, ?> recCol = ((ValueSetColumn<?, ?>) col);
 				if(!recCol.isValueSet(vs))
 				{
 					if(create)
@@ -395,7 +395,7 @@ public class ColumnPointer<C extends Column<?>>
 	/**
 	 * @return a new ColumnPointer pointing to the parent of the column to which this ColumnPoiter points, or null if that column was already top level
 	 */
-	public ColumnPointer<ValueSetColumn<?>> getParentPointer()
+	public ColumnPointer<ValueSetColumn<?, ?>> getParentPointer()
 	{
 		if(isSubColumn())
 		{
@@ -403,7 +403,7 @@ public class ColumnPointer<C extends Column<?>>
 			for(Column<?> col : columnStack) // (iterates from bottom to top)
 				if(parentStack.size() < columnStack.size() - 1)
 					parentStack.push(col);
-			return new ColumnPointer<ValueSetColumn<?>>(parentStack);
+			return new ColumnPointer<ValueSetColumn<?, ?>>(parentStack);
 		}
 		else
 			return null;
