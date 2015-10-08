@@ -40,6 +40,7 @@ import android.util.Log;
  * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
  * 
  * @author Michalis Vitos, mstevens
+ * @deprecated
  */
 public class PrefProjectStore extends ProjectStore
 {
@@ -358,6 +359,18 @@ public class PrefProjectStore extends ProjectStore
 	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
 	{
 		return retrieveProject(projectID, projectFingerPrint);
+	}
+
+	@Override
+	public byte[] serialise(Project project)
+	{
+		return null; // not implemented
+	}
+
+	@Override
+	public Project deserialise(byte[] serialisedProject)
+	{
+		return null; // not implemented
 	}
 
 }

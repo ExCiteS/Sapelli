@@ -216,5 +216,23 @@ public abstract class ProjectStore extends Store
 	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
 	
 	public abstract void deleteHeldForeignKey(Relationship relationship);
+	
+	/**
+	 * TODO
+	 * May use but should not rely on querying the ProjectStore itself.
+	 *  
+	 * @param project
+	 * @return
+	 */
+	public abstract byte[] serialise(Project project);
+	
+	/**
+	 * TODO
+	 * May use but should not rely on querying the ProjectStore itself.
+	 * 
+	 * @param serialisedProject
+	 * @return
+	 */
+	public abstract Project deserialise(byte[] serialisedProject);
 
 }

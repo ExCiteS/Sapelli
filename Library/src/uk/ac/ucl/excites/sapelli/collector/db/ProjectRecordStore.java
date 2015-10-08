@@ -18,12 +18,17 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
@@ -43,10 +48,14 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
@@ -526,6 +535,97 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		backuper.addStoreForBackup(recordStore);
+	}
+
+	static private final ColumnSet ProjectSerialisation = new ColumnSet("ProjectSerialisation", false);
+	static private final ByteArrayColumn PROJECT_XML_COLUMN = ProjectSerialisation.addColumn(new ByteArrayColumn("ProjectXMLBytes", false));
+	static private final ByteArrayListColumn PROJECT_FSI_RECORDS_COLUMN = ProjectSerialisation.addColumn(new ByteArrayListColumn("ProjectFSIRecordsBytes", false, Project.MAX_FORMS));
+	static
+	{
+		ProjectSerialisation.seal();
+	}
+	
+	/**
+	 * TODO
+	 * May use but should not rely on querying the ProjectStore itself.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#serialise(uk.ac.ucl.excites.sapelli.collector.model.Project)
+	 */
+	@Override
+	public byte[] serialise(Project project)
+	{
+		try
+		{
+			// Project XML bytes:
+			FileInputStream projectXMLFileIn = new FileInputStream(ProjectLoader.GetProjectXMLFile(getProjectFolder(project)));
+			ByteArrayOutputStream projectXMLBytesOut = new ByteArrayOutputStream();
+			IOUtils.copy(projectXMLFileIn, projectXMLBytesOut);
+			projectXMLFileIn.close();
+			projectXMLBytesOut.close();
+			
+			// FSI record bytes for each Form:
+			List<byte[]> fsiRecordBytesList = new ArrayList<>(project.getNumberOfForms());
+			for(Form form : project.getForms())
+			{
+				Record fsiRecord = retrieveFSIRecord(form);
+				if(fsiRecord == null)
+					fsiRecord = getFSIRecord(form); // may trigger optionality analysis
+				fsiRecordBytesList.add(fsiRecord.toBytes());
+			}
+			
+			// Create serialisedProject valueSet:
+			ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(ProjectSerialisation, projectXMLBytesOut.toByteArray(), fsiRecordBytesList);
+			
+			// Return as byte array:
+			return serialisedProjectVS.toBytes();
+		}
+		catch(Exception e)
+		{
+			// TODO
+			return null;
+		}
+	}
+
+	/**
+	 * TODO
+	 * May use but should not rely on querying the ProjectStore itself.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#deserialise(byte[])
+	 */
+	@Override
+	public Project deserialise(byte[] serialisedProject)
+	{
+		try
+		{
+			// Deserialise valueSet:
+			ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(ProjectSerialisation, serialisedProject);
+			
+			// Retrieve FSI records:
+			List<byte[]> fsiRecordBytesList = PROJECT_FSI_RECORDS_COLUMN.retrieveValue(serialisedProjectVS);
+			final List<Record> fsiRecords = new ArrayList<Record>(fsiRecordBytesList.size());
+			for(byte[] fsiRecordBytes : fsiRecordBytesList)
+				fsiRecords.add(FSI_SCHEMA.createRecord(fsiRecordBytes));
+		
+			// Retrieve & parse Project XML:
+			return ProjectLoader.ParseProjectXML(
+				new ByteArrayInputStream(PROJECT_XML_COLUMN.retrieveValue(serialisedProjectVS)),
+				new FormSchemaInfoProvider()
+				{
+					@Override
+					public List<String> getByPassableFieldIDs(Form form)
+					{
+						for(Record fsiRecord : fsiRecords)
+							if(FSI_FORM_POSITION_COLUMN.retrieveValue(fsiRecord).shortValue() == form.getPosition())
+								return ProjectRecordStore.this.getByPassableFieldIDs(fsiRecord);
+						return null;
+					}
+				});
+		}
+		catch(Exception e)
+		{
+			// TODO
+			return null;
+		}
 	}
 
 }

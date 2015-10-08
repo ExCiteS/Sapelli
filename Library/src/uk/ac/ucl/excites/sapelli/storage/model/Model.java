@@ -21,8 +21,6 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
  * A Model groups a series of {@link Schema}s that belong together.
@@ -126,10 +125,7 @@ public class Model implements Serializable
 	{
 		// Serialise Model object:
 		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();	
-		ObjectOutputStream objOut = new ObjectOutputStream(CompressorFactory.getCompressorOutputStream(OBJECT_COMPRESSION, rawOut));
-		objOut.writeObject(model);
-		objOut.flush();
-		objOut.close();
+		client.serialiseModel(model, CompressorFactory.getCompressorOutputStream(OBJECT_COMPRESSION, rawOut));
 		// Return new Model record:
 		return MODEL_SCHEMA.createRecord(model.id, model.name, rawOut.toByteArray(), model.hashCode());
 	}
@@ -165,8 +161,9 @@ public class Model implements Serializable
 	 * @throws IllegalArgumentException
 	 * @throws IOException
 	 * @throws ClassNotFoundException
+	 * @throws UnknownModelException 
 	 */
-	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
+	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException, UnknownModelException
 	{
 		if(modelRecord == null)
 			throw new NullPointerException("The modelRecord cannot be null!");
@@ -174,9 +171,7 @@ public class Model implements Serializable
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
 		// Decompress & deserialise Schema object bytes:
-		ObjectInputStream objIn = new ObjectInputStream(CompressorFactory.getCompressorInputStream(OBJECT_COMPRESSION, new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord))));
-		Model model = (Model) objIn.readObject();
-		objIn.close();
+		Model model = client.deserialiseModel(CompressorFactory.getCompressorInputStream(OBJECT_COMPRESSION, new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord))));
 		
 		// Perform check:
 		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))

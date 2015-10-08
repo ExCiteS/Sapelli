@@ -18,17 +18,27 @@
 
 package uk.ac.ucl.excites.sapelli.storage;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
@@ -48,6 +58,12 @@ public abstract class StorageClient implements StorageObserver
 		Deleted
 	}
 	
+	static private final Charset UTF8 = Charset.forName("UTF-8");
+	
+	static protected final byte[] NEW_MODEL_SERIALISATION_HEADER = "SapelliModel".getBytes(UTF8);
+	
+	static private final StringColumn NEW_MODEL_SERIALISATION_KIND_COLUMN = StringColumn.ForCharacterCount("Kind", false, 15, UTF8);
+
 	// DYNAMICS -----------------------------------------------------
 	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
 	
@@ -99,6 +115,83 @@ public abstract class StorageClient implements StorageObserver
 	 * @throws UnknownModelException
 	 */
 	protected abstract Model getClientModel(long modelID) throws UnknownModelException;
+	
+	/**
+	 * TODO 
+	 * @param model
+	 * @param out
+	 * @throws IOException
+	 */
+	public void serialiseModel(Model model, OutputStream out) throws IOException
+	{
+		// Write header:
+		//out.write(NEW_MODEL_SERIALISATION_HEADER);
+		
+		// Check if this is a reserved model:
+		if(false) //getReservedModel(model.id) != null)
+		{	// Write "Reserved" + the model id:
+			//out.write(NEW_MODEL_SERIALISATION_KIND_COLUMN.toBytes("Reserved"));
+			
+			
+			BitWrapOutputStream bitOut = new BitWrapOutputStream(out);
+			Model.MODEL_ID_FIELD.write(model.id, bitOut);
+			bitOut.flush();
+			bitOut.close();
+		}
+		else
+		{	// Use Java object serialisation:
+			ObjectOutputStream objOut = new ObjectOutputStream(out);
+			objOut.writeObject(model);
+			objOut.flush();
+			objOut.close();
+		}
+	}
+	
+	/**
+	 * TODO
+	 * 
+	 * @param in
+	 * @return
+	 * @throws UnknownModelException
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	public Model deserialiseModel(InputStream in) throws UnknownModelException, IOException, ClassNotFoundException
+	{
+		// Check if this is a reserved model:
+		/*if(!in.markSupported())
+			in = new BufferedInputStream(in); // decorate stream so we can use mark/reset		
+		
+		// Check new header:
+		in.mark(NEW_MODEL_SERIALISATION_HEADER.length);
+		byte[] newHeaderBytes = new byte[NEW_MODEL_SERIALISATION_HEADER.length];
+		int read = in.read(newHeaderBytes);
+		if(read == NEW_MODEL_SERIALISATION_HEADER.length && Arrays.equals(newHeaderBytes, NEW_MODEL_SERIALISATION_HEADER))
+		{	// New header present...
+			// Read kind:
+			//NEW_MODEL_SERIALISATION_KIND_COLUMN.fromBytes(bytes)
+			return null;
+		}
+		else
+		{
+			in.reset();*/
+			// Use Java object serialisation:
+			return deserialiseModelObject(in);
+		//}
+	}
+	
+	private Model deserialiseModelObject(InputStream in) throws ClassNotFoundException, IOException
+	{
+		ObjectInputStream objIn = new ObjectInputStream(in);
+		try
+		{
+			return (Model) objIn.readObject();
+		}
+		finally
+		{
+			objIn.close();
+		}
+	}
 	
 	/**
 	 * @param modelID

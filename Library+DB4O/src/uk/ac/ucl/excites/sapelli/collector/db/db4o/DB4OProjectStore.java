@@ -37,7 +37,7 @@ import com.db4o.query.Predicate;
 
 /**
  * @author mstevens, julia, Michalis Vitos
- * 
+ * @deprecated
  */
 public class DB4OProjectStore extends ProjectStore
 {
@@ -287,6 +287,18 @@ public class DB4OProjectStore extends ProjectStore
 		{
 			throw new DBException("Error upon backup up project store");
 		}
+	}
+
+	@Override
+	public byte[] serialise(Project project)
+	{
+		return null; // not implemented
+	}
+
+	@Override
+	public Project deserialise(byte[] serialisedProject)
+	{
+		return null; // not implemented
 	}
 	
 }
