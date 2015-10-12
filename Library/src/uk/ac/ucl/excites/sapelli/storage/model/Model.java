@@ -201,7 +201,9 @@ public class Model implements Serializable
 	/**
 	 * Creates a new model
 	 * 
+	 * @param id
 	 * @param name
+	 * @param meta
 	 */
 	private Model(long id, String name, boolean meta)
 	{
@@ -353,6 +355,12 @@ public class Model implements Serializable
 					this.sealed == that.sealed;
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return getClass().getSimpleName() + "_" + (name != null ? name + "_" : "") + "(ID=" + id + ")"; 
 	}
 	
 }
