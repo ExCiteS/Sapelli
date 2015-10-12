@@ -39,7 +39,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 /**
  * Abstract class representing database schema/table column of generic type {@code T}.
  *
- * @param <T>
+ * @param <T> the content type
+ * 
  * @author mstevens
  */
 public abstract class Column<T> implements Serializable
@@ -50,8 +51,15 @@ public abstract class Column<T> implements Serializable
 
 	static public final char ILLEGAL_NAME_CHAR_REPLACEMENT = '_';
 
+	/**
+	 * @param name the String to be sanitised for use as a Column name
+	 * @return a version of the given name which is acceptable for use as a Column name
+	 */
 	static public String SanitiseName(String name)
 	{
+		// Check for null & empty String:
+		if(name == null || name.isEmpty())
+			throw new IllegalArgumentException("Please provide a non-null, non-empty name to be sanitised");
 		// Perform basic sanitation:
 		//	Detect & replace the most common illegal characters with a simple underscore; except those that come last, which are just removed
 		StringBuilder bldr = new StringBuilder();
@@ -60,41 +68,41 @@ public abstract class Column<T> implements Serializable
 			switch(c)
 			{
 				// Not allowed anywhere:
-				case '.'		:	/* not allowed at start of XML names, but nowhere in Sapelli column names because it is the RecordColumn.QUALIFIED_NAME_SEPARATOR */
-				case ','		:	/* not allowed anywhere in XML names */
-				case '?'		:	/* not allowed anywhere in XML names */
-				case '!'		:	/* not allowed anywhere in XML names */
+				case '.'		:	/* not allowed at start of XML names, but nowhere in our Column names because it is the ValueSetColumn.QUALIFIED_NAME_SEPARATOR */
+				case ','		:	/* not allowed anywhere in XML names. Moreover it is one of our supported CSV separators. */
+				case '?'		:	/* not allowed anywhere in XML names.*/
+				case '!'		:	/* not allowed anywhere in XML names.*/
 				case ':'		:	/* is allowed anywhere in XML names but we take it out anyway to avoid some XML tools recognising it as an XML namespace separator */
-				case ';'		:	/* not allowed anywhere in XML names */
-				case '\''		:	/* not allowed anywhere in XML names */
-				case '"'		:	/* not allowed anywhere in XML names */
-				case '/'		:	/* not allowed anywhere in XML names */
-				case '\\'		:	/* not allowed anywhere in XML names */
-				case '@'		:	/* not allowed anywhere in XML names */
-				case '('		:	/* not allowed anywhere in XML names */
-				case ')'		:	/* not allowed anywhere in XML names */
-				case '['		:	/* not allowed anywhere in XML names */
-				case ']'		:	/* not allowed anywhere in XML names */
-				case '{'		:	/* not allowed anywhere in XML names */
-				case '}'		:	/* not allowed anywhere in XML names */
-				case '&'		:	/* not allowed anywhere in XML names */
-				case '%'		:	/* not allowed anywhere in XML names */
-				case '$'		:	/* not allowed anywhere in XML names */
-				case '\u00A3'	:	/* (Pound sign) not allowed anywhere in XML names */
-				case '+'		:	/* not allowed anywhere in XML names */
-				case '*'		:	/* not allowed anywhere in XML names */
-				case '#'		:	/* not allowed anywhere in XML names */
-				case '|'		:	/* not allowed anywhere in XML names */
-				case '~'		:	/* not allowed anywhere in XML names */
-				case ' '		:	/* not allowed anywhere in XML names */
-				case '\t'		:	/* not allowed anywhere in XML names */
-				case '\r'		:	/* not allowed anywhere in XML names */
-				case '\n'		:	/* not allowed anywhere in XML names */
+				case ';'		:	/* not allowed anywhere in XML names. Moreover it is one of our supported CSV separators. */
+				case '\''		:	/* not allowed anywhere in XML names.*/
+				case '"'		:	/* not allowed anywhere in XML names.*/
+				case '/'		:	/* not allowed anywhere in XML names.*/
+				case '\\'		:	/* not allowed anywhere in XML names.*/
+				case '@'		:	/* not allowed anywhere in XML names.*/
+				case '('		:	/* not allowed anywhere in XML names.*/
+				case ')'		:	/* not allowed anywhere in XML names.*/
+				case '['		:	/* not allowed anywhere in XML names.*/
+				case ']'		:	/* not allowed anywhere in XML names.*/
+				case '{'		:	/* not allowed anywhere in XML names.*/
+				case '}'		:	/* not allowed anywhere in XML names.*/
+				case '&'		:	/* not allowed anywhere in XML names.*/
+				case '%'		:	/* not allowed anywhere in XML names.*/
+				case '$'		:	/* not allowed anywhere in XML names.*/
+				case '\u00A3'	:	/* (Pound sign) not allowed anywhere in XML names.*/
+				case '+'		:	/* not allowed anywhere in XML names.*/
+				case '*'		:	/* not allowed anywhere in XML names.*/
+				case '#'		:	/* not allowed anywhere in XML names.*/
+				case '|'		:	/* not allowed anywhere in XML names.*/
+				case '~'		:	/* not allowed anywhere in XML names.*/
+				case ' '		:	/* not allowed anywhere in XML names.*/
+				case '\t'		:	/* not allowed anywhere in XML names. Moreover it is one of our supported CSV separators. */
+				case '\r'		:	/* not allowed anywhere in XML names.*/
+				case '\n'		:	/* not allowed anywhere in XML names.*/
 					prevNeedsReplace++;
 					break;
 
 				// Not allowed at start, OK elsewhere:
-				case '-'	:	/* not allowed at start of XML names */
+				case '-'	:	/* not allowed at start of XML names.*/
 					if(bldr.length() == 0)
 					{
 						prevNeedsReplace++;
@@ -118,11 +126,13 @@ public abstract class Column<T> implements Serializable
 			return name;
 	}
 
+	/**
+	 * @param name
+	 * @return whether or not the given name is valid Column name
+	 */
 	static public boolean IsValidName(String name)
 	{
-		return 	name.indexOf(ValueSetColumn.QUALIFIED_NAME_SEPARATOR /* '.' */) == -1 &&
-				name.indexOf(':') == -1 &&
-				XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
+		return name != null && !name.isEmpty() && name.equals(SanitiseName(name));
 	}
 
 	// DYNAMICS------------------------------------------------------
@@ -133,7 +143,7 @@ public abstract class Column<T> implements Serializable
 	public Column(String name, boolean optional)
 	{
 		if(!IsValidName(name))
-			throw new IllegalArgumentException("Invalid column name (" + name + "), please use static the Column#SanitiseName method.");
+			throw new IllegalArgumentException("Invalid column name (" + name + "), please use the static Column#SanitiseName method.");
 		this.name = name;
 		this.optional = optional;
 	}

@@ -19,10 +19,11 @@
 package uk.ac.ucl.excites.sapelli.shared.collections;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+
+import uk.ac.ucl.excites.sapelli.shared.util.Collections7;
 
 /**
  * @author mstevens
@@ -53,7 +54,10 @@ public final class EmptyQueue<E> implements Queue<E>
 	@Override
 	public Iterator<E> iterator()
 	{
-		return Collections.<E> emptyIterator();
+		/* Note:
+		 * 	We use our Collections7 instead of java.util.Collection to make sure this class works on
+		 * 	Java/JRE version prior to [1.]7 and Android versions prior to 4.4/API level 19. */
+		return Collections7.<E> emptyIterator();
 	}
 
 	@Override

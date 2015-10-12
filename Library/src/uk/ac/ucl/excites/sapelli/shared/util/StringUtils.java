@@ -143,7 +143,7 @@ public final class StringUtils
 	/**
 	 * Simple escaping method to clear Strings of a single to-be-avoided char
 	 * 
-	 * @param str
+	 * @param str may be null, in which case null will be returned
 	 * @param avoid
 	 * @param replacement
 	 * @param prefix
@@ -151,6 +151,8 @@ public final class StringUtils
 	 */
 	static public String escape(String str, char avoid, char replacement, char prefix)
 	{
+		if(str == null)
+			return null;
 		StringBuilder bldr = new StringBuilder();
 		for(char c : str.toCharArray())
 			if(c == avoid)
@@ -170,7 +172,7 @@ public final class StringUtils
 	/**
 	 * Simple de-escaping method which reverses the work of {@link #escape(String, char, char, char)}
 	 * 
-	 * @param str
+	 * @param str may be null, in which case null will be returned
 	 * @param avoid
 	 * @param replacement
 	 * @param prefix
@@ -178,6 +180,8 @@ public final class StringUtils
 	 */
 	static public String deescape(String str, char avoid, char replacement, char prefix)
 	{
+		if(str == null)
+			return null;
 		StringBuilder bldr = new StringBuilder();
 		boolean prevPrefix = false;
 		for(char c : str.toCharArray())
