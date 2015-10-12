@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -81,9 +80,9 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	public void accept(ColumnVisitor visitor)
 	{
 		if(visitor.allowOrientationSelfTraversal())
-			super.accept(visitor, !visitor.skipNonBinarySerialisedOrientationSubColumns());
+			super.accept(visitor, !visitor.skipNonBinarySerialisedOrientationSubColumns()); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
-			visitor.visit(this);
+			visitor.visit(this); // visit as OrientationColumn (as a single whole)
 	}
 
 	@Override

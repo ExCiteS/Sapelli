@@ -28,7 +28,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -42,9 +42,11 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * The "swap columns" mechanism allows to deal with the situation in which we want to use a
  * (slightly) different column for binary storage. Currently only used in {@link LocationColumn}.
  * 
- * @author mstevens
+ *
+ * @param <VS> the ValueSet type (= type of the Column)
+ * @param <CS> the ColumnSet type of the ValueSet type
  */
-public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnSet> extends Column<VC>
+public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnSet> extends Column<VS>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -174,14 +176,14 @@ public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
-	public VC parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
+	public VS parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		return parse(recordStr, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
 	}
 	
-	public VC parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public VS parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		VC record = getNewRecord();
+		VS record = getNewRecord();
 		record.parse(recordStr, includeVirtual, skipColumns);
 		return record;
 	}
@@ -190,18 +192,18 @@ public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
-	public String toString(VC record)
+	public String toString(VS record)
 	{
 		return toString(record, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
 	}
 	
-	public String toString(VC record, boolean includeVirtual, Set<Column<?>> skipColumns)
+	public String toString(VS record, boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		return record.serialise(includeVirtual, skipColumns);
 	}
 
 	@Override
-	protected void write(VC record, BitOutputStream bitStream) throws IOException
+	protected void write(VS record, BitOutputStream bitStream) throws IOException
 	{
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(!isColumnSkipped(subCol))
@@ -211,12 +213,12 @@ public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnS
 	/**
 	 * @return new "subrecord" instance
 	 */
-	public abstract VC getNewRecord();
+	public abstract VS getNewRecord();
 
 	@Override
-	protected VC read(BitInputStream bitStream) throws IOException
+	protected VS read(BitInputStream bitStream) throws IOException
 	{
-		VC record = getNewRecord();
+		VS record = getNewRecord();
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(!isColumnSkipped(subCol))
 				subCol.storeObject(record, getBinaryColumn(subCol).readValue(bitStream));
@@ -224,13 +226,81 @@ public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnS
 	}
 
 	/**
-	 * There is nothing to check here, all necessary validation will
+	 * Checks, possibly recursively, whether a non-{code null} value for this column is set in the given valueSet.
+	 *
+	 * @param valueSet should not be {@code null}
+	 * @param recurse whether or not to recursively check if all subColumns also have a non-{@code null} value
+	 * @return whether or not a non-{@code null} value is set for this column (if recursive is {@code false}), and also all its sub[...]columns (if recurse if {@code true})
+	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#isValuePresent(uk.ac.ucl.excites.sapelli.storage.model.ValueSet, boolean)
+	 */
+	@Override
+	public boolean isValuePresent(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	{
+		VS subValueSet = retrieveValue(valueSet);
+		if(subValueSet == null || !recurse)
+			return subValueSet != null;
+		//else: recursive...
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(!subCol.isValuePresent(subValueSet, recurse))
+				return false;
+		return true;
+	}
+	
+	/**
+	 * Checks, possibly recursively, whether this column either has a non-{code null} value in the given valueSet or is optional.
+	 * 
+	 * @param valueSet should not be {@code null}
+	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value or are optional
+	 * @return whether a non-{@code null} value is set or the column is optional (if recursive is {@code false}), and whether the same applies for all its sub[...]columns (if recurse if {@code true})
+	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
+	 */
+	@Override
+	public final boolean isValuePresentOrOptional(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	{
+		VS subValueSet = retrieveValue(valueSet);
+		if(subValueSet == null || !recurse)
+			return subValueSet != null || optional;
+		//else: recursive...
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(!subCol.isValuePresentOrOptional(subValueSet, recurse))
+				return false;
+		return true;
+	}
+	
+	/**
+	 * Checks, possibly recursively, whether this column has a valid value in the given valueSet.
+	 * A {@code null} value is valid only if it the column is optional. A non-{@code null} value is valid if it passes the {@link #validate(Object)} tests.
+	 * 
+	 * @param valueSet should not be {@code null}
+	 * @param recurse whether or not to check recursively if all subColumns also valid values
+	 * @return whether the value currently contained by the valueSet for this column is valid (if recursive is {@code false}), and whether the same applies for all its sub[...]columns (if recurse if {@code true})
+	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 */
+	@Override
+	public boolean isValueValid(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	{
+		VS subValueSet = retrieveValue(valueSet);
+		if(subValueSet == null || !recurse)
+			return isValidValue(subValueSet);
+		//else: recursive...
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(!subCol.isValueValid(subValueSet, recurse))
+				return false;
+		return true;
+	}
+
+	/**
+	 * Default implementation does not check anything, assuming all necessary validation will
 	 * happen when data is stored, read or written using the subcolumns.
+	 * 
+	 * May be overridden.
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(VC record) throws IllegalArgumentException
+	protected void validate(VS record) throws IllegalArgumentException
 	{
 		// does nothing
 	}
@@ -257,7 +327,7 @@ public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
 	 */
 	@Override
-	protected boolean equalRestrictions(Column<VC> otherColumn)
+	protected boolean equalRestrictions(Column<VS> otherColumn)
 	{
 		if(otherColumn instanceof ValueSetColumn)
 		{
@@ -310,7 +380,7 @@ public abstract class ValueSetColumn<VC extends ValueSet<CS>, CS extends ColumnS
 	/**
 	 * @return the columnSet
 	 */
-	public ColumnSet getColumnSet()
+	public CS getColumnSet()
 	{
 		return columnSet;
 	}

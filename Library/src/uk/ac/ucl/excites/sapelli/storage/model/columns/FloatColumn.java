@@ -83,9 +83,9 @@ public class FloatColumn extends NumberColumn<Double>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	public Object convert(Object value)
+	public Double convert(Object value)
 	{
-		return value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue()));
+		return (Double) (value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue())));
 	}
 	
 	/**

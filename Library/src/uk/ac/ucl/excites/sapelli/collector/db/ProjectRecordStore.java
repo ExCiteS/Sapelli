@@ -200,7 +200,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		
 		// Create ProjectDescriptor:
 		int id = PROJECT_ID_COLUMN.retrieveValue(projRec).intValue();
-		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValueSet(projRec);
+		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValuePresent(projRec);
 		ProjectDescriptor projDescr = new ProjectDescriptor(v1x ? ProjectDescriptor.PROJECT_ID_V1X_TEMP : id,
 															PROJECT_NAME_COLUMN.retrieveValue(projRec),
 															PROJECT_VARIANT_COLUMN.retrieveValue(projRec), // "" is treated as null,

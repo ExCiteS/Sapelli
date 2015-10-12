@@ -27,8 +27,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 
 /**
@@ -141,14 +139,13 @@ public class Location extends ValueSet<ColumnSet>
 	}
 	
 	/**
-	 * Only to be used by  {@link LocationColumn#getNewRecord()}
+	 * Only to be used by {@link LocationColumn#getNewRecord()}
 	 */
-	public Location()
+	/*package*/ Location()
 	{
 		super(COLUMN_SET);
-		COLUMN_LATITUDE.storeValue(this, 0.0d);
-		COLUMN_LONGITUDE.storeValue(this, 0.0d);
-		COLUMN_PROVIDER.storeValue(this, PROVIDER_UNKNOWN);
+		// no default lat & lon values!
+		COLUMN_PROVIDER.storeValue(this, PROVIDER_UNKNOWN); // default provider
 	}
 	
 	/**

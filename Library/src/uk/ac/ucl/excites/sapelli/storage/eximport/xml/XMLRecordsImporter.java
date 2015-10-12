@@ -25,21 +25,23 @@ import java.util.Stack;
 
 import org.xml.sax.SAXException;
 
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportColumnValueParser;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
@@ -47,24 +49,48 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
  * 
  * <p>Supported formats:<br/>
  * 	- v1.x exports, with both v1.x versions of the {@link Location} serialisation format (see {@link Location#parseV1X(String)}).<br/>
- *  - All 3 {@link CompositeMode}s supported by {@link XMLRecordsExporter}: {@link CompositeMode#String}, {@link CompositeMode#Flat} & {@link CompositeMode#Nested} 
+ *  - All 3 {@link CompositeMode}s supported by {@link XMLRecordsExporter}: {@link CompositeMode#String}, {@link CompositeMode#Flat} & {@link CompositeMode#Nested}<br/>
+ * </p>
+ * <p>Note about the tagColumnDepths stack:<br/>
+ * 	We use tagColumnDepths stack to remember the "depth levels" represented by each opened column tag.
+ * 	For example:<br/>
+ * 		- {@code <StartTime>} --> 1 level deep (= top level column)<br/>
+ * 		- {@code <Location>} --> 1 level deep (= top level column)<br/>
+ * 		- {@code <Location.Latitude>} --> 2 levels deep<br/>
+ * 	This information tells many levels to backtrack (i.e. "shortening" the {@code currentCP}) when the tag
+ * 	is closed (see {@link #endElement(String,String,String)}).<br/>
+ * 	When the XML is in {@link CompositeMode#Nested}, this will only be "known" when we hit the 2nd
+ * 	nesting level (e.g. {@code <Latitude>} occurring within {@code <Location>}).<br/>
+ * 	In these cases we must have a way to know that no CDATA should be parsed at the level of the
+ * 	outer tag. There are 2 bits of CDATA to ignore: the leading and the trailing whitespace, e.g.:<br/>
+ * 		- leading white space:	{@code <Location>\n\t\t\t<Latitude>1.6279193200170994</Latitude>}<br/>
+ * 		- trailing white space:	{@code </Provider>\n\t\t</Location>}<br/>
+ * 	The first kind is easily ignored by postponing the parsing of column value Strings until the
+ * 	containing tag is closed (see {@link #characters(char[],int,int)} and {@link #endElement(String,String,String)})
+ * 	and by wiping the {@code currentStringBldr} upon the opening of each new column tag.<br/>
+ * 	The second kind is a bit more tricky. To know to ignore the trailing whitespace we make the column
+ * 	depth of the outer tag negative, which is then checked in {@link #endElement(String,String,String)}
+ * 	in order to skip parsing String contents when closing the outer tag.
  * 
  * @author mstevens
  */
 public class XMLRecordsImporter extends DocumentParser implements Importer
 {
 
-	protected StorageClient client;
+	protected final StorageClient client;
 	protected Record currentRecord;
+	protected ColumnPointer<?> currentCP;
+	protected Stack<Integer> tagColumnDepths;
+	protected Stack<String> ignoreTags;
+	protected StringBuilder currentStringBldr;
 	protected boolean v1xExport;
-	protected Stack<Column<?>> columnStack;
+	protected ImportColumnValueParser valueParser;
 	protected List<Record> records;
 
 	public XMLRecordsImporter(StorageClient client)
 	{
 		super();
 		this.client = client;
-		columnStack = new Stack<Column<?>>();
 	}
 
 	/* (non-Javadoc)
@@ -74,7 +100,12 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 	public List<Record> importFrom(File xmlFile) throws UnknownModelException, IndexOutOfBoundsException, Exception
 	{
 		records = new ArrayList<Record>();
-		columnStack.clear();
+		currentRecord = null;
+		ignoreTags = new Stack<String>();
+		currentStringBldr = new StringBuilder();
+		currentCP = null;
+		tagColumnDepths = new Stack<Integer>();
+		valueParser = new ImportColumnValueParser();
 		parse(open(xmlFile));
 		return records;
 	}
@@ -85,20 +116,20 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 		// does nothing (for now)
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws UnknownModelException, IndexOutOfBoundsException, SAXException
 	{
 		// <RecordsExport>
-		if(qName.equals(XMLRecordsExporter.TAG_RECORDS_EXPORT))
+		if(qName.equals(XMLRecordsExporter.TAG_RECORDS_EXPORT) && ignoreTags.isEmpty())
 		{
-			// do nothing
+			// does nothing (but keep this if-block!)
 		}
 		// <Record>
-		else if(qName.equals(Record.TAG_RECORD))
+		else if(qName.equals(Record.TAG_RECORD) && ignoreTags.isEmpty())
 		{
 			if(currentRecord != null)
 				throw new SAXException("Records cannot be nested!");
-			
 			Schema schema = null;
 			try
 			{
@@ -124,114 +155,127 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 			}
 			if(schema != null)
 				currentRecord = schema.createRecord();
-			// TODO transmission? sent/received
+			currentCP = null;
 		}
-		// Record columns:
-		else if(currentRecord != null)
+		// Columns:
+		else if(currentRecord != null && ignoreTags.isEmpty())
 		{
-			ValueSet<?> valueSet = currentRecord;
-			for(String colName : qName.split("\\" + ValueSetColumn.QUALIFIED_NAME_SEPARATOR))
+			// Wipe any currentString if there is one:
+			currentStringBldr.setLength(0);
+			// Find the column:
+			try
 			{
-				// Deal with previous (record)column:
-				if(!columnStack.isEmpty())
-				{
-					ValueSetColumn<?, ?> recCol = ((ValueSetColumn<?, ?>) columnStack.peek());
-					// Create subrecord instance:
-					if(!recCol.isValueSet(valueSet))
-						recCol.storeObject(valueSet, recCol.getNewRecord());
-					// Set subrecord as record:
-					valueSet = recCol.retrieveValue(valueSet);
-				}
-				// Deal with current column:
-				Column<?> col = valueSet.getColumnSet().getColumn(colName, true);
-				if(col == null)
-					addWarning("Skipping column " + colName + " because it does not exist in " + valueSet.getColumnSet().toString());
-				else if(col instanceof VirtualColumn)
-				{
-					//addWarning("Skipping virtual column " + colName);
-					col = null;
-				}
-				columnStack.push(col); // even when null! (to deal with unrecognised columns)
-				if(col == null)
-					break;
+				if(currentCP != null)
+					currentCP = ColumnPointer.ExtendByName((ColumnPointer<ValueSetColumn<?, ?>>) currentCP, qName, false, false);
+				else
+					currentCP = ColumnPointer.ByName(currentRecord.getSchema(), qName, false, false);
+				// Note: the ColumnPointer#By() and ColumnPointer#ExtendByName() methods support splitting at ValueSetColumn.QUALIFIED_NAME_SEPARATOR
 			}
+			catch(IllegalArgumentException iae)
+			{
+				ColumnSet currentCS = (currentCP != null) ? ((ColumnPointer<ValueSetColumn<?, ?>>) currentCP).getColumn().getColumnSet() : currentRecord.getSchema();
+				addWarning("Skipping column " + qName + " because it does not exist in " + currentCS.toString());
+				ignoreTags.push(qName);
+				return;
+			}
+			
+			// Skip virtual columns:
+			if(currentCP.getColumn() instanceof VirtualColumn)
+			{
+				currentCP = currentCP.getParentPointer();
+				ignoreTags.push(qName);
+				return;
+			}
+			
+			// Manipulate the tagColumnDepths stack (see class javadoc):
+			if(!tagColumnDepths.isEmpty() && tagColumnDepths.peek() > 0)
+				tagColumnDepths.push(tagColumnDepths.pop() * -1); // we reached the inner level of nested subcolumns, make preceeding columnDepth negative so we know it was nested upon closing
+			tagColumnDepths.push(currentCP.getPathDepth() - (tagColumnDepths.isEmpty() ? 0 : Math.abs(tagColumnDepths.peek())));
+			
+			// Create (sub)ValueSet/Record (if needed):
+			currentCP.createValueSet(currentRecord);
 		}
 		// <?>
 		else
-			addWarning("Ignored unrecognised or invalidly placed element \"" + qName + "\".");
+		{
+			addWarning("Ignored unrecognised or invalidly placed element \"" + qName + "\", ignored.");
+			ignoreTags.push(qName);
+		}
 	}
 
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException
 	{
-		// Reached leaf value string...
-		if(currentRecord != null && !columnStack.isEmpty() && columnStack.peek() != null)
+		currentStringBldr.append(new String(ch, start, length));
+		/* Note: 
+			we postpone the parsing of column value Strings until the tag that contains it is closed.
+			This allows us to ignore the *leading* whitespace between nesting levels. See class javadoc. */
+	}
+	
+	/**
+	 * Called with the currentString when a Column tag is closed
+	 */
+	private void parseColumnValue()
+	{
+		if(currentCP == null)
+			return;
+		
+		// Get (sub)ValueSet/Record:
+		ValueSet<?> valueSet = currentCP.getValueSet(currentRecord, false /*don't create*/); // (sub)record recreation happens in parseStartElement (and should stay there!)
+		
+		// Get the pointed-at column:
+		Column<?> column = currentCP.getColumn();
+		
+		// The valueString:
+		String valueString = currentStringBldr.toString();
+		
+		// Parse & store value:
+		try
 		{
-			// Get the column at the top of the columnStack:
-			Column<?> column = columnStack.peek();
-			
-			// Get the (sub)record corresponding to the column:
-			ValueSet<?> valueSet = currentRecord;
-			for(Column<?> col : columnStack)
-				if(col instanceof ValueSetColumn && col != column)
-					valueSet = ((ValueSetColumn<?, ?>) col).retrieveValue(valueSet);
-			
-			// Get string representation of column value:
-			String valueString = new String(ch, start, length);
-			// String checks:
-			if(!(column instanceof StringColumn)) // Note: We may want to try and do this without so many instanceof checks...
-			{
-				valueString = valueString.trim();
-				if(valueString.isEmpty())
-					return; // unless the column is a StringColumn the empty String should be treated as null so there is no value to set. We return here to avoid errors when setting null values on non-optional columns.	
-			}
-			// else --> don't trim here & allow empty String (because the values of StringColumns are not quoted in XML exports and empty string is not the same as null in this case)!
-			
-			// Parse & store value:
-			try
-			{
-				if(v1xExport && column instanceof LocationColumn)
-					// Backwards compatibility with old location formats:
-					column.storeObject(valueSet, Location.parseV1X(valueString));
-				else
-				{
-					if(column instanceof StringColumn)
-						/* The values of StringColumns exported to XML are not quoted, so we store them 'as is'.
-						 * Parsing them with parseAndStoreValue() would cause empty string to be treated as null
-						 * and non-empty String would cause and Exception to be thrown because parseAndStoreValue()
-						 * would invoke StringColumn#parse() which expects a quoted String.
-						 * 
-						 * See XMLRecordExporter#visit(ColumnPointer) for the corresponding export logic.
-						 * Note that there we used (column.getType() == String.class) instead of an instanceof
-						 * check. This is to deal with virtual columns with a StringColumn as target. Here we
-						 * don't need to bother with that because virtual columns are always skipped upon
-						 * importing (see above). */
-						column.storeObject(valueSet, valueString);
-					else
-						column.parseAndStoreValue(valueSet, valueString);
-				}
-			}
-			catch(Exception e)
-			{
-				addWarning(e.getClass().getName() + " upon parsing value (" + valueString + ") for " + column.toString() + " \"" + column.getName() + "\"" + (e.getMessage() != null ? ", cause: " + e.getMessage() : "."));
-			}
+			if(v1xExport && column instanceof LocationColumn)
+				// Backwards compatibility with old location formats:
+				((LocationColumn) column).storeValue(valueSet, Location.parseV1X(valueString));
+			else
+				// Use the value parser:
+				valueParser.parseAndStoreValue(column, valueString, valueSet);
+		}
+		catch(Exception e)
+		{
+			addWarning(e.getClass().getSimpleName() + " upon parsing value (" + currentStringBldr + ") for " + column.toString() + " \"" + column.getName() + "\" [Info: " + ExceptionHelpers.getMessageAndCause(e) + ".");
 		}
 	}
 	
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException
 	{
-		// </Record>
-		if(qName.equals(Record.TAG_RECORD))
+		// <RecordsExport>
+		if(qName.equals(XMLRecordsExporter.TAG_RECORDS_EXPORT) && ignoreTags.isEmpty())
 		{
+			// does nothing (but keep this if-block!!!)
+		}
+		// </Record>
+		else if(qName.equals(Record.TAG_RECORD) && ignoreTags.isEmpty())
+		{
+			if(!currentRecord.isFilled(true)) // recursive "filledness" check
+				addWarning("Imported record is incomplete: " + currentRecord.toString(false));
 			records.add(currentRecord);
 			currentRecord = null;
 		}
-		// Record columns:
-		else if(currentRecord != null && !columnStack.isEmpty())
+		// Columns:
+		else if(currentCP != null && ignoreTags.isEmpty()) // currentCP not being null also implies there is a currentRecord and tagColumnDepths is not empty
 		{
-			for(int c = 0; c <= StringUtils.countOccurances(qName, ValueSetColumn.QUALIFIED_NAME_SEPARATOR); c++)
-				columnStack.pop();
+			if(tagColumnDepths.peek() > 0) // skip parsing for negative column depths (this means we are closing an outer tag of a subcolumn nesting), see class javadoc.
+				parseColumnValue(); // Will parse currentString (= CDATA contents of the tag being closed) if it is not null
+			
+			// Backtrack currentCP (as many levels as represented by the tag being closed):
+			for(int l = Math.abs(tagColumnDepths.pop()); l > 0; l--)
+				if(currentCP != null) // (just in case)
+					currentCP = currentCP.getParentPointer();
+		}
+		// <?>
+		else if(!ignoreTags.isEmpty())
+		{
+			ignoreTags.pop();
 		}
 	}
 

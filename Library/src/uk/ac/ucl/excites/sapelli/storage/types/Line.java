@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.types;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * A polygon, implemented as a List of {@link Location}s
@@ -40,6 +41,11 @@ public class Line extends ArrayList<Location>
 	public Line(int initialCapacity)
 	{
 		super(initialCapacity);
+	}
+	
+	public Line(Collection<Location> points)
+	{
+		super(points);
 	}
 	
 	@Override

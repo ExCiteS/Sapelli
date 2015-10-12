@@ -172,7 +172,7 @@ public class DB4ORecordStore extends RecordStore
 				// We call this UPDATE-CASE-1
 			}
 			else // No it isn't, but perhaps there is a previously stored record with the same primary key value(s):
-				if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
+				if(autoIncrIDColumn == null || autoIncrIDColumn.isValuePresent(record))
 			{
 				previouslyStored = retrieveRecord(record.getRecordQuery()); // (may be null if there is no matching record)
 				// if previouslyStored is now != null than we are we call this UPDATE-CASE-2

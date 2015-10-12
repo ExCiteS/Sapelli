@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.storage.types;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 
 /**
  * A class representing 3-dimensional (device) orientation.
@@ -64,9 +63,9 @@ public class Orientation extends ValueSet<ColumnSet>
 	/**
 	 * Only to be used by {@link OrientationColumn#getNewRecord()}
 	 */
-	public Orientation()
+	/*package*/ Orientation()
 	{
-		super(COLUMN_SET);
+		super(COLUMN_SET); // no default values!
 	}
 
 	/**

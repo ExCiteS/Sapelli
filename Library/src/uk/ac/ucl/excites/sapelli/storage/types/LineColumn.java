@@ -16,52 +16,58 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
+
+import java.util.Collection;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.Location;
-import uk.ac.ucl.excites.sapelli.storage.types.Polygon;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * A column for {@link Polygon}s, implemented as a {@link ListColumn} subclass.
+ * A column for {@link Line}s, implemented as a {@link ListColumn} subclass.
  * 
  * @author mstevens
  */
-public class PolygonColumn extends ListColumn<Polygon, Location>
+public class LineColumn extends ListColumn<Line, Location>
 {
 	
 	static private final long serialVersionUID = 2L;
 	
 	static public final int SIZE_FIELD_BITS = 16;
 
-	public PolygonColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
+	public LineColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
 		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional);
 	}
 	
-	private PolygonColumn(String name, Column<Location> locationCol, boolean optional)
+	private LineColumn(String name, Column<Location> locationCol, boolean optional)
 	{
 		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS));
 	}
 	
 	@Override
-	public PolygonColumn copy()
+	public LineColumn copy()
 	{
-		return new PolygonColumn(name, singleColumn.copy(), optional);
+		return new LineColumn(name, singleColumn.copy(), optional);
 	}
 
 	@Override
-	protected Polygon getNewList(int minimumCapacity)
+	protected Line getNewList(int minimumCapacity)
 	{
-		return new Polygon(minimumCapacity);
+		return new Line(minimumCapacity);
+	}
+	
+	@Override
+	protected Line getNewList(Collection<Location> points)
+	{
+		return new Line(points);
 	}
 	
 	@Override
 	public String getTypeString()
 	{
-		return Polygon.class.getSimpleName();
+		return Line.class.getSimpleName();
 	}
 
 	@Override

@@ -36,11 +36,15 @@ import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportColumnValueStringProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
 
@@ -63,12 +67,12 @@ public class XMLRecordsExporter extends SimpleExporter
 	static public enum CompositeMode
 	{
 		/**
-		 * Create one tag with name {@link RecordColumn#getName()} containing a single String value generated using {@link RecordColumn#toString(Record)}.
+		 * Create one tag with name {@link RecordColumn#getName()} containing a single String value generated using {@link ValueSetColumn#toString(Record)}.
 		 */
 		String,
 		
 		/**
-		 * Create separate tags for each "leaf" column, names are constructed from parents' names and the leaf column's name, separated by {@link RecordColumn#QUALIFIED_NAME_SEPARATOR}.
+		 * Create separate tags for each "leaf" column, names are constructed from parents' names and the leaf column's name, separated by {@link ValueSetColumn#QUALIFIED_NAME_SEPARATOR}.
 		 */
 		Flat,
 		
@@ -104,6 +108,7 @@ public class XMLRecordsExporter extends SimpleExporter
 	
 	// DYNAMICS------------------------------------------------------
 	private CompositeMode compositeMode;
+	private ColumnValueStringProvider valueStringProvider;
 	
 	private int tabs = 0;
 	
@@ -164,6 +169,7 @@ public class XMLRecordsExporter extends SimpleExporter
 		
 		// Export:
 		List<Record> exported = new ArrayList<Record>();
+		valueStringProvider = new ColumnValueStringProvider();
 		try
 		{
 			openWriter(description, DateTime.now());
@@ -275,16 +281,8 @@ public class XMLRecordsExporter extends SimpleExporter
 		// Write column value or null value comment:
 		Column<?> leafColumn = leafColumnPointer.getColumn();
 		String columnName = (compositeMode == CompositeMode.Flat ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName());
-		if(valueSet != null && leafColumn.isValueSet(valueSet))
-		{
-			/* 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target), then
-				we use the raw (i.e. unquoted) String value. We can do this because the difference between null and the empty string
-				is preserved due to the fact that we do not put a tag (only an XML comment) in case the value is null.
-				See XMLRecordsImporter#characters(char[], int, int) for the corresponding import logic.
-				*/
-			String valueString = (leafColumn.getType() == String.class ? (String) leafColumn.retrieveValue(valueSet) : leafColumn.retrieveValueAsString(valueSet));
-			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + (USES_XML_VERSION_11 ? StringEscapeUtils.escapeXml11(valueString) : StringEscapeUtils.escapeXml10(valueString)) + "</" + columnName + ">", tabs));
-		}
+		if(valueSet != null && leafColumn.isValuePresent(valueSet))
+			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + valueStringProvider.toString(leafColumn, valueSet) + "</" + columnName + ">", tabs));
 		else
 			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(columnName), tabs));
 	}
@@ -328,6 +326,30 @@ public class XMLRecordsExporter extends SimpleExporter
 	public boolean includeVirtualColumns()
 	{
 		return true;
+	}
+	
+	/**
+	 * Helper class which creates String representations, escaped as necessary, of column values.
+	 * 
+	 * For {@link ListLikeColumn}s (i.e. {@link StringColumn} and {@link ListColumn}s) we don't use the
+	 * Column's own serialisation delimiters because the XML format allows us to preserve the difference
+	 * between {@code null} and an empty list/String value:
+	 * 	- <!-- columnName is null -->	: null value
+	 *  - <ColumnName></ColumnName>		: empty list/String value
+	 * 
+	 * @see ExportColumnValueStringProvider
+	 * 
+	 * @author mstevens
+	 */
+	private class ColumnValueStringProvider extends ExportColumnValueStringProvider
+	{
+
+		@Override
+		protected String escapeAndQuote(String valueString, boolean force)
+		{
+			return USES_XML_VERSION_11 ? StringEscapeUtils.escapeXml11(valueString) : StringEscapeUtils.escapeXml10(valueString); // always escape (forcing doesn't make a difference)
+		}
+		
 	}
 	
 }

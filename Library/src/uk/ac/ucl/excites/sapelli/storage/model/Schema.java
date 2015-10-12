@@ -190,7 +190,7 @@ public class Schema extends ColumnSet implements Serializable
 	{
 		if(this.primaryKey != null)
 			throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
-		if(sealed)
+		if(isSealed())
 			throw new IllegalStateException("Cannot set primary key on a sealed schema!");
 		// Also add as an index (+ do checks):
 		doAddIndex(primaryKey);
@@ -217,21 +217,16 @@ public class Schema extends ColumnSet implements Serializable
 		indexes.add(index);
 	}
 	
-	/**
-	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
-	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
-	 */
-	public void seal()
+	@Override
+	protected void sealTasks()
 	{
-		// Add automatic primary key to "external/client" schemata that don't have one yet:
+		// Add automatic primary key to Schemata that don't have one yet:
 		if(!hasPrimaryKey())
 		{
 			IntegerColumn autoKeyCol = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
-			addColumn(autoKeyCol, false);
+			this.addColumn(autoKeyCol, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
-		// Seal:
-		super.seal();
 	}
 		
 	/**
@@ -461,12 +456,6 @@ public class Schema extends ColumnSet implements Serializable
 		hash = 31 * hash + modelSchemaNumber;
 		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
 		return hash;
-	}
-	
-	@Override
-	public String toString()
-	{
-		return "Schema " + name;
 	}
 	
 	public String getSpecification()
