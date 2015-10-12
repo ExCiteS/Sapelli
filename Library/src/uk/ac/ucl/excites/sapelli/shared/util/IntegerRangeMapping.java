@@ -472,6 +472,16 @@ public class IntegerRangeMapping implements Serializable
 		return read(from).shortValue();
 	}
 	
+	/**
+	 * @param from
+	 * @return
+	 * @throws IOException
+	 */
+	public byte readByte(BitInputStream from) throws IOException
+	{
+		return read(from).byteValue();
+	}
+	
 	public String toString()
 	{
 		BigInteger rawMax = hiBound.subtract(loBound);
