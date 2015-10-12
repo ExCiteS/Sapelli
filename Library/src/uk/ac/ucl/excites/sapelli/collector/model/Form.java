@@ -37,10 +37,11 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
@@ -90,6 +91,32 @@ public class Form implements WarningKeeper
 	public static final TimeStampColumn COLUMN_TIMESTAMP_END = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
+	
+	public static TimeStamp GetStartTime(ValueSet<?> record)
+	{
+		return GetStartTime(record, false);
+	}
+	
+	public static TimeStamp GetStartTime(ValueSet<?> record, boolean asStoredBinary)
+	{
+		if(asStoredBinary)
+			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
+		else
+			return COLUMN_TIMESTAMP_START.retrieveValue(record);
+	}
+	
+	public static TimeStamp GetEndTime(ValueSet<?> record)
+	{
+		if(record.getColumnSet().containsColumn(COLUMN_TIMESTAMP_END))
+			return COLUMN_TIMESTAMP_END.retrieveValue(record);
+		else
+			return null;
+	}
+	
+	public static long GetDeviceID(ValueSet<?> record)
+	{
+		return COLUMN_DEVICE_ID.retrieveValue(record);
+	}
 	
 	// The Screen Transition type between different Screens
 	public static enum ScreenTransition
@@ -819,32 +846,6 @@ public class Form implements WarningKeeper
 		}
 		else
 			return null;
-	}
-	
-	public TimeStamp getStartTime(Record record)
-	{
-		return getStartTime(record, false);
-	}
-	
-	public TimeStamp getStartTime(Record record, boolean asStoredBinary)
-	{
-		if(asStoredBinary)
-			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
-		else
-			return COLUMN_TIMESTAMP_START.retrieveValue(record);
-	}
-	
-	public TimeStamp getEndTime(Record record)
-	{
-		if(isStoreEndTime())
-			return COLUMN_TIMESTAMP_END.retrieveValue(record);
-		else
-			return null;
-	}
-	
-	public long getDeviceID(Record record)
-	{
-		return COLUMN_DEVICE_ID.retrieveValue(record);
 	}
 	
 	public void finish(Record record)
