@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.shared.io;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,11 @@ public final class BitWrapInputStream extends BitInputStream
 		this.input = input;
 		numBitsRemaining = 0;
 		isEndOfStream = false;
+	}
+	
+	public BitWrapInputStream(byte[] byteArray)
+	{
+		this(new ByteArrayInputStream(byteArray));
 	}
 	
 	/**
