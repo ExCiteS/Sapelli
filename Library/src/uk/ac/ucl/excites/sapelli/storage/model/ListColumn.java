@@ -478,8 +478,8 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		hash = 31 * hash + serialisationDelimiterOpen;
 		hash = 31 * hash + serialisationDelimiterClose;
 		hash = 31 * hash + separator;
-		hash = 31 * hash + separatorEscape;
-		hash = 31 * hash + separatorEscapePrefix;
+		hash = 31 * hash + (separatorEscape != null ? separatorEscape.hashCode() : 0);
+		hash = 31 * hash + (separatorEscapePrefix != null ? separatorEscapePrefix.hashCode() : 0);
 		hash = 31 * hash + singleColumn.hashCode();
 		return hash;
 	}
