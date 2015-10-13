@@ -115,7 +115,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private final Project projectToExport;
+	private Project projectToExport;
 	
 	private FormatDialogCallback formatDialogCallback;
 	
@@ -164,6 +164,14 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	{
 		this.projectToExport = projectToExport;
 		this.formatDialogCallback = formatDialogCallback;
+	}
+	
+	/**
+	 * @param projectToExport the projectToExport to set
+	 */
+	public void setProjectToExport(Project projectToExport)
+	{
+		this.projectToExport = projectToExport;
 	}
 	
 	@Override
@@ -433,7 +441,6 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			// Get string builder for description String:
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder("_");
 			
-			
 			new ExportFilenameProvider()
 			{
 				@Override
@@ -456,7 +463,6 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 				}
 			};
 			
-			
 			// Define query Source:
 			Source source;
 			if(projectToExport != null)
@@ -465,8 +471,11 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 				bldr.append(projectToExport.getModel().getName());
 			}
 			else
+			{
 				source = Source.ANY; // TODO Exclude collector-internal schemas!!!
-
+				bldr.append("ALL"); // TODO 
+			}
+			
 			// Define constraints:
 			AndConstraint constraints = new AndConstraint();
 			// 	Date range:
@@ -474,12 +483,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
-			
-			
-			
 			// 	TODO Exclude previously exported
-			
-			
 			
 			// Retrieve by query:
 			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));

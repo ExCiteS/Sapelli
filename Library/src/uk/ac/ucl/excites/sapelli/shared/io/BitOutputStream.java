@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 
-
 /**
  * A stream where bits can be written to. Provides write methods for various (primitive) types.<br/>
  * <br/>
@@ -359,6 +358,7 @@ public abstract class BitOutputStream extends OutputStream
 	public void close() throws IOException
 	{
 		this.closed = true;
+		super.close();
 	}
 	
 	/**
@@ -368,10 +368,10 @@ public abstract class BitOutputStream extends OutputStream
 	{
 		return closed;
 	}
-    
-    public int getNumberOfBitsWritten()
-    {
-    	return numberOfBitsWritten;
-    }
+	
+	public int getNumberOfBitsWritten()
+	{
+		return numberOfBitsWritten;
+	}
 
 }

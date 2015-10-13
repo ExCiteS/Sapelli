@@ -26,6 +26,8 @@ import java.io.OutputStream;
 
 import org.apache.commons.io.IOUtils;
 
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
+
 /**
  * @author mstevens
  * 
@@ -74,14 +76,7 @@ public abstract class Compressor
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore)
-			{
-			}
+			StreamHelpers.SilentClose(out);
 		}
 	}
 	
@@ -110,22 +105,8 @@ public abstract class Compressor
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore)
-			{
-			}
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore)
-			{
-			}
+			StreamHelpers.SilentClose(out);
+			StreamHelpers.SilentClose(in);
 		}
 	}
 	
@@ -135,22 +116,22 @@ public abstract class Compressor
 		return getMode().name() + Compressor.class.getSimpleName();
 	}
 
-	// public class CompressorCallable implements Callable<CompressorResult>
-	// {
-	//
-	// private byte[] uncompressedData;
-	//
-	// public CompressorCallable(byte[] uncompressedData)
-	// {
-	// this.uncompressedData = uncompressedData;
-	// }
-	//
-	// @Override
-	// public CompressorResult call() throws Exception
-	// {
-	// return new CompressorResult(getMode(), com, ratio)
-	// }
-	//
-	// }
+	/*public class CompressorCallable implements Callable<CompressorResult>
+	{
+
+		private byte[] uncompressedData;
+
+		public CompressorCallable(byte[] uncompressedData)
+		{
+			this.uncompressedData = uncompressedData;
+		}
+
+		@Override
+		 public CompressorResult call() throws Exception
+		 {
+		 return new CompressorResult(getMode(), com, ratio)
+		 }
+
+	}*/
 
 }

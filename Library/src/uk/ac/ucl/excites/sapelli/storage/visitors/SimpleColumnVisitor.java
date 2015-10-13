@@ -51,7 +51,7 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	 * 
 	 * @param leafColumn
 	 */
-	public abstract <T> void visit(Column<T> Column);
+	public abstract <T> void visit(Column<T> column);
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn)

@@ -188,6 +188,15 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public void setPrimaryKey(PrimaryKey primaryKey)
 	{
+		setPrimaryKey(primaryKey, false);
+	}
+	
+	/**
+	 * @param primaryKey
+	 * @param seal if {@code true} the Schema will be sealed after setting the primary key
+	 */
+	public void setPrimaryKey(PrimaryKey primaryKey, boolean seal)
+	{
 		if(this.primaryKey != null)
 			throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
 		if(sealed)
@@ -196,6 +205,9 @@ public class Schema extends ColumnSet implements Serializable
 		doAddIndex(primaryKey);
 		// Set primary key:
 		this.primaryKey = primaryKey;
+		// Seal if needed:
+		if(seal)
+			seal();
 	}
 
 	private void doAddIndex(Index index)
@@ -341,7 +353,7 @@ public class Schema extends ColumnSet implements Serializable
 	 * @return
 	 * @throws Exception 
 	 */
-	public Record createRecord(byte[] serialisedValues) throws Exception
+	public Record createRecord(byte[] serialisedValues) throws IOException
 	{
 		return new Record(this, serialisedValues);
 	}
