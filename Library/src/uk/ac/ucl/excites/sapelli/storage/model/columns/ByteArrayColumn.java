@@ -31,8 +31,6 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 /**
  * Column to store byte arrays
  * 
- * TODO add compression support?
- * 
  * @author mstevens
  */
 public class ByteArrayColumn extends Column<byte[]>
