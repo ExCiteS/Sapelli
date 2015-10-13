@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
-import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -36,21 +35,16 @@ public abstract class TransmissionClient extends StorageClient
 {
 
 	// STATICS-------------------------------------------------------
-	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
-
-	// DYNAMICS------------------------------------------------------
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
+	/**
+	 * ID for the reserved Transmission Management Model ({@link TransmissionStore#TRANSMISSION_MANAGEMENT_MODEL})
 	 */
-	@Override
-	protected List<Model> getReservedModels()
+	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0;
+	static
 	{
-		List<Model> reserved = super.getReservedModels();
-		reserved.add(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
-		return reserved;
+		AddReservedModel(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
 	}
-	
+
+	// DYNAMICS------------------------------------------------------	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
 	 */
