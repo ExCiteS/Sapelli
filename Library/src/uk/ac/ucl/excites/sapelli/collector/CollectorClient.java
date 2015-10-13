@@ -18,8 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.collector;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
@@ -28,8 +30,11 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperation;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturn;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnNoException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -54,8 +59,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;
 	
 	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
-	
-	//static public final Source ALL_COLLECTOR_RECORDS = Source.NotFrom(Transmission.)
 	
 	/**
 	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
@@ -89,6 +92,8 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		return (int) (modelID >> Project.PROJECT_ID_SIZE);
 	}
 	
+	static protected final byte MODEL_SERIALISATION_KIND_COMPRESSED_COLLECTOR_PROJECT_XML = MODEL_SERIALISATION_KIND_RESERVED + 1;
+	
 	// DYNAMICS------------------------------------------------------
 	public final StoreHandle<ProjectStore> projectStoreHandle = new StoreHandle<ProjectStore>(new StoreCreator<ProjectStore>()
 	{
@@ -106,18 +111,73 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 * @throws DBException
 	 */
 	protected abstract ProjectStore createProjectStore() throws DBException;
-	
+
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#serialiseClientModel(uk.ac.ucl.excites.sapelli.storage.model.Model, java.io.OutputStream)
 	 */
 	@Override
-	protected List<Model> getReservedModels()
+	protected void serialiseClientModel(Model model, final OutputStream out) throws IOException, UnknownModelException
 	{
-		List<Model> reserved = super.getReservedModels();
-		reserved.add(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
-		return reserved;
+		final Project project = getProject(model.id);
+		if(project != null)
+		{
+			// Write "kind" byte:
+			out.write(MODEL_SERIALISATION_KIND_COMPRESSED_COLLECTOR_PROJECT_XML);
+			// Serialise project and write compressed result to the OutputStream:
+			projectStoreHandle.executeNoDBEx(new StoreOperation<ProjectStore, IOException>()
+			{
+				@Override
+				public void execute(ProjectStore store) throws IOException
+				{
+					OutputStream cOut = null;
+					try
+					{
+						cOut = compress(out);
+						store.serialise(project, cOut);
+					}
+					finally
+					{
+						StreamHelpers.SilentFlushAndClose(cOut);
+					}
+				}
+			});
+		}
+		else
+			throw new UnknownModelException(model.id, model.getName());
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#deserialiseClientModel(byte, java.io.InputStream)
+	 */
+	@Override
+	protected Model deserialiseClientModel(byte kind, final InputStream in) throws Exception
+	{
+		if(kind == MODEL_SERIALISATION_KIND_COMPRESSED_COLLECTOR_PROJECT_XML)
+		{
+			Project project = projectStoreHandle.executeWithReturn(new StoreOperationWithReturn<ProjectStore, Project, Exception>()
+			{
+				@Override
+				public Project execute(ProjectStore store) throws IOException
+				{
+					InputStream dcIn = null;
+					try
+					{
+						dcIn = decompress(in);
+						return store.deserialise(dcIn);
+					}
+					finally
+					{
+						StreamHelpers.SilentClose(dcIn);
+					}
+				}
+			});
+			if(project != null)
+				return project.getModel();
+		}
+		// else:
+		return null;
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
 	 */
@@ -170,7 +230,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	@Override
 	protected Model getClientModel(long modelID) throws UnknownModelException
 	{
-		// TODO check record store too? (requires retrieveModel method)
 		Project project = getProject(modelID);
 		if(project != null)
 			return project.getModel();

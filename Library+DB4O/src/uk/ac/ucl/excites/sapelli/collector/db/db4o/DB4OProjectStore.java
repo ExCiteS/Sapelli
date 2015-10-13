@@ -19,6 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.db.db4o;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -290,15 +293,15 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public byte[] serialise(Project project)
+	public void serialise(Project project, OutputStream out) throws IOException
 	{
-		return null; // not implemented
+		throw new UnsupportedOperationException("serialise() not implemented");
 	}
 
 	@Override
-	public Project deserialise(byte[] serialisedProject)
+	public Project deserialise(InputStream in) throws IOException
 	{
-		return null; // not implemented
+		throw new UnsupportedOperationException("deserialise() not implemented");
 	}
 	
 }

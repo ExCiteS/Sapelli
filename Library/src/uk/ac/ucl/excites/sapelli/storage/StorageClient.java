@@ -18,7 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage;
 
-import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -30,15 +31,19 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
@@ -58,12 +63,12 @@ public abstract class StorageClient implements StorageObserver
 		Deleted
 	}
 	
-	static private final Charset UTF8 = Charset.forName("UTF-8");
 	
-	static protected final byte[] NEW_MODEL_SERIALISATION_HEADER = "SapelliModel".getBytes(UTF8);
+	static private Compression MODEL_SERIALISATION_COMPRESSION = Compression.DEFLATE;
+	static protected final byte[] MODEL_SERIALISATION_HEADER_BYTES = "SapelliModel".getBytes(Charset.forName("UTF-8"));
+	static protected final byte MODEL_SERIALISATION_KIND_RESERVED = 0;
+	static protected final byte MODEL_SERIALISATION_KIND_COMPRESSED_JAVA_OBJECT = -1;
 	
-	static private final StringColumn NEW_MODEL_SERIALISATION_KIND_COLUMN = StringColumn.ForCharacterCount("Kind", false, 15, UTF8);
-
 	// DYNAMICS -----------------------------------------------------
 	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
 	
@@ -117,80 +122,163 @@ public abstract class StorageClient implements StorageObserver
 	protected abstract Model getClientModel(long modelID) throws UnknownModelException;
 	
 	/**
-	 * TODO 
-	 * @param model
-	 * @param out
-	 * @throws IOException
+	 * Converts {@link Model} instances into byte[] representations.
+	 * 
+	 * @param model the {@link Model} instance to serialise
+	 * @return a byte[] containing the serialised model
+	 * @throws Exception
 	 */
-	public void serialiseModel(Model model, OutputStream out) throws IOException
+	public final byte[] serialiseModel(Model model) throws Exception
 	{
-		// Write header:
-		//out.write(NEW_MODEL_SERIALISATION_HEADER);
-		
-		// Check if this is a reserved model:
-		if(false) //getReservedModel(model.id) != null)
-		{	// Write "Reserved" + the model id:
-			//out.write(NEW_MODEL_SERIALISATION_KIND_COLUMN.toBytes("Reserved"));
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		try
+		{
+			// Write header:
+			out.write(MODEL_SERIALISATION_HEADER_BYTES);
 			
+			// Check if this is a reserved model:
+			if(getReservedModel(model.id) != null)
+			{
+				// Write kind byte:
+				out.write(MODEL_SERIALISATION_KIND_RESERVED);
+				// Write model id:
+				BitOutputStream bitOut = new BitWrapOutputStream(out);
+				Model.MODEL_ID_FIELD.write(model.id, bitOut);
+				bitOut.flush();
+				bitOut.close();
+			}
+			else
+			{	// This is not a reserved model, ask the subclass to serialise it:
+				try
+				{
+					serialiseClientModel(model, out); // is assumed to close the stream!
+				}
+				catch(UnknownModelException uke)
+				{	// Use compressed Java object serialisation instead:
+					out.write(MODEL_SERIALISATION_KIND_COMPRESSED_JAVA_OBJECT);
+					ObjectOutputStream objOut = new ObjectOutputStream(compress(out));
+					objOut.writeObject(model);
+					objOut.flush();
+					objOut.close();
+				}
+			}
 			
-			BitWrapOutputStream bitOut = new BitWrapOutputStream(out);
-			Model.MODEL_ID_FIELD.write(model.id, bitOut);
-			bitOut.flush();
-			bitOut.close();
+			// Return bytes:
+			return out.toByteArray();
 		}
-		else
-		{	// Use Java object serialisation:
-			ObjectOutputStream objOut = new ObjectOutputStream(out);
-			objOut.writeObject(model);
-			objOut.flush();
-			objOut.close();
+		finally
+		{	// Just in case it hasn't been closed yet:
+			StreamHelpers.SilentClose(out);
 		}
 	}
 	
 	/**
-	 * TODO
+	 * Converts serialised models (given as a byte[]) back to a {@link Model} instance.
 	 * 
-	 * @param in
-	 * @return
-	 * @throws UnknownModelException
-	 * @throws IOException
-	 * @throws ClassNotFoundException
+	 * @param serialisedModel a byte[] which is the result of serialising a Model instance using {@link #serialiseModel(Model)}
+	 * @return the deserialised Model instance
+	 * @throws Exception in case deserialisation failed
 	 */
-	public Model deserialiseModel(InputStream in) throws UnknownModelException, IOException, ClassNotFoundException
-	{
-		// Check if this is a reserved model:
-		/*if(!in.markSupported())
-			in = new BufferedInputStream(in); // decorate stream so we can use mark/reset		
-		
-		// Check new header:
-		in.mark(NEW_MODEL_SERIALISATION_HEADER.length);
-		byte[] newHeaderBytes = new byte[NEW_MODEL_SERIALISATION_HEADER.length];
-		int read = in.read(newHeaderBytes);
-		if(read == NEW_MODEL_SERIALISATION_HEADER.length && Arrays.equals(newHeaderBytes, NEW_MODEL_SERIALISATION_HEADER))
-		{	// New header present...
-			// Read kind:
-			//NEW_MODEL_SERIALISATION_KIND_COLUMN.fromBytes(bytes)
-			return null;
-		}
-		else
-		{
-			in.reset();*/
-			// Use Java object serialisation:
-			return deserialiseModelObject(in);
-		//}
-	}
-	
-	private Model deserialiseModelObject(InputStream in) throws ClassNotFoundException, IOException
-	{
-		ObjectInputStream objIn = new ObjectInputStream(in);
+	public final Model deserialiseModel(byte[] serialisedModel) throws Exception
+	{		
+		InputStream in = new ByteArrayInputStream(serialisedModel);
 		try
 		{
-			return (Model) objIn.readObject();
+			// Check for "SapelliModel" header:
+			in.mark(MODEL_SERIALISATION_HEADER_BYTES.length);
+			byte[] headerBytes = new byte[MODEL_SERIALISATION_HEADER_BYTES.length];
+			if(	in.read(headerBytes) == MODEL_SERIALISATION_HEADER_BYTES.length &&
+				Arrays.equals(headerBytes, MODEL_SERIALISATION_HEADER_BYTES))
+			{	// Header is present, read which kind of model serialisation is used:
+				byte kind = (byte) in.read();
+				// Deserialise according to kind:
+				switch(kind)
+				{
+					case MODEL_SERIALISATION_KIND_RESERVED :
+						return getReservedModel(Model.MODEL_ID_FIELD.readLong(new BitWrapInputStream(in)));
+					case MODEL_SERIALISATION_KIND_COMPRESSED_JAVA_OBJECT :
+						return deserialiseCompressedModelObject(in);
+					default :
+						return deserialiseClientModel(kind, in); // may throw and exception or return null if model was unknown
+				}
+			}
+			else
+			{	// No header present, this model is serialised in the old way (headerless, compressed Java object serialisation):
+				in.reset();
+				return deserialiseCompressedModelObject(in);
+			}
 		}
 		finally
 		{
-			objIn.close();
+			StreamHelpers.SilentClose(in);
 		}
+	}
+	
+	/**
+	 * @param in
+	 * @return in the {@link InputStream} to read from, will be closed
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	private Model deserialiseCompressedModelObject(InputStream in) throws ClassNotFoundException, IOException
+	{
+		try
+		{
+			in = new ObjectInputStream(decompress(in));
+			return (Model) ((ObjectInputStream) in).readObject();
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(in);
+		}
+	}
+	
+	/**
+	 * To be implemented by subclasses in order to serialise their specific Model kinds.
+	 * 
+	 * If the subclass is able to serialise the model it *must* start with writing a single "kind" byte
+	 * to the output, which signifies the serialisation kind or format and should be understood by the
+	 * subclass' implementation of {@link #deserialiseClientModel(byte, InputStream)}. 
+	 * 
+	 * @param model the {@link Model} instance to serialise
+	 * @param out the {@link OutputStream} to write to, must be closed before this method returns!
+	 * @throws IOException in case a problem occurs during serialisation
+	 * @throws UnknownModelException in case the given Model is not recognised or serialisable by the subclass 
+	 */
+	protected abstract void serialiseClientModel(Model model, OutputStream out) throws IOException, UnknownModelException;
+	
+	/**
+	 * To be implemented by subclasses in order to deserialise their specific Model kinds.
+	 * 
+	 * @param kind byte indicating the kind of model/model serialisation 
+	 * @param in the {@link InputStream} to read from, must be closed before this method returns!
+	 * @return the deserialised Model, or {@code null} if the model was unknown
+	 * @throws Exception if something when wrong
+	 */
+	protected abstract Model deserialiseClientModel(byte kind, InputStream in) throws Exception;
+	
+	/**
+	 * Helper method for Model serialisation. Wraps a given OutputStream in a compressing one.
+	 * 
+	 * @param out
+	 * @return
+	 * @throws IOException
+	 */
+	protected final OutputStream compress(OutputStream out) throws IOException
+	{
+		return CompressorFactory.getCompressorOutputStream(MODEL_SERIALISATION_COMPRESSION, out);
+	}
+	
+	/**
+	 * Helper method for Model deserialisation. Wraps a given InputStream in a decompressing one.
+	 * 
+	 * @param in
+	 * @return
+	 * @throws IOException
+	 */
+	protected final InputStream decompress(InputStream in) throws IOException
+	{
+		return CompressorFactory.getCompressorInputStream(MODEL_SERIALISATION_COMPRESSION, in);
 	}
 	
 	/**

@@ -18,16 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
-import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -36,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
  * A Model groups a series of {@link Schema}s that belong together.
@@ -105,8 +100,6 @@ public class Model implements Serializable
 		META_SCHEMA.seal();
 	}
 	
-	private static Compression OBJECT_COMPRESSION = Compression.DEFLATE;
-	
 	// Seal the Meta-Model:
 	static
 	{
@@ -119,15 +112,11 @@ public class Model implements Serializable
 	 * @param model
 	 * @param client
 	 * @return
-	 * @throws IOException
+	 * @throws Exception
 	 */
-	static public Record GetModelRecord(Model model, StorageClient client) throws IOException
+	static public Record GetModelRecord(Model model, StorageClient client) throws Exception
 	{
-		// Serialise Model object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();	
-		client.serialiseModel(model, CompressorFactory.getCompressorOutputStream(OBJECT_COMPRESSION, rawOut));
-		// Return new Model record:
-		return MODEL_SCHEMA.createRecord(model.id, model.name, rawOut.toByteArray(), model.hashCode());
+		return MODEL_SCHEMA.createRecord(model.id, model.name, client.serialiseModel(model), model.hashCode()); // use client to serialise Model object to byte[]
 	}
 	
 	/**
@@ -157,25 +146,21 @@ public class Model implements Serializable
 	 * @param modelRecord
 	 * @param client
 	 * @return
-	 * @throws NullPointerException
-	 * @throws IllegalArgumentException
-	 * @throws IOException
-	 * @throws ClassNotFoundException
-	 * @throws UnknownModelException 
+	 * @throws Exception if a problem occurs
 	 */
-	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException, UnknownModelException
+	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws Exception
 	{
 		if(modelRecord == null)
 			throw new NullPointerException("The modelRecord cannot be null!");
 		if(modelRecord.getSchema() != MODEL_SCHEMA)
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
-		// Decompress & deserialise Schema object bytes:
-		Model model = client.deserialiseModel(CompressorFactory.getCompressorInputStream(OBJECT_COMPRESSION, new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord))));
+		// Deserialise Model from bytes:
+		Model model = client.deserialiseModel(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord));
 		
 		// Perform check:
 		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))
-			throw new IllegalStateException("Model hashCode mismatch");
+			System.err.println("Model hashCode mismatch"); // don't throw an Exception, hashCode mismatches are not necessarily problematic and are to be expected if Storage model or Collector model classes change. 
 		// Note: if hashCode matches then id, name should match as well
 		
 		return model;
@@ -239,7 +224,7 @@ public class Model implements Serializable
 	 * @throws IOException
 	 * @see #GetModelRecord(Model)
 	 */
-	public Record getModelRecord(StorageClient client) throws IOException
+	public Record getModelRecord(StorageClient client) throws Exception
 	{
 		return GetModelRecord(this, client);
 	}

@@ -19,6 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -333,7 +336,7 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public void backup(StoreBackupper backuper, File destinationFolder)
 	{
-		// TODO implement preferences backup
+		throw new UnsupportedOperationException("preferences backup not implemented");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -362,15 +365,15 @@ public class PrefProjectStore extends ProjectStore
 	}
 
 	@Override
-	public byte[] serialise(Project project)
+	public void serialise(Project project, OutputStream out) throws IOException
 	{
-		return null; // not implemented
+		throw new UnsupportedOperationException("serialise() not implemented");
 	}
 
 	@Override
-	public Project deserialise(byte[] serialisedProject)
+	public Project deserialise(InputStream in) throws IOException
 	{
-		return null; // not implemented
+		throw new UnsupportedOperationException("deserialise() not implemented");
 	}
 
 }
