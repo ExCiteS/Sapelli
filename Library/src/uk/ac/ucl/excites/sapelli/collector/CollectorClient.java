@@ -61,8 +61,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		AddReservedModel(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
 	}
 	
-	//static public final Source ALL_COLLECTOR_RECORDS = Source.NotFrom(Transmission.)
-	
 	/**
 	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
 	 * 
