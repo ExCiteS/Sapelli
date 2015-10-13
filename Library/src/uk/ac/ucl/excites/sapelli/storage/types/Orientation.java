@@ -43,8 +43,7 @@ public class Orientation extends ValueSet<ColumnSet>
 	{	// Add columns to Schema & seal it:
 		COLUMN_SET.addColumn(COLUMN_AZIMUTH);
 		COLUMN_SET.addColumn(COLUMN_PITCH);
-		COLUMN_SET.addColumn(COLUMN_ROLL);
-		COLUMN_SET.seal();
+		COLUMN_SET.addColumn(COLUMN_ROLL, true /*seal!*/);
 	}
 	
 	/**

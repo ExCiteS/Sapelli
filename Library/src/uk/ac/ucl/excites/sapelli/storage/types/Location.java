@@ -85,8 +85,7 @@ public class Location extends ValueSet<ColumnSet>
 		COLUMN_SET.addColumn(COLUMN_SPEED);
 		COLUMN_SET.addColumn(COLUMN_ACCURACY);
 		COLUMN_SET.addColumn(COLUMN_TIME);
-		COLUMN_SET.addColumn(COLUMN_PROVIDER);
-		COLUMN_SET.seal();
+		COLUMN_SET.addColumn(COLUMN_PROVIDER, true /*seal!*/);
 	}
 	
 	//Dynamic--------------------------------------------------------
