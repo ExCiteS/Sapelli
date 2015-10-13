@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -124,6 +125,8 @@ public class ProjectParser extends DocumentParser
 	}
 
 	/**
+	 * Parses the given XML file to produce a {@link Project} instance.
+	 * 
 	 * @param xmlFile
 	 * @return the parsed Project instance
 	 * @throws Exception
@@ -134,6 +137,9 @@ public class ProjectParser extends DocumentParser
 	}
 
 	/**
+	 * Parses the given XML file to produce a {@link Project} instance.
+	 * If one is given the {@link FormSchemaInfoProvider} is used to speed up {@link Schema} generation.
+	 * 
 	 * @param xmlFile
 	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
 	 * @return the parsed Project instance
@@ -145,6 +151,8 @@ public class ProjectParser extends DocumentParser
 	}
 	
 	/**
+	 * Parses the given {@link InputStream}, expected to provide XML file contents, to produce a {@link Project} instance.
+	 * 
 	 * @param input
 	 * @return the parsed Project instance
 	 * @throws Exception
@@ -155,6 +163,9 @@ public class ProjectParser extends DocumentParser
 	}
 	
 	/**
+	 * Parses the given {@link InputStream}, expected to provide XML file contents, to produce a {@link Project} instance.
+	 * If one is given the {@link FormSchemaInfoProvider} is used to speed up {@link Schema} generation.
+	 * 
 	 * @param input
 	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
 	 * @return the parsed Project instance

@@ -233,7 +233,7 @@ public class XMLRecordsExporter extends SimpleExporter
 	}
 
 	@Override
-	public void enter(ValueSetColumn<?> recordCol)
+	public void enter(ValueSetColumn<?, ?> recordCol)
 	{
 		if(compositeMode == CompositeMode.String)
 			return; //this should never happen
@@ -252,7 +252,7 @@ public class XMLRecordsExporter extends SimpleExporter
 	}
 	
 	@Override
-	public void leave(ValueSetColumn<?> recordCol)
+	public void leave(ValueSetColumn<?, ?> recordCol)
 	{
 		if(compositeMode == CompositeMode.String)
 			return; //this should never happen

@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -189,14 +190,22 @@ public abstract class Payload
 		if(this.transmission == null)
 			throw new IllegalStateException("Cannot serialise before transmission has been set!");
 	
-		BitArrayOutputStream bitstream = new BitArrayOutputStream();
+		BitArrayOutputStream bitstream = null;
+		try
+		{
+			bitstream = new BitArrayOutputStream();
 		
-		// Serialise payload data:
-		write(bitstream);
+			// Serialise payload data:
+			write(bitstream);
 		
-		// Close & return bits (no need for flush because it doesn't do anything on a BitArrayOutputStream):
-		bitstream.close();
-		return bitstream.toBitArray();
+			// Close & return bits (no need for flush because it doesn't do anything on a BitArrayOutputStream):
+			bitstream.close();
+			return bitstream.toBitArray();
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(bitstream);
+		}
 	}
 	
 	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException;
@@ -215,8 +224,7 @@ public abstract class Payload
 		}
 		finally
 		{
-			if(bitstream != null)
-				bitstream.close();	
+			StreamHelpers.SilentClose(bitstream);
 		}
 	}
 	

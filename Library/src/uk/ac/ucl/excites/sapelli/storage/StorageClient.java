@@ -18,9 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.storage;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
@@ -77,6 +80,31 @@ public abstract class StorageClient implements StorageObserver
 	 */
 	static public final int SCHEMA_FLAGS_STORAGE_INTERNAL =	SCHEMA_FLAG_STORAGE_LAYER;
 	
+	static private final Map<Long, Model> RESERVED_MODELS = new HashMap<Long, Model>();
+	
+	static public final Collection<Model> GetReservedModels()
+	{
+		return Collections.unmodifiableCollection(RESERVED_MODELS.values());
+	}
+	
+	static final protected void AddReservedModel(Model newReservedModel)
+	{
+		if(newReservedModel == null)
+			throw new NullPointerException("newReservedModel cannot be null!");
+		if(RESERVED_MODELS.containsKey(newReservedModel.id) && RESERVED_MODELS.get(newReservedModel.id) != newReservedModel)
+			throw new IllegalStateException("Reserved model id clash (id: " + newReservedModel.id + ")!");
+		RESERVED_MODELS.put(newReservedModel.id, newReservedModel);
+	}
+	
+	/**
+	 * @param modelID
+	 * @return a reserved Model with the given modelID, or {@code null} if no such reserved Model is known
+	 */
+	static final protected Model GetReservedModel(long modelID)
+	{
+		return RESERVED_MODELS.get(modelID);
+	}
+
 	// DYNAMICS -----------------------------------------------------
 	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
 	
@@ -97,21 +125,11 @@ public abstract class StorageClient implements StorageObserver
 	public final Model getModel(long modelID) throws UnknownModelException
 	{
 		// First check reserved models:
-		for(Model model : getReservedModels())
-			if(model.getID() == modelID)
-				return model;
+		Model reservedModel = GetReservedModel(modelID);
+		if(reservedModel != null)
+			return reservedModel;
 		// Get client model:
 		return getClientModel(modelID);
-	}
-	
-	/**
-	 * Subclasses can override this but *must* return at least the same models returned by the super implementation.
-	 * 
-	 * @return
-	 */
-	public List<Model> getReservedModels()
-	{
-		return new ArrayList<Model>();
 	}
 	
 	/**

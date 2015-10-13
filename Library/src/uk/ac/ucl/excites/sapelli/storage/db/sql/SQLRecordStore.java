@@ -50,6 +50,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
@@ -57,6 +58,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
@@ -223,7 +225,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA)
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
-						modelsTable.insert(Model.GetModelRecord(schema.getModel()));
+						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
 					schemataTable.insert(Schema.GetMetaRecord(schema));
 				}
 			}
@@ -238,32 +240,88 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return table;
 	}
 
-	protected abstract TableFactory<STable> getTableFactory();
-	
-	protected Collection<Schema> getSchemata(Source source)
+	/**
+	 * Finds schema tables that have become empty and drops them, along with
+	 * deleting the corresponding row from the Schemata table.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
+	 */
+	protected void cleanup() throws DBException
 	{
-		if(source.isNone())
-			return Collections.<Schema> emptyList();
-		else if(source.isAny())
-			return getAllKnownSchemata();
-		else
-			return source.getSchemata(new SourceResolver()
+		// Find empty tables & release all table resources:
+		List<STable> emptyTables = null;
+		for(STable table : tables.values())
+		{
+			try
 			{
-				@Override
-				public Collection<Schema> resolve(SourceBySet sourceBySet)
+				// Check if table is empty:
+				if(table.isInDB() && table.isEmpty())
 				{
-					return	sourceBySet.isByInclusion() ?
-								sourceBySet.getSchemata() :
-								getAllKnownSchemataExcept(sourceBySet.getSchemata());
+					if(emptyTables == null)
+						emptyTables = new ArrayList<STable>();
+					emptyTables.add(table);
 				}
-
-				@Override
-				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
+				// Release table resources:
+				table.release();
+			}
+			catch(DBException dbE)
+			{
+				dbE.printStackTrace(System.err);
+				continue;
+			}
+		}
+		// Release resources on "system tables":
+		schemataTable.release();
+		modelsTable.release();
+		
+		// Clean up empty tables:
+		if(emptyTables != null)
+		{
+			startTransaction();
+			try
+			{
+				Set<Model> possiblyRemovableModels = new HashSet<Model>();
+				// Forget schemata & drop tables:
+				for(STable emptyTable : emptyTables)
 				{
-					 // TODO more efficient SQL-based implementation: SELECT * FROM Schemata WHERE flags & sourceByFlags.getFlags() = sourceByFlags.getFlags();
-					return sourceByFlags.filterSchemata(getAllKnownSchemata());
+					RecordReference schemaMetaRecordRef = Schema.GetMetaRecordReference(emptyTable.schema);
+					
+					// Unregister (i.e. "forget") the schema (which the table corresponds to) in the schemataTable:
+					schemataTable.delete(schemaMetaRecordRef);
+					
+					// Drop the table itself:
+					emptyTable.drop();
+					
+					// Remember model:
+					possiblyRemovableModels.add(emptyTable.schema.getModel());
+					
+					// Remove from tables map:
+					tables.remove(schemaMetaRecordRef);
 				}
-			});
+				// Forget models if none of their schemata correspond to an existing (and at this point non-empty) table in the database:
+				modelLoop : for(Model model : possiblyRemovableModels)
+				{
+					for(Schema schema : model.getSchemata())
+						if(doesTableExist(client.getTableName(schema)))
+							continue modelLoop; // one of the model's schemata corresponds to a table, so we should not forget about this model
+					// None of the model's schemata correspond to a table, so unregister (i.e. "forget") the model in the modelsTable:
+					modelsTable.delete(Model.GetModelRecordReference(model));
+				}
+			}
+			catch(DBException dbE)
+			{
+				try
+				{
+					rollbackTransactions();
+				}
+				catch(DBException dbE2)
+				{
+					dbE2.printStackTrace(System.err);
+				}
+				throw dbE;
+			}
+			commitTransaction();
+		}
 	}
 	
 	protected List<Schema> getAllKnownSchemata()
@@ -318,7 +376,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					Model model = modelCache.get(Model.MODEL_ID_COLUMN.retrieveValue(modelRef));
 					if(model == null)
 					{	// model is not in cache, so query the models table:
-						model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
+						model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
 						modelCache.put(model.id, model); // remember model in cache
 					}
 					// Get the schema from the model object:
@@ -337,6 +395,57 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			e.printStackTrace(System.err);
 			return Collections.<Schema> emptyList();
 		}
+	}
+	
+	/**
+	 * Returns a Schema object that corresponds to the stored version of the given schema.
+	 * Only to be used for upgrade purposes.
+	 * 
+	 * @param schema
+	 * @return the stored version of the schema, or null if no records of this schema are currently stored
+	 */
+	protected Schema getStoredVersion(Schema schema)
+	{
+		try
+		{
+			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
+			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
+			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+	
+	protected abstract TableFactory<STable> getTableFactory();
+	
+	protected Collection<Schema> getSchemata(Source source)
+	{
+		if(source.isNone())
+			return Collections.<Schema> emptyList();
+		else if(source.isAny())
+			return getAllKnownSchemata();
+		else
+			return source.getSchemata(new SourceResolver()
+			{
+				@Override
+				public Collection<Schema> resolve(SourceBySet sourceBySet)
+				{
+					return	sourceBySet.isByInclusion() ?
+								sourceBySet.getSchemata() :
+								getAllKnownSchemataExcept(sourceBySet.getSchemata());
+				}
+
+				@Override
+				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
+				{
+					 // TODO more efficient SQL-based implementation: SELECT * FROM Schemata WHERE flags & sourceByFlags.getFlags() = sourceByFlags.getFlags();
+					return sourceByFlags.filterSchemata(getAllKnownSchemata());
+				}
+			});
 	}
 	
 	/**
@@ -481,113 +590,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)
 	}
 	
-	/**
-	 * Finds schema tables that have become empty and drops them, along with
-	 * deleting the corresponding row from the Schemata table.
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
-	 */
-	protected void cleanup() throws DBException
-	{
-		// Find empty tables & release all table resources:
-		List<STable> emptyTables = null;
-		for(STable table : tables.values())
-		{
-			try
-			{
-				// Check if table is empty:
-				if(table.isInDB() && table.isEmpty())
-				{
-					if(emptyTables == null)
-						emptyTables = new ArrayList<STable>();
-					emptyTables.add(table);
-				}
-				// Release table resources:
-				table.release();
-			}
-			catch(DBException dbE)
-			{
-				dbE.printStackTrace(System.err);
-				continue;
-			}
-		}
-		// Release resources on "system tables":
-		schemataTable.release();
-		modelsTable.release();
-		
-		// Clean up empty tables:
-		if(emptyTables != null)
-		{
-			startTransaction();
-			try
-			{
-				Set<Model> possiblyRemovableModels = new HashSet<Model>();
-				// Forget schemata & drop tables:
-				for(STable emptyTable : emptyTables)
-				{
-					RecordReference schemaMetaRecordRef = Schema.GetMetaRecordReference(emptyTable.schema);
-					
-					// Unregister (i.e. "forget") the schema (which the table corresponds to) in the schemataTable:
-					schemataTable.delete(schemaMetaRecordRef);
-					
-					// Drop the table itself:
-					emptyTable.drop();
-					
-					// Remember model:
-					possiblyRemovableModels.add(emptyTable.schema.getModel());
-					
-					// Remove from tables map:
-					tables.remove(schemaMetaRecordRef);
-				}
-				// Forget models if none of their schemata correspond to an existing (and at this point non-empty) table in the database:
-				modelLoop : for(Model model : possiblyRemovableModels)
-				{
-					for(Schema schema : model.getSchemata())
-						if(doesTableExist(client.getTableName(schema)))
-							continue modelLoop; // one of the model's schemata corresponds to a table, so we should not forget about this model
-					// None of the model's schemata correspond to a table, so unregister (i.e. "forget") the model in the modelsTable:
-					modelsTable.delete(Model.GetModelRecordReference(model));
-				}
-			}
-			catch(DBException dbE)
-			{
-				try
-				{
-					rollbackTransactions();
-				}
-				catch(DBException dbE2)
-				{
-					dbE2.printStackTrace(System.err);
-				}
-				throw dbE;
-			}
-			commitTransaction();
-		}
-	}
-	
-	/**
-	 * Returns a Schema object that corresponds to the stored version of the given schema.
-	 * Only to be used for upgrade purposes.
-	 * 
-	 * @param schema
-	 * @return the stored version of the schema, or null if no records of this schema are currently stored
-	 */
-	protected Schema getStoredVersion(Schema schema)
-	{
-		try
-		{
-			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
-			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
-			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery())); // model object obtained by deserialising model record
-			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			return null;
-		}
-	}
-	
 	protected abstract String getNullString();
 	
 	protected abstract char getQuoteChar();
@@ -636,7 +638,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Mapping of composite Sapelli columns to a list of SQLColumns which they correspond to.
 		 * E.g. Location --> (Lat, Lon, ...) 
 		 */
-		public final Map<ValueSetColumn<?>, List<SColumn>> composite2SqlColumns;
+		public final Map<ValueSetColumn<?, ?>, List<SColumn>> composite2SqlColumns;
 		
 		/**
 		 * The auto-incrementing primary key column as (a Sapelli Column, not an S/SQLColumn), will be null if there is none
@@ -650,7 +652,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // we use a LHP to preserve column order!
-			composite2SqlColumns = new HashMap<ValueSetColumn<?>, List<SColumn>>();
+			composite2SqlColumns = new HashMap<ValueSetColumn<?, ?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
 		}
@@ -676,7 +678,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Deal with composites...
 			while(sourceCP.isSubColumn())
 			{
-				ColumnPointer<ValueSetColumn<?>> parentCP = sourceCP.getParentPointer();
+				ColumnPointer<ValueSetColumn<?, ?>> parentCP = sourceCP.getParentPointer();
 				List<SColumn> subSQLCols;
 				if(composite2SqlColumns.containsKey(parentCP.getColumn()))
 					subSQLCols = composite2SqlColumns.get(parentCP.getColumn());
@@ -758,7 +760,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public List<SColumn> getSQLColumns(Column<?> sapColumn)
 		{
 			if(sapColumn instanceof ValueSetColumn)
-				return composite2SqlColumns.get((ValueSetColumn<?>) sapColumn);
+				return composite2SqlColumns.get((ValueSetColumn<?, ?>) sapColumn);
 			else
 				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
@@ -1254,6 +1256,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void visit(BooleanListColumn boolListCol)
 		{
 			visitListColumn(boolListCol);
+		}
+		
+		@Override
+		public void visit(StringListColumn stringListCol)
+		{
+			visitListColumn(stringListCol);
+		}
+		
+		@Override
+		public void visit(ByteArrayListColumn byteArrayListCol)
+		{
+			visitListColumn(byteArrayListCol);
 		}
 		
 		@Override
@@ -1863,9 +1877,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(getNullString()); // "NULL"
 				}
 			}
-			else if(cp.getColumn() instanceof ValueSetColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
+			else if(cp.getColumn() instanceof ValueSetColumn<?, ?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
 			{	// Equality constraint on composite column...
-				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?>) cp.getColumn());
+				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?, ?>) cp.getColumn());
 				if(subSqlCols != null)
 				{	// ...  which is split up in the SQLTable...
 					ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();

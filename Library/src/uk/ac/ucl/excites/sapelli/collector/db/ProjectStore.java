@@ -166,6 +166,16 @@ public abstract class ProjectStore extends Store
 	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
 	
 	/**
+	 * Retrieves specific a project, returned as a ProjectDescriptor or a Project instance.
+	 * If the ProjectStore implements a caching mechanism than any cached Project objects will be returned as such (rather than as ProjectDescriptors).
+	 * 
+	 * @param projectID
+	 * @param projectFingerPrint
+	 * @return null if no such project was found
+	 */
+	public abstract ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint);
+	
+	/**
 	 * Retrieves specific Project, identified by ProjectDescriptor
 	 * 
 	 * @param descriptor

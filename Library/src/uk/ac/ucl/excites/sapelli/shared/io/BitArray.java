@@ -67,11 +67,7 @@ public class BitArray implements Iterable<Boolean>
 		}
 		finally
 		{
-			try
-			{
-				baos.close();
-			}
-			catch(IOException ignore) {}
+			StreamHelpers.SilentClose(baos);
 		}
 		return baos.toBitArray(true); // use given max bitLength
 	}

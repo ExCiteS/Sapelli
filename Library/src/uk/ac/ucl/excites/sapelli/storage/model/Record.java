@@ -113,6 +113,7 @@ public class Record extends RecordValueSet<Schema>
 	 * 
 	 * @param newSchema
 	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
+	 * 
 	 * @deprecated unsafe, avoid this unless there is a very good reason and you know what you are doing
 	 */
 	public void setSchema(Schema newSchema) throws IllegalArgumentException
@@ -127,6 +128,7 @@ public class Record extends RecordValueSet<Schema>
 	 * @param force - if true the old and new schema are *not* compared, but the number of columns of the new schema must *always* match the number of values!
 	 * @throws IndexOutOfBoundsException - when the new schema has a different number of columns than the number of values in the record
 	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
+	 * 
 	 * @deprecated unsafe, avoid this unless there is a very good reason and you know what you are doing
 	 */
 	public void setSchema(Schema newSchema, boolean force) throws IndexOutOfBoundsException, IllegalArgumentException

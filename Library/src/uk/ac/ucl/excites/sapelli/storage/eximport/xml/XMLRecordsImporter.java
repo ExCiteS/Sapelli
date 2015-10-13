@@ -135,7 +135,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 				// Deal with previous (record)column:
 				if(!columnStack.isEmpty())
 				{
-					ValueSetColumn<?> recCol = ((ValueSetColumn<?>) columnStack.peek());
+					ValueSetColumn<?, ?> recCol = ((ValueSetColumn<?, ?>) columnStack.peek());
 					// Create subrecord instance:
 					if(!recCol.isValueSet(valueSet))
 						recCol.storeObject(valueSet, recCol.getNewRecord());
@@ -174,7 +174,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 			ValueSet<?> valueSet = currentRecord;
 			for(Column<?> col : columnStack)
 				if(col instanceof ValueSetColumn && col != column)
-					valueSet = ((ValueSetColumn<?>) col).retrieveValue(valueSet);
+					valueSet = ((ValueSetColumn<?, ?>) col).retrieveValue(valueSet);
 			
 			// Get string representation of column value:
 			String valueString = new String(ch, start, length);

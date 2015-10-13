@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageObserver;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
@@ -44,7 +43,14 @@ public abstract class TransmissionClient extends StorageClient
 {
 
 	// STATICS-------------------------------------------------------
-	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
+	/**
+	 * ID for the reserved Transmission Management Model ({@link TransmissionStore#TRANSMISSION_MANAGEMENT_MODEL})
+	 */
+	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0;
+	static
+	{
+		AddReservedModel(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
+	}
 	
 	/**
 	 * Flag indicating that a Schema has been defined at the Transmission layer of the Sapelli Library
@@ -78,17 +84,7 @@ public abstract class TransmissionClient extends StorageClient
 		new TransmissionStorageObserver(); // no need to hold a reference to it, the object will register itself as a StorageObserver
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
-	 */
-	@Override
-	public List<Model> getReservedModels()
-	{
-		List<Model> reserved = super.getReservedModels();
-		reserved.add(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
-		return reserved;
-	}
-	
+	// DYNAMICS------------------------------------------------------	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
 	 */

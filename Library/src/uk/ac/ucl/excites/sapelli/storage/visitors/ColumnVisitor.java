@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -33,11 +34,16 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
- * TODO document: mainly to explain how traversal of valuesetcolumns (and subclasses) works
- * 
+ * An interface for visitors that inspect columns.
+ * It has {@code visit(Column)} methods for each type of column.
+ * Additionally the {@code enter(ValueSetColumn)} and an {@code leave(ValueSetColumn)} methods are used to signal
+ * that the visitor is respectively entering or leaving a {@link ValueSetColumn} to inspect its subcolumns. 
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Visitor_pattern">Visitor Design Pattern</a>
  * @author mstevens
  */
 public interface ColumnVisitor
@@ -53,9 +59,15 @@ public interface ColumnVisitor
 	
 	public void visit(StringColumn stringCol);
 	
+	public void visit(ByteArrayColumn byteArrayCol);
+	
 	public void visit(IntegerListColumn intListCol);
 	
 	public void visit(BooleanListColumn boolListCol);
+	
+	public void visit(StringListColumn stringListCol);
+	
+	public void visit(ByteArrayListColumn byteArrayListCol);
 	
 	public void visit(LineColumn lineCol);
 	
@@ -67,15 +79,13 @@ public interface ColumnVisitor
 	
 	public void visit(OrientationColumn orCol);
 	
-	public void visit(ByteArrayColumn byteArrayCol);
-	
 	public <T> void visit(ListColumn.Simple<T> simpleListCol);
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
-	public void enter(ValueSetColumn<?> valueSetCol);
+	public void enter(ValueSetColumn<?, ?> valueSetCol);
 	
-	public void leave(ValueSetColumn<?> valueSetCol);
+	public void leave(ValueSetColumn<?, ?> valueSetCol);
 	
 	public boolean allowLocationSelfTraversal();
 	

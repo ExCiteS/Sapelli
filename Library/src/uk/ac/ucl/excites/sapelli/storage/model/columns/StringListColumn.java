@@ -23,40 +23,39 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * @author mstevens
- *
  */
-public class IntegerListColumn extends ListColumn.Simple<Long>
+public class StringListColumn extends ListColumn.Simple<String>
 {
 
-	static private final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 2L;
 
 	/**
-	 * Creates an {@link IntegerListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
+	 * Creates a {@link StringListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 */
-	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional)
 	{
 		super(name, singleColumn, optional);
 	}
-
+	
 	/**
-	 * Creates an {@link IntegerListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * Creates a {@link StringListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 * @param maxLength
 	 */
-	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int maxLength)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength)
 	{
 		super(name, singleColumn, optional, maxLength);
 	}
-
+	
 	/**
-	 * Creates an {@link IntegerListColumn} with the given minimum and maximum lengths.
+	 * Creates a {@link StringListColumn} with the given minimum and maximum lengths.
 	 * 
 	 * @param name
 	 * @param singleColumn
@@ -64,7 +63,7 @@ public class IntegerListColumn extends ListColumn.Simple<Long>
 	 * @param minLength
 	 * @param maxLength
 	 */
-	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int minLength, int maxLength)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength)
 	{
 		super(name, singleColumn, optional, minLength, maxLength);
 	}

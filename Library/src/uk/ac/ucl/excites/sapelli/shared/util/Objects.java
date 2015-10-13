@@ -19,17 +19,22 @@
 package uk.ac.ucl.excites.sapelli.shared.util;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * This class contains {@code static} utility methods for operating on objects.
  * 
- * The methods implemented here correspond to (and are 100% compatible with) a
- * subset of those found in {@link java.util.Objects}, which is only available
- * since JRE7/JDK [1.]7 and Android SDK/API level 19.
+ * This class (and all its methods) is 100% equivalent and compatible with the
+ * {@link java.util.Objects} class introduced in JavaSE 7/JDK 1.7, and later in Android 4.4/API level 19.
  * 
- * @author mstevens
+ * This implementation is loosely based on the {@link java.util.Objects} implementation created by
+ * the Android Open Source Project (libcore/luni; rev. 4daf167; see link below), licensed under the
+ * Apache License, Version 2.0.
+ * 
+ * @author AOSP, mstevens
  * 
  * @see java.util.Objects
+ * @see https://android.googlesource.com/platform/libcore/+/4daf167bcaae54986cd4d9ad9b604700fde8f2fe/luni/src/main/java/java/util/Objects.java
  */
 public final class Objects
 {
@@ -40,6 +45,17 @@ public final class Objects
 	}
 	
 	/**
+	 * Returns 0 if {@code a == b}, or {@code c.compare(a, b)} otherwise. That is, this makes {@code c} null-safe.
+	 * 
+	 * @see java.util.Objects#compare(Object, Object, Comparator)
+	 * @see java.util.Comparator#compare(Object, Object)
+	 */
+	public static <T> int compare(T a, T b, Comparator<? super T> c)
+	{
+		return a == b ? 0 : c.compare(a, b);
+	}
+	
+	/**
 	 * Null-safe equivalent of {@code obj1.equals(obj2)}.
 	 * 
 	 * @param obj1 an object
@@ -47,7 +63,7 @@ public final class Objects
 	 * @return {@code true} if the arguments are equal to each other and {@code false} otherwise
 	 * 
 	 * @see java.util.Objects#equals(Object, Object)
-	 * @see Object#equals(Object)
+	 * @see java.util.Object#equals(Object)
 	 */
 	public static boolean equals(Object obj1, Object obj2)
 	{
@@ -68,7 +84,8 @@ public final class Objects
 	 * 
 	 * @see java.util.Objects#deepEquals(Object, Object)
 	 * @see java.util.Arrays#deepEquals(Object[], Object[])
-	 * @see Object#equals(Object)
+	 * @see java.util.Arrays#deepEquals0(Object, Object)
+	 * @see java.util.Object#equals(Object)
 	 */
 	public static boolean deepEquals(Object obj1, Object obj2)
 	{
@@ -104,11 +121,87 @@ public final class Objects
 	 * @param obj an object
 	 * @return the hash code of a non-{@code null} argument and 0 for a {@code null} argument
 	 * 
-	 * @see Object#hashCode
+	 * @see java.lang.Object#hashCode()
+	 * @see java.util.Objects#hashCode(Object)
 	 */
 	public static int hashCode(Object obj)
 	{
 		return obj != null ? obj.hashCode() : 0;
+	}
+	
+	/**
+	 * Convenience wrapper for {@link Arrays#hashCode}, adding varargs. This can be used to compute a hash code for an object's fields as follows:
+	 * {@code Objects.hash(a, b, c)}.
+	 * 
+	 * @param values
+	 * @return
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 * @see java.util.Objects#hash(Object...)
+	 */
+	public static int hash(Object... values)
+	{
+		return Arrays.hashCode(values);
+	}
+
+	/**
+	 * Returns {@code o} if non-null, or throws {@code NullPointerException}.
+	 * 
+	 * @param o
+	 * @return
+	 * 
+	 * @see java.util.Objects#requireNonNull(Object)
+	 */
+	public static <T> T requireNonNull(T o)
+	{
+		if(o == null)
+			throw new NullPointerException();
+		return o;
+	}
+
+	/**
+	 * Returns {@code o} if non-null, or throws {@code NullPointerException} with the given detail message.
+	 * 
+	 * @param o
+	 * @param message
+	 * @return
+	 * 
+	 * @see java.util.Objects#requireNonNull(Object, String)
+	 */
+	public static <T> T requireNonNull(T o, String message)
+	{
+		if(o == null)
+			throw new NullPointerException(message);
+		return o;
+	}
+
+	/**
+	 * Returns "null" for null or {@code o.toString()}.
+	 * 
+	 * @param o
+	 * @return
+	 * 
+	 * @see java.lang.Object#toString()
+	 * @see java.util.Objects#toString(Object)
+	 */
+	public static String toString(Object o)
+	{
+		return String.valueOf(o);
+	}
+
+	/**
+	 * Returns {@code nullString} for null or {@code o.toString()}.
+	 * 
+	 * @param o
+	 * @param nullString
+	 * @return
+	 * 
+	 * @see java.lang.Object#toString()
+	 * @see java.util.Objects#toString(Object, String)
+	 */
+	public static String toString(Object o, String nullString)
+	{
+		return (o == null) ? nullString : o.toString();
 	}
 
 }

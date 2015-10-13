@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -164,12 +165,7 @@ public class BinaryMessage extends Message<BinaryMessage, byte[]>
 		}
 		finally
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
 		}
 	}
 
@@ -240,12 +236,7 @@ public class BinaryMessage extends Message<BinaryMessage, byte[]>
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(out);
 		}
 		if(data.length > MAX_TOTAL_SIZE_BYTES)
 			throw new InvalidMessageException("Error on assembling bytes of BinaryMessage, maximum length exceeded (" + data.length + ", max is " + MAX_TOTAL_SIZE_BYTES + ").");		

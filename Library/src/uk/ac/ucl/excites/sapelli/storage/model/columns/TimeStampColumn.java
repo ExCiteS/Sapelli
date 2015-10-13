@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -185,7 +186,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 				private static final long serialVersionUID = 2L;
 	
 				@Override
-				public String mapValue(TimeStamp nonNullValue)
+				public String mapValue(TimeStamp nonNullValue, UnmodifiableValueSet<?> valueSet)
 				{
 					return TimeUtils.PrettyTimestampWithoutMSFormatter.print(nonNullValue.toDateTime());
 				}
@@ -203,7 +204,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 				private static final long serialVersionUID = 2L;
 	
 				@Override
-				public Double mapValue(TimeStamp nonNullValue)
+				public Double mapValue(TimeStamp nonNullValue, UnmodifiableValueSet<?> valueSet)
 				{
 					return Double.valueOf(nonNullValue.getHourOffsetWrtUTC());
 				}
@@ -221,7 +222,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 				private static final long serialVersionUID = 2L;
 	
 				@Override
-				public Long mapValue(TimeStamp nonNullValue)
+				public Long mapValue(TimeStamp nonNullValue, UnmodifiableValueSet<?> valueSet)
 				{
 					return nonNullValue.getMsSinceEpoch();
 				}

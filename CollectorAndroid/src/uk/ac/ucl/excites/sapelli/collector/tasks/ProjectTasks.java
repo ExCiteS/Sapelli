@@ -94,7 +94,7 @@ public final class ProjectTasks
 			{
 				callback.projectDataQueryFailure(reason);
 			}
-		}).execute(new RecordsQuery(Source.From(project.getModel().getSchemata())));
+		}).execute(new RecordsQuery(Source.From(project.getModel())));
 	}
 	
 	static public interface ProjectDataCallaback

@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -135,11 +136,13 @@ public class TextMessage extends Message<TextMessage, String>
 			if(Decoding.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h)) == null)
 				throw new InvalidMessageException("Message content contains invalid characters.");
 		
+		BitArrayOutputStream hdrFieldBitsOut = null;
+		BitArrayInputStream hdrFieldBitsIn = null;
 		try
 		{
 			// Read header:
 			//	Convert from chars to 6-bit integers:
-			BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
+			hdrFieldBitsOut = new BitArrayOutputStream();
 			try
 			{
 				for(int h = 0; h < HEADER_SIZE_CHARS; h++)
@@ -150,12 +153,10 @@ public class TextMessage extends Message<TextMessage, String>
 			{
 				throw new InvalidMessageException("Message content contains invalid characters in header.");
 			}
-			finally
-			{
-				hdrFieldBitsOut.close();
-			}
+			hdrFieldBitsOut.close();
+			
 			//	Read header fields:
-			BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
+			hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
 			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(hdrFieldBitsIn);
 			payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(hdrFieldBitsIn);
 			partNumber = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
@@ -165,6 +166,11 @@ public class TextMessage extends Message<TextMessage, String>
 		catch(IOException ioe)
 		{
 			throw new InvalidMessageException("Exception upon reading message header", ioe);
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(hdrFieldBitsOut);
+			StreamHelpers.SilentClose(hdrFieldBitsIn);
 		}
 		
 		// Part number check:
@@ -214,12 +220,13 @@ public class TextMessage extends Message<TextMessage, String>
 	public String getContent() throws InvalidMessageException
 	{
 		StringBuilder blr = new StringBuilder();
-		
-		//Write header:
-		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
+		BitArrayOutputStream hdrFieldBitsOut = null;
 		BitArrayInputStream hdrFieldBitsIn = null;
+		
+		// Write header:
 		try
 		{	//	Write header fields:
+			hdrFieldBitsOut = new BitArrayOutputStream();
 			Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
 			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);					// Payload hash (= CRC16 hash): takes up the next 16 bits
 			PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
@@ -244,17 +251,8 @@ public class TextMessage extends Message<TextMessage, String>
 		}
 		finally
 		{
-			try
-			{
-				hdrFieldBitsOut.close();
-			}
-			catch(IOException ignore) {}
-			try
-			{
-				if(hdrFieldBitsIn != null)
-					hdrFieldBitsIn.close();
-			}
-			catch(IOException ignore) {}
+			StreamHelpers.SilentClose(hdrFieldBitsOut);
+			StreamHelpers.SilentClose(hdrFieldBitsIn);
 		}
 		
 		// Write body:

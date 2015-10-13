@@ -56,7 +56,14 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	
 	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;
 	
+	/**
+	 * ID for the reserved Collector Management Model ({@link ProjectRecordStore#COLLECTOR_MANAGEMENT_MODEL})
+	 */
 	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
+	static
+	{
+		AddReservedModel(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
+	}
 	
 	/**
 	 * Flag indicating that a Schema has been defined at the Collector layer of the Sapelli Library
@@ -86,13 +93,19 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static public final int SCHEMA_FLAGS_COLLECTOR_USER_DATA = 	SCHEMA_FLAGS_COLLECTOR_DATA | SCHEMA_FLAG_KEEP_HISTORY;
 	
 	/**
+	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
+	 * 
 	 * @param project
 	 * @return unsigned 56 bit integer
+	 * @throws IllegalArgumentException in case of a clash with a reserved Model
 	 */
-	static public long GetModelID(Project project)
+	static public long GetModelID(Project project) throws IllegalArgumentException
 	{
-		return	((((long) project.getFingerPrint()) & 0xffffffffl) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
-				project.getID();																 // Project id takes up next 24 bits
+		long modelID =	((((long) project.getFingerPrint()) & 0xffffffffl) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
+						project.getID();																 // Project id takes up next 24 bits
+		if(GetReservedModel(modelID) != null)
+			throw new IllegalArgumentException("Model ID computed for Project \"" + project.toString(false) + "\" clashes with reserved model ID (" + modelID + ")!");
+		return modelID;
 	}
 	
 	/**
@@ -132,17 +145,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	protected abstract ProjectStore createProjectStore() throws DBException;
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
-	 */
-	@Override
-	public List<Model> getReservedModels()
-	{
-		List<Model> reserved = super.getReservedModels();
-		reserved.add(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
-		return reserved;
-	}
-	
-	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
 	 */
 	@Override
@@ -161,7 +163,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	
 	/**
 	 * @param modelID
-	 * @return the project corresponding to the given modelID, or null if no such project was found or if no projectStore is available
+	 * @return the project corresponding to the given modelID, or {@code null} if no such project was found or if no projectStore is available
 	 */
 	public Project getProject(final long modelID)
 	{

@@ -49,7 +49,7 @@ public class PrefProjectStore extends ProjectStore
 {
 	
 	// Statics----------------------------------------------
-	static protected final String TAG = "DB4OPrefDataAccess";
+	static protected final String TAG = "PrefProjctStore";
 	private static final String PREFERENCES_NAME = "PROJECT_STORAGE";
 	private static final String PREF_KEY_SEPARATOR = "_";
 	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT";
@@ -147,7 +147,7 @@ public class PrefProjectStore extends ProjectStore
 		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectFingerPrint), null);
 		if(folderPath != null)
 		{
-			Project p = ProjectLoader.ParseProject(folderPath);
+			Project p = ProjectLoader.ParseProjectXMLInFolder(folderPath);
 			if(p != null)
 			{
 				cacheProject(p); // cache the project (the cache will be initialised if needed)
@@ -199,7 +199,7 @@ public class PrefProjectStore extends ProjectStore
 				int projectFingerPrint = getProjectFingerPrint(entry.getKey());
 				if(getCachedProject(projectID, projectFingerPrint) == null)
 				{	// Parse the project if it is not already in the cache:
-					Project p = ProjectLoader.ParseProject(entry.getValue().toString());
+					Project p = ProjectLoader.ParseProjectXMLInFolder(entry.getValue().toString());
 					if(p != null)
 					{
 						if(p.getFingerPrint() != projectFingerPrint)
@@ -376,6 +376,12 @@ public class PrefProjectStore extends ProjectStore
 	public void delete(ProjectDescriptor projectDescriptor)
 	{
 		delete(retrieveProject(projectDescriptor));
+	}
+
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return retrieveProject(projectID, projectFingerPrint);
 	}
 
 }

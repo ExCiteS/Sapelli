@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 
-
 /**
  * A stream where bits can be written to. Provides write methods for various (primitive) types.<br/>
  * <br/>
@@ -39,8 +38,8 @@ public abstract class BitOutputStream extends OutputStream
 {
 
 	//STATIC
-	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-	private static final Charset UTF16BE = Charset.forName("UTF-16BE");
+	private static final Charset DEFAULT_STRING_CHARSET = Charset.forName("UTF-8");
+	private static final Charset DEFAULT_CHAR_CHARSET = Charset.forName("UTF-16BE");
 	
 	//DYNAMIC
 	private boolean closed;
@@ -307,7 +306,7 @@ public abstract class BitOutputStream extends OutputStream
 	 */
 	public int write(String value) throws IOException
 	{
-		return write(value, DEFAULT_CHARSET);
+		return write(value, DEFAULT_STRING_CHARSET);
 	}
 	
 	/**
@@ -327,7 +326,7 @@ public abstract class BitOutputStream extends OutputStream
 	
 	/**
 	 * Writes a single (16 bit) char to the output.
-	 * Always uses UTF-16BE encoding (for now).
+	 * Always uses UTF-16BE encoding.
 	 * 
 	 * @param value char to write
 	 * @throws IOException if an I/O error occurs
@@ -335,8 +334,19 @@ public abstract class BitOutputStream extends OutputStream
 	 */
 	public void write(char value) throws IOException
 	{
-		// TODO support other character encodings?
-		write(new String(new char[] { value }).getBytes(UTF16BE));
+		write(value, DEFAULT_CHAR_CHARSET);
+	}
+	
+	/**
+	 * Writes a single char to the output, encoded using the given Charset.
+	 * 
+	 * @param value char to write
+	 * @param charset the Charset to use to encode the char
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void write(char value, Charset charset) throws IOException
+	{
+		write(new String(new char[] { value }).getBytes(charset));
 	}
 	
 	/**
@@ -348,6 +358,7 @@ public abstract class BitOutputStream extends OutputStream
 	public void close() throws IOException
 	{
 		this.closed = true;
+		super.close();
 	}
 	
 	/**
@@ -357,10 +368,10 @@ public abstract class BitOutputStream extends OutputStream
 	{
 		return closed;
 	}
-    
-    public int getNumberOfBitsWritten()
-    {
-    	return numberOfBitsWritten;
-    }
+	
+	public int getNumberOfBitsWritten()
+	{
+		return numberOfBitsWritten;
+	}
 
 }

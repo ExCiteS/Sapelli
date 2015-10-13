@@ -419,6 +419,7 @@ public abstract class BitInputStream extends InputStream
 	public void close() throws IOException
 	{
 		closed = true;
+		super.close();
 	}
 	
 	/**

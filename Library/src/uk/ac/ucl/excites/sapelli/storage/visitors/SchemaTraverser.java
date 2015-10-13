@@ -28,14 +28,16 @@ import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
- * TODO
+ * A {@link ColumnVisitor} which can traverse all (sub)columns of a Schema and which keeps of stack of parent columns.
+ * 
+ * A {@link ColumnPointer} to the (sub)column currently being visited can be obtained by calling {@link #getColumnPointer(Column)}.
  * 
  * @author mstevens
  */
 public abstract class SchemaTraverser implements ColumnVisitor 
 {
 
-	private final Stack<ValueSetColumn<?>> parentStack = new Stack<ValueSetColumn<?>>();
+	private final Stack<ValueSetColumn<?, ?>> parentStack = new Stack<ValueSetColumn<?, ?>>();
 	
 	public void traverse(Schema schema)
 	{
@@ -52,17 +54,19 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void enter(ValueSetColumn<?> recordCol)
+	public void enter(ValueSetColumn<?, ?> valueSetCol)
 	{
-		parentStack.push(recordCol);
+		parentStack.push(valueSetCol);
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void leave(ValueSetColumn<?> recordCol)
+	public void leave(ValueSetColumn<?, ?> valueSetCol)
 	{
+		if(parentStack.peek() != valueSetCol)
+			throw new IllegalStateException("Invalid parent stack state!");
 		parentStack.pop();
 	}
 	

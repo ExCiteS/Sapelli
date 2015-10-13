@@ -561,13 +561,13 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	public void onDataExportDone(ExportResult result, boolean exportedDataDeleted)
 	{
 		if(exportedDataDeleted)
-			onDataDeleteDone();
+			onDataChanged();
 	}
 	
 	/**
 	 * To be called upon completion of a record/data delete operation
 	 */
-	public void onDataDeleteDone()
+	public void onDataChanged()
 	{
 		// Refresh all tabs:
 		pagerAdapter.refresh();
@@ -753,12 +753,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			public void storeSuccess(List<Record> storedRecords)
 			{
 				showInfoDialog("Succesfully imported " + storedRecords.size() + " records."); // TODO report skipped duplicates
+				onDataChanged();
 			}
 			
 			@Override
 			public void storeFailure(Exception reason)
 			{
 				showErrorDialog("Error upon storing imported records: " + reason.getMessage(), false);
+				onDataChanged();
 			}
 		}).execute(records);
 	}

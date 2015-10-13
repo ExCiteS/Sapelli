@@ -118,11 +118,12 @@ public class Model implements Serializable
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
 	 * 
-	 * @param columnSet
+	 * @param model
+	 * @param client
 	 * @return
 	 * @throws IOException
 	 */
-	static public Record GetModelRecord(Model model) throws IOException
+	static public Record GetModelRecord(Model model, StorageClient client) throws IOException
 	{
 		// Serialise Model object:
 		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();	
@@ -157,7 +158,16 @@ public class Model implements Serializable
 		return new RecordReference(MODEL_SCHEMA, modelID);
 	}
 	
-	static public Model FromModelRecord(Record modelRecord) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
+	/**
+	 * @param modelRecord
+	 * @param client
+	 * @return
+	 * @throws NullPointerException
+	 * @throws IllegalArgumentException
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
 	{
 		if(modelRecord == null)
 			throw new NullPointerException("The modelRecord cannot be null!");
@@ -260,13 +270,14 @@ public class Model implements Serializable
 	/**
 	 * Returns "model record" which describes the model (and contains a serialised version of it)
 	 * 
+	 * @param client
 	 * @return
 	 * @throws IOException
 	 * @see #GetModelRecord(Model)
 	 */
-	public Record getModelRecord() throws IOException
+	public Record getModelRecord(StorageClient client) throws IOException
 	{
-		return GetModelRecord(this);
+		return GetModelRecord(this, client);
 	}
 	
 	/**

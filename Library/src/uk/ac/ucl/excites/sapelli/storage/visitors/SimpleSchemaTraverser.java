@@ -29,7 +29,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
- * TODO
+ * A {@link SimpleColumnVisitor} which can traverse all (sub)columns of a Schema and which has
+ * a single abstract {@link #visit(ColumnPointer)} method (used for all column types).
+ * The class keeps of stack of (parent) columns, which always includes the one being visited at the top.
  * 
  * @author mstevens
  */
@@ -53,17 +55,19 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void enter(ValueSetColumn<?> recordCol)
+	public void enter(ValueSetColumn<?, ?> valueSetCol)
 	{
-		columnStack.push(recordCol);
+		columnStack.push(valueSetCol);
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void leave(ValueSetColumn<?> recordCol)
+	public void leave(ValueSetColumn<?, ?> valueSetCol)
 	{
+		if(columnStack.peek() != valueSetCol)
+			throw new IllegalStateException("Invalid column stack state!");
 		columnStack.pop();
 	}
 	
