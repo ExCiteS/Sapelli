@@ -58,6 +58,10 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	
 	// Dynamics------------------------------------------------------
 	
+	protected /*final*/ CS columnSet; // not final (for now) for Record#setSchema() methods
+	
+	protected final Object[] values;
+	
 	/**
 	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet.
 	 * 
@@ -169,7 +173,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param the current value
 	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected Object getValue(Column<?> column) throws IllegalArgumentException
+	protected final Object getValue(Column<?> column) throws IllegalArgumentException
 	{
 		return values[getPosition(column)]; // return value from array
 	}
@@ -181,7 +185,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @return values array index
 	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected int getPosition(Column<?> column) throws IllegalArgumentException
+	protected final int getPosition(Column<?> column) throws IllegalArgumentException
 	{
 		// Get column position by its name:
 		int position = columnSet.getColumnPosition(column.name);
@@ -323,7 +327,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Serialise the ValueSet to a byte array, excluding virtual columns
+	 * Serialise the ValueSet to a byte array, excluding virtual columns.
 	 * 
 	 * @return
 	 * @throws IOException
@@ -338,7 +342,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			out = new BitWrapOutputStream(rawOut);
 				
 			// Write record:
-			this.writeToBitStream(out, columnSet.getColumns(false));
+			this.writeToBitStream(out);
 			
 			// Flush & close the stream and get bytes:
 			out.flush();
@@ -356,11 +360,22 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Write ValueSet values to the given bitStream
+	 * Write all ValueSet values to the given bitStream, excluding those of virtual columns.
+	 * 
+	 * @param bitStream
+	 * @throws IOException
+	 */
+	public void writeToBitStream(BitOutputStream bitStream) throws IOException
+	{
+		writeToBitStream(bitStream, columnSet.getColumns(false), Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Write ValueSet values, possibly including those of virtual columns and except the given skipped ones, to the given bitStream.
 	 * 
 	 * @param bitStream
 	 * @param includeVirtual whether or not to include the values corresponding to virtual columns
-	 * @param skipColumns columns no to include the values of
+	 * @param skipColumns columns *not* to include the values of
 	 * @throws IOException
 	 */
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
@@ -369,7 +384,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Write ValueSet values of the given columns (in given order) to the given bitStream
+	 * Write ValueSet values of the given columns (in given order) to the given bitStream.
 	 * 
 	 * @param bitStream
 	 * @param columns columns to include the values of
@@ -381,17 +396,17 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Write ValueSet values of the given columns (possibly including virtual ones and except the skipped ones) to the given bitStream
+	 * Write ValueSet values of the given columns (in given order), except the given skipped ones, to the given bitStream.
 	 * 
 	 * @param bitStream
 	 * @param columns columns to include the values of
-	 * @param skipColumns columns no to include the values of
+	 * @param skipColumns columns *not* to include the values of
 	 * @throws IOException
 	 */
 	public void writeToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns/*, boolean includeVirtual*/, Set<? extends Column<?>> skipColumns) throws IOException
 	{
 		try
-		{	//write fields:
+		{	// Write fields:
 			for(Column<?> c : columns)
 				if(/*(includeVirtual || !(c instanceof VirtualColumn)) && */!skipColumns.contains(c))
 					c.retrieveAndWriteValue(this, bitStream);
@@ -403,7 +418,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Deserialise the ValueSet from a byte array, excluding virtual columns
+	 * Deserialise the ValueSet from a byte array, excluding virtual columns.
 	 * 
 	 * @param bytes
 	 * @return the record itself
@@ -419,7 +434,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			in = new BitWrapInputStream(rawIn);
 				
 			// Read record:
-			this.readFromBitStream(in, false, Collections.<Column<?>> emptySet());
+			this.readFromBitStream(in);
 		}
 		catch(Exception e)
 		{
@@ -433,19 +448,55 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Read ValueSet values from the given bitStream
+	 * Read all ValueSet values from the given bitStream, excluding those of virtual columns.
 	 * 
 	 * @param bitStream
-	 * @param includeVirtual whether or not to expect, and if so skip(!), the values corresponding to virtual columns
-	 * @param skipColumns columns no to expect the values of
+	 * @throws IOException
+	 */
+	public void readFromBitStream(BitInputStream bitStream) throws IOException
+	{
+		readFromBitStream(bitStream, columnSet.getColumns(false), Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Read ValueSet values, possibly including those of virtual columns and except the given skipped ones, from the given bitStream.
+	 * 
+	 * @param bitStream
+	 * @param includeVirtual whether or not to expect the values corresponding to virtual columns, if {@code true} these values will be read from the stream but not stored (i.e. they will effectively be skipped)
+	 * @param skipColumns columns *not* to expect the values of
 	 * @throws IOException
 	 */
 	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
 	{
+		readFromBitStream(bitStream, columnSet.getColumns(includeVirtual), skipColumns);
+	}
+	
+	/**
+	 * Read ValueSet values of the given columns (in given order) from the given bitStream.
+	 * 
+	 * @param bitStream
+	 * @param columns columns to expect the values of
+	 * @throws IOException
+	 */
+	public void readFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns) throws IOException
+	{
+		readFromBitStream(bitStream, columns, Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Read ValueSet values of the given columns (in given order), except the given skipped ones, from the given bitStream.
+	 * 
+	 * @param bitStream
+	 * @param columns columns to except the values of
+	 * @param skipColumns columns *not* to except the values of
+	 * @throws IOException
+	 */
+	public void readFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns/*, boolean includeVirtual*/, Set<? extends Column<?>> skipColumns) throws IOException
+	{
 		try
-		{	//read fields:
-			for(Column<?> c : columnSet.getColumns(includeVirtual))
-				if(!skipColumns.contains(c))
+		{	// Read fields:
+			for(Column<?> c : columns)
+				if(/*(includeVirtual || !(c instanceof VirtualColumn)) && */!skipColumns.contains(c))
 				{
 					if(c instanceof VirtualColumn)
 						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
