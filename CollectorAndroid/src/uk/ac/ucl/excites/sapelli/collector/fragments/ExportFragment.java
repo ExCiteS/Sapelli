@@ -113,7 +113,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private final Project projectToExport;
+	private Project projectToExport;
 	
 	private FormatDialogCallback formatDialogCallback;
 	
@@ -163,6 +163,14 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	{
 		this.projectToExport = projectToExport;
 		this.formatDialogCallback = formatDialogCallback;
+	}
+	
+	/**
+	 * @param projectToExport the projectToExport to set
+	 */
+	public void setProjectToExport(Project projectToExport)
+	{
+		this.projectToExport = projectToExport;
 	}
 	
 	@Override
@@ -421,20 +429,25 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		
 		public void run()
 		{
+			// Thrown away old state:
 			exportResult = null;
-			// Schemas (when list stays empty all records of any schema/project/form will be fetched):
+			
+			// Define query Source:
 			Source source;
 			if(projectToExport != null)
 				source = Source.From(projectToExport.getModel());
 			else
 				source = Source.With(CollectorClient.SCHEMA_FLAGS_COLLECTOR_DATA);
-			// Date range:
+			
+			// Define constraints:
 			AndConstraint constraints = new AndConstraint();
+			//	Date range:
 			if(dateRange[DT_RANGE_IDX_FROM] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
-			// TODO Exclude previously exported
+			//	TODO Exclude previously exported
+			
 			// Retrieve by query:
 			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
 			// TODO order by form, deviceid, timestamp
