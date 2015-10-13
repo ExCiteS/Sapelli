@@ -172,14 +172,8 @@ public final class FileHelpers
 		}
 		catch(Exception e)
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
+			StreamHelpers.SilentClose(out);
 			throw new IOException("Error on copying file", e);
 		}
 	}

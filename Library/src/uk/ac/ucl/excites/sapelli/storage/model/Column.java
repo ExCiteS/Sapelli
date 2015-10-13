@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLNameEncoder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
@@ -307,12 +308,7 @@ public abstract class Column<T> implements Serializable
 		}
 		finally
 		{
-			if(bos != null)
-				try
-				{
-					bos.close();
-				}
-				catch(IOException ignore) { }
+			StreamHelpers.SilentClose(bos);
 		}
 	}
 
@@ -333,12 +329,7 @@ public abstract class Column<T> implements Serializable
 		}
 		finally
 		{
-			if(bis != null)
-				try
-				{
-					bis.close();
-				}
-				catch(IOException ignore) { }
+			StreamHelpers.SilentClose(bis);
 		}
 	}
 
@@ -522,14 +513,8 @@ public abstract class Column<T> implements Serializable
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(out);
+			StreamHelpers.SilentClose(in);
 		}
 	}
 

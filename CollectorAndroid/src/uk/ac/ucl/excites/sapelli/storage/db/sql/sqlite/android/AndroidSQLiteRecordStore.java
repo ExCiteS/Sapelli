@@ -23,6 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -256,16 +257,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		Cursor cursor = null;
 		try
 		{
-		    cursor = db.rawQuery("SELECT changes();", null);
-		    if(cursor != null && cursor.moveToFirst())
-		        return (int) cursor.getLong(0);
-		    else
-		    	throw new SQLException("Failure on execution of changes() query");
+			cursor = db.rawQuery("SELECT changes();", null);
+			if(cursor != null && cursor.moveToFirst())
+				return (int) cursor.getLong(0);
+			else
+				throw new SQLException("Failure on execution of changes() query");
 		}
 		finally
 		{
-		    if(cursor != null)
-		        cursor.close();
+			StreamHelpers.SilentClose(cursor);
 		}
 	}
 

@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
@@ -417,12 +418,7 @@ public class RecordsPayload extends Payload
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(out);
 		}
 	}
 	
@@ -501,12 +497,7 @@ public class RecordsPayload extends Payload
 		}
 		finally
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
 		}
 	}
 	
