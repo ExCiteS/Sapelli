@@ -358,6 +358,7 @@ public abstract class BitOutputStream extends OutputStream
 	public void close() throws IOException
 	{
 		this.closed = true;
+		super.close();
 	}
 	
 	/**
