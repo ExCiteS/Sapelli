@@ -57,7 +57,6 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	static final private char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
 	
 	// Dynamics------------------------------------------------------
-	
 	protected /*final*/ CS columnSet; // not final (for now) for Record#setSchema() methods
 	
 	protected final Object[] values;

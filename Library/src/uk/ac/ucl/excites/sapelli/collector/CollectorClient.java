@@ -156,6 +156,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	}
 
 	/* (non-Javadoc)
+<<<<<<< HEAD
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#deserialiseClientModel(byte, java.io.InputStream)
 	 */
 	@Override
@@ -188,6 +189,8 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	}
 
 	/* (non-Javadoc)
+=======
+>>>>>>> master
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
 	 */
 	@Override
