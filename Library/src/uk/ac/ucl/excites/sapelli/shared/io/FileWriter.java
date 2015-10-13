@@ -141,17 +141,8 @@ public class FileWriter
 		rollbackTransaction(); // rollback any non-committed transaction
 		if(writer != null)
 		{
-			try
-			{
-				writer.close();
-			}
-			catch(IOException ignore)
-			{
-			}
-			finally
-			{
-				writer = null;
-			}
+			StreamHelpers.SilentClose(writer);
+			writer = null;
 		}
 	}
 

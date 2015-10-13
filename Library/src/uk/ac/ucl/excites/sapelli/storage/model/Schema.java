@@ -336,7 +336,7 @@ public class Schema extends ColumnSet implements Serializable
 	 * @return
 	 * @throws Exception 
 	 */
-	public Record createRecord(byte[] serialisedValues) throws Exception
+	public Record createRecord(byte[] serialisedValues) throws IOException
 	{
 		return new Record(this, serialisedValues);
 	}

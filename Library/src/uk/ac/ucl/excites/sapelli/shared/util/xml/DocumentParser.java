@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.shared.util.xml;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 
 import javax.xml.parsers.SAXParser;
@@ -29,6 +28,8 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 
 /**
  * @author mstevens
@@ -70,14 +71,7 @@ public abstract class DocumentParser extends Handler
 		}
 		finally
 		{	// In case the stream is still open:
-			try
-			{
-				input.close();
-			}
-			catch(IOException ioe)
-			{
-				ioe.printStackTrace();
-			}
+			StreamHelpers.SilentClose(input);
 		}
 	}
 
