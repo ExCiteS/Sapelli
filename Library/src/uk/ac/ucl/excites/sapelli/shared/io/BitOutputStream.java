@@ -368,10 +368,10 @@ public abstract class BitOutputStream extends OutputStream
 	{
 		return closed;
 	}
-    
-    public int getNumberOfBitsWritten()
-    {
-    	return numberOfBitsWritten;
-    }
+	
+	public int getNumberOfBitsWritten()
+	{
+		return numberOfBitsWritten;
+	}
 
 }
