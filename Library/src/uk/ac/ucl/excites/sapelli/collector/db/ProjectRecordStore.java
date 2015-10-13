@@ -81,10 +81,6 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
  * 
  * @author mstevens
  */
-/**
- * @author mstevens
- *
- */
 public class ProjectRecordStore extends ProjectStore implements StoreHandle.StoreUser, FormSchemaInfoProvider
 {
 	
