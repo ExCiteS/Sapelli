@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
@@ -279,9 +280,10 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		
 		// Convert transmission body from BitArray to String:
 		StringBuilder bld = new StringBuilder();
-		BitInputStream bitsIn = new BitArrayInputStream(bodyBits);
+		BitInputStream bitsIn = null;
 		try
 		{
+			bitsIn = new BitArrayInputStream(bodyBits);
 			Boolean escapeBit = null;
 			while(bitsIn.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
 			{
@@ -319,7 +321,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		}
 		finally
 		{
-			bitsIn.close();
+			StreamHelpers.SilentClose(bitsIn);
 		}
 			
 		// Split up transmission body string in parts (each becoming the body of a separate TextMessage):

@@ -30,6 +30,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
+
 /**
  * @author mstevens
  * 
@@ -70,14 +72,7 @@ public abstract class DocumentParser extends Handler
 		}
 		finally
 		{	// In case the stream is still open:
-			try
-			{
-				input.close();
-			}
-			catch(IOException ioe)
-			{
-				ioe.printStackTrace();
-			}
+			StreamHelpers.SilentClose(input);
 		}
 	}
 

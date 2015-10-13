@@ -33,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
@@ -56,8 +57,6 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	static final private char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
 	
 	// Dynamics------------------------------------------------------
-	protected CS columnSet;
-	protected Object[] values;
 	
 	/**
 	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet.
@@ -352,12 +351,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(out);
 		}
 	}
 	
@@ -433,12 +427,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		}
 		finally
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
 		}
 		return this;
 	}
@@ -492,12 +481,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		}
 		finally
 		{
-			if(out != null)
-				try
-				{
-					out.close();
-				}
-				catch(IOException ignore) {}
+			StreamHelpers.SilentClose(out);
 		}
 	}
 	
