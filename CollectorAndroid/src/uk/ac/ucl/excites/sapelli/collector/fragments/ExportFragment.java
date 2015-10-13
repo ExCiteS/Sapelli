@@ -440,12 +440,12 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			
 			// Define constraints:
 			AndConstraint constraints = new AndConstraint();
-			// 	Date range:
+			//	Date range:
 			if(dateRange[DT_RANGE_IDX_FROM] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
-			// 	TODO Exclude previously exported
+			//	TODO Exclude previously exported
 			
 			// Retrieve by query:
 			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
