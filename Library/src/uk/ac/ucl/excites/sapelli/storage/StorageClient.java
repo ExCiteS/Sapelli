@@ -26,10 +26,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
@@ -63,6 +66,30 @@ public abstract class StorageClient implements StorageObserver
 		Deleted
 	}
 	
+	static private final Map<Long, Model> RESERVED_MODELS = new HashMap<Long, Model>();
+	
+	static public final Collection<Model> GetReservedModels()
+	{
+		return Collections.unmodifiableCollection(RESERVED_MODELS.values());
+	}
+	
+	static final protected void AddReservedModel(Model newReservedModel)
+	{
+		if(newReservedModel == null)
+			throw new NullPointerException("newReservedModel cannot be null!");
+		if(RESERVED_MODELS.containsKey(newReservedModel.id) && RESERVED_MODELS.get(newReservedModel.id) != newReservedModel)
+			throw new IllegalStateException("Reserved model id clash (id: " + newReservedModel.id + ")!");
+		RESERVED_MODELS.put(newReservedModel.id, newReservedModel);
+	}
+	
+	/**
+	 * @param modelID
+	 * @return a reserved Model with the given modelID, or {@code null} if no such reserved Model is known
+	 */
+	static final protected Model GetReservedModel(long modelID)
+	{
+		return RESERVED_MODELS.get(modelID);
+	}
 	
 	static private Compression MODEL_SERIALISATION_COMPRESSION = Compression.DEFLATE;
 	static protected final byte[] MODEL_SERIALISATION_HEADER_BYTES = "SapelliModel".getBytes(Charset.forName("UTF-8"));
@@ -89,29 +116,11 @@ public abstract class StorageClient implements StorageObserver
 	public final Model getModel(long modelID) throws UnknownModelException
 	{
 		// First check reserved models:
-		Model reservedModel = getReservedModel(modelID);
+		Model reservedModel = GetReservedModel(modelID);
 		if(reservedModel != null)
 			return reservedModel;
 		// Get client model:
 		return getClientModel(modelID);
-	}
-	
-	private Model getReservedModel(long modelID)
-	{
-		for(Model model : getReservedModels())
-			if(model.getID() == modelID)
-				return model;
-		return null;
-	}
-	
-	/**
-	 * Subclasses can override this but *must* return at least the same models returned by the super implementation.
-	 * 
-	 * @return
-	 */
-	protected List<Model> getReservedModels()
-	{
-		return new ArrayList<Model>();
 	}
 	
 	/**
@@ -137,7 +146,7 @@ public abstract class StorageClient implements StorageObserver
 			out.write(MODEL_SERIALISATION_HEADER_BYTES);
 			
 			// Check if this is a reserved model:
-			if(getReservedModel(model.id) != null)
+			if(GetReservedModel(model.id) != null)
 			{
 				// Write kind byte:
 				out.write(MODEL_SERIALISATION_KIND_RESERVED);
@@ -195,7 +204,7 @@ public abstract class StorageClient implements StorageObserver
 				switch(kind)
 				{
 					case MODEL_SERIALISATION_KIND_RESERVED :
-						return getReservedModel(Model.MODEL_ID_FIELD.readLong(new BitWrapInputStream(in)));
+						return GetReservedModel(Model.MODEL_ID_FIELD.readLong(new BitWrapInputStream(in)));
 					case MODEL_SERIALISATION_KIND_COMPRESSED_JAVA_OBJECT :
 						return deserialiseCompressedModelObject(in);
 					default :
