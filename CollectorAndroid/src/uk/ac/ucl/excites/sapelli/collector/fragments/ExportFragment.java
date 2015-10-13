@@ -510,7 +510,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			{
 				// TODO Generate selection description String:
 				String selectionDesc = "TODO";
-								
+				
 				// Run the right export task:
 				RecordsTasks.runExportTask(activity, result, ExportFragment.this, exportFolder, selectionDesc, this);
 			}
