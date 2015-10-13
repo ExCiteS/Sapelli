@@ -48,13 +48,14 @@ public class ExportTabFragment extends ProjectManagerTabFragment implements OnCl
 		rootLayout.findViewById(R.id.btnExportForProject).setOnClickListener(this);
 		
 		// Export fragment:
-		exportFragment = addChild(R.id.frgExportOnTabContainer, new ExportFragment(getOwner().getCurrentProject(false)));
+		exportFragment = addChild(R.id.frgExportOnTabContainer, new ExportFragment());
 	}
 
 	@Override
 	protected void refresh(Project project)
 	{
-		// does nothing (for now)
+		if(project != null)
+			exportFragment.setProjectToExport(project);
 	}
 
 	@Override

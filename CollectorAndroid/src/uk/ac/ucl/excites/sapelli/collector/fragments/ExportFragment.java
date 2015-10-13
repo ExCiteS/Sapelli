@@ -19,9 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -33,6 +31,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -57,12 +56,11 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separat
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 
 /**
@@ -115,7 +113,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private final Project projectToExport;
+	private Project projectToExport;
 	
 	private FormatDialogCallback formatDialogCallback;
 	
@@ -165,6 +163,14 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	{
 		this.projectToExport = projectToExport;
 		this.formatDialogCallback = formatDialogCallback;
+	}
+	
+	/**
+	 * @param projectToExport the projectToExport to set
+	 */
+	public void setProjectToExport(Project projectToExport)
+	{
+		this.projectToExport = projectToExport;
 	}
 	
 	@Override
@@ -423,21 +429,26 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		
 		public void run()
 		{
+			// Thrown away old state:
 			exportResult = null;
-			// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-			Set<Schema> schemata = new HashSet<Schema>();
+			
+			// Define query Source:
+			Source source;
 			if(projectToExport != null)
-				schemata.addAll(projectToExport.getModel().getSchemata());
-			// Date range:
+				source = Source.From(projectToExport.getModel());
+			else
+				source = Source.ANY; // TODO Exclude collector-internal schemas!!!
+			
+			// Define constraints:
 			AndConstraint constraints = new AndConstraint();
 			if(dateRange[DT_RANGE_IDX_FROM] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
 			if(dateRange[DT_RANGE_IDX_TO] != null)
 				constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 			// TODO Exclude previously exported
+			
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints));
-			// TODO Exclude collector-internal schemas!!!
+			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
 			// TODO order by form, deviceid, timestamp
 			// TODO let ExportFragment & Backup share this code somehow
 		}
