@@ -20,7 +20,9 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 
@@ -94,21 +96,24 @@ public abstract class SapelliSQLiteStatement
 	 * Executes a SQL INSERT operation, i.e. the creation (the "C" in "CRUD") of a new record in a database table.
 	 * 
 	 * @return the ROWID of the new record
+	 * @throws DBPrimaryKeyException
+	 * @throws DBConstraintException
 	 * @throws DBException
 	 * 
 	 * @see http://www.sqlite.org/lang_createtable.html#rowid
 	 * @see http://www.sqlite.org/autoinc.html
 	 * @see http://www.sqlite.org/version3.html
 	 */
-	public abstract long executeInsert() throws DBException;
+	public abstract long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException;
 	
 	/**
 	 * Executes a SQL UPDATE operation, i.e. the updating (the "U" in "CRUD") of (an) existing record(s) in a database table.
 	 * 
 	 * @return the number of affected rows 
+	 * @throws DBConstraintException
 	 * @throws DBException
 	 */
-	public abstract int executeUpdate() throws DBException;
+	public abstract int executeUpdate() throws DBConstraintException, DBException;
 	
 	/**
 	 * Executes a SQL DELETE operation, i.e. the deleting (the "D" in "CRUD") of (an) existing record(s) in a database table.
@@ -145,5 +150,15 @@ public abstract class SapelliSQLiteStatement
 	 * Releases resources, statement is no longer usable afterwards.
 	 */
 	public abstract void close();
+	
+	/**
+	 * @return the raw SQL expression (possibly with unbound parameters)
+	 */
+	protected abstract String getSQL();
+	
+	protected String formatMessageWithSQL(String message)
+	{
+		return String.format(message, getSQL());
+	}
 
 }
