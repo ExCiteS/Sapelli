@@ -33,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
@@ -282,6 +283,18 @@ public class DB4ORecordStore extends RecordStore
 			return result.subList(0, limit);
 		else
 			return result;
+	}
+	
+	@Override
+	public List<RecordReference> retrieveRecordReferences(RecordsQuery query)
+	{
+		List<Record> records = retrieveRecords(query);
+		if(records == null)
+			return null;
+		List<RecordReference> result = new ArrayList<RecordReference>(records.size());
+		for(Record record : records)
+			result.add(record.getReference());
+		return result;
 	}
 
 	/* (non-Javadoc)

@@ -33,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperation;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturn;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnNoException;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -52,11 +53,18 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	
 	// STATICS-------------------------------------------------------
 	/**
-	 * Version used in all Sapelli Collector v2.0 pre-releases up to and including Beta 14:
+	 * Version used in all Sapelli Collector v2.0 pre-releases up to and including Beta 16:
 	 */
 	static public final int COLLECTOR_RECORDSTORE_V2 = 2;
 	
-	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V2;
+	/**
+	 * Version used from Sapelli Collector v2.0 Beta 17:
+	 * 	- New: new way of storing serialised Models in {@link Model#MODEL_SCHEMA}
+	 *  - TODO: more?  
+	 */
+	static public final int COLLECTOR_RECORDSTORE_V3 = 3;
+	
+	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V3;
 	
 	/**
 	 * ID for the reserved Collector Management Model ({@link ProjectRecordStore#COLLECTOR_MANAGEMENT_MODEL})
@@ -107,19 +115,19 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	public final StoreHandle<ProjectStore> projectStoreHandle = new StoreHandle<ProjectStore>(new StoreCreator<ProjectStore>()
 	{
 		@Override
-		public ProjectStore createStore() throws DBException
+		public void createAndSetStore(StoreSetter<ProjectStore> setter) throws DBException
 		{
-			return createProjectStore();
+			createAndSetProjectStore(setter);
 		}
 	});
 	
 	/**
-	 * Returns a new ProjectStore instance
+	 * Creates a new ProjectStore instance
 	 * 
-	 * @return
+	 * @param setter
 	 * @throws DBException
 	 */
-	protected abstract ProjectStore createProjectStore() throws DBException;
+	protected abstract void createAndSetProjectStore(StoreSetter<ProjectStore> setter) throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#serialiseClientModel(uk.ac.ucl.excites.sapelli.storage.model.Model, java.io.OutputStream)

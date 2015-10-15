@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
@@ -51,8 +52,6 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
- * TODO upwards error logging mechanism 
- * 
  * @author mstevens
  */
 public abstract class StorageClient implements StorageObserver
@@ -102,11 +101,19 @@ public abstract class StorageClient implements StorageObserver
 	public final StoreHandle<RecordStore> recordStoreHandle = new StoreHandle<RecordStore>(new StoreCreator<RecordStore>()
 	{
 		@Override
-		public RecordStore createStore() throws DBException
+		public void createAndSetStore(StoreSetter<RecordStore> setter) throws DBException
 		{
-			return createRecordStore();
+			createAndSetRecordStore(setter);
 		}
 	});
+	
+	/**
+	 * Creates a new RecordStore instance
+	 * 
+	 * @param setter
+	 * @throws DBException
+	 */
+	protected abstract void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException;
 	
 	/**
 	 * @param modelID
@@ -336,7 +343,7 @@ public abstract class StorageClient implements StorageObserver
 	{
 		if(schema == Model.MODEL_SCHEMA)
 			return "Models";
-		if(schema == Model.META_SCHEMA)
+		if(schema == Model.SCHEMA_SCHEMA)
 			return "Schemata";
 		else
 			return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
@@ -370,12 +377,15 @@ public abstract class StorageClient implements StorageObserver
 	 */
 	public void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords) {};
 	
-	/**
-	 * Returns a new RecordStore instance
-	 * 
-	 * @return
-	 * @throws DBException
-	 */
-	protected abstract RecordStore createRecordStore() throws DBException;
+	public final void logError(String msg)
+	{
+		logError(msg, null);
+	}
+	
+	public abstract void logError(String msg, Throwable throwable);
+	
+	public abstract void logWarning(String msg);
+	
+	public abstract void logInfo(String msg);
 	
 }

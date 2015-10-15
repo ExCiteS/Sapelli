@@ -238,6 +238,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			return;
 		}
 		
+		// Check & report in database upgrade:
+		if(getCollectorClient().hasDatabaseBeenUpgraded())
+			showInfoDialog("Database has been upgraded"); // TODO more elaborate msg (from Strings.xml)
+		
 		// And finally...
 		/*if(app.getBuildInfo().isDemoBuild())
 			demoMode();

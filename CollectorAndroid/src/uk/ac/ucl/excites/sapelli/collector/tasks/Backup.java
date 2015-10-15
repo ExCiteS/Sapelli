@@ -76,7 +76,8 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			// Not back-upable:
 			case Downloads:
 			case Temp:
-			case DB: // (in fact this is will always included in back-up but not directly, only after DB(s) has/have been copied to a temp folder)
+			case DB: // in fact this is will always included in back-up but not directly, only after DB(s) has/have been copied to a temp folder
+			case OldDBVersions: // in fact this is will always included in back-up, but it isn't offered as a user choice
 			default:
 				throw new IllegalArgumentException("This folder (" + folder.name() + ") cannot be backed-up!");
 		}
@@ -97,6 +98,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			case Downloads:
 			case Temp:
 			case DB: // (see comment above)
+			case OldDBVersions: // (see comment above)
 			default:
 				throw new IllegalArgumentException("This folder (" + folder.name() + ") cannot be backed-up!");
 		}
@@ -121,6 +123,10 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		this.activity = activity;
 		this.fileStorageProvider = fileStorageProvider;
 		foldersToExport = new HashSet<Folder>();
+		// Already add the OldDBVersion folder (not user-selectable but always included):
+		foldersToExport.add(Folder.OldDBVersions);
+		
+		// Create runnable:
 		runBackup = new Runnable()
 		{
 			@Override
@@ -370,7 +376,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 				
 				// Phase 2: Back-up database(s)
 				publishProgress(activity.getString(R.string.backup_progress_db));
-				// 	Create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labeled as backups):				
+				// 	Create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labelled as backups):				
 				StoreBackupper.Backup(toZip[z], false, app.getStoreHandlesForBackup());
 				
 				// Phase 3: Create ZIP archive

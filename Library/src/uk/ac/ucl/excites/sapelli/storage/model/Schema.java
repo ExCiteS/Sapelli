@@ -70,7 +70,7 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public Record GetMetaRecord(Schema schema)
 	{
-		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
+		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public RecordReference GetMetaRecordReference(Schema schema)
 	{
-		return new RecordReference(Model.META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
+		return new RecordReference(Model.SCHEMA_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
 	// Dynamics-----------------------------------------------------------

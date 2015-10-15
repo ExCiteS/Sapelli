@@ -59,8 +59,9 @@ import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
+ * Abstract {@link SQLRecordStore} implementation which is backed by a SQLite database.
+ * 
  * @author mstevens
- *
  */
 public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>
 {
@@ -100,11 +101,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	/**
 	 * @param client
-	 * @param version
 	 */
-	public SQLiteRecordStore(StorageClient client, int version)
+	public SQLiteRecordStore(StorageClient client)
 	{
-		super(client, version, PARAM_PLACEHOLDER);
+		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
 	}
 

@@ -77,7 +77,7 @@ public class Model implements Serializable
 	// Meta-Model:
 	static public final Model META_MODEL = new Model(-1, "MetaModel", true);
 	
-	// Model Schema: a "meta" schema for records that describe a Model
+	// Model Schema: a "meta" Schema for records that describe a Model
 	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
 	static protected final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
@@ -88,14 +88,14 @@ public class Model implements Serializable
 		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN), true /*seal!*/);
 	}
 	
-	// Meta Schema: a Schema to describe other Schema's
-	static public final Schema META_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName() + "ta");
-	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = META_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
-	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = META_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
-	static public final StringColumn META_NAME_COLUMN = META_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
+	// Schema Schema: a "meta" Schema for records that describe other Schemata
+	static public final Schema SCHEMA_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName() + "ta");
+	static public final ForeignKeyColumn SCHEMA_MODEL_ID_COLUMN = SCHEMA_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
+	static public final IntegerColumn SCHEMA_SCHEMA_NUMBER_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
+	static public final StringColumn SCHEMA_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
 	static
 	{
-		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN), true /*seal!*/);
+		SCHEMA_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(SCHEMA_MODEL_ID_COLUMN, SCHEMA_SCHEMA_NUMBER_COLUMN), true /*seal!*/);
 	}
 	
 	// Seal the Meta-Model:

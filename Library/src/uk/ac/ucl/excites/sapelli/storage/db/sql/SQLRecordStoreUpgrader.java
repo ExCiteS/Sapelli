@@ -18,11 +18,18 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -33,18 +40,79 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
  * @author mstevens
  *
  */
-public abstract class Upgrader
+public abstract class SQLRecordStoreUpgrader<C extends StorageClient>
 {
 	
+	protected final C client;
+	protected final UpgradeCallback callback;
+	protected final File backupFolder;
+	private final Map<Integer, UpgradeStep<C>> steps;
+	
+	@SafeVarargs
+	public SQLRecordStoreUpgrader(C client, UpgradeCallback callback, File backupFolder, UpgradeStep<C>... steps)
+	{
+		this.client = client;
+		this.callback = callback;
+		this.backupFolder = backupFolder;
+		this.steps = new HashMap<Integer, UpgradeStep<C>>(steps != null ? steps.length : 0);
+		if(steps != null)
+			for(UpgradeStep<C> step : steps)
+				this.steps.put(step.fromVersion, step);
+	}
+	
 	/**
-	 * To be called from {@link SQLRecordStore#initialise(boolean, int, Upgrader)}.
+	 * To be called from {@link RecordStore#initialise(boolean, int, Upgrader)}.
 	 *  
 	 * @param recordStore
-	 * @param oldVersion
-	 * @param newVersion
+	 * @param toVersion
 	 * @throws DBException
 	 */
-	public abstract void upgrade(SQLRecordStore<?, ?, ?> recordStore, int oldVersion, int newVersion) throws DBException;
+	public final void upgrade(SQLRecordStore<?, ?, ?> recordStore, final int toVersion) throws DBException
+	{
+		final int fromVersion = recordStore.getVersion();
+		
+		// Apply step-by-step upgrade:
+		int currentVersion;
+		while((currentVersion = recordStore.getVersion()) < toVersion)
+		{
+			// Get the right upgrade step:
+			UpgradeStep<C> step = steps.get(currentVersion);
+			if(step == null)
+				throw new DBException("No UpgradeStep for current version (" + currentVersion + ") found!");
+			
+			// Backup first:
+			try
+			{
+				StoreBackupper.Backup(FileHelpers.getSubDirectory(backupFolder, "v" + currentVersion, true), true, recordStore);
+			}
+			catch(Exception e)
+			{
+				throw new DBException("Database backup prior to upgrade from v" + currentVersion + " to v" + step.toVersion + " failed!", e);
+			}
+			
+			// Apply upgrade step (always in a transaction):
+			try
+			{
+				// Open transaction:
+				recordStore.startTransaction();
+				// Apply step:
+				step.apply(client, recordStore);
+				// Set new version:
+				recordStore.setVersion(step.toVersion);
+				// Close transaction:
+				recordStore.commitTransaction();
+			}
+			catch(Exception e)
+			{
+				// don't roll back here, SQLRecordStore#initialise() will do that
+				throw new DBException("Failed to upgrade database from v" + currentVersion + " to v" + step.toVersion + "!", e);
+			}
+		}
+		
+		// If successful:
+		if(callback != null)
+			callback.upgradePerformed(fromVersion, toVersion);
+	}
 	
 	protected List<Schema> getAllSchemata(SQLRecordStore<?, ?, ?> recordStore)
 	{
@@ -57,6 +125,8 @@ public abstract class Upgrader
 	}
 	
 	/**
+	 * TODO needs testing, not sure I ever got this to really work
+	 * 
 	 * @param recordStore
 	 * @param newSchema must already contain the new Columns
 	 * @param replacers
@@ -111,6 +181,42 @@ public abstract class Upgrader
 	
 	/**
 	 * @author mstevens
+	 */
+	protected abstract static class UpgradeStep<C extends StorageClient>
+	{
+		
+		public final int fromVersion;
+		public final int toVersion;
+		
+		public UpgradeStep(int fromVersion)
+		{
+			this(fromVersion, fromVersion + 1);
+		}
+		
+		public UpgradeStep(int fromVersion, int toVersion)
+		{
+			this.fromVersion = fromVersion;
+			this.toVersion = toVersion;
+		}
+		
+		public abstract void apply(C client, SQLRecordStore<?, ?, ?> recordStore) throws Exception;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	public interface UpgradeCallback
+	{
+		
+		public void upgradePerformed(int fromVersion, int toVersion);
+		
+	}
+	
+	/**
+	 * TODO needs testing, not sure I ever got this to really work
+	 * 
+	 * @author mstevens
 	 *
 	 * @param <OT>
 	 * @param <NT>
@@ -148,6 +254,8 @@ public abstract class Upgrader
 	}
 
 	/**
+	 * TODO needs testing, not sure I ever got this to really work
+	 * 
 	 * @author mstevens
 	 *
 	 * @param <OT>

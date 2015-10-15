@@ -20,8 +20,15 @@ package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.db.CollectorRecordStoreUpgrader;
+import com.crashlytics.android.Crashlytics;
+
+import android.app.Application;
+import android.content.res.Configuration;
+import android.os.Environment;
+import android.support.v4.os.EnvironmentCompat;
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.AndroidFileStorageProvider;
@@ -32,19 +39,15 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
-import android.app.Application;
-import android.content.res.Configuration;
-import android.os.Environment;
-import android.support.v4.os.EnvironmentCompat;
-
-import com.crashlytics.android.Crashlytics;
 
 /**
  * Application App to keep the db4o object throughout the life-cycle of the Collector
@@ -76,7 +79,7 @@ public class CollectorApp extends Application
 	
 	private CollectorPreferences preferences;
 	
-	public final CollectorClient collectorClient = new AndroidCollectorClient();
+	public final AndroidCollectorClient collectorClient = new AndroidCollectorClient();
 	
 	// Files storage:
 	private FileStorageProvider fileStorageProvider;
@@ -293,22 +296,64 @@ public class CollectorApp extends Application
 	 * @author mstevens
 	 *
 	 */
-	private class AndroidCollectorClient extends CollectorClient
+	public final class AndroidCollectorClient extends CollectorClient implements SQLRecordStoreUpgrader.UpgradeCallback
 	{
 
+		private int oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
+		
 		@Override
-		protected RecordStore createRecordStore() throws DBException
+		protected void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException
 		{
-			return new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorRecordStoreUpgrader(this));
-			//return new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			setter.setAndInitialise(new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorSQLRecordStoreUpgrader(this, this, getFileStorageProvider())));
+			//setter.setAndInitialise(new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME));
 		}
 
 		@Override
-		protected ProjectStore createProjectStore() throws DBException
+		protected void createAndSetProjectStore(StoreSetter<ProjectStore> setter) throws DBException
 		{
-			return new ProjectRecordStore(this, getFileStorageProvider());
-			//return new PrefProjectStore(CollectorApp.this, getFileStorageProvider(), getDemoPrefix());
-			//return new DB4OProjectStore(getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + "ProjectStore");
+			setter.setAndInitialise(new ProjectRecordStore(this, getFileStorageProvider()));
+			//setter.setAndInitialise(new PrefProjectStore(CollectorApp.this, getFileStorageProvider(), getDemoPrefix()));
+			//setter.setAndInitialise(new DB4OProjectStore(getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + "ProjectStore"));
+		}
+		
+		@Override
+		public void upgradePerformed(int fromVersion, int toVersion)
+		{
+			oldDatabaseVersion = fromVersion;
+		}
+		
+		public boolean hasDatabaseBeenUpgraded()
+		{
+			return oldDatabaseVersion != CURRENT_COLLECTOR_RECORDSTORE_VERSION;
+		}
+
+		/**
+		 * @return the oldDatabaseVersion
+		 */
+		public final int getOldDatabaseVersion()
+		{
+			return oldDatabaseVersion;
+		}
+		
+		@Override
+		public void logError(String msg, Throwable throwable)
+		{
+			if(throwable != null)
+				Log.e(getClass().getSimpleName(), msg, throwable);
+			else
+				Log.e(getClass().getSimpleName(), msg);
+		}
+
+		@Override
+		public void logWarning(String msg)
+		{
+			Log.w(getClass().getSimpleName(), msg);
+		}
+
+		@Override
+		public void logInfo(String msg)
+		{
+			Log.i(getClass().getSimpleName(), msg);
 		}
 
 	}

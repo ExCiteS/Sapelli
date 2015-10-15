@@ -30,7 +30,47 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 public abstract class Store
 {
 	
+	private boolean initialising = false;
+	private boolean initialised = false;
 	private boolean closed = false;
+	
+	public final void initialise() throws DBException
+	{
+		if(initialised)
+			return;
+		initialising = true;
+		try
+		{
+			doInitialise();
+		}
+		finally
+		{
+			initialising = false;
+		}
+		// Only if no exception was thrown:
+		initialised = true;
+	}
+	
+	protected void doInitialise() throws DBException
+	{
+		// does nothing by default
+	}
+	
+	/**
+	 * @return the initialising
+	 */
+	protected final boolean isInitialising()
+	{
+		return initialising;
+	}
+	
+	/**
+	 * @return the initialised
+	 */
+	public final boolean isInitialised()
+	{
+		return initialised;
+	}
 
 	/**
 	 * Called by GC

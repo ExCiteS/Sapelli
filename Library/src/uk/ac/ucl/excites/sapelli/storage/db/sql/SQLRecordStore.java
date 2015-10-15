@@ -79,12 +79,13 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
 /**
+ * Abstract {@link RecordStore} implementation which is backed by an SQL-based relational database.
+ * 
  * @author mstevens
  *
  * @param <SRS>
  * @param <STable>
  * @param <SColumn>
- * 
  */
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
@@ -93,10 +94,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	static protected final String SPACE = " ";
 	
 	// DYNAMIC -----------------------------------------------------------
-	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
-	private boolean initialising = false;
+	private InitArguments initArgs;
 	
 	/**
 	 * Helper for {@link #retrieveRecords(RecordsQuery)}.
@@ -135,54 +135,117 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 
 	/**
 	 * @param client
-	 * @param version current (targeted) version of the database, if existing database is older it will be upgrader (see {@link #initialise(boolean, int, Upgrader)}).
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
-	public SQLRecordStore(StorageClient client, int version, String valuePlaceHolder)
+	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
 		super(client, true); // make use of roll-back tasks
-		this.version = version;
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
 	}
 	
 	/**
-	 * Must be called from subclass constructor!
-	 * 
-	 * @param newDB whether or not the database file is new (i.e. empty)
-	 * @throws DBException
+	 * @param initArgs the initInfo to set
 	 */
-	protected void initialise(boolean newDB, int dbVersion, Upgrader upgrader) throws DBException
+	protected final void setInitialisationArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader<?> upgrader)
 	{
-		initialising = true;
+		this.initArgs = new InitArguments(newDB, targetVersion, upgrader);
+	}
+
+	/**
+	 * @author mstevens
+	 */
+	private final class InitArguments
+	{
+		
+		public final boolean newDB;
+		public final int targetVersion;
+		public final SQLRecordStoreUpgrader<?> upgrader;
+		
+		/**
+		 * @param newDB
+		 * @param targetVersion the version we want to database to be in or be upgrade to
+		 * @param upgrader
+		 */
+		public InitArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader<?> upgrader)
+		{
+			this.newDB = newDB;
+			this.targetVersion = targetVersion;
+			this.upgrader = upgrader;
+		}
+		
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#doInitialise()
+	 */
+	protected final void doInitialise() throws DBException
+	{
+		if(initArgs == null)
+			throw new DBException("Cannot initialise " + getClass().getSimpleName() + " because initialisation arguments have not been set!");
 		try
 		{
-			if(newDB)
+			// Create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database):
+			if(initArgs.newDB)
 				startTransaction();
+			this.modelsTable = getTable(Model.MODEL_SCHEMA, initArgs.newDB);
+			this.schemataTable = getTable(Model.SCHEMA_SCHEMA, initArgs.newDB);
+			if(initArgs.newDB)
+				commitTransaction();
+			
+			// Database version matters:
+			if(!initArgs.newDB)
+			{
+				// Upgrade existing database if necessary:
+				if(getVersion() < initArgs.targetVersion && initArgs.upgrader != null)
+					initArgs.upgrader.upgrade(this, initArgs.targetVersion); // will set the new version if successful
+			}
+			else
+				// Set version on new database:
+				setVersion(initArgs.targetVersion);
+		}
+		catch(DBException e)
+		{
 			try
 			{
-				// Create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database):
-				this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
-				this.schemataTable = getTable(Model.META_SCHEMA, newDB);
-				
-				// Upgrade database if necessary:
-				if(dbVersion < version && upgrader != null)
-					upgrader.upgrade(this, dbVersion, version);
-			}
-			catch(DBException e)
-			{
 				rollbackTransactions();
-				throw e;
 			}
-			if(newDB)
-				commitTransaction();
+			catch(Exception ignore) {}
+			throw e;
 		}
 		finally
 		{
-			initialising = false;
+			initArgs = null;
 		}
 	}
+
+	/**
+	 * Gets the current version of the database.
+	 * 
+	 * @throws DBException 
+	 */
+	public abstract int getVersion() throws DBException;
 	
+	/**
+	 * Sets the current version of the database (persistently stored).
+	 * 
+	 * @param version
+	 * @throws DBException
+	 */
+	protected abstract void setVersion(int version) throws DBException;
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#isStorable(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	public boolean isStorable(Record record)
+	{
+		if(isInitialising())
+			return record != null;
+		else
+			return super.isStorable(record);
+	}
+
 	protected abstract void executeSQL(String sql) throws DBException;
 	
 	protected abstract int executeSQLReturnAffectedRows(String sql) throws DBException;
@@ -221,7 +284,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected final STable getTable(Schema schema, boolean createWhenNotInDB) throws DBException
 	{
-		return getTable(schema, createWhenNotInDB, initialising); // don't allow access to modelsTable & schemataTable unless we are initialising
+		return getTable(schema, createWhenNotInDB, isInitialising()); // don't allow access to modelsTable & schemataTable unless we are initialising
 	}
 	
 	/**
@@ -233,17 +296,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected final STable getTable(Schema schema, boolean createWhenNotInDB, boolean allowMeta) throws DBException
 	{
+		// Check is we are ready:
+		if(!isInitialised() && !isInitialising())
+			throw new DBException(getClass().getSimpleName() + " is not initialised!");
 		// Check known tables:
 		STable table = null;
 		RecordReference schemaMetaRecordRef = null;
-		if(schema == Model.MODEL_SCHEMA || schema == Model.META_SCHEMA)
+		if(schema == Model.MODEL_SCHEMA || schema == Model.SCHEMA_SCHEMA)
 		{
 			if(!allowMeta)
 				throw new DBException("Direct manipulation of modelsTable or schemataTable is not allowed!");
 			//else:
 			if(schema == Model.MODEL_SCHEMA)
 				table = modelsTable; // may still be null if getTable() was called from initialise()
-			else if(schema == Model.META_SCHEMA)
+			else if(schema == Model.SCHEMA_SCHEMA)
 				table = schemataTable; // may still be null if getTable() was called from initialise()
 		}
 		else
@@ -256,7 +322,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		if(table == null)
 		{
 			table = getTableFactory().generateTable(schema);
-			if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
+			if(schema != Model.MODEL_SCHEMA && schema != Model.SCHEMA_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
 				tables.put(schemaMetaRecordRef, table);
 		}
 		
@@ -270,7 +336,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				table.create();
 
 				// Register the schema & its model; unless the table it is the modelsTable or the schemataTable itself:
-				if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA)
+				if(schema != Model.MODEL_SCHEMA && schema != Model.SCHEMA_SCHEMA)
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
@@ -391,7 +457,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
 			
 			// Query schemata table, filtering out the undesired ones:
-			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), filterSkipSchemata));
+			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.SCHEMA_SCHEMA), filterSkipSchemata));
 			if(schemaMetaRecords.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
@@ -413,7 +479,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				}
 				else
 				{	// No cached table, we will have to consult the models ...
-					RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+					RecordReference modelRef = Model.SCHEMA_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 					// ... first check the model cache:
 					Model model = modelCache.get(Model.MODEL_ID_COLUMN.retrieveValue(modelRef));
 					if(model == null)
@@ -422,7 +488,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 						modelCache.put(model.id, model); // remember model in cache
 					}
 					// Get the schema from the model object:
-					schema = model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+					schema = model.getSchema(Model.SCHEMA_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
 				}
 				
 				// Add schema to list:
@@ -451,9 +517,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		try
 		{
 			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
-			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+			RecordReference modelRef = Model.SCHEMA_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
-			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+			return model.getSchema(Model.SCHEMA_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
 		}
 		catch(Exception e)
 		{

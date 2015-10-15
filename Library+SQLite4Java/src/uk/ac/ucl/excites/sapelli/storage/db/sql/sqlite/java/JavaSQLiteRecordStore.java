@@ -23,7 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.Upgrader;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -46,18 +46,22 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * @param client
 	 * @param folderPath
 	 * @param baseName
-	 * @param version
+	 * @param targetVersion
 	 * @param upgrader
 	 * @throws DBException
 	 */
-	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName, int version, Upgrader upgrader) throws DBException
+	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName, int targetVersion, SQLRecordStoreUpgrader<?> upgrader) throws DBException
 	{
-		super(client, version);
+		super(client);
+		
+		// Database file:
+		File dbFile = new File(folderPath, GetDBFileName(baseName));
+		boolean newDB = !dbFile.exists();
 		
 		// Open database connection:
 		try
 		{
-			this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
+			this.db = new SQLiteConnection(dbFile);
 			db.open(true); // allow creation
 		}
 		catch(SQLiteException sqlE)
@@ -65,25 +69,37 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 			throw new DBException(sqlE);
 		}
 		
-		boolean newDB = !doesTableExist(Model.MODEL_SCHEMA);
+		// Just to be sure:
+		newDB = newDB || !doesTableExist(Model.MODEL_SCHEMA);
 		
-		// Get current user_version from SQLite file and change/set it if needed:
-		int dbVersion = newDB ? version : getVersion();
-		if(newDB || dbVersion < version)
-			setVersion(version);
-		
-		// Initialise, and upgrade if necessary:
-		initialise(newDB, dbVersion, upgrader);
+		// Set init args:
+		setInitialisationArguments(newDB, targetVersion, upgrader);
 	}
 	
-	protected int getVersion() throws DBException
+	@Override
+	public int getVersion() throws DBException
 	{
-		return getStatement("PRAGMA user_version;", null).executeLongQuery().intValue();
+		try
+		{
+			return getStatement("PRAGMA user_version;", null).executeLongQuery().intValue();
+		}
+		catch(Exception ex)
+		{
+			throw new DBException("Could not get database version.", ex.getCause());
+		}
 	}
-	
-	protected void setVersion(int newVersion) throws DBException
+
+	@Override
+	protected void setVersion(int version) throws DBException
 	{
-		executeSQL("PRAGMA user_version = " + newVersion + ";");
+		try
+		{
+			executeSQL("PRAGMA user_version = " + version + ";");
+		}
+		catch(Exception ex)
+		{
+			throw new DBException("Could not set database version.", ex.getCause());
+		}
 	}
 	
 	@Override

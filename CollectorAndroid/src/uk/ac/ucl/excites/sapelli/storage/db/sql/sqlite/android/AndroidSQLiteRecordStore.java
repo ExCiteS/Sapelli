@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.Upgrader;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import android.annotation.TargetApi;
@@ -63,18 +63,19 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	
 	/**
 	 * @param client
-	 * @param upgrader
 	 * @param context
 	 * @param databaseFolder
 	 * @param baseName
+	 * @param targetVersion
+	 * @param upgrader
 	 * @throws DBException
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName, int version, Upgrader upgrader) throws DBException
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName, int targetVersion, SQLRecordStoreUpgrader<?> upgrader) throws DBException
 	{
-		super(client, version);
+		super(client);
 		
 		// Helper:
-		CustomSQLiteOpenHelper helper = new CustomSQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), version);
+		CustomSQLiteOpenHelper helper = new CustomSQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), targetVersion);
 		
 		// Open writable database:
 		try
@@ -87,8 +88,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		}
 		Log.d(TAG, "Opened SQLite database: " + db.getPath());
 		
-		// Initialise, and run upgrader if needed:
-		initialise(helper.newDB, helper.dbVersion, upgrader); // will initialise modelsTable & schemataTable, but will old CREATE the corresponding db tables if newDB = true
+		// Set initialisation args:
+		setInitialisationArguments(helper.newDB, targetVersion, upgrader);
 	}
 	
 	@Override
@@ -217,6 +218,32 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
+	public int getVersion() throws DBException
+	{
+		try
+		{
+			return db.getVersion();
+		}
+		catch(Exception ex)
+		{
+			throw new DBException("Could not get database version.", ex);
+		}
+	}
+
+	@Override
+	protected void setVersion(int version) throws DBException
+	{
+		try
+		{
+			db.setVersion(version);
+		}
+		catch(Exception ex)
+		{
+			throw new DBException("Could not set database version.", ex);
+		}
+	}
+	
+	@Override
 	protected void closeConnection()
 	{
 		db.close();
@@ -320,6 +347,17 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		
 	}
 	
+	/**
+	 * Custom {@link SQLiteOpenHelper} implementation.
+	 * 
+	 * Important:
+	 * 	After calling onUpgrade() (provided no Exception is thrown) the SQLiteOpenHelper will already
+	 * 	set the new version (see {@link android.database.sqlite.SQLiteOpenHelper#getDatabaseLocked(boolean)})!
+	 * 	Because we don't do the actual upgrade work in our onUpgrade() implementation we must undo this in
+	 * 	{@link #onOpen(SQLiteDatabase)} which is called soon after.
+	 * 
+	 * @author mstevens
+	 */
 	static private class CustomSQLiteOpenHelper extends SQLiteOpenHelper
 	{
 		
@@ -338,10 +376,22 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			newDB = true;
 		}
 		
+		/* (non-Javadoc)
+		 * @see android.database.sqlite.SQLiteOpenHelper#onUpgrade(android.database.sqlite.SQLiteDatabase, int, int)
+		 */
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
 		{
-			this.dbVersion = oldVersion;
+			this.dbVersion = oldVersion; // !!!
+		}
+
+		/* (non-Javadoc)
+		 * @see android.database.sqlite.SQLiteOpenHelper#onOpen(android.database.sqlite.SQLiteDatabase)
+		 */
+		@Override
+		public void onOpen(SQLiteDatabase db)
+		{
+			db.setVersion(dbVersion); // !!!
 		}
 		
 	}
