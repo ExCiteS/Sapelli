@@ -28,7 +28,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -354,7 +356,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#insert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public synchronized void insert(Record record) throws DBException
+		public synchronized void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
 			if(insertStatement == null)
 			{
@@ -389,7 +391,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public synchronized boolean update(Record record) throws DBException
+		public synchronized boolean update(Record record) throws DBConstraintException, DBException
 		{
 			if(updateStatement == null)
 			{

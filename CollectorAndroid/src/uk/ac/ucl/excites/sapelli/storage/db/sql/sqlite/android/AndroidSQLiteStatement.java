@@ -103,26 +103,26 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	 */
 	@SuppressLint("DefaultLocale")
 	@Override
-	public long executeInsert() throws DBException
+	public long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException
 	{
 		try
 		{
 			long rowID = androidSQLiteSt.executeInsert();
 			if(rowID == -1)
-				throw new DBException("Execution of INSERT statement (" + getSQL() + ") failed (returned ROWID = -1)");
+				throw new DBException(formatMessageWithSQL("Execution of INSERT statement (%s) failed (returned ROWID = -1)"));
 			return rowID;
 		}
 		catch(SQLiteConstraintException sqliteConstrE)
 		{
 			String msg = sqliteConstrE.getMessage();
 			if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
-				throw new DBPrimaryKeyException("Failed to execute INSERT statement (" + getSQL() + ") due to existing record with same primary key", sqliteConstrE);
+				throw new DBPrimaryKeyException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to existing record with same primary key"), sqliteConstrE);
 			else
-				throw new DBConstraintException("Failed to execute INSERT statement (" + getSQL() + ") due to constraint violation", sqliteConstrE);
+				throw new DBConstraintException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to constraint violation"), sqliteConstrE);
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute INSERT statement", sqlE);
+			throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement: %s"), sqlE);
 		}
 	}
 
@@ -130,15 +130,19 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
 	 */
 	@Override
-	public int executeUpdate() throws DBException
+	public int executeUpdate() throws DBConstraintException, DBException
 	{
 		try
 		{
 			return executeUpdateDelete();
 		}
+		catch(SQLiteConstraintException sqliteConstrE)
+		{
+			throw new DBConstraintException(formatMessageWithSQL("Failed to execute UPDATE statement (%s) due to constraint violation"), sqliteConstrE);
+		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute UPDATE statement (" + getSQL() + ")", sqlE);
+			throw new DBException(formatMessageWithSQL("Failed to execute UPDATE statement: %s"), sqlE);
 		}
 	}
 
@@ -154,7 +158,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute DELETE statement (" + getSQL() + ")", sqlE);
+			throw new DBException(formatMessageWithSQL("Failed to execute DELETE statement: %s"), sqlE);
 		}
 	}
 	
@@ -198,8 +202,10 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	/**
 	 * @return SQL expression
 	 * @see android.database.sqlite.SQLiteStatement#toString()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#getSQL()
 	 */
-	private String getSQL()
+	@Override
+	protected String getSQL()
 	{
 		return androidSQLiteSt.toString().substring("SQLiteProgram: ".length());
 	}
