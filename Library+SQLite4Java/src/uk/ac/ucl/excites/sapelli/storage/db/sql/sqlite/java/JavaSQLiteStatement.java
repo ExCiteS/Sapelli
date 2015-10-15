@@ -181,47 +181,50 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	
 	/**
 	 * Insert a record
-	 *  
-	 * @throws DBException 
+	 * 
+	 * @throws DBPrimaryKeyException
+	 * @throws DBConstraintException
+	 * @throws DBException
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert()
 	 */
 	@Override
-	public long executeInsert() throws DBException
+	public long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException
 	{
 		try
 		{
 			javaSQLiteSt.step();
 			long rowID = db.getLastInsertId();
 			if(rowID <= 0)
-				throw new DBException("Execution of INSERT statement failed (returned ROWID = " + rowID + ")");
+				throw new DBException(formatMessageWithSQL("Execution of INSERT statement (%s) failed (returned ROWID = " + rowID + ")"));
 			return rowID;
 		}
 		catch(SQLiteException e)
 		{
-			if(e.getErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
+			if(e.getBaseErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
 			{
 				String msg = e.getMessage();
 				if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
-					throw new DBPrimaryKeyException("Failed to execute INSERT statement due to existing record with same primary key", e);
+					throw new DBPrimaryKeyException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to existing record with same primary key"), e);
 				else
-					throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", e);
+					throw new DBConstraintException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to constraint violation"), e);
 			}
-			throw new DBException("Failed to execute INSERT statement", e);
+			throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement: %s"), e);
 		}
 	}
 
 	/**
 	 * Update a record
-	 *   
+	 * 
+	 * @throws DBConstraintException
 	 * @throws DBException 
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
 	 */
 	@Override
-	public int executeUpdate() throws DBException
+	public int executeUpdate() throws DBConstraintException, DBException
 	{
 		try
 		{
@@ -230,7 +233,9 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute UPDATE statement", e);
+			if(e.getBaseErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
+				throw new DBConstraintException(formatMessageWithSQL("Failed to execute UPDATE statement (%s) due to constraint violation"), e);
+			throw new DBException(formatMessageWithSQL("Failed to execute UPDATE statement: %s"), e);
 		}
 	}
 
@@ -252,7 +257,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute DELETE statement", e);
+			throw new DBException(formatMessageWithSQL("Failed to execute DELETE statement: %s"), e);
 		}
 	}
 
@@ -270,7 +275,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute simple long query", e);
+			throw new DBException(formatMessageWithSQL("Failed to execute simple long query: %s"), e);
 		}
 	}
 	
@@ -299,7 +304,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(DBException e) // from moveToNext(), we could throw this as-is but msg is confusing
 		{
-			throw new DBException("Failed to execute SELECT rows query", e.getCause());
+			throw new DBException(formatMessageWithSQL("Failed to execute SELECT rows query: %s"), e.getCause());
 		}
 	}
 	
@@ -410,6 +415,15 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	public String toString()
 	{
 		return javaSQLiteSt.toString();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#getSQL()
+	 */
+	@Override
+	protected String getSQL()
+	{
+		return javaSQLiteSt.getSqlParts().toString();
 	}
 	
 }

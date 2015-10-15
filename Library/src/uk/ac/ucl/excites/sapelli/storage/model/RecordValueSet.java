@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
- * Abstract superclass for Record and RecordReference
+ * Abstract superclass for {@link Record} and {@link RecordReference}.
  * 
  * @author mstevens
  *
@@ -85,7 +85,7 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
 	 * 
-	 * @return a query that looks for this record
+	 * @return a query that looks for this Record(Reference)
 	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 */
 	public abstract SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException;
@@ -93,7 +93,7 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
 	 * 
-	 * @return a Constraint
+	 * @return a Constraint that matches this Record(Reference)
 	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 */
 	public abstract Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException;

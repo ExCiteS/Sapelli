@@ -86,6 +86,16 @@ public class RecordsQuery
 	}
 	
 	/**
+	 * Query all records of any known schema, with the given limit
+	 * 
+	 * @param limit
+	 */
+	public RecordsQuery(int limit)
+	{
+		this(Source.ANY, Order.UNDEFINED, limit, NO_CONSTRAINTS);
+	}
+	
+	/**
 	 * Query with given schema and order
 	 * 
 	 * @param schema
@@ -127,6 +137,28 @@ public class RecordsQuery
 	public RecordsQuery(Source source, Constraint... constraints)
 	{
 		this(source, Order.UNDEFINED, NO_LIMIT, constraints);
+	}
+	
+	/**
+	 * Query with given schema and limit
+	 * 
+	 * @param schema
+	 * @param limit
+	 */
+	public RecordsQuery(Schema schema, int limit)
+	{
+		this(Source.From(schema), Order.UNDEFINED, limit, NO_CONSTRAINTS);
+	}
+	
+	/**
+	 * Query with defined source and limit
+	 * 
+	 * @param source
+	 * @param limit
+	 */
+	public RecordsQuery(Source source, int limit)
+	{
+		this(source, Order.UNDEFINED, limit, NO_CONSTRAINTS);
 	}
 	
 	/**
