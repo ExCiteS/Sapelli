@@ -107,8 +107,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		// Unique index to ensure name+variant+version combinations are unique:
 		PROJECT_SCHEMA.addIndex(new Index("ProjectUnique", true, PROJECT_NAME_COLUMN, PROJECT_VARIANT_COLUMN, PROJECT_VERSION_COLUMN));
-		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN));
-		PROJECT_SCHEMA.seal(); // !!!
+		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN), true /*seal!*/);
 	}
 	//	 Form Schema Info (FSI) schema:
 	static public final Schema FSI_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
@@ -119,8 +118,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//		Set primary key & seal schema:
 	static
 	{
-		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN));
-		FSI_SCHEMA.seal(); // !!!
+		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN), true /*seal!*/);
 	}
 	//	 Held Foreign Key (HFK) schema: to store "held" foreign keys (RecordReferences) on Relationship fields
 	static public final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
@@ -132,8 +130,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//		Set primary key & seal schema:
 	static
 	{
-		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN));
-		HFK_SCHEMA.seal(); // !!!
+		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN), true /*seal!*/);
 	}
 	// Seal the collector management model:
 	static
@@ -230,7 +227,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		
 		// Create ProjectDescriptor:
 		int id = PROJECT_ID_COLUMN.retrieveValue(projRec).intValue();
-		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValueSet(projRec);
+		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValuePresent(projRec);
 		ProjectDescriptor projDescr = new ProjectDescriptor(v1x ? ProjectDescriptor.PROJECT_ID_V1X_TEMP : id,
 															PROJECT_NAME_COLUMN.retrieveValue(projRec),
 															PROJECT_VARIANT_COLUMN.retrieveValue(projRec), // "" is treated as null,

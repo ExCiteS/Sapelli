@@ -85,8 +85,7 @@ public class Model implements Serializable
 	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
 	static
 	{
-		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN));
-		MODEL_SCHEMA.seal();
+		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN), true /*seal!*/);
 	}
 	
 	// Meta Schema: a Schema to describe other Schema's
@@ -96,8 +95,7 @@ public class Model implements Serializable
 	static public final StringColumn META_NAME_COLUMN = META_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
 	static
 	{
-		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
-		META_SCHEMA.seal();
+		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN), true /*seal!*/);
 	}
 	
 	// Seal the Meta-Model:
@@ -345,7 +343,7 @@ public class Model implements Serializable
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName() + "_" + (name != null ? name + "_" : "") + "(ID=" + id + ")"; 
+		return getClass().getSimpleName() + "{" + (name != null ? name + "; " : "") + "ID=" + id + "}"; 
 	}
 	
 }

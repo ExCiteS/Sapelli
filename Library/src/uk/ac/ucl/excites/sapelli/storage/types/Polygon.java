@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.types;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 
 /**
@@ -44,6 +45,11 @@ public class Polygon extends ArrayList<Location>
 	public Polygon(int initialCapacity)
 	{
 		super(initialCapacity);
+	}
+	
+	public Polygon(Collection<Location> points)
+	{
+		super(points);
 	}
 	
 	@Override

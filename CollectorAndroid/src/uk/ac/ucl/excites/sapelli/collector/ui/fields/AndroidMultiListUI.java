@@ -70,7 +70,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		if(newRecord)
 		{
 			// Set the value that was stored (if there is one):
-			if(!field.isNoColumn() && field.getColumn().isValueSet(record))
+			if(!field.isNoColumn() && field.getColumn().isValuePresent(record))
 			{
 				// Get selected leaf:
 				MultiListItem item = field.getItemForValue(field.getColumn().retrieveValue(record).intValue());

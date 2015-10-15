@@ -72,7 +72,7 @@ public abstract class Upgrader
 		// get Schema object as currently stored
 		Schema oldSchema = recordStore.getStoredVersion(newSchema);
 		if(oldSchema == null /*|| !oldSchema.containsEquivalentColumn(oldColumn)*/)
-			throw new DBException("TODO");
+			throw new DBException("TODO"); // TODO
 		
 		// get STable for oldSchema:
 		SQLTable oldTable = recordStore.getTableFactory().generateTable(oldSchema);
@@ -80,7 +80,7 @@ public abstract class Upgrader
 		//STable newTable = getTableFactory().generateTable(newSchema);
 		
 		// Retrieve all records currently in the (old) table:
-		List<Record> oldRecords = oldTable.select(RecordsQuery.ALL);
+		List<Record> oldRecords = oldTable.select(new RecordsQuery(oldTable.schema));
 		
 		// Drop old table:
 		oldTable.drop();

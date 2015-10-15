@@ -77,10 +77,9 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 */
-	@SuppressWarnings("unchecked")
 	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
 	{
-		return compareValues(vs != null ? retrieveValue(vs) : null, (T) convert(value));
+		return compareValues(vs != null ? retrieveValue(vs) : null, convert(value));
 	}
 	
 	/**

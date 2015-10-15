@@ -34,8 +34,11 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportColumnValueStringProvider;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -103,6 +106,8 @@ public class CSVRecordsExporter extends SimpleExporter
 	private Separator separator;
 	
 	private List<ColumnPointer<?>> columnPointers;
+	
+	private ColumnValueStringProvider valueStringProvider;
 	
 	public CSVRecordsExporter(File exportFolder)
 	{
@@ -175,6 +180,7 @@ public class CSVRecordsExporter extends SimpleExporter
 		// Export each group to a separate CSV file:
 		List<Record> exported = new ArrayList<Record>();
 		List<File> csvFiles = new ArrayList<File>();
+		valueStringProvider = new ColumnValueStringProvider();
 		for(Map.Entry<Schema, List<Record>> entry : recordsBySchema.entrySet())
 		{
 			try
@@ -219,20 +225,8 @@ public class CSVRecordsExporter extends SimpleExporter
 								writer.write(separator.getSeparatorChar());
 							Column<?> col = cp.getColumn();
 							ValueSet<?> valueSet = cp.getValueSet(r, false);
-							if(valueSet != null && col.isValueSet(valueSet)) // do write nothing when the value is not set (i.e. null is represented by an empty String)
-							{
-								/* Get String representing the column value...
-								 * 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target),
-								 * 	then we use the raw String value returned by StringColumn#retrieveValue() instead of the singe-quoted String returned
-								 * 	by StringColumn#retrieveValueAsString(). */
-								String valueString = (col.getType() == String.class ? (String) col.retrieveValue(valueSet) : col.retrieveValueAsString(valueSet));
-								/* Write value and escape/quote if necessary or required...
-								 * 	We force (double) quotes on StringColumns in order to maintain ability to differentiate null and empty String.
-								 * 	We don't need to do this on VirtualColumns with target type String because their values will get quoted when needed
-								 * 	(i.e. due to occurrence of double quote, new line or separator) but they don't need to maintain the difference between
-								 * 	null and empty String since virtual columns would be ignored if we ever implement a CSVRecordsImporter class. */	
-								writer.write(escapeAndQuote(valueString, col instanceof StringColumn));
-							}
+							if(valueSet != null && col.isValuePresent(valueSet)) // write nothing when the value is not set (i.e. null value is represented by an empty String)
+								writer.write(valueStringProvider.toString(col, valueSet));
 						}
 						writer.write('\n');
 					}
@@ -305,6 +299,30 @@ public class CSVRecordsExporter extends SimpleExporter
 	public boolean allowForeignKeySelfTraversal()
 	{
 		return true;
+	}
+	
+	/**
+	 * Helper class which creates String representations, escaped and quoted as necessary, of column values.
+	 * 
+	 * The string representations of {@link ListLikeColumn}s (i.e. {@link StringColumn} and {@link ListColumn}s)
+	 * are always quoted (and thus also escaped), and we don't use the Column's own serialisation delimiters
+	 * because the quoting allows us to preserve the difference between {@code null} and an empty list/String value:
+	 * 	- SEPARATOR+SEPARATOR --> null value
+	 *  - SEPARATOR+"+"+SEPARATOR --> empty value
+	 *  
+	 * @see ExportColumnValueStringProvider
+	 * 
+	 * @author mstevens
+	 */
+	private class ColumnValueStringProvider extends ExportColumnValueStringProvider
+	{
+
+		@Override
+		protected String escapeAndQuote(String valueString, boolean force)
+		{
+			return CSVRecordsExporter.this.escapeAndQuote(valueString, force);
+		}
+		
 	}
 	
 }

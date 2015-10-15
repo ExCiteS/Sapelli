@@ -29,13 +29,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 
 /**
  * An interface for visitors that inspect columns.

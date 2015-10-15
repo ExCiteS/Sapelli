@@ -395,12 +395,20 @@ public abstract class RecordStore extends Store
 	}
 
 	/**
-	 * Retrieve records by query
+	 * Retrieve {@link Record}s by query
 	 * 
 	 * @param query
-	 * @return a list of records, possibly empty, never null
+	 * @return a {@link List} of {@link Record}s, possibly empty, never {@code null}
 	 */
 	public abstract List<Record> retrieveRecords(RecordsQuery query);
+
+	/**
+	 * Retrieve {@link RecordReference}s by query
+	 * 
+	 * @param query
+	 * @return a {@link List} of {@link RecordReference}s, possibly empty, never {@code null}
+	 */
+	public abstract List<RecordReference> retrieveRecordReferences(RecordsQuery query);
 	
 	/**
 	 * Retrieve a single record by SingleRecordQuery.

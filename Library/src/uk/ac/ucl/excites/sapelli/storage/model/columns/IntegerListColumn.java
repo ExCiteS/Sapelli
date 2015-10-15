@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -31,7 +32,7 @@ public class IntegerListColumn extends ListColumn.Simple<Long>
 	static private final long serialVersionUID = 2L;
 
 	/**
-	 * Creates an {@link IntegerListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
+	 * Creates a {@link IntegerListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
 	 * 
 	 * @param name
 	 * @param singleColumn
@@ -41,9 +42,28 @@ public class IntegerListColumn extends ListColumn.Simple<Long>
 	{
 		super(name, singleColumn, optional);
 	}
-
+	
 	/**
-	 * Creates an {@link IntegerListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * Creates a {@link IntegerListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 */
+	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * Creates a {@link IntegerListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
 	 * 
 	 * @param name
 	 * @param singleColumn
@@ -54,9 +74,29 @@ public class IntegerListColumn extends ListColumn.Simple<Long>
 	{
 		super(name, singleColumn, optional, maxLength);
 	}
-
+	
 	/**
-	 * Creates an {@link IntegerListColumn} with the given minimum and maximum lengths.
+	 * Creates a {@link IntegerListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 */
+	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * Creates a {@link IntegerListColumn} with the given minimum and maximum lengths.
 	 * 
 	 * @param name
 	 * @param singleColumn
@@ -67,6 +107,27 @@ public class IntegerListColumn extends ListColumn.Simple<Long>
 	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int minLength, int maxLength)
 	{
 		super(name, singleColumn, optional, minLength, maxLength);
+	}
+	
+	/**
+	 * Creates a {@link IntegerListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 */
+	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
 	}
 
 	@Override

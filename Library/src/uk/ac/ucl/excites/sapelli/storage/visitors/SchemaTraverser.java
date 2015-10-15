@@ -39,12 +39,12 @@ public abstract class SchemaTraverser implements ColumnVisitor
 
 	private final Stack<ValueSetColumn<?, ?>> parentStack = new Stack<ValueSetColumn<?, ?>>();
 	
-	public void traverse(Schema schema)
+	protected final void traverse(Schema schema)
 	{
 		traverse(schema, Collections.<Column<?>> emptySet());
 	}
 	
-	public void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
+	protected final void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
 	{
 		parentStack.clear();
 		schema.accept(this, skipColumns);
@@ -73,7 +73,7 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	/**
 	 * @return
 	 */
-	protected <C extends Column<?>> ColumnPointer<C> getColumnPointer(C currentColumn)
+	protected final <C extends Column<?>> ColumnPointer<C> getColumnPointer(C currentColumn)
 	{
 		return new ColumnPointer<C>(parentStack, currentColumn); // checks will be performed to ensure the currentColumn is really a child of the parent(s)
 	}

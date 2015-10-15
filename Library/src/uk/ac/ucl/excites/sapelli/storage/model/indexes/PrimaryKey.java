@@ -59,12 +59,6 @@ public class PrimaryKey extends Index
 	}
 	
 	@Override
-	public String toString()
-	{
-		return "PrimaryKey " + name;
-	}
-	
-	@Override
     public boolean equals(Object obj)
 	{
 		if(this == obj)

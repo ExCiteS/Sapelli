@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.Location;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -147,9 +147,9 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	public void accept(ColumnVisitor visitor)
 	{
 		if(visitor.allowLocationSelfTraversal())
-			super.accept(visitor, !visitor.skipNonBinarySerialisedLocationSubColumns());
+			super.accept(visitor, !visitor.skipNonBinarySerialisedLocationSubColumns()); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
-			visitor.visit(this);
+			visitor.visit(this); // visit as LocationColumn (as a single whole)
 	}
 
 	@Override

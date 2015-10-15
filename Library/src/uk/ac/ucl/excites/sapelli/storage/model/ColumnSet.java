@@ -48,8 +48,8 @@ public class ColumnSet implements Serializable
 
 	// Dynamics-----------------------------------------------------------
 	protected final String name;
-	protected boolean sealed = false;
 	protected final boolean useVirtualVersions;
+	private boolean sealed = false;
 	
 	public ColumnSet(String name, boolean useVirtualVersions)
 	{
@@ -79,51 +79,75 @@ public class ColumnSet implements Serializable
 	private transient List<Column<?>> allColumns;
 	
 	/**
-	 * Add a series of new, non-virtual columns to the ColumnSet
+	 * Add a series of new, non-virtual columns to the ColumnSet. The columns' virtual versions are added only if {@link #useVirtualVersions} is {@code true}.
 	 * 
 	 * @param columns the columns to add, cannot include {@link VirtualColumn}s
 	 * @throws DuplicateColumnException in case of a name-clash
 	 * @throws IllegalArgumentException
 	 */
-	public void addColumns(List<Column<?>> columns) throws DuplicateColumnException, IllegalArgumentException
+	public final void addColumns(List<Column<?>> columns) throws DuplicateColumnException, IllegalArgumentException
 	{
-		for(Column<?> c : columns)
-			addColumn(c);
+		addColumns(columns, false); // don't seal yet
 	}
 	
 	/**
-	 * Add a new, non-virtual column to the ColumnSet
+	 * Add a series of new, non-virtual columns to the ColumnSet. The columns' virtual versions are added only if {@link #useVirtualVersions} is {@code true}.
+	 * 
+	 * @param columns the columns to add, cannot include {@link VirtualColumn}s
+	 * @param seal if {@code true} the ColumnSet will be sealed after adding the column (i.e. this is the last column to be added)
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
+	 */
+	public final void addColumns(List<Column<?>> columns, boolean seal) throws DuplicateColumnException, IllegalArgumentException
+	{
+		for(Column<?> c : columns)
+			addColumn(c);
+		if(seal)
+			seal();
+	}
+	
+	/**
+	 * Add a new, non-virtual column to the ColumnSet. The column's virtual versions are added only if {@link #useVirtualVersions} is {@code true}.
 	 * 
 	 * @param column the column to add, cannot be a {@link VirtualColumn}
 	 * @return the added column
 	 * @throws DuplicateColumnException in case of a name-clash
 	 * @throws IllegalArgumentException
 	 */
-	public <C extends Column<T>, T> C addColumn(C column) throws DuplicateColumnException, IllegalArgumentException
+	public final <C extends Column<T>, T> C addColumn(C column) throws DuplicateColumnException, IllegalArgumentException
 	{
-		if(column == null)
-			throw new NullPointerException("Cannot add null column!");
-		if(column instanceof VirtualColumn<?, ?>)
-			throw new IllegalArgumentException("Cannot directly add a virtual columns to a schema!");
-		addColumn(column, useVirtualVersions);
-		return column;
+		return addColumn(column, false); // don't seal yet
 	}
 	
 	/**
-	 * @param column
-	 * @param useVirtual
+	 * Add a new, non-virtual column to the ColumnSet. The column's virtual versions are added only if {@link #useVirtualVersions} is {@code true}.
+	 * 
+	 * @param column the column to add, cannot be a {@link VirtualColumn}
+	 * @param seal if {@code true} the ColumnSet will be sealed after adding the column (i.e. this is the last column to be added)
+	 * @return the added column
 	 * @throws DuplicateColumnException in case of a name-clash
 	 * @throws IllegalArgumentException
 	 */
-	protected <T> void addColumn(Column<T> column, boolean useVirtualVersions) throws DuplicateColumnException, IllegalArgumentException
+	public final <C extends Column<T>, T> C addColumn(C column, boolean seal) throws DuplicateColumnException, IllegalArgumentException
 	{
-		if(sealed)
-			throw new IllegalStateException("Cannot extend a sealed schema!");
-		if(containsColumn(column.name, true))
-			throw new DuplicateColumnException(column.getName());
+		return addColumn(column, useVirtualVersions, seal);
+	}
+	
+	/**
+	 * Add a new, non-virtual column to the ColumnSet.
+	 * 
+	 * @param column the column to add, cannot be a {@link VirtualColumn}
+	 * @param useVirtualVersion whether or not to also add the column's virtual versions (passing {@code true} will also have an effect if {@link #useVirtualVersions} is also {@code true})
+	 * @param seal if {@code true} the ColumnSet will be sealed after adding the column (i.e. this is the last column to be added)
+	 * @return the added column
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
+	 */
+	public <C extends Column<T>, T> C addColumn(C column, boolean useVirtualVersions, boolean seal) throws DuplicateColumnException, IllegalArgumentException
+	{
 		// Add the column:
-		columnNameToPosition.put(column.getName(), realColumns.size());
-		realColumns.add(column);
+		addRealColumn(column); // throws if exception if sealed, duplicate, null column, etc.
+		
 		// If we are allowed then add any virtual versions it may have:		
 		if(this.useVirtualVersions && useVirtualVersions)
 			for(VirtualColumn<?, T> vCol : column.getVirtualVersions())
@@ -134,15 +158,55 @@ public class ColumnSet implements Serializable
 					virtualColumnsByName = new HashMap<String, VirtualColumn<?, ?>>();
 				virtualColumnsByName.put(vCol.getName(), vCol);
 			}
+		
+		// Seal if needed:
+		if(seal)
+			seal();
+		
+		// Return added column:
+		return column;
 	}
-
-	/**
-	 * Seals the ColumnSet. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
-	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
-	 */
-	public void seal()
+	
+	protected void addRealColumn(Column<?> column)
 	{
+		// Checks:
+		if(sealed)
+			throw new IllegalStateException("Cannot extend a sealed schema!");
+		if(column == null)
+			throw new NullPointerException("Cannot add null column!");
+		if(column instanceof VirtualColumn<?, ?>)
+			throw new IllegalArgumentException("Cannot directly add a virtual columns to a schema!");
+		if(containsColumn(column.name, true))
+			throw new DuplicateColumnException(column.getName());
+		
+		// Add the column:
+		columnNameToPosition.put(column.getName(), realColumns.size());
+		realColumns.add(column);
+	}
+	
+	/**
+	 * Seals the ColumnSet. After this, ValueSets can be created based on the ColumnSet, but no more columns can be added.
+	 * 
+	 * @throws IllegalStateException
+	 */
+	public final void seal() throws IllegalStateException
+	{
+		if(sealed)
+			return; // already sealed
+		if(realColumns.isEmpty())
+			throw new IllegalStateException("A ColumnSet must contain at least 1 (real) column before it can be sealed.");
+		// Do additional work (if any):
+		sealTasks();
+		// Seal the ColumnSet:
 		this.sealed = true;
+	}
+	
+	/**
+	 * To be overridden by subclasses that need to perform additional work as part of the sealing of the ColumnSet.
+	 */
+	protected void sealTasks()
+	{
+		// does nothing by default
 	}
 	
 	/**
@@ -337,7 +401,7 @@ public class ColumnSet implements Serializable
 	 */
 	public boolean isVariableSize()
 	{
-		return isVariableSize(false, Collections.<Column<?>>emptySet());
+		return isVariableSize(false, Collections.<Column<?>> emptySet());
 	}
 	
 	/**
@@ -409,6 +473,12 @@ public class ColumnSet implements Serializable
 		return total;
 	}
 	
+	@Override
+	public String toString()
+	{
+		return getClass().getSimpleName() + "{" + name + "}";
+	}
+	
 	/**
 	 * Check for equality
 	 * 
@@ -460,7 +530,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + (name == null ? 0 : name.hashCode());

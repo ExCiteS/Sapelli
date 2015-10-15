@@ -40,12 +40,12 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 
 	private final Stack<Column<?>> columnStack = new Stack<Column<?>>();
 	
-	public void traverse(Schema schema)
+	protected final void traverse(Schema schema)
 	{
 		traverse(schema, Collections.<Column<?>> emptySet());
 	}
 	
-	public void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
+	protected final void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
 	{
 		columnStack.clear();
 		schema.accept(this, skipColumns);
@@ -83,14 +83,14 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	}
 	
 	@Override
-	public <T> void visit(Column<T> column)
+	protected final <T> void visit(Column<T> column)
 	{
 		columnStack.push(column);
 		visit(getColumnPointer());
 		columnStack.pop();
 	}
 	
-	protected ColumnPointer<?> getColumnPointer()
+	protected final ColumnPointer<?> getColumnPointer()
 	{
 		return ColumnPointer.FromList(columnStack);
 	}

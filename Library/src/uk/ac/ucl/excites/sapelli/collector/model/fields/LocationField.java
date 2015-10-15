@@ -26,8 +26,8 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 
 /**
  * @author mstevens
