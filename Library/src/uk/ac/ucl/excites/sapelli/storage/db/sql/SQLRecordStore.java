@@ -96,6 +96,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
+	private boolean initialising = false;
 	
 	/**
 	 * Helper for {@link #retrieveRecords(RecordsQuery)}.
@@ -153,25 +154,33 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected void initialise(boolean newDB, int dbVersion, Upgrader upgrader) throws DBException
 	{
-		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
-		if(newDB)
-			startTransaction();
+		initialising = true;
 		try
 		{
-			this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
-			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
-			
-			// Upgrade if necessary:
-			if(dbVersion < version && upgrader != null)
-				upgrader.upgrade(this, dbVersion, version);
+			if(newDB)
+				startTransaction();
+			try
+			{
+				// Create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database):
+				this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
+				this.schemataTable = getTable(Model.META_SCHEMA, newDB);
+				
+				// Upgrade database if necessary:
+				if(dbVersion < version && upgrader != null)
+					upgrader.upgrade(this, dbVersion, version);
+			}
+			catch(DBException e)
+			{
+				rollbackTransactions();
+				throw e;
+			}
+			if(newDB)
+				commitTransaction();
 		}
-		catch(DBException e)
+		finally
 		{
-			rollbackTransactions();
-			throw e;
+			initialising = false;
 		}
-		if(newDB)
-			commitTransaction();
 	}
 	
 	protected abstract void executeSQL(String sql) throws DBException;
@@ -210,15 +219,33 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @return
 	 * @throws DBException
 	 */
-	protected STable getTable(Schema schema, boolean createWhenNotInDB) throws DBException
+	protected final STable getTable(Schema schema, boolean createWhenNotInDB) throws DBException
+	{
+		return getTable(schema, createWhenNotInDB, initialising); // don't allow access to modelsTable & schemataTable unless we are initialising
+	}
+	
+	/**
+	 * @param schema
+	 * @param createWhenNotInDB
+	 * @param allowMeta whether or not to provide access to the modelsTable & schemataTable
+	 * @return
+	 * @throws DBException
+	 */
+	protected final STable getTable(Schema schema, boolean createWhenNotInDB, boolean allowMeta) throws DBException
 	{
 		// Check known tables:
 		STable table = null;
 		RecordReference schemaMetaRecordRef = null;
-		if(schema == Model.MODEL_SCHEMA)
-			table = modelsTable; // may still be null if getTable() was called from initialise()
-		else if(schema == Model.META_SCHEMA)
-			table = schemataTable; // may still be null if getTable() was called from initialise()
+		if(schema == Model.MODEL_SCHEMA || schema == Model.META_SCHEMA)
+		{
+			if(!allowMeta)
+				throw new DBException("Direct manipulation of modelsTable or schemataTable is not allowed!");
+			//else:
+			if(schema == Model.MODEL_SCHEMA)
+				table = modelsTable; // may still be null if getTable() was called from initialise()
+			else if(schema == Model.META_SCHEMA)
+				table = schemataTable; // may still be null if getTable() was called from initialise()
+		}
 		else
 		{
 			schemaMetaRecordRef = Schema.GetMetaRecordReference(schema); // get reference to schemaMetaRecord
@@ -569,9 +596,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				if(!subResult.isEmpty())
 				{
 					if(resultAcc == null)
-						resultAcc = subResult;
-					else
-						resultAcc.addAll(subResult);
+						resultAcc = new ArrayList<R>(subResult.size());
+					resultAcc.addAll(subResult);
 				}
 			}
 			catch(DBException dbE)
