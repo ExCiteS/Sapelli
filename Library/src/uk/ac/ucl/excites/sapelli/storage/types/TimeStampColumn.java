@@ -290,7 +290,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	protected TimeStamp read(BitInputStream bitStream) throws IOException
 	{
 		long msSinceJavaEpoch = timeMapping.readLong(bitStream) * (keepMS ? 1 : 1000);
-		return new TimeStamp(msSinceJavaEpoch, keepLocalTimezone ? TimeStamp.getDateTimeZoneFor((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : DateTimeZone.UTC);
+		return new TimeStamp(msSinceJavaEpoch, keepLocalTimezone ? TimeStamp.getDateTimeZoneForQHOffset((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : DateTimeZone.UTC);
 	}		
 
 	@Override
