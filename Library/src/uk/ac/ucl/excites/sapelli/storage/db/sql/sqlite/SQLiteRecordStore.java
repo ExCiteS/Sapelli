@@ -455,30 +455,30 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordSelectHelper)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordValueSetSelectHelper)
 		 */
 		@Override
-		protected synchronized List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
+		protected <R extends RecordValueSet<?>> List<R> executeRecordSelection(RecordValueSetSelectHelper<R> recordValueSetSelectHelper) throws DBException
 		{
 			ISQLiteCursor cursor = null;
 			try
 			{
 				// Execute query (also binds parameters) to get cursor:
-				cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
+				cursor = executeQuery(recordValueSetSelectHelper.getQuery(), recordValueSetSelectHelper.getParameterColumns(), recordValueSetSelectHelper.getSapArguments());
 				// Deal with cursor:
 				if(cursor == null || !cursor.hasRow())
 					// No results:
-					return Collections.<Record> emptyList();
+					return Collections.<R> emptyList();
 				else
 				{	// Process cursor rows and create corresponding records:
-					List<Record> result = new ArrayList<Record>();
+					List<R> result = new ArrayList<R>();
 					while(cursor.moveToNext())
 					{
-						Record record = schema.createRecord();
+						R recordOrReference = recordValueSetSelectHelper.projection.createRecordValueSet();
 						int i = 0;
-						for(SQLiteColumn<?, ?> sqliteCol : sqlColumns.values())
-							sqliteCol.store(record, cursor, i++);
-						result.add(record);
+						for(SQLiteColumn<?, ?> sqliteCol : recordValueSetSelectHelper.projection.getProjectionColumns())
+							sqliteCol.store(recordOrReference, cursor, i++);
+						result.add(recordOrReference);
 					}
 					return result;
 				}
@@ -583,14 +583,14 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		protected abstract void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
 		
 		/**
-		 * @param record
+		 * @param recordOrReference
 		 * @param cursor
 		 * @param columnIdx
 		 * @throws DBException
 		 */
-		public void store(Record record, ISQLiteCursor cursor, int columnIdx) throws DBException
+		public void store(RecordValueSet<?> recordOrReference, ISQLiteCursor cursor, int columnIdx) throws DBException
 		{
-			store(record, getValueOrNull(cursor, columnIdx));
+			store(recordOrReference, getValueOrNull(cursor, columnIdx));
 		}
 		
 		/**
@@ -863,7 +863,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			bldr.append(table.tableName);
 			// WHERE clause:
 			appendWhereClause(null);
-			bldr.append(";", false);
 		}
 		
 	}
