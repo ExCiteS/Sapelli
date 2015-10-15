@@ -23,6 +23,9 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.Upgrader;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 
 /**
  * @author mstevens
@@ -41,6 +44,26 @@ public class CollectorRecordStoreUpgrader extends Upgrader implements StoreUser
 	@Override
 	public void upgrade(SQLRecordStore<?, ?, ?> recordStore, int oldVersion, int newVersion) throws DBException
 	{
+		// TODO Backup first?
+		
+		// TODO version check
+		
+
+		// TODO it is very unsave this is possible, we probably should allow operations on the models table this way...
+//		for(RecordReference modelRecRef : recordStore.retrieveRecordReferences(new RecordsQuery(Model.MODEL_SCHEMA)))
+//		{
+//			try
+//			{
+//				Model model = client.getModel(Model.MODEL_ID_COLUMN.retrieveValue(modelRecRef));
+//				recordStore.store(model.getModelRecord(client));
+//			}
+//			catch(Exception e)
+//			{
+//				e.printStackTrace();
+//				recordStore.delete(modelRecRef); // bad idea??
+//			}
+//		}
+		
 		//List<Record> convertedRecords = new ArrayList<Record>();
 		
 		// TODO add upgrade routines here
