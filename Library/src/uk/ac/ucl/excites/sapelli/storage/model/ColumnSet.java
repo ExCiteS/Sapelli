@@ -476,7 +476,7 @@ public class ColumnSet implements Serializable
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName() + "_" + name;
+		return getClass().getSimpleName() + "{" + name + "}";
 	}
 	
 	/**

@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -303,11 +304,19 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	
 	public String toString(boolean includeVirtual)
 	{
-		StringBuffer bff = new StringBuffer();
-		bff.append(columnSet.toString());
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("");
+		// ValueSet type:
+		bldr.append(getClass().getSimpleName());
+		// ColumnSet (type+name):
+		bldr.append("<" + columnSet.toString() + ">:[");
+		// Values:
+		bldr.openTransaction("; ");
 		for(Column<?> c : columnSet.getColumns(includeVirtual))
-			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
-		return bff.toString();
+			bldr.append(c.getName() + " = " + c.retrieveValueAsString(this));
+		bldr.commitTransaction();
+		bldr.append("]");
+		// Return result:
+		return bldr.toString();
 	}
 	
 	/**

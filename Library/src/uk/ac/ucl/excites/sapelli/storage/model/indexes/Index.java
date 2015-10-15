@@ -95,12 +95,6 @@ public class Index extends ColumnSet
 		return unique;
 	}
 	
-	@Override
-	public String toString()
-	{
-		return "Index " + name;
-	}
-	
 	public boolean isMultiColumn()
 	{
 		return getNumberOfColumns(false) > 1;

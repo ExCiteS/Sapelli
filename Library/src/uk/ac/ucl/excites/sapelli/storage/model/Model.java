@@ -363,7 +363,7 @@ public class Model implements Serializable
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName() + "_" + (name != null ? name + "_" : "") + "(ID=" + id + ")"; 
+		return getClass().getSimpleName() + "{" + (name != null ? name + "; " : "") + "ID=" + id + "}"; 
 	}
 	
 }
