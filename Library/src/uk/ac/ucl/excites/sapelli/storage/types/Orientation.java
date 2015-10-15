@@ -34,17 +34,11 @@ public class Orientation extends ValueSet<ColumnSet>
 	//Statics----------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	// Schema & columns
+	// ColumnSet & Columns:
 	static final public ColumnSet COLUMN_SET = new ColumnSet(Orientation.class.getSimpleName(), false);
-	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, true, false);	// optional signed 32 bit float
-	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true, true, false);		// optional signed 32 bit float
-	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true, true, false);		// optional signed 32 bit float
-	static
-	{	// Add columns to Schema & seal it:
-		COLUMN_SET.addColumn(COLUMN_AZIMUTH);
-		COLUMN_SET.addColumn(COLUMN_PITCH);
-		COLUMN_SET.addColumn(COLUMN_ROLL, true /*seal!*/);
-	}
+	static final public FloatColumn COLUMN_AZIMUTH	= COLUMN_SET.addColumn(new FloatColumn("Azimuth", true, true, false));				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_PITCH	= COLUMN_SET.addColumn(new FloatColumn("Pitch", true, true, false));				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_ROLL		= COLUMN_SET.addColumn(new FloatColumn("Roll", true, true, false), true /*seal!*/);	// optional signed 32 bit float
 	
 	/**
 	 * @param azimuth
