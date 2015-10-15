@@ -57,6 +57,7 @@ public class StoreHandle<S extends Store>
 	
 	/**
 	 * Returns the held or a newly created Store instance.
+	 * 
 	 * When a new instance must be created {@link StoreCreator#createAndSetStore(StoreSetter)} is used,
 	 * which in turns calls {@link StoreSetter#setAndInitialise(Store)} on the given StoreSetter. The
 	 * Store instance is initialised from {@link StoreSetter#setAndInitialise(Store)}, but only after
@@ -84,17 +85,30 @@ public class StoreHandle<S extends Store>
 			// Forget about all users:
 			users.clear();
 			
-			storeCreator.createAndSetStore(new StoreSetter<S>() // throws DBException if creation fails
+			// Try creating & initialising the store:
+			try
 			{
-				@Override
-				public void setAndInitialise(S store) throws DBException
+				storeCreator.createAndSetStore(new StoreSetter<S>() // throws DBException if creation fails
 				{
-					// First set a strong reference to the store (to be able to respond to secondary calls to getStore() *during* initialisation):
-					storeStrongRef = store;
-					// Initialise (& possibly upgrade) the store:
-					store.initialise();
-				}
-			});
+					@Override
+					public void setAndInitialise(S store) throws DBException
+					{
+						// First set a strong reference to the store (to be able to respond to secondary calls to getStore() *during* initialisation):
+						storeStrongRef = store;
+						// Initialise (& possibly upgrade) the store:
+						store.initialise(); // may throw DBException
+					}
+				});
+			}
+			catch(DBException dbE)
+			{
+				// Clear store reference:
+				storeStrongRef = null;
+				// Forget about all users (a user may have registered during initialisation)
+				users.clear();
+				// Re-throw:
+				throw dbE;
+			}
 		}
 				
 		// Register user:
@@ -112,36 +126,6 @@ public class StoreHandle<S extends Store>
 		
 		// Return store:
 		return holdStore;
-	}
-	
-	/**
-	 * @author mstevens
-	 *
-	 * @param <S>
-	 */
-	public interface StoreSetter<S extends Store>
-	{
-		
-		/**
-		 * TODO
-		 * 
-		 * @param store
-		 * @throws DBException
-		 */
-		public void setAndInitialise(S store) throws DBException;
-		
-	}
-	
-	/**
-	 * @author mstevens
-	 *
-	 * @param <S>
-	 */
-	public interface StoreCreator<S extends Store>
-	{
-		
-		public void createAndSetStore(StoreSetter<S> setter) throws DBException;
-		
 	}
 	
 	/**
@@ -259,6 +243,30 @@ public class StoreHandle<S extends Store>
 	 */
 	public interface StoreUser
 	{
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 */
+	public interface StoreSetter<S extends Store>
+	{
+		
+		public void setAndInitialise(S store) throws DBException;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 */
+	public interface StoreCreator<S extends Store>
+	{
+		
+		public void createAndSetStore(StoreSetter<S> setter) throws DBException;
 		
 	}
 	
