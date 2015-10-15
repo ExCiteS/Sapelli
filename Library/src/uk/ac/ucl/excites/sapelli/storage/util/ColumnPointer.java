@@ -84,6 +84,19 @@ public class ColumnPointer<C extends Column<?>>
 		// Return new cp:
 		return new ColumnPointer<Column<?>>(parents, columns.get(c));
 	}
+
+	/**
+	 * Returns a new ColumnPointer which points to a (sub)column with the given name.
+	 * 
+	 * @param topLevelCS the top-level ColumnSet or Schema
+	 * @param columnName the name of the pointed-at column, may contain {@link ValueSetColumn.QUALIFIED_NAME_SEPARATOR}s
+	 * @return
+	 * @throws IllegalArgumentException when no path could be constructed
+	 */
+	static public ColumnPointer<?> ByName(ColumnSet topLevelCS, String columnName) throws IllegalArgumentException
+	{
+		return ByName(topLevelCS, columnName, true, true);
+	}
 	
 	/**
 	 * Returns a new ColumnPointer which points to a (sub)column with the given name.
@@ -98,6 +111,19 @@ public class ColumnPointer<C extends Column<?>>
 	static public ColumnPointer<?> ByName(ColumnSet topLevelCS, String columnName, boolean deepSearch, boolean trySanitising) throws IllegalArgumentException
 	{	
 		return SplitAndFindByName(new Stack<Column<?>>(), topLevelCS, columnName, deepSearch, trySanitising);
+	}
+
+	/**
+	 * Returns a new ColumnPointer which extends the path contained by the given one in order to point to a subcolumn with the given name.
+	 * 
+	 * @param parentPointer pointer to extend from
+	 * @param subcolumnName the name of the pointed-at column, may contain {@link ValueSetColumn.QUALIFIED_NAME_SEPARATOR}s
+	 * @return
+	 * @throws IllegalArgumentException when no path could be constructed
+	 */
+	static public ColumnPointer<?> ExtendByName(ColumnPointer<? extends ValueSetColumn<?, ?>> parentPointer, String subcolumnName) throws IllegalArgumentException
+	{
+		return ExtendByName(parentPointer, subcolumnName, true, true);
 	}
 	
 	/**
