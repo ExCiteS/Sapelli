@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
@@ -760,7 +761,8 @@ public class Form implements WarningKeeper
 		{
 			// Create new Schema:
 			schema = new Schema(project.getModel(),
-								project.getModel().getName() + ":" + id);
+								project.getModel().getName() + ":" + id,
+								CollectorClient.SCHEMA_FLAGS_COLLECTOR_USER_DATA);
 			
 			/* Add implicit columns
 			 * 	StartTime & DeviceID together form the primary key of our records.

@@ -95,6 +95,35 @@ public abstract class StorageClient implements StorageObserver
 	static protected final byte MODEL_SERIALISATION_KIND_RESERVED = 0;
 	static protected final byte MODEL_SERIALISATION_KIND_COMPRESSED_JAVA_OBJECT = -1;
 	
+	/**
+	 * Schema flag indicating that the Schema has been defined at the Storage layer of the Sapelli Library.
+	 * 
+	 * Note: flag bits 4 & 5 are reserved for future Storage layer usage.
+	 */
+	static private final int SCHEMA_FLAG_STORAGE_LAYER =	1 << 0;
+	
+	/**
+	 * Schema flag indicating that records of the Schema are exportable.
+	 */
+	static public final int SCHEMA_FLAG_EXPORTABLE = 		1 << 1;
+	
+	/**
+	 * Schema flag indicating that changes made to records of the Schema will reported to StorageObservers.
+	 */
+	static public final int SCHEMA_FLAG_TRACK_CHANGES =		1 << 2;
+
+	/**
+	 * Schema flag indicating that records of the Schema hold a history of changes.
+	 * Using this flag implies the Schema will have change tracking (@see {@link #SCHEMA_FLAG_TRACK_CHANGES}) enabled as well.
+	 * TODO Not yet implemented
+	 */
+	static public final int SCHEMA_FLAG_KEEP_HISTORY =		SCHEMA_FLAG_TRACK_CHANGES | 1 << 3;
+	
+	/**
+	 * Flags used on "internal" Storage layer Schemata .
+	 */
+	static public final int SCHEMA_FLAGS_STORAGE_INTERNAL =	SCHEMA_FLAG_STORAGE_LAYER;
+	
 	// DYNAMICS -----------------------------------------------------
 	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
 	
@@ -368,7 +397,9 @@ public abstract class StorageClient implements StorageObserver
 	{
 		// Forward to all observers (if any):
 		for(StorageObserver observer : observers)
-			observer.storageEvent(operation, recordRef);
+			// Only report events about records whose Schema has track changes enabled:
+			if(recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRACK_CHANGES))
+				observer.storageEvent(operation, recordRef);
 	}
 	
 	/**

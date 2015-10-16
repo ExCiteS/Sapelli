@@ -76,6 +76,33 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	}
 	
 	/**
+	 * Flag indicating that a Schema has been defined at the Collector layer of the Sapelli Library.
+	 * 
+	 * Note: flag bits 11, 12 & 13 are reserved for future Collector layer usage
+	 */
+	static private final int SCHEMA_FLAG_COLLECTOR_LAYER =		1 << 10;
+	
+	/**
+	 * Flags used on "internal" Collector layer Schemata.
+	 */
+	static public final int SCHEMA_FLAGS_COLLECTOR_INTERNAL = 	SCHEMA_FLAG_COLLECTOR_LAYER;
+	
+	/**
+	 * Flags used on Schemata for all Collector data records.
+	 */
+	static public final int SCHEMA_FLAGS_COLLECTOR_DATA = 		SCHEMA_FLAG_COLLECTOR_LAYER | SCHEMA_FLAG_EXPORTABLE;
+	
+	/**
+	 * Flags used on Schemata for automatically-generated ("auxiliary") Collector data records.
+	 */
+	static public final int SCHEMA_FLAGS_COLLECTOR_AUX_DATA = 	SCHEMA_FLAGS_COLLECTOR_DATA;
+	
+	/**
+	 * Flags used on Schemata for user-generated Collector data records.
+	 */
+	static public final int SCHEMA_FLAGS_COLLECTOR_USER_DATA = 	SCHEMA_FLAGS_COLLECTOR_DATA | SCHEMA_FLAG_KEEP_HISTORY;
+	
+	/**
 	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
 	 * 
 	 * @param project
