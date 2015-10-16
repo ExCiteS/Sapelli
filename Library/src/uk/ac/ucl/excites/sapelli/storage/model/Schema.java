@@ -72,7 +72,7 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public Record GetMetaRecord(Schema schema, StorageClient client)
 	{
-		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name); // TODO add tableName
+		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name, schema.flags, client.getTableName(schema));
 	}
 	
 	/**
