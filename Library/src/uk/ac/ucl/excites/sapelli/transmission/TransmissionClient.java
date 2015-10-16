@@ -43,6 +43,23 @@ public abstract class TransmissionClient extends StorageClient
 	{
 		AddReservedModel(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
 	}
+	
+	/**
+	 * Flag indicating that a Schema has been defined at the Transmission layer of the Sapelli Library
+	 */
+	static private final int SCHEMA_FLAG_TRANSMISSION_LAYER =	1 << 6;
+	
+	/**
+	 * Schema flag indicating that records of the Schema can be transmitted using the Transmission/Payload classes
+	 */
+	static public final int SCHEMA_FLAG_TRANSMITTABLE = 		1 << 7;
+	
+	// Note: flag bits 8 & 9 are reserved for future Transmission layer usage
+	
+	/**
+	 * Flags used on "internal" Transmission layer Schemata
+	 */
+	static public final int SCHEMA_FLAGS_TRANSMISSION_INTERNAL = SCHEMA_FLAG_TRANSMISSION_LAYER;
 
 	// DYNAMICS------------------------------------------------------	
 	/* (non-Javadoc)
