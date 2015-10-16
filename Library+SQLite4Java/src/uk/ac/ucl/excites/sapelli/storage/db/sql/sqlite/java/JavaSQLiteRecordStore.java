@@ -50,7 +50,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * @param upgrader
 	 * @throws DBException
 	 */
-	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName, int targetVersion, SQLRecordStoreUpgrader<?> upgrader) throws DBException
+	public JavaSQLiteRecordStore(StorageClient client, File folderPath, String baseName, int targetVersion, SQLRecordStoreUpgrader upgrader) throws DBException
 	{
 		super(client);
 		

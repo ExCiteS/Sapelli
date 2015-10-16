@@ -19,6 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -300,6 +302,7 @@ public class CollectorApp extends Application
 	{
 
 		private int oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
+		private List<String> upgradeWarnings = Collections.<String> emptyList();
 		
 		@Override
 		protected void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException
@@ -317,9 +320,10 @@ public class CollectorApp extends Application
 		}
 		
 		@Override
-		public void upgradePerformed(int fromVersion, int toVersion)
+		public void upgradePerformed(int fromVersion, int toVersion, List<String> warnings)
 		{
 			oldDatabaseVersion = fromVersion;
+			upgradeWarnings = warnings;
 		}
 		
 		public boolean hasDatabaseBeenUpgraded()
@@ -335,6 +339,14 @@ public class CollectorApp extends Application
 			return oldDatabaseVersion;
 		}
 		
+		/**
+		 * @return the upgradeWarnings
+		 */
+		protected final List<String> getUpgradeWarnings()
+		{
+			return upgradeWarnings;
+		}
+
 		@Override
 		public void logError(String msg, Throwable throwable)
 		{

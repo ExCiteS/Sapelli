@@ -70,7 +70,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 * @param upgrader
 	 * @throws DBException
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName, int targetVersion, SQLRecordStoreUpgrader<?> upgrader) throws DBException
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName, int targetVersion, SQLRecordStoreUpgrader upgrader) throws DBException
 	{
 		super(client);
 		
@@ -90,6 +90,17 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		
 		// Set initialisation args:
 		setInitialisationArguments(helper.newDB, targetVersion, upgrader);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#doInitialise()
+	 */
+	@Override
+	protected void doInitialise() throws DBException
+	{
+		addProtectedTable("android_metadata");
+		
+		super.doInitialise(); // !!!
 	}
 	
 	@Override

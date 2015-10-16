@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,23 +41,23 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
  * @author mstevens
  *
  */
-public abstract class SQLRecordStoreUpgrader<C extends StorageClient>
+public abstract class SQLRecordStoreUpgrader
 {
 	
-	protected final C client;
+	private final List<String> warnings;
 	protected final UpgradeCallback callback;
 	protected final File backupFolder;
-	private final Map<Integer, UpgradeStep<C>> steps;
+	private final Map<Integer, UpgradeStep<?>> steps;
 	
 	@SafeVarargs
-	public SQLRecordStoreUpgrader(C client, UpgradeCallback callback, File backupFolder, UpgradeStep<C>... steps)
+	public SQLRecordStoreUpgrader(UpgradeCallback callback, File backupFolder, UpgradeStep<?>... steps)
 	{
-		this.client = client;
+		this.warnings = new ArrayList<String>();
 		this.callback = callback;
 		this.backupFolder = backupFolder;
-		this.steps = new HashMap<Integer, UpgradeStep<C>>(steps != null ? steps.length : 0);
+		this.steps = new HashMap<Integer, UpgradeStep<?>>(steps != null ? steps.length : 0);
 		if(steps != null)
-			for(UpgradeStep<C> step : steps)
+			for(UpgradeStep<?> step : steps)
 				this.steps.put(step.fromVersion, step);
 	}
 	
@@ -71,12 +72,15 @@ public abstract class SQLRecordStoreUpgrader<C extends StorageClient>
 	{
 		final int fromVersion = recordStore.getVersion();
 		
+		// Clear previous warnings:
+		warnings.clear();
+		
 		// Apply step-by-step upgrade:
 		int currentVersion;
 		while((currentVersion = recordStore.getVersion()) < toVersion)
 		{
 			// Get the right upgrade step:
-			UpgradeStep<C> step = steps.get(currentVersion);
+			UpgradeStep<?> step = steps.get(currentVersion);
 			if(step == null)
 				throw new DBException("No UpgradeStep for current version (" + currentVersion + ") found!");
 			
@@ -96,7 +100,7 @@ public abstract class SQLRecordStoreUpgrader<C extends StorageClient>
 				// Open transaction:
 				recordStore.startTransaction();
 				// Apply step:
-				step.apply(client, recordStore);
+				step.apply(recordStore, new UpgradeOperations());
 				// Set new version:
 				recordStore.setVersion(step.toVersion);
 				// Close transaction:
@@ -111,95 +115,131 @@ public abstract class SQLRecordStoreUpgrader<C extends StorageClient>
 		
 		// If successful:
 		if(callback != null)
-			callback.upgradePerformed(fromVersion, toVersion);
-	}
-	
-	protected List<Schema> getAllSchemata(SQLRecordStore<?, ?, ?> recordStore)
-	{
-		return recordStore.getAllKnownSchemata();
-	}
-	
-	protected void cleanup(SQLRecordStore<?, ?, ?> recordStore) throws DBException
-	{
-		recordStore.cleanup();
-	}
-	
-	/**
-	 * TODO needs testing, not sure I ever got this to really work
-	 * 
-	 * @param recordStore
-	 * @param newSchema must already contain the new Columns
-	 * @param replacers
-	 * @return the converted records, which are yet to be inserted!
-	 * @throws DBException
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected List<Record> replace(SQLRecordStore<?, ?, ?> recordStore, Schema newSchema, List<ColumnReplacer<?, ?>> replacers) throws DBException
-	{
-		if(!recordStore.doesTableExist(newSchema)) // only based on schema name (no STable object is instantiated)
-			return Collections.<Record> emptyList();
-		
-		// get Schema object as currently stored
-		Schema oldSchema = recordStore.getStoredVersion(newSchema);
-		if(oldSchema == null /*|| !oldSchema.containsEquivalentColumn(oldColumn)*/)
-			throw new DBException("TODO"); // TODO
-		
-		// get STable for oldSchema:
-		SQLTable oldTable = recordStore.getTableFactory().generateTable(oldSchema);
-		// get STable for newSchema:
-		//STable newTable = getTableFactory().generateTable(newSchema);
-		
-		// Retrieve all records currently in the (old) table:
-		List<Record> oldRecords = oldTable.select(new RecordsQuery(oldTable.schema));
-		
-		// Drop old table:
-		oldTable.drop();
-		oldTable.release();
-		
-		// Create new table:
-		//newTable.create();
-		
-		// Convert & store records:
-		List<Record> newRecords = new ArrayList<Record>(oldRecords.size());
-		for(Record oldRec : oldRecords)
-		{
-			Record newRec = newSchema.createRecord();
-			cols : for(Column<?> oldCol : oldSchema.getColumns(false))
-			{
-				for(ColumnReplacer<?, ?> replacer : replacers) // loop over replacers to see if one of them deals with the current oldCol
-					if(replacer.replace(oldCol, newRec, oldRec))
-						continue cols; // value was converted or skipped
-				//else (oldCol is not replaced or deleted):
-				newSchema.getEquivalentColumn(oldCol).storeObject(newRec, oldCol.retrieveValue(oldRec));
-			}
-			//newTable.insert(newRec);
-			newRecords.add(newRec);
-		}
-		
-		return newRecords;
+			callback.upgradePerformed(fromVersion, toVersion, warnings);
 	}
 	
 	/**
 	 * @author mstevens
 	 */
-	protected abstract static class UpgradeStep<C extends StorageClient>
+	static public abstract class UpgradeStep<C extends StorageClient>
 	{
 		
+		protected final C client;
 		public final int fromVersion;
 		public final int toVersion;
 		
-		public UpgradeStep(int fromVersion)
+		public UpgradeStep(C client, int fromVersion)
 		{
-			this(fromVersion, fromVersion + 1);
+			this(client, fromVersion, fromVersion + 1);
 		}
 		
-		public UpgradeStep(int fromVersion, int toVersion)
+		public UpgradeStep(C client, int fromVersion, int toVersion)
 		{
+			this.client = client;
 			this.fromVersion = fromVersion;
 			this.toVersion = toVersion;
 		}
 		
-		public abstract void apply(C client, SQLRecordStore<?, ?, ?> recordStore) throws Exception;
+		public abstract void apply(SQLRecordStore<?, ?, ?> recordStore, UpgradeOperations upgradeOperations) throws Exception;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public class UpgradeOperations
+	{
+		
+		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String tableName, boolean force) throws DBException
+		{
+			recordStore.dropTable(tableName, force);
+		}
+		
+		public void renameTable(SQLRecordStore<?, ?, ?> recordStore, String oldTableName, String newTableName) throws DBException
+		{
+			recordStore.renameTable(oldTableName, newTableName);
+		}
+		
+		public List<String> getAllTableNames(SQLRecordStore<?, ?, ?> recordStore)
+		{
+			return recordStore.getAllTableNames();
+		}
+		
+		public List<Schema> getAllSchemata(SQLRecordStore<?, ?, ?> recordStore)
+		{
+			return recordStore.getAllKnownSchemata();
+		}
+		
+		public void cleanup(SQLRecordStore<?, ?, ?> recordStore) throws DBException
+		{
+			recordStore.cleanup();
+		}
+		
+		public void addWarning(String warning)
+		{
+			warnings.add(warning);
+		}
+
+		public void addWarnings(Collection<String> warnings)
+		{
+			SQLRecordStoreUpgrader.this.warnings.addAll(warnings);
+		}
+		
+		/**
+		 * TODO needs testing, not sure I ever got this to really work
+		 * 
+		 * @param recordStore
+		 * @param newSchema must already contain the new Columns
+		 * @param replacers
+		 * @return the converted records, which are yet to be inserted!
+		 * @throws DBException
+		 */
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		public List<Record> replace(SQLRecordStore<?, ?, ?> recordStore, Schema newSchema, List<ColumnReplacer<?, ?>> replacers) throws DBException
+		{
+			if(!recordStore.doesTableExist(newSchema)) // only based on schema name (no STable object is instantiated)
+				return Collections.<Record> emptyList();
+			
+			// get Schema object as currently stored
+			Schema oldSchema = recordStore.getStoredVersion(newSchema);
+			if(oldSchema == null /*|| !oldSchema.containsEquivalentColumn(oldColumn)*/)
+				throw new DBException("TODO"); // TODO
+			
+			// get STable for oldSchema:
+			SQLTable oldTable = recordStore.getTableFactory().generateTable(oldSchema);
+			// get STable for newSchema:
+			//STable newTable = getTableFactory().generateTable(newSchema);
+			
+			// Retrieve all records currently in the (old) table:
+			List<Record> oldRecords = oldTable.select(new RecordsQuery(oldTable.schema));
+			
+			// Drop old table:
+			oldTable.drop();
+			oldTable.release();
+			
+			// Create new table:
+			//newTable.create();
+			
+			// Convert & store records:
+			List<Record> newRecords = new ArrayList<Record>(oldRecords.size());
+			for(Record oldRec : oldRecords)
+			{
+				Record newRec = newSchema.createRecord();
+				cols : for(Column<?> oldCol : oldSchema.getColumns(false))
+				{
+					for(ColumnReplacer<?, ?> replacer : replacers) // loop over replacers to see if one of them deals with the current oldCol
+						if(replacer.replace(oldCol, newRec, oldRec))
+							continue cols; // value was converted or skipped
+					//else (oldCol is not replaced or deleted):
+					newSchema.getEquivalentColumn(oldCol).storeObject(newRec, oldCol.retrieveValue(oldRec));
+				}
+				//newTable.insert(newRec);
+				newRecords.add(newRec);
+			}
+			
+			return newRecords;
+		}
 		
 	}
 	
@@ -209,7 +249,7 @@ public abstract class SQLRecordStoreUpgrader<C extends StorageClient>
 	public interface UpgradeCallback
 	{
 		
-		public void upgradePerformed(int fromVersion, int toVersion);
+		public void upgradePerformed(int fromVersion, int toVersion, List<String> warnings);
 		
 	}
 	

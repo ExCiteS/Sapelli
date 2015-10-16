@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -106,6 +107,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#doInitialise()
+	 */
+	@Override
+	protected void doInitialise() throws DBException
+	{
+		addProtectedTable("sqlite_master");
+		
+		super.doInitialise(); // !!!
 	}
 
 	/* (non-Javadoc)
@@ -206,6 +218,37 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getAllTableNames()
+	 */
+	@Override
+	protected List<String> getAllTableNames()
+	{
+		ISQLiteCursor cursor = null;
+		try
+		{
+			SQLiteStringColumn<String> nameCol = new SQLiteStringColumn<String>(this, "name", null, null);
+			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table'",
+									Collections.<SQLiteColumn<?, ?>> singletonList(nameCol),
+									Collections.<String> emptyList());
+			List<String> tableNames = new ArrayList<String>();
+			if(cursor != null)
+				while(cursor.moveToNext())
+					CollectionUtils.addIgnoreNull(tableNames, nameCol.getValueOrNull(cursor, 0));
+			return tableNames;
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err);
+			return Collections.<String> emptyList();
+		}
+		finally
+		{
+			if(cursor != null)
+				cursor.close();
+		}
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#hasFullIndexSupport()
 	 */

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
@@ -66,11 +67,12 @@ public class Schema extends ColumnSet implements Serializable
 	 * Returns a "meta" record which describes the given schema (and contains a serialised version of it)
 	 * 
 	 * @param schema
+	 * @param client
 	 * @return
 	 */
-	static public Record GetMetaRecord(Schema schema)
+	static public Record GetMetaRecord(Schema schema, StorageClient client)
 	{
-		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
+		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name); // TODO add tableName
 	}
 	
 	/**
@@ -145,12 +147,13 @@ public class Schema extends ColumnSet implements Serializable
 	/**
 	 * Returns a "meta" record which describes the schema (and contains a serialised version of it)
 	 * 
+	 * @param client
 	 * @return meta Record
 	 * @see #GetMetaRecord(Schema)
 	 */
-	public Record getMetaRecord()
+	public Record getMetaRecord(StorageClient client)
 	{
-		return GetMetaRecord(this);
+		return GetMetaRecord(this, client);
 	}
 	
 	/**

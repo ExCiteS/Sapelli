@@ -127,11 +127,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	private final Map<RecordReference, STable> tables;
 	
-	
 	/**
 	 * If non-null (all) SQL statements/queries will use parameters instead of literal values
 	 */
 	private final String valuePlaceHolder;
+	
+	/**
+	 * The names of tables that are protected.
+	 */
+	private final List<String> protectedTables = new ArrayList<String>();
 
 	/**
 	 * @param client
@@ -142,16 +146,32 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		super(client, true); // make use of roll-back tasks
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
+		
+		// Protected tables:
+		this.protectedTables.add(client.getTableName(Model.MODEL_SCHEMA));
+		this.protectedTables.add(client.getTableName(Model.SCHEMA_SCHEMA));
+		// subclasses can add additional protected tables during initialisation
 	}
 	
 	/**
 	 * @param initArgs the initInfo to set
 	 */
-	protected final void setInitialisationArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader<?> upgrader)
+	protected final void setInitialisationArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader upgrader)
 	{
 		this.initArgs = new InitArguments(newDB, targetVersion, upgrader);
 	}
 
+	protected final void addProtectedTable(String tableName) throws DBException
+	{
+		if(!isInitialising())
+			throw new DBException("Protected tables can only be added during initialisation");
+		//else:
+		if(tableName != null && !tableName.isEmpty())
+			protectedTables.add(tableName);
+		else
+			throw new DBException("Protected table name cannot be null or empty!");
+	}
+	
 	/**
 	 * @author mstevens
 	 */
@@ -160,14 +180,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public final boolean newDB;
 		public final int targetVersion;
-		public final SQLRecordStoreUpgrader<?> upgrader;
+		public final SQLRecordStoreUpgrader upgrader;
 		
 		/**
 		 * @param newDB
 		 * @param targetVersion the version we want to database to be in or be upgrade to
 		 * @param upgrader
 		 */
-		public InitArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader<?> upgrader)
+		public InitArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader upgrader)
 		{
 			this.newDB = newDB;
 			this.targetVersion = targetVersion;
@@ -176,10 +196,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 	}
 	
-	/* (non-Javadoc)
+	/**
+	 * Subclasses may override this but *must* call super.
+	 * TODO somehow force the super() call using annotations?
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#doInitialise()
 	 */
-	protected final void doInitialise() throws DBException
+	protected void doInitialise() throws DBException
 	{
 		if(initArgs == null)
 			throw new DBException("Cannot initialise " + getClass().getSimpleName() + " because initialisation arguments have not been set!");
@@ -340,7 +363,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
-					schemataTable.insert(Schema.GetMetaRecord(schema));
+					schemataTable.insert(Schema.GetMetaRecord(schema, client));
 				}
 			}
 			catch(Exception e)
@@ -516,7 +539,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		try
 		{
-			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
+			Record schemaMetaRecord = Schema.GetMetaRecord(schema, client);
 			RecordReference modelRef = Model.SCHEMA_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
 			return model.getSchema(Model.SCHEMA_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
@@ -730,6 +753,94 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			case GREATER : return ">";
 		}
 		return null; // this should never happen
+	}
+	
+	/**
+	 * To be overridden by subclasses.
+	 * 
+	 * @return
+	 */
+	public final List<String> getProtectedTableNames()
+	{
+		return protectedTables;
+	}
+	
+	/**
+	 * @return a {@link List} of the names of all tables in the database
+	 */
+	protected abstract List<String> getAllTableNames();
+	
+	/**
+	 * Drops the table with the given name.  Use with care!
+	 * Will fail, with {@link DBException} thrown, if the table is protected and unless {@code force} is {@code true}.
+	 * 
+	 * @param tableName
+	 * @param force
+	 * @throws DBException
+	 */
+	protected void dropTable(String tableName, boolean force) throws DBException
+	{
+		if(!protectedTables.contains(tableName) || force)
+		{
+			// Drop table:
+			executeSQL(generateDropTableStatement(tableName));
+			
+			// If this is not the modelsTable or schemataTable...
+			if(!tableName.equals(modelsTable.tableName) && tableName.equals(schemataTable.tableName))
+			{
+				// Delete schemata entry:
+				if(schemataTable.isInDB())
+					schemataTable.delete(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, tableName)));
+				
+				// Delete from tables map:
+				RecordReference schemaRecRef = null;
+				for(Map.Entry<RecordReference, STable> tableEntry : tables.entrySet())
+					if(tableEntry.getValue().tableName.equals(tableName))
+					{
+						schemaRecRef = tableEntry.getKey();
+						break;
+					}
+				if(schemaRecRef != null)
+					tables.remove(schemaRecRef);
+			}
+		}
+		else
+			throw new DBException("Cannot delete protected table '" + tableName + "'!");
+	}
+	
+	protected String generateDropTableStatement(String tableName)
+	{
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+		bldr.append("DROP TABLE");
+		bldr.append(tableName);
+		bldr.append(";", false);
+		return bldr.toString();
+	}
+	
+	/**
+	 * Renames the table with the given old name to the given new name.  Use with care!
+	 * Will fail, with {@link DBException} thrown, if the table is protected.
+	 * 
+	 * @param oldTableName
+	 * @param newTableName
+	 * @throws DBException
+	 */
+	protected void renameTable(String oldTableName, String newTableName) throws DBException
+	{
+		if(!protectedTables.contains(oldTableName))
+		{
+			executeSQL(String.format("ALTER TABLE %1$s RENAME TO %2$s;", oldTableName, newTableName));
+			
+			// Update schemata entry:
+			Record schemaMetaRecord = schemataTable.select(new FirstRecordQuery(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, oldTableName))));
+			Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(schemaMetaRecord, newTableName);
+			schemataTable.update(schemaMetaRecord);
+			
+			// Delete from tables map:
+			tables.remove(schemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed
+		}
+		else
+			throw new DBException("Cannot rename protected table '" + oldTableName + "'!");
 	}
 	
 	/**
@@ -1132,20 +1243,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			
 			// Perform the DROP operation:
-			executeSQL(generateDropTableStatement());
+			executeSQL(generateDropTableStatement(tableName));
 			// Note: if there is an exception the line below will not be executed but the roll-back task above will...
 			
 			// Now the table is gone...
 			existsInDB = false; // !!!
-		}
-		
-		protected String generateDropTableStatement()
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("DROP TABLE");
-			bldr.append(tableName);
-			bldr.append(";", false);
-			return bldr.toString();
 		}
 		
 		/**

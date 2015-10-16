@@ -21,68 +21,53 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
  * @author mstevens
  *
  */
-public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader<CollectorClient> implements StoreUser
+public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader implements StoreUser
 {
 	
 	public CollectorSQLRecordStoreUpgrader(CollectorClient client, UpgradeCallback callback, FileStorageProvider fileStorageProvider)
 	{
-		super(	client,
-				callback,
+		super(	callback,
 				fileStorageProvider.getOldDBVersionsFolder(false),
 				// Steps:
-				upgradeFrom2To3
+				//	v2->v3:
+				CollectorBeta17UpgradeStep(client)
 				/*...*/);
 	}
-	
-	/**
-	 * TODO
-	 * 
-	 * 			//	The RecordReferences contain enough information (all we really need is the modelID) and 
-			//	retrieving them does not involve Model serialisation (which would fail because the 
-	 * 
-	 * @author mstevens
-	 */
-	static private UpgradeStep<CollectorClient> upgradeFrom2To3 = new UpgradeStep<CollectorClient>(CollectorClient.COLLECTOR_RECORDSTORE_V2, CollectorClient.COLLECTOR_RECORDSTORE_V3)
+
+	static private UpgradeStep<CollectorClient> CollectorBeta17UpgradeStep(CollectorClient client)
 	{
-		@Override
-		public void apply(CollectorClient client, SQLRecordStore<?, ?, ?> recordStore) throws Exception
+		return new Beta17UpgradeStep<CollectorClient>(client, CollectorClient.COLLECTOR_RECORDSTORE_V2, CollectorClient.COLLECTOR_RECORDSTORE_V3)
 		{
-			// Retrieve all known Models as RecordReferences, and loop over them:
-			for(RecordReference modelRecRef : recordStore.retrieveRecordReferences(new RecordsQuery(Model.MODEL_SCHEMA)))
+			@Override
+			protected String getOldTableName(Schema schema)
 			{
-				Model model = null;
-				try
-				{
-					model = client.getModel(Model.MODEL_ID_COLUMN.retrieveValue(modelRecRef));
-					recordStore.store(model.getModelRecord(client));
-				}
-				catch(UnknownModelException ume)
-				{
-					// TODO
-				}
-				catch(Exception e)
-				{
-					//if(model == null)
-						//client.logError("Failed to Failed to , throwable);
-					// TODO recordStore.delete(modelRecRef); // bad idea??
-					throw e;
-				}
+				// From old CollectorClient:
+				if(schema == ProjectRecordStore.PROJECT_SCHEMA)
+					return "Collector_Projects";
+				if(schema == ProjectRecordStore.FSI_SCHEMA)
+					return "Project_FormSchemaInfo";
+				if(schema == ProjectRecordStore.HFK_SCHEMA)
+					return "Relationship_HFKs";
+				// From old TransmissionClient:
+				// TODO ...
+				// From old StorageClient:
+				if(schema == Model.MODEL_SCHEMA)
+					return "Models";
+				if(schema == Model.SCHEMA_SCHEMA)
+					return "Schemata";
+				else
+					return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
 			}
-			
-			// TODO rename object col
-			// TODO drop hashCode col? (doesn't hurt to keep it)
-		}
-	};
+		};
+	}
 	
 }
