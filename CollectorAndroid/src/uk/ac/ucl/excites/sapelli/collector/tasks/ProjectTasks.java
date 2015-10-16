@@ -43,7 +43,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * A collection of async tasks to deal with loading, removed projects and handling their data.

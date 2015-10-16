@@ -23,10 +23,10 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**

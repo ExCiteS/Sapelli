@@ -62,7 +62,6 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
@@ -75,6 +74,10 @@ import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceByFlags;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceResolver;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
@@ -461,12 +464,48 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 	}
 	
+	protected Collection<Schema> getSchemata(Source source)
+	{
+		if(source.isNone())
+			return Collections.<Schema> emptyList();
+		else if(source.isAny())
+			return getAllKnownSchemata();
+		else
+			return source.getSchemata(new SourceResolver()
+			{
+				@Override
+				public Collection<Schema> resolve(SourceBySet sourceBySet)
+				{
+					return	sourceBySet.isByInclusion() ?
+								sourceBySet.getSchemata() :
+								getAllKnownSchemataExcept(sourceBySet.getSchemata());
+				}
+
+				@Override
+				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
+				{
+					return sourceByFlags.filterSchemata(getAllKnownSchemata());
+				}
+			});
+	}
+	
 	protected List<Schema> getAllKnownSchemata()
 	{
-		return getAllKnownSchemataExcept(Collections.<Schema> emptySet());
+		return getKnownSchemata(null);
 	}
 	
 	protected List<Schema> getAllKnownSchemataExcept(Set<Schema> skipSchemata)
+	{
+		// Construct constraint to filter out undesired schemata:
+		AndConstraint filterSkipSchemata = new AndConstraint();
+		for(Schema skippedSchema : skipSchemata)
+			filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
+		
+		// Query for schemata, filtering out the undisidered ones:
+		return getKnownSchemata(filterSkipSchemata);
+	}
+	
+	protected List<Schema> getKnownSchemata(Constraint constraint)
 	{
 		try
 		{
@@ -474,13 +513,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(schemataTable == null || schemataTable.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
-			// Construct constraint to filter out undesired schemata:
-			AndConstraint filterSkipSchemata = new AndConstraint();
-			for(Schema skippedSchema : skipSchemata)
-				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
-			
-			// Query schemata table, filtering out the undesired ones:
-			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.SCHEMA_SCHEMA), filterSkipSchemata));
+			// Query schemata table, using the given constraint:
+			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.SCHEMA_SCHEMA), constraint));
 			if(schemaMetaRecords.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
@@ -534,6 +568,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @param schema
 	 * @return the stored version of the schema, or null if no records of this schema are currently stored
+	 * @deprecated
 	 */
 	protected Schema getStoredVersion(Schema schema)
 	{
@@ -552,15 +587,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	protected abstract TableFactory<STable> getTableFactory();
-	
-	protected Collection<Schema> getSchemata(Source source)
-	{
-		return	(source.isAny() ?
-					getAllKnownSchemata() :
-					(source.isByInclusion() ?
-						source.getSchemata() :
-						getAllKnownSchemataExcept(source.getSchemata())));
-	}
 	
 	/**
 	 * Default implementation for SQL databases: first do a SELECT based on the key to verify whether the

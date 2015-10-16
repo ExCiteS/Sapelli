@@ -39,7 +39,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * Abstract superclass for Record storage back-ends

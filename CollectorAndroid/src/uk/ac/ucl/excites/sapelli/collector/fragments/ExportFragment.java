@@ -41,6 +41,7 @@ import android.widget.DatePicker;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TimePicker;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -57,9 +58,9 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.Composi
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 
 /**
@@ -436,7 +437,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			if(projectToExport != null)
 				source = Source.From(projectToExport.getModel());
 			else
-				source = Source.ANY; // TODO Exclude collector-internal schemas!!!
+				source = Source.With(CollectorClient.SCHEMA_FLAGS_COLLECTOR_DATA);
 			
 			// Define constraints:
 			AndConstraint constraints = new AndConstraint();

@@ -24,6 +24,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
