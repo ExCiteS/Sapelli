@@ -183,7 +183,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	
 	public VS parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		VS record = getNewRecord();
+		VS record = getNewValueSet();
 		record.parse(recordStr, includeVirtual, skipColumns);
 		return record;
 	}
@@ -213,16 +213,16 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	/**
 	 * @return new "subrecord" instance
 	 */
-	public abstract VS getNewRecord();
+	public abstract VS getNewValueSet();
 
 	@Override
 	protected VS read(BitInputStream bitStream) throws IOException
 	{
-		VS record = getNewRecord();
+		VS valueSet = getNewValueSet();
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(!isColumnSkipped(subCol))
-				subCol.storeObject(record, getBinaryColumn(subCol).readValue(bitStream));
-		return record;
+				subCol.storeObject(valueSet, getBinaryColumn(subCol).readValue(bitStream));
+		return valueSet;
 	}
 
 	/**

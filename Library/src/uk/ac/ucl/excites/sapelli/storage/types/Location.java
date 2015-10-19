@@ -126,7 +126,7 @@ public class Location extends ValueSet<ColumnSet>
 	}
 	
 	/**
-	 * Only to be used by {@link LocationColumn#getNewRecord()}
+	 * Only to be used by {@link LocationColumn#getNewValueSet()}
 	 */
 	/*package*/ Location()
 	{

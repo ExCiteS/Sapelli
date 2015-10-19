@@ -54,7 +54,7 @@ public class Orientation extends ValueSet<ColumnSet>
 	}
 	
 	/**
-	 * Only to be used by {@link OrientationColumn#getNewRecord()}
+	 * Only to be used by {@link OrientationColumn#getNewValueSet()}
 	 */
 	/*package*/ Orientation()
 	{

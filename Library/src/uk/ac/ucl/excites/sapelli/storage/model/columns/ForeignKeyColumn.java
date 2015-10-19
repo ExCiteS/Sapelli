@@ -65,7 +65,7 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 	}
 
 	@Override
-	public RecordReference getNewRecord()
+	public RecordReference getNewValueSet()
 	{
 		return foreignSchema.createRecordReference();
 	}

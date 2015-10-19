@@ -406,7 +406,7 @@ public class ColumnPointer<C extends Column<?>>
 				if(!recCol.isValuePresent(vs))
 				{
 					if(create)
-						recCol.storeObject(vs, recCol.getNewRecord());
+						recCol.storeObject(vs, recCol.getNewValueSet());
 					else
 						return null;
 				}

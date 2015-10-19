@@ -91,7 +91,7 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	}
 	
 	@Override
-	public Location getNewRecord()
+	public Location getNewValueSet()
 	{
 		return new Location();
 	}

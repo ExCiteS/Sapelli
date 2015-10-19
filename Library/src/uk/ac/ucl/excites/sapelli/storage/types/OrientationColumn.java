@@ -50,7 +50,7 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	}
 
 	@Override
-	public Orientation getNewRecord()
+	public Orientation getNewValueSet()
 	{
 		return new Orientation();
 	}
