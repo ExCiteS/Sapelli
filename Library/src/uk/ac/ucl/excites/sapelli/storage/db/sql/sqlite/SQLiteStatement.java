@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.Closeable;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
@@ -37,7 +38,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
  * @see http://www.sqlite.org/c3ref/stmt.html
  * @see http://en.wikipedia.org/wiki/Create,_read,_update_and_delete
  */
-public abstract class SapelliSQLiteStatement
+public abstract class SQLiteStatement implements Closeable
 {
 	
 	protected final List<SQLiteColumn<?, ?>> paramCols;

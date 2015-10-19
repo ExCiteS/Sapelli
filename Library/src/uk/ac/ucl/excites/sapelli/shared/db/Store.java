@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.shared.db;
 
+import java.io.Closeable;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -27,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
  * 
  * @author mstevens
  */
-public abstract class Store
+public abstract class Store implements Closeable
 {
 	
 	private boolean initialising = false;
@@ -77,23 +78,23 @@ public abstract class Store
 	 * 
 	 * @see java.lang.Object#finalize()
 	 */
-	public void finalize()
+	public final void finalize()
 	{
-		try
-		{
-			close();
-		}
-		catch(DBException dbE)
-		{
-			dbE.printStackTrace(System.err);
-		}
+		close();
 	}
 	
-	public void close() throws DBException
+	public final void close()
 	{
 		if(!closed)
 		{
-			doClose();
+			try
+			{
+				doClose();
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+			}
 			closed = true;
 		}
 	}
@@ -105,7 +106,7 @@ public abstract class Store
 	 */
 	protected abstract void doClose() throws DBException;
 
-	public boolean isClosed()
+	public final boolean isClosed()
 	{
 		return closed;
 	}

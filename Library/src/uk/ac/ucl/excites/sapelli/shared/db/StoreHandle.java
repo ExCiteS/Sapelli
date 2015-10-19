@@ -222,16 +222,9 @@ public class StoreHandle<S extends Store>
 		// Finalise if no longer used by other clients...
 		if(users.isEmpty() && storeStrongRef == null) // ...and there is no strong reference
 		{
-			try
-			{
-				S store = getStoreFromWeakRef();
-				if(store != null)
-					store.close();
-			}
-			catch(DBException dbE)
-			{
-				dbE.printStackTrace(System.err);
-			}
+			S store = getStoreFromWeakRef();
+			if(store != null)
+				store.close();
 		}
 	}
 	

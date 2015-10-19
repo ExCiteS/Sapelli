@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.Closeable;
+
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 
 /**
@@ -31,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
  * 
  * @author mstevens
  */
-public interface ISQLiteCursor
+public interface SQLiteCursor extends Closeable
 {
 
 	public byte[] getBlob(int columnIdx) throws DBException;
