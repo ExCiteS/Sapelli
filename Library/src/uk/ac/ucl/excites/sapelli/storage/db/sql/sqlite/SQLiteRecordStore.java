@@ -229,7 +229,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			SQLiteStringColumn<String> nameCol = new SQLiteStringColumn<String>(this, "name", null, null);
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table'",
-									Collections.<SQLiteColumn<?, ?>> singletonList(nameCol),
+									Collections.<SQLiteColumn<?, ?>> emptyList(),
 									Collections.<String> emptyList());
 			List<String> tableNames = new ArrayList<String>();
 			if(cursor != null)
