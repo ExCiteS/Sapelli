@@ -3,13 +3,11 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.shared.util.ReflectionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeOperations;
@@ -99,10 +97,6 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		// Create new Models table and insert new records:
 		recordStore.store(newModelRecs); // this also achieves renaming the "compressedSerialisedObject" column to "serialisation"
 		
-		// Use reflection to make Column#optional a non-final field so we can modify it below:
-		Field optionalField = Column.class.getField("optional");
-		ReflectionHelpers.setFinal(optionalField, false);
-		
 		// List for the names of all tables that should be kept:
 		Set<String> keepTables = new HashSet<String>(recordStore.getProtectedTableNames());
 		
@@ -123,40 +117,36 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			keepTables.add(schema.tableName); // !!!
 			
 			// Find all optional ValueSetColumns in the schema:
-			List<ValueSetColumn<?, ?>> optionalValueSetCols = new ArrayList<ValueSetColumn<?, ?>>();
+			boolean hasOptionalValueSetCols = false;
 			for(Column<?> col : schema.getColumns(false))
 				if(col instanceof ValueSetColumn<?, ?> && col.optional)
-					optionalValueSetCols.add((ValueSetColumn<?, ?>) col);
+				{
+					hasOptionalValueSetCols = true;
+					break;
+				}
 			// If the schema has such columns then...
-			if(!optionalValueSetCols.isEmpty())
+			if(hasOptionalValueSetCols)
 			{
-				// Temporarily make each of these columns non-optional:
-				for(ValueSetColumn<?, ?> vCol : optionalValueSetCols)
-					optionalField.setBoolean(vCol, false);
-				/* This is required because the tables currently existing in the db are
-				 *	incompatible with the SQLRecordStore#SQLTable instance we would get
-				 *	for the schema if the ValueSetColumn(s) were optional. By pretending
-				 *	the column is non-optional the SQLTable instance that will be created
-				 *	the execute the query below will be compatible with the table as it
-				 *	exists in the db, enabling us to ... */
+				// Temporarily disable the use of boolean columns to represent optional ValueSetColumns:
+				upgradeOps.getTableFactory(recordStore).setUseBoolColsForOptionalValueSetCols(false);
+				/* This is required because the tables currently existing in the db are incompatible with
+				 * the SQLRecordStore#SQLTable instance we would get for the schema if we wouldn't disable
+				 * this behaviour. Disabling the behaviour ensures we get a SQLTable that is compatible with
+				 * the table as it exists in the db, enabling us to ... */
 				
 				// ... get all current records:
 				List<Record> records = recordStore.retrieveRecords(schema);
 
 				// Drop table (this will also get rid of the above-mentioned SQLTable instance):
 				upgradeOps.dropTable(recordStore, schema.tableName, false);
-
-				// Make the ValueSetColumns optional again:
-				for(ValueSetColumn<?, ?> vCol : optionalValueSetCols)
-					optionalField.setBoolean(vCol, true);
+				
+				// Re-enable the use of boolean columns to represent optional ValueSetColumns:
+				upgradeOps.getTableFactory(recordStore).setUseBoolColsForOptionalValueSetCols(true);
 				
 				// Re-insert all records in new table (which will have the boolean column representing the ValueSetColumn):
 				recordStore.store(records);
 			}
 		}
-		
-		// Make Column#optional final again:
-		ReflectionHelpers.setFinal(optionalField, true);
 		
 		// Delete unknown/unupgradable tables:
 		for(String tableName : upgradeOps.getAllTableNames(recordStore))

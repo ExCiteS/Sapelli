@@ -1551,6 +1551,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public STable generateTable(Schema schema) throws DBException;
 		
+		/**
+		 * @return whether or not boolean Columns are used to represent optional ValueSetColumns
+		 */
+		public boolean isUseBoolColsForOptionalValueSetCols();
+		
+		/**
+		 * Method to disable/enable usage of boolean Columns to represent optional ValueSetColumns at top-level.
+		 * Only for upgrade purposes.
+		 * 
+		 * @param enable
+		 * @throws DBException
+		 */
+		public void setUseBoolColsForOptionalValueSetCols(boolean enable) throws DBException;
+		
 	}
 	
 	/**
@@ -1569,6 +1583,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		
 		protected STable table;
+		
+		private boolean useBoolColsForOptionalValueSetCols = true;
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
@@ -1589,6 +1605,27 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		protected abstract STable createTable(Schema schema) throws DBException;
 		
+		/**
+		 * @return the useBoolColsForOptionalValueSetCols
+		 */
+		@Override
+		public boolean isUseBoolColsForOptionalValueSetCols()
+		{
+			return useBoolColsForOptionalValueSetCols;
+		}
+
+		/**
+		 * @param enable
+		 * @throws DBException 
+		 */
+		@Override
+		public void setUseBoolColsForOptionalValueSetCols(boolean enable) throws DBException
+		{
+			if(!isInitialising())
+				throw new DBException("Changing useBoolColsForOptionalValueSetCols is only allowed during initialisation/upgrade!");
+			this.useBoolColsForOptionalValueSetCols = enable;
+		}
+
 		/**
 		 * TODO implement ListColumns using normalisation:
 		 * 		generate Schema for a "subtable" with FK to this one --> generate table for it ... etc.

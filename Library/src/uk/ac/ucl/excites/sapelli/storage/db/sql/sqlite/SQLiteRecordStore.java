@@ -699,7 +699,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
 		{
-			if(valueSetCol.optional)
+			if(isUseBoolColsForOptionalValueSetCols() && valueSetCol.optional)
 			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
 				table.addColumn(new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, getColumnPointer(valueSetCol), new TypeMapping<Boolean, VS>()
 				{

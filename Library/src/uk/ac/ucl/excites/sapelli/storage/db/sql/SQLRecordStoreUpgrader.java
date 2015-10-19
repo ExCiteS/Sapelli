@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TableFactory;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -206,6 +207,14 @@ public abstract class SQLRecordStoreUpgrader
 		public List<Schema> getAllSchemata(SQLRecordStore<?, ?, ?> recordStore)
 		{
 			return recordStore.getAllKnownSchemata();
+		}
+		
+		/**
+		 * @see SQLRecordStore#getTableFactory()
+		 */
+		public TableFactory<?> getTableFactory(SQLRecordStore<?, ?, ?> recordStore)
+		{
+			return recordStore.getTableFactory();
 		}
 		
 		/**
