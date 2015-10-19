@@ -697,7 +697,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, getColumnPointer(boolCol)));
+			table.addColumn(new SQLiteBooleanColumn.Simple(SQLiteRecordStore.this, getColumnPointer(boolCol)));
 		}
 		
 		@Override
