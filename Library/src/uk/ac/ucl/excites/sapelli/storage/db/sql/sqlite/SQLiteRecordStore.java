@@ -43,10 +43,13 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteIntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -688,6 +691,36 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		protected SQLiteTable createTable(Schema schema) throws DBException
 		{
 			return new SQLiteTable(schema);
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+		 */
+		@Override
+		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+		{
+			if(valueSetCol.optional)
+			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
+				table.addColumn(new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, getColumnPointer(valueSetCol), new TypeMapping<Boolean, VS>()
+				{
+					@Override
+					public Boolean toSQLType(VS value)
+					{
+						return value != null;
+					}
+	
+					@Override
+					public VS toSapelliType(Boolean value)
+					{
+						if(value != null && value.booleanValue())
+							return valueSetCol.getNewValueSet();
+						else
+							return null;
+					}
+				}));
+			}
+			// !!!
+			super.enter(valueSetCol);
 		}
 		
 		/* (non-Javadoc)
