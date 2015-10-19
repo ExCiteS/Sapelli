@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
@@ -79,13 +80,19 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	public int getVersion() throws DBException
 	{
+		JavaSQLiteStatement statement = null;
 		try
 		{
-			return getStatement("PRAGMA user_version;", null).executeLongQuery().intValue();
+			statement = getStatement("PRAGMA user_version;", null);
+			return statement.executeLongQuery().intValue();
 		}
 		catch(Exception ex)
 		{
 			throw new DBException("Could not get database version.", ex.getCause());
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(statement);
 		}
 	}
 
