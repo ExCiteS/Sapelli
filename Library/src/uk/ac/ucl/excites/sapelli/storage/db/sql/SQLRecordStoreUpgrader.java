@@ -75,6 +75,10 @@ public abstract class SQLRecordStoreUpgrader
 		// Clear previous warnings:
 		warnings.clear();
 		
+		// Enable logging:
+		boolean wasLoggingEnabled = recordStore.isLoggingEnabled();
+		recordStore.setLoggingEnabled(true);
+		
 		// Apply step-by-step upgrade:
 		int currentVersion;
 		while((currentVersion = recordStore.getVersion()) < toVersion)
@@ -113,6 +117,9 @@ public abstract class SQLRecordStoreUpgrader
 			}
 		}
 		
+		// Re-disable logging if needed:
+		recordStore.setLoggingEnabled(wasLoggingEnabled);
+		
 		// If successful:
 		if(callback != null)
 			callback.upgradePerformed(fromVersion, toVersion, warnings);
@@ -145,35 +152,76 @@ public abstract class SQLRecordStoreUpgrader
 	}
 	
 	/**
+	 * Helper class which grants UpgradeSteps access to a number of {@link SQLRecordStore} methods would otherwise be
+	 * inaccessible due to their package or protected access level.
+	 * 
 	 * @author mstevens
-	 *
 	 */
 	public class UpgradeOperations
 	{
 		
+		/**
+		 * @see SQLRecordStore#doesTableExist(String)
+		 */
+		public boolean doesTableExist(SQLRecordStore<?, ?, ?> recordStore, String tableName)
+		{
+			return recordStore.doesTableExist(tableName) || recordStore.doesTableExist(recordStore.sanitiseIdentifier(tableName));
+		}
+		
+		/**
+		 * @see SQLRecordStore#sanitiseIdentifier(String)
+		 */
+		public String sanitiseIdentifier(SQLRecordStore<?, ?, ?> recordStore, String identifier)
+		{
+			return recordStore.sanitiseIdentifier(identifier);
+		}
+		
+		/**
+		 * @see SQLRecordStore#dropTable(String, boolean)
+		 */
 		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String tableName, boolean force) throws DBException
 		{
 			recordStore.dropTable(tableName, force);
 		}
 		
+		/**
+		 * @see SQLRecordStore#renameTable(String, String)
+		 */
 		public void renameTable(SQLRecordStore<?, ?, ?> recordStore, String oldTableName, String newTableName) throws DBException
 		{
 			recordStore.renameTable(oldTableName, newTableName);
 		}
 		
+		/**
+		 * @see SQLRecordStore#getAllTableNames()
+		 */
 		public List<String> getAllTableNames(SQLRecordStore<?, ?, ?> recordStore)
 		{
 			return recordStore.getAllTableNames();
 		}
 		
+		/**
+		 * @see SQLRecordStore#getAllKnownSchemata()
+		 */
 		public List<Schema> getAllSchemata(SQLRecordStore<?, ?, ?> recordStore)
 		{
 			return recordStore.getAllKnownSchemata();
 		}
 		
+		/**
+		 * @see SQLRecordStore#cleanup()
+		 */
 		public void cleanup(SQLRecordStore<?, ?, ?> recordStore) throws DBException
 		{
 			recordStore.cleanup();
+		}
+		
+		/**
+		 * @see SQLRecordStore#release()
+		 */
+		public void release(SQLRecordStore<?, ?, ?> recordStore)
+		{
+			recordStore.release();
 		}
 		
 		public void addWarning(String warning)
@@ -195,7 +243,7 @@ public abstract class SQLRecordStoreUpgrader
 		 * @return the converted records, which are yet to be inserted!
 		 * @throws DBException
 		 */
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
 		public List<Record> replace(SQLRecordStore<?, ?, ?> recordStore, Schema newSchema, List<ColumnReplacer<?, ?>> replacers) throws DBException
 		{
 			if(!recordStore.doesTableExist(newSchema)) // only based on schema name (no STable object is instantiated)
