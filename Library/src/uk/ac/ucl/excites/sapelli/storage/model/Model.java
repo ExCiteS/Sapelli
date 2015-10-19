@@ -78,7 +78,7 @@ public class Model implements Serializable
 	static public final Model META_MODEL = new Model(-1, "MetaModel", true, StorageClient.SCHEMA_FLAGS_STORAGE_INTERNAL);
 	
 	// Model Schema: a "meta" Schema for records that describe a Model
-	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
+	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName(), Model.class.getSimpleName() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
 	static protected final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
 	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("compressedSerialisedObject", false));
@@ -89,12 +89,12 @@ public class Model implements Serializable
 	}
 	
 	// Schema Schema: a "meta" Schema for records that describe other Schemata
-	static public final Schema SCHEMA_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName() + "ta");
+	static public final Schema SCHEMA_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName(), Schema.class.getSimpleName() + "ta");
 	static public final ForeignKeyColumn SCHEMA_MODEL_ID_COLUMN = SCHEMA_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
 	static public final IntegerColumn SCHEMA_SCHEMA_NUMBER_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
 	static public final StringColumn SCHEMA_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
-	static public final IntegerColumn META_FLAGS_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
-	static public final StringColumn SCHEMA_TABLE_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH * 2));
+	static public final IntegerColumn SCHEMA_FLAGS_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
+	static public final StringColumn SCHEMA_TABLE_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("tableName", true, Schema.MAX_SCHEMA_NAME_LENGTH * 2));
 	static
 	{
 		SCHEMA_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(SCHEMA_MODEL_ID_COLUMN, SCHEMA_SCHEMA_NUMBER_COLUMN), true /*seal!*/);

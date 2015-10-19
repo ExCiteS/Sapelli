@@ -60,21 +60,81 @@ public abstract class TransmissionClient extends StorageClient
 	 * Flags used on "internal" Transmission layer Schemata
 	 */
 	static public final int SCHEMA_FLAGS_TRANSMISSION_INTERNAL = SCHEMA_FLAG_TRANSMISSION_LAYER;
-
-	// DYNAMICS------------------------------------------------------	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * 
+	 * @param model
+	 * @param name (will also be used as unprefixed tableName)
+	 * @param unprefixedTableName
+	 * @return
 	 */
-	@Override
-	public String getTableName(Schema schema)
+	static public Schema CreateTransmissionSchema(Model model, String name)
 	{
-		if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
-			return "Transmissions";
-		if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
-			return "Transmission_Parts";
-		return super.getTableName(schema);
+		return CreateTransmissionSchema(model, name, name, model.getDefaultSchemaFlags());
 	}
 	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Transmission layer table).
+	 * 
+	 * @param model
+	 * @param name
+	 * @param unprefixedTableName
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name, String unprefixedTableName)
+	{
+		return CreateTransmissionSchema(model, name, unprefixedTableName, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * 
+	 * @param model
+	 * @param name (will also be used as unprefixed tableName)
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name, int schemaFlags)
+	{
+		return CreateTransmissionSchema(model, name, name, schemaFlags);
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Collector layer table).
+	 * 
+	 * @param model
+	 * @param name
+	 * @param unprefixedTableName
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name, String unprefixedTableName, int schemaFlags)
+	{
+		return new Schema(model, name, GetTransmissionPrefixedSchemaTableName(unprefixedTableName, schemaFlags), schemaFlags);
+	}
+	
+	/**
+	 * Generates a complete table name from the given unprefixed table name (prefixed to indicate it is a Collector layer table).
+	 * 
+	 * @param unprefixedTableName
+	 * @param schemaFlags
+	 * @return the full table name
+	 */
+	static public String GetTransmissionPrefixedSchemaTableName(String unprefixedTableName, int schemaFlags)
+	{
+		if(!TestSchemaFlags(schemaFlags, SCHEMA_FLAG_TRANSMISSION_LAYER))
+			throw new IllegalArgumentException("SCHEMA_FLAG_TRANSMISSION flag expected to be set");
+		// Build tableName:
+		StringBuilder tableNameBldr = new StringBuilder("Transmission_");
+		tableNameBldr.append(unprefixedTableName);
+		// Return full table name:
+		return tableNameBldr.toString();
+	}
+
+	// DYNAMICS------------------------------------------------------	
 	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
 	
 	public abstract Payload createPayload(int nonBuiltinType);

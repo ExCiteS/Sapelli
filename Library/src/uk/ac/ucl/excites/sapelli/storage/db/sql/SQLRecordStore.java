@@ -296,20 +296,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	
 	protected abstract String sanitiseIdentifier(String identifier);
 	
-	protected String getTableName(Schema schema)
-	{
-		return sanitiseIdentifier(client.getTableName(schema));
-	}
-	
 	/**
 	 * Checks whether a table for the given schema exists in the database.
 	 * 
 	 * @param schema
 	 * @return
 	 */
-	protected boolean doesTableExist(Schema schema)
+	protected final boolean doesTableExist(Schema schema)
 	{
-		return doesTableExist(getTableName(schema));
+		return doesTableExist(sanitiseIdentifier(schema.tableName));
 	}
 	
 	/**
@@ -384,7 +379,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
-					schemataTable.insert(Schema.GetMetaRecord(schema, client));
+					schemataTable.insert(schema.getMetaRecord());
 				}
 			}
 			catch(Exception e)
@@ -460,7 +455,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				modelLoop : for(Model model : possiblyRemovableModels)
 				{
 					for(Schema schema : model.getSchemata())
-						if(doesTableExist(client.getTableName(schema)))
+						if(doesTableExist(schema))
 							continue modelLoop; // one of the model's schemata corresponds to a table, so we should not forget about this model
 					// None of the model's schemata correspond to a table, so unregister (i.e. "forget") the model in the modelsTable:
 					modelsTable.delete(Model.GetModelRecordReference(model));
@@ -593,7 +588,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		try
 		{
-			Record schemaMetaRecord = Schema.GetMetaRecord(schema, client);
+			Record schemaMetaRecord = schema.getMetaRecord();
 			RecordReference modelRef = Model.SCHEMA_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
 			return model.getSchema(Model.SCHEMA_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
@@ -816,7 +811,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract List<String> getAllTableNames();
 	
 	/**
-	 * Drops the table with the given name.  Use with care!
+	 * Drops the table with the given name. Use with care!
 	 * Will fail, with {@link DBException} thrown, if the table is protected and unless {@code force} is {@code true}.
 	 * 
 	 * @param tableName
@@ -825,29 +820,50 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected void dropTable(String tableName, boolean force) throws DBException
 	{
+		if(!doesTableExist(tableName))
+		{	// Try sanitising:
+			tableName = sanitiseIdentifier(tableName);
+			if(!doesTableExist(tableName))
+				return; // there is no such table
+		}
+		//else:
 		if(!protectedTables.contains(tableName) || force)
 		{
-			// Drop table:
-			executeSQL(generateDropTableStatement(tableName));
-			
-			// If this is not the modelsTable or schemataTable...
-			if(!tableName.equals(modelsTable.tableName) && tableName.equals(schemataTable.tableName))
+			// Get table instance:
+			STable table = null;
+			if(modelsTable.tableName.equals(tableName))
+				table = modelsTable;
+			else if(schemataTable.tableName.equals(tableName))
+				table = schemataTable;
+			else
 			{
 				// Delete schemata entry:
 				if(schemataTable.isInDB())
 					schemataTable.delete(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, tableName)));
 				
-				// Delete from tables map:
+				// Look for table in tables map:
 				RecordReference schemaRecRef = null;
-				for(Map.Entry<RecordReference, STable> tableEntry : tables.entrySet())
-					if(tableEntry.getValue().tableName.equals(tableName))
+				for(Map.Entry<RecordReference, STable> entry : tables.entrySet())
+					if(entry.getValue().tableName.equals(tableName))
 					{
-						schemaRecRef = tableEntry.getKey();
+						schemaRecRef = entry.getKey();
+						table = entry.getValue();
 						break;
 					}
+				
+				// Delete from tables map:
 				if(schemaRecRef != null)
 					tables.remove(schemaRecRef);
 			}
+			
+			// Release resources so we can drop:
+			release();
+			
+			// DROP table:
+			if(table != null)
+				table.drop();
+			else
+				executeSQL(generateDropTableStatement(tableName));
 		}
 		else
 			throw new DBException("Cannot delete protected table '" + tableName + "'!");
@@ -855,15 +871,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	
 	protected String generateDropTableStatement(String tableName)
 	{
-		TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-		bldr.append("DROP TABLE");
-		bldr.append(tableName);
-		bldr.append(";", false);
-		return bldr.toString();
+		return String.format("DROP TABLE %s;", tableName);
 	}
 	
 	/**
-	 * Renames the table with the given old name to the given new name.  Use with care!
+	 * Renames the table with the given old name to the given new name. Use with care!
 	 * Will fail, with {@link DBException} thrown, if the table is protected.
 	 * 
 	 * @param oldTableName
@@ -872,17 +884,32 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected void renameTable(String oldTableName, String newTableName) throws DBException
 	{
+		if(!doesTableExist(oldTableName))
+		{	// Try sanitising:
+			oldTableName = sanitiseIdentifier(oldTableName);
+			if(!doesTableExist(oldTableName))
+				return; // there is no such table
+		}
+		//else:
 		if(!protectedTables.contains(oldTableName))
 		{
+			// Sanitise:
+			newTableName = sanitiseIdentifier(newTableName);
+			
+			// Rename database table:
 			executeSQL(String.format("ALTER TABLE %1$s RENAME TO %2$s;", oldTableName, newTableName));
 			
-			// Update schemata entry:
+			// Query schemata table:
 			Record schemaMetaRecord = schemataTable.select(new FirstRecordQuery(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, oldTableName))));
-			Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(schemaMetaRecord, newTableName);
-			schemataTable.update(schemaMetaRecord);
+			if(schemaMetaRecord != null)
+			{
+				// Update schemata entry:
+				Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(schemaMetaRecord, newTableName);
+				schemataTable.update(schemaMetaRecord);
 			
-			// Delete from tables map:
-			tables.remove(schemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed
+				// Delete table from tables map:
+				tables.remove(schemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed
+			}
 		}
 		else
 			throw new DBException("Cannot rename protected table '" + oldTableName + "'!");
@@ -920,7 +947,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	public abstract class SQLTable
 	{
 
+		/**
+		 * Sanitised version of schema.tableName.
+		 */
 		public final String tableName;
+		
 		public final Schema schema;
 		
 		@SuppressWarnings("unchecked")

@@ -73,10 +73,10 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	
 	// Transmission storage model:
 	//	Model:
-	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
+	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement", TransmissionClient.SCHEMA_FLAGS_TRANSMISSION_INTERNAL);
 	// Schema(s) & columns:
 	//	Transmission Schema
-	static final public Schema TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Transmission");
+	static final public Schema TRANSMISSION_SCHEMA = TransmissionClient.CreateTransmissionSchema(TRANSMISSION_MANAGEMENT_MODEL, Transmission.class.getSimpleName(), Transmission.class.getSimpleName() + "s");
 	static final public IntegerColumn TRANSMISSION_COLUMN_ID = new IntegerColumn("ID", false, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_REMOTE_ID = new IntegerColumn("RemoteID", true, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_TYPE = new IntegerColumn("Type", false, false, Integer.SIZE);
@@ -105,7 +105,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		TRANSMISSION_SCHEMA.seal();
 	}
 	//	Transmission Part Schema
-	static final public Schema TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmissionPart");
+	static final public Schema TRANSMISSION_PART_SCHEMA = TransmissionClient.CreateTransmissionSchema(TRANSMISSION_MANAGEMENT_MODEL, Transmission.class.getSimpleName() + "Part", Transmission.class.getSimpleName() + "Parts");
 	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION_ID = new ForeignKeyColumn(TRANSMISSION_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_NUMBER = new IntegerColumn("PartNumber", false, false, Integer.SIZE);
 	static final public TimeStampColumn TRANSMISSION_PART_COLUMN_DELIVERED_AT = TimeStampColumn.JavaMSTime("DeliveredAt", true, false);

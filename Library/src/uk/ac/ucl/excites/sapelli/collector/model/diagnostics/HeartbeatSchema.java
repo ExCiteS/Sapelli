@@ -40,6 +40,8 @@ public class HeartbeatSchema extends Schema
 	
 	static private final long serialVersionUID = 2L;
 	
+	static public final String HEARTBEAT_NAME = "Heartbeat";
+	
 	static public final TimeStampColumn	COLUMN_LOCAL_TIME = TimeStampColumn.Century21("LocalTime", false, true);
 	static public final IntegerColumn	COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", false, true, Long.SIZE);
 	static public final IntegerColumn	COLUMN_UPTIME_MS = new IntegerColumn("UptimeMS", true, false, 40); // 40 bits: allowing for uptimes of almost 35 years ;-)
@@ -57,7 +59,8 @@ public class HeartbeatSchema extends Schema
 	{
 		// Call Schema constructor (the schema will be added to the project model): 
 		super(	project.getModel(),
-				project.getModel().getName() + ":" + "Heartbeat",
+				project.getModel().getName() + ":" + HEARTBEAT_NAME,
+				CollectorClient.GetCollectorPrefixedSchemaTableName(	Project.class.getSimpleName() + project.getID() + "_" + project.getFingerPrint() + "_" + HEARTBEAT_NAME, CollectorClient.SCHEMA_FLAGS_COLLECTOR_AUX_DATA), 
 				CollectorClient.SCHEMA_FLAGS_COLLECTOR_AUX_DATA );
 		// Add columns:
 		this.addColumn(COLUMN_LOCAL_TIME);

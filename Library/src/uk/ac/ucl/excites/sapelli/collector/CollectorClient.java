@@ -103,6 +103,81 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static public final int SCHEMA_FLAGS_COLLECTOR_USER_DATA = 	SCHEMA_FLAGS_COLLECTOR_DATA | SCHEMA_FLAG_KEEP_HISTORY;
 	
 	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * 
+	 * @param model
+	 * @param name (will also be used as unprefixed tableName)
+	 * @param unprefixedTableName
+	 * @return
+	 */
+	static public Schema CreateCollectorSchema(Model model, String name)
+	{
+		return CreateCollectorSchema(model, name, name, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Collector layer table).
+	 * 
+	 * @param model
+	 * @param name
+	 * @param unprefixedTableName
+	 * @return
+	 */
+	static public Schema CreateCollectorSchema(Model model, String name, String unprefixedTableName)
+	{
+		return CreateCollectorSchema(model, name, unprefixedTableName, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * 
+	 * @param model
+	 * @param name (will also be used as unprefixed tableName)
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public Schema CreateCollectorSchema(Model model, String name, int schemaFlags)
+	{
+		return CreateCollectorSchema(model, name, name, schemaFlags);
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Collector layer table).
+	 * 
+	 * @param model
+	 * @param name
+	 * @param unprefixedTableName
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public Schema CreateCollectorSchema(Model model, String name, String unprefixedTableName, int schemaFlags)
+	{
+		return new Schema(model, name, GetCollectorPrefixedSchemaTableName(unprefixedTableName, schemaFlags), schemaFlags);
+	}
+	
+	/**
+	 * Generates a complete table name from the given unprefixed table name (prefixed to indicate it is a Collector layer table).
+	 * 
+	 * @param unprefixedTableName
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public String GetCollectorPrefixedSchemaTableName(String unprefixedTableName, int schemaFlags)
+	{
+		if(!TestSchemaFlags(schemaFlags, SCHEMA_FLAG_COLLECTOR_LAYER))
+			throw new IllegalArgumentException("SCHEMA_FLAG_COLLECTOR_LAYER flag expected to be set");
+		// Build tableName:
+		StringBuilder tableNameBldr = new StringBuilder("Collector_");
+		if(TestSchemaFlags(schemaFlags, SCHEMA_FLAGS_COLLECTOR_DATA))
+			tableNameBldr.append("Data_");
+		tableNameBldr.append(unprefixedTableName);
+		// Return full table name:
+		return tableNameBldr.toString();
+	}
+	
+	/**
 	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
 	 * 
 	 * @param project
@@ -220,21 +295,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		}
 		// else:
 		return null;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
-	 */
-	@Override
-	public String getTableName(Schema schema)
-	{
-		if(schema == ProjectRecordStore.PROJECT_SCHEMA)
-			return "Collector_Projects";
-		if(schema == ProjectRecordStore.FSI_SCHEMA)
-			return "Project_FormSchemaInfo";
-		if(schema == ProjectRecordStore.HFK_SCHEMA)
-			return "Relationship_HFKs";
-		return super.getTableName(schema);
 	}
 	
 	/**

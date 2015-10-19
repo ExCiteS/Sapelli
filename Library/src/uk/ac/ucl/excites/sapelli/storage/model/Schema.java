@@ -41,7 +41,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 public class Schema extends ColumnSet implements Serializable
 {
 
-	// Statics------------------------------------------------------------
+	// STATICS ----------------------------------------------------------------
 	private static final long serialVersionUID = 2L;
 	
 	static public final String COLUMN_AUTO_KEY_NAME = "AutoKey";
@@ -64,15 +64,14 @@ public class Schema extends ColumnSet implements Serializable
 	static public final int MAX_SCHEMA_NAME_LENGTH = 256; // chars
 	
 	/**
-	 * Returns a "meta" record which describes the given schema (and contains a serialised version of it)
+	 * Returns a "meta" record which describes the given schema.
 	 * 
 	 * @param schema
-	 * @param client
 	 * @return
 	 */
-	static public Record GetMetaRecord(Schema schema, StorageClient client)
+	static public Record GetMetaRecord(Schema schema)
 	{
-		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name, schema.flags, client.getTableName(schema));
+		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name, schema.flags, schema.tableName);
 	}
 	
 	/**
@@ -87,7 +86,8 @@ public class Schema extends ColumnSet implements Serializable
 		return new RecordReference(Model.SCHEMA_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
-	// Dynamics-----------------------------------------------------------
+	// DYNAMICS ---------------------------------------------------------------
+	public final String tableName;
 	public final Model model;
 	public final int modelSchemaNumber;
 	public final int flags;
@@ -105,13 +105,43 @@ public class Schema extends ColumnSet implements Serializable
 	 * default schema flags a NullPointerException will be thrown.
 	 * 
 	 * @param model
-	 * @param name
+	 * @param name (will also be used as tableName)
 	 * @throws ModelFullException if the model is full
 	 * @throws NullPointerException
 	 */
 	public Schema(Model model, String name) throws ModelFullException, NullPointerException
 	{
-		this(model, name, model.getDefaultSchemaFlags());
+		this(model, name, name);
+	}
+
+	/**
+	 * Create a new schema instance which will be add to the provided {@link Model}.
+	 * The Schema will use the default schema flags of the Model, if the model does not have
+	 * default schema flags a NullPointerException will be thrown.
+	 * 
+	 * @param model
+	 * @param name
+	 * @param tableName alternative name to use when recreating database table for storing Records of this Schema (e.g. the plural form of the name)
+	 * @throws ModelFullException if the model is full
+	 * @throws NullPointerException
+	 */
+	public Schema(Model model, String name, String tableName) throws ModelFullException, NullPointerException
+	{
+		this(model, name, tableName, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create a new schema instance which will be add to the provided {@link Model}.
+	 * 
+	 * @param model
+	 * @param name (will also be used as tableName)
+	 * @param flags
+	 * @throws ModelFullException if the model is full
+	 * @throws NullPointerException
+	 */
+	public Schema(Model model, String name, int flags) throws ModelFullException, NullPointerException
+	{
+		this(model, name, name, flags);
 	}
 	
 	/**
@@ -119,17 +149,19 @@ public class Schema extends ColumnSet implements Serializable
 	 * 
 	 * @param model
 	 * @param name
+	 * @param tableName alternative name to use when recreating database table for storing Records of this Schema (e.g. the plural form of the name)
 	 * @param flags
 	 * @throws ModelFullException if the model is full
 	 * @throws NullPointerException
 	 */
-	public Schema(Model model, String name, int flags) throws ModelFullException, NullPointerException
+	public Schema(Model model, String name, String tableName, int flags) throws ModelFullException, NullPointerException
 	{
 		super((name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name), true);
 		if(this.name.length() > MAX_SCHEMA_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
+		this.tableName = tableName != null ? tableName : name;
 		this.model = model;
 		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 		this.flags = flags;
@@ -164,6 +196,14 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	/**
+	 * @return the tableName
+	 */
+	protected final String getTableName()
+	{
+		return tableName;
+	}
+
+	/**
 	 * @return the flags
 	 */
 	public int getFlags()
@@ -179,19 +219,18 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public boolean hasFlags(int flags)
 	{
-		return (this.flags & flags) == flags;
+		return StorageClient.TestSchemaFlags(this.flags, flags);
 	}
 	
 	/**
-	 * Returns a "meta" record which describes the schema (and contains a serialised version of it)
+	 * Returns a "meta" record which describes the schema.
 	 * 
-	 * @param client
 	 * @return meta Record
 	 * @see #GetMetaRecord(Schema)
 	 */
-	public Record getMetaRecord(StorageClient client)
+	public Record getMetaRecord()
 	{
-		return GetMetaRecord(this, client);
+		return GetMetaRecord(this);
 	}
 	
 	/**

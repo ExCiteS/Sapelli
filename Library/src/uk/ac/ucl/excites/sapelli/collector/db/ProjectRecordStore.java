@@ -89,7 +89,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//	Model:
 	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement", CollectorClient.SCHEMA_FLAGS_COLLECTOR_INTERNAL);
 	//	 Project schema:
-	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
+	static public final Schema PROJECT_SCHEMA = CollectorClient.CreateCollectorSchema(COLLECTOR_MANAGEMENT_MODEL, Project.class.getSimpleName(), Project.class.getSimpleName() + "s");
 	//		Columns:
 	static private final IntegerColumn PROJECT_ID_COLUMN = PROJECT_SCHEMA.addColumn(new IntegerColumn("id", false, Project.PROJECT_ID_FIELD));
 	static private final IntegerColumn PROJECT_FINGERPRINT_COLUMN = PROJECT_SCHEMA.addColumn(new IntegerColumn("fingerPrint", false, true, Project.PROJECT_FINGERPRINT_SIZE));
@@ -110,7 +110,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN), true /*seal!*/);
 	}
 	//	 Form Schema Info (FSI) schema:
-	static public final Schema FSI_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
+	static public final Schema FSI_SCHEMA = CollectorClient.CreateCollectorSchema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
 	//		Columns:
 	static private final ForeignKeyColumn FSI_PROJECT_KEY_COLUMN = FSI_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn FSI_FORM_POSITION_COLUMN = FSI_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));
@@ -121,7 +121,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN), true /*seal!*/);
 	}
 	//	 Held Foreign Key (HFK) schema: to store "held" foreign keys (RecordReferences) on Relationship fields
-	static public final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
+	static public final Schema HFK_SCHEMA = CollectorClient.CreateCollectorSchema(COLLECTOR_MANAGEMENT_MODEL, "RelationshipFK", "RelationshipFKs");
 	//		Columns:
 	static private final ForeignKeyColumn HFK_PROJECT_KEY_COLUMN = HFK_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn HFK_FORM_POSITION_COLUMN = HFK_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));

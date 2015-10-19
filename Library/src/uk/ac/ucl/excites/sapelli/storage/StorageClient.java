@@ -120,9 +120,21 @@ public abstract class StorageClient implements StorageObserver
 	static public final int SCHEMA_FLAG_KEEP_HISTORY =		SCHEMA_FLAG_TRACK_CHANGES | 1 << 3;
 	
 	/**
-	 * Flags used on "internal" Storage layer Schemata .
+	 * Flags used on "internal" Storage layer Schemata.
 	 */
 	static public final int SCHEMA_FLAGS_STORAGE_INTERNAL =	SCHEMA_FLAG_STORAGE_LAYER;
+	
+	/**
+	 * Method to test in the given int flags value matches the given flags (bit) pattern.
+	 * 
+	 * @param flagsValue
+	 * @param flagsPattern
+	 * @return TODO
+	 */
+	static public boolean TestSchemaFlags(int flagsValue, int flagsPattern)
+	{
+		return (flagsValue & flagsPattern) == flagsPattern;
+	}
 	
 	// DYNAMICS -----------------------------------------------------
 	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
@@ -356,26 +368,6 @@ public abstract class StorageClient implements StorageObserver
 		{
 			throw new UnknownModelException(modelID, null, schemaNumber, schemaName); // throw UME with schema information instead of only modelID
 		}
-	}
-	
-	/**
-	 * Returns the name to be used for a table which will contain records of the given schema in
-	 * back-end (relational) database storage (i.e. through a RecordStore implementation).
-	 * 
-	 * May be overridden by subclasses to add additional exceptional cases.
-	 * 
-	 * TODO replace this and the overriding methods by a more elegant mechanism using the Schema.name (and perhaps making it plural)
-	 * 
-	 * @return
-	 */
-	public String getTableName(Schema schema)
-	{
-		if(schema == Model.MODEL_SCHEMA)
-			return "Models";
-		if(schema == Model.SCHEMA_SCHEMA)
-			return "Schemata";
-		else
-			return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
 	}
 	
 	/**
