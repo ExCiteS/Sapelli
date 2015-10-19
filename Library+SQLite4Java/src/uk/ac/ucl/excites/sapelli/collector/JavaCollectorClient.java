@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
@@ -71,9 +72,15 @@ public class JavaCollectorClient extends CollectorClient implements SQLRecordSto
 	}
 
 	@Override
-	public void upgradePerformed(int fromVersion, int toVersion)
+	public void upgradePerformed(int fromVersion, int toVersion, List<String> warnings)
 	{
 		System.out.println("Database upgraded from v" + fromVersion + " to v" + toVersion + ".");
+		if(!warnings.isEmpty())
+		{
+			System.out.println("Warnings:");
+			for(String warning : warnings)
+				System.out.println(" - " + warning);
+		}
 	}
 
 	@Override
