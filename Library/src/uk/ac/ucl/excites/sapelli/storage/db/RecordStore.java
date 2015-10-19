@@ -556,7 +556,10 @@ public abstract class RecordStore extends Store
 	 */
 	protected abstract boolean doDelete(Record record) throws DBException;
 	
-	/* (non-Javadoc)
+	/**
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
 	protected void doClose() throws DBException
