@@ -24,7 +24,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 
@@ -135,7 +135,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
+	protected SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
 		// Get statement:
 		JavaSQLiteStatement selectStatement = getStatement(sql, paramCols);
@@ -171,7 +171,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * Performs a back-up of the database using the SQLite Online Backup API
 	 * 
 	 * @see com.almworks.sqlite4java.SQLiteBackup
-	 * @see <a href="http://www.sqlite.org/c3ref/backup_finish.html#sqlite3backupinit"> SQLite Online Backup API</a>
+	 * @see <a href="http://www.sqlite.org/c3ref/backup_finish.html#sqlite3backupinit">SQLite Online Backup API</a>
 	 * @see <a href="http://www.sqlite.org/backup.html">Using the SQLite Online Backup API</a>
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#doBackup(java.io.File)
 	 */

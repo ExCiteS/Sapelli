@@ -23,17 +23,16 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDoneException;
-import android.database.sqlite.SQLiteStatement;
 import android.os.Build;
 
 /**
- * An Android-specific {@link SapelliSQLiteStatement} subclass. It is a thin wrapper around Android's {@link SQLiteStatement} class.
+ * An Android-specific {@link SQLiteStatement} subclass. It is a thin wrapper around Android's {@link SQLiteStatement} class.
  * 
  * Supports SQL INSERT, UPDATE, and DELETE operations (i.e. "CUD" from "CRUD"). SQL SELECT row queries are not supported,
  * but "simple" SELECT queries resulting in a 1x1 long value are.
@@ -43,11 +42,11 @@ import android.os.Build;
  * @see android.database.sqlite.SQLiteDatabase
  * @see android.database.sqlite.SQLiteStatement
  */
-public class AndroidSQLiteStatement extends SapelliSQLiteStatement
+public class AndroidSQLiteStatement extends SQLiteStatement
 {
 	
 	private final AndroidSQLiteRecordStore recordStore;
-	private final SQLiteStatement androidSQLiteSt;
+	private final android.database.sqlite.SQLiteStatement androidSQLiteSt;
 	
 	/**
 	 * @param androidSQLiteRecordStore
@@ -55,7 +54,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	 * @param paramCols
 	 * @throws SQLException
 	 */
-	public AndroidSQLiteStatement(AndroidSQLiteRecordStore recordStore, SQLiteStatement androidSQLiteSt, List<SQLiteColumn<?, ?>> paramCols)
+	public AndroidSQLiteStatement(AndroidSQLiteRecordStore recordStore, android.database.sqlite.SQLiteStatement androidSQLiteSt, List<SQLiteColumn<?, ?>> paramCols)
 	{
 		super(paramCols);
 		this.recordStore = recordStore;
@@ -127,7 +126,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeUpdate()
 	 */
 	@Override
 	public int executeUpdate() throws DBConstraintException, DBException
@@ -147,7 +146,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeDelete()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeDelete()
 	 */
 	@Override
 	public int executeDelete() throws DBException
@@ -202,7 +201,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	/**
 	 * @return SQL expression
 	 * @see android.database.sqlite.SQLiteStatement#toString()
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#getSQL()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#getSQL()
 	 */
 	@Override
 	protected String getSQL()

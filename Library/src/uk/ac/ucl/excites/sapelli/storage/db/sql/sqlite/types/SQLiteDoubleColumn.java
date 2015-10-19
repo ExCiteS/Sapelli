@@ -20,9 +20,9 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -63,13 +63,13 @@ public class SQLiteDoubleColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	 * @param value non-null
 	 */
 	@Override
-	protected void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, Double value) throws DBException
+	protected void bindNonNull(SQLiteStatement statement, int paramIdx, Double value) throws DBException
 	{
 		statement.bindDouble(paramIdx, value);
 	}
 
 	@Override
-	public Double getValue(ISQLiteCursor cursor, int columnIdx) throws DBException
+	public Double getValue(SQLiteCursor cursor, int columnIdx) throws DBException
 	{
 		return cursor.getDouble(columnIdx);
 	}

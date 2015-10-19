@@ -28,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -36,7 +36,6 @@ import android.content.ContextWrapper;
 import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
@@ -182,7 +181,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 */
 	@SuppressWarnings("unused")
 	@Override
-	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
+	protected SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
 		try
 		{
@@ -271,7 +270,6 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
-			Log.d(TAG, "Compile statement: " + sql);
 			return new AndroidSQLiteStatement(this, db.compileStatement(sql), paramCols);
 		}
 		catch(SQLException sqlE)
@@ -433,14 +431,14 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	
 	/**
 	 * Our custom cursor class, which behaves identical to the {@link SQLiteCursor} super class. The only difference
-	 * is it implements the {@link ISQLiteCursor} interface. Apart from {@link #hasRow()} all methods declared in
+	 * is it implements the {@link SQLiteCursor} interface. Apart from {@link #hasRow()} all methods declared in
 	 * the interface already exist in the {@link SQLiteCursor}. The purpose of this strategy is to allow non-Android
 	 * specific classes (i.e. at the level of the Sapelli Library), notably the typed SQLiteColumn subclasses, to
 	 * call methods on cursor instances.
 	 * 
 	 * @author mstevens
 	 */
-	static private final class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
+	static private final class AndroidSQLiteCursor extends android.database.sqlite.SQLiteCursor implements SQLiteCursor
 	{
 
 		public static AndroidSQLiteCursor newCursor(SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query)

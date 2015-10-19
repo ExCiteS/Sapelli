@@ -42,12 +42,12 @@ public abstract class SapelliSQLiteStatement
 	
 	protected final List<SQLiteColumn<?, ?>> paramCols;
 	
-	public SapelliSQLiteStatement()
+	public SQLiteStatement()
 	{
 		this.paramCols = null;
 	}
 	
-	public SapelliSQLiteStatement(List<SQLiteColumn<?, ?>> paramCols)
+	public SQLiteStatement(List<SQLiteColumn<?, ?>> paramCols)
 	{
 		this.paramCols = paramCols;
 	}
@@ -125,14 +125,14 @@ public abstract class SapelliSQLiteStatement
 	
 	/**
 	 * Executes a SQL SELECT row query, i.e. the reading (the "R" in "CRUD") of (partial) records from a database table.
-	 * The results (0, 1 or more rows) are made accessible through a returned {@link ISQLiteCursor} instance.
+	 * The results (0, 1 or more rows) are made accessible through a returned {@link SQLiteCursor} instance.
 	 * 
 	 * *Not* supported unless subclass overrides this method, otherwise a {@link UnsupportedOperationException} will be thrown.
 	 *
-	 * @return an {@link ISQLiteCursor} to iterate over results
+	 * @return an {@link SQLiteCursor} to iterate over results
 	 * @throws DBException
 	*/
-	public ISQLiteCursor executeSelectRows() throws DBException
+	public SQLiteCursor executeSelectRows() throws DBException
 	{
 		throw new UnsupportedOperationException("executeR() is not supported on " + this.getClass().getName()); // !!!
 	}

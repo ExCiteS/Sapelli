@@ -198,7 +198,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected boolean doesTableExist(String tableName)
 	{
-		ISQLiteCursor cursor = null;
+		SQLiteCursor cursor = null;
 		try
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
@@ -224,7 +224,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected List<String> getAllTableNames()
 	{
-		ISQLiteCursor cursor = null;
+		SQLiteCursor cursor = null;
 		try
 		{
 			SQLiteStringColumn<String> nameCol = new SQLiteStringColumn<String>(this, "name", null, null);
@@ -283,7 +283,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return an cursor to iterate over the results
 	 * @throws DBException
 	 */
-	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
+	protected abstract SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
 
 	@Override
 	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
@@ -339,7 +339,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return
 	 * @throws DBException
 	 */
-	protected abstract SapelliSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract SQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/**
 	 * 
@@ -348,11 +348,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SapelliSQLiteStatement existsStatement;
-		private SapelliSQLiteStatement insertStatement;
-		private SapelliSQLiteStatement updateStatement;
-		private SapelliSQLiteStatement deleteStatement;
-		private SapelliSQLiteStatement countStatement;
+		private SQLiteStatement existsStatement;
+		private SQLiteStatement insertStatement;
+		private SQLiteStatement updateStatement;
+		private SQLiteStatement deleteStatement;
+		private SQLiteStatement countStatement;
 
 		public SQLiteTable(Schema schema)
 		{
@@ -484,7 +484,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
-			SapelliSQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			SQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			
 			// Bind parameters:
 			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
@@ -505,7 +505,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		protected <R extends RecordValueSet<?>> List<R> executeRecordSelection(RecordValueSetSelectHelper<R> recordValueSetSelectHelper) throws DBException
 		{
-			ISQLiteCursor cursor = null;
+			SQLiteCursor cursor = null;
 			try
 			{
 				// Execute query (also binds parameters) to get cursor:
@@ -589,7 +589,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param recordOrReference
 		 * @throws DBException
 		 */
-		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, RecordValueSet<?> recordOrReference) throws DBException
+		public void retrieveAndBind(SQLiteStatement statement, int paramIdx, RecordValueSet<?> recordOrReference) throws DBException
 		{
 			bind(statement, paramIdx, retrieve(recordOrReference));
 		}
@@ -600,7 +600,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param sapValue
 		 * @throws DBException
 		 */
-		public void bindSapelliObject(SapelliSQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
+		public void bindSapelliObject(SQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
 		{
 			bind(statement, paramIdx, sapelliOjectToSQL(sapValue));
 		}
@@ -611,7 +611,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param value
 		 * @throws DBException
 		 */
-		public void bind(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException
+		public void bind(SQLiteStatement statement, int paramIdx, SQLType value) throws DBException
 		{
 			if(value != null)
 				bindNonNull(statement, paramIdx, value);
@@ -625,7 +625,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param value
 		 * @throws DBException
 		 */
-		protected abstract void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
+		protected abstract void bindNonNull(SQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
 		
 		/**
 		 * @param recordOrReference
@@ -633,7 +633,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param columnIdx
 		 * @throws DBException
 		 */
-		public void store(RecordValueSet<?> recordOrReference, ISQLiteCursor cursor, int columnIdx) throws DBException
+		public void store(RecordValueSet<?> recordOrReference, SQLiteCursor cursor, int columnIdx) throws DBException
 		{
 			store(recordOrReference, getValueOrNull(cursor, columnIdx));
 		}
@@ -644,7 +644,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @return
 		 * @throws DBException
 		 */
-		public SQLType getValueOrNull(ISQLiteCursor cursor, int columnIdx) throws DBException
+		public SQLType getValueOrNull(SQLiteCursor cursor, int columnIdx) throws DBException
 		{
 			if(cursor.isNull(columnIdx))
 				return null;
@@ -657,7 +657,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @return
 		 * @throws DBException
 		 */
-		protected abstract SQLType getValue(ISQLiteCursor cursor, int columnIdx) throws DBException;
+		protected abstract SQLType getValue(SQLiteCursor cursor, int columnIdx) throws DBException;
 
 	}
 	
@@ -903,7 +903,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Initialise
 			super(table);
 			
-			// Build statement:			
+			// Build statement:	
 			bldr.append("SELECT ROWID FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
