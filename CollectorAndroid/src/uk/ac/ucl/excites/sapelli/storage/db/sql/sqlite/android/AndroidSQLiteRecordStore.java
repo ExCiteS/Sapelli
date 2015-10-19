@@ -23,7 +23,6 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -59,6 +58,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	
 	// DYNAMIC---------------------------------------------
 	private final SQLiteDatabase db;
+	
+	private AndroidSQLiteStatement selectChangesStatement;
 	
 	/**
 	 * @param client
@@ -255,6 +256,21 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#release()
+	 */
+	@Override
+	protected void release()
+	{
+		if(selectChangesStatement != null)
+		{
+			selectChangesStatement.close();
+			selectChangesStatement = null;
+		}
+		
+		super.release(); // !!!
+	}
+	
 	@Override
 	protected void closeConnection()
 	{
@@ -292,9 +308,13 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 * @see http://stackoverflow.com/a/6659693/1084488
 	 * @see http://stackoverflow.com/a/18441056/1084488
 	 */
-	public int getNumberOfAffectedRows() throws SQLException
+	public int getNumberOfAffectedRows() throws DBException//SQLException
 	{
-		Cursor cursor = null;
+		if(selectChangesStatement == null)
+			selectChangesStatement = getStatement("SELECT changes();", null);
+		return selectChangesStatement.executeLongQuery().intValue();
+		// Alternative implementation (kept for future reference only):
+		/*Cursor cursor = null;
 		try
 		{
 			cursor = db.rawQuery("SELECT changes();", null);
@@ -306,7 +326,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		finally
 		{
 			StreamHelpers.SilentClose(cursor);
-		}
+		}*/
 	}
 
 	/**
@@ -429,7 +449,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 		{
 			if(loggingEnabled)
-				Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));				
+				Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));			
 			return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 		}
 	}

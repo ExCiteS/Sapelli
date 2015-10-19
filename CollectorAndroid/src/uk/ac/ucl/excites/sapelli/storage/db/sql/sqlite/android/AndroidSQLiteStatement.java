@@ -161,7 +161,7 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 		}
 	}
 	
-	private final int executeUpdateDelete() throws SQLException
+	private final int executeUpdateDelete() throws SQLException, DBException
 	{
 		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 			// API levels 11 and higher
