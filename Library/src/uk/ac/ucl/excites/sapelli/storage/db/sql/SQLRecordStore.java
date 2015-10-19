@@ -341,7 +341,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		// Check known tables:
 		STable table = null;
 		RecordReference schemaMetaRecordRef = null;
-		if(schema == Model.MODEL_SCHEMA || schema == Model.SCHEMA_SCHEMA)
+		if(Model.META_MODEL.contains(schema))
 		{
 			if(!allowMeta)
 				throw new DBException("Direct manipulation of modelsTable or schemataTable is not allowed!");
@@ -361,7 +361,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		if(table == null)
 		{
 			table = getTableFactory().generateTable(schema);
-			if(schema != Model.MODEL_SCHEMA && schema != Model.SCHEMA_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
+			if(!Model.META_MODEL.contains(schema)) // the "tables" map is only for tables of "real" (non-meta) schemata!
 				tables.put(schemaMetaRecordRef, table);
 		}
 		
@@ -375,7 +375,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				table.create();
 
 				// Register the schema & its model; unless the table it is the modelsTable or the schemataTable itself:
-				if(schema != Model.MODEL_SCHEMA && schema != Model.SCHEMA_SCHEMA)
+				if(!Model.META_MODEL.contains(schema))
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
