@@ -81,8 +81,8 @@ public class Model implements Serializable
 	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName(), Model.class.getSimpleName() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
 	static protected final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
-	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("compressedSerialisedObject", false));
-	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
+	static protected final ByteArrayColumn MODEL_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("serialisation", false));
+	static protected final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
 	static
 	{
 		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN), true /*seal!*/);
@@ -156,7 +156,7 @@ public class Model implements Serializable
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
 		// Deserialise Model from bytes:
-		Model model = client.deserialiseModel(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord));
+		Model model = client.deserialiseModel(MODEL_SERIALISATION_COLUMN.retrieveValue(modelRecord));
 		
 		// Perform check:
 		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))
@@ -340,6 +340,31 @@ public class Model implements Serializable
 	public List<Schema> getSchemata()
 	{
 		return Collections.unmodifiableList(schemata);
+	}
+	
+	/**
+	 * Checks if the Model contains the given Schema, uses == comparison.
+	 * 
+	 * @param schema
+	 * @return whether or not the Model contains the given Schema
+	 */
+	public boolean contains(Schema schema)
+	{
+		for(Schema s : schemata)
+			if(s == schema)
+				return true;
+		return false;
+	}
+	
+	/**
+	 * Checks if the Model contains the given Schema or an equivalent one, uses {@link Schema#equals(Object)} which can be slow.
+	 * 
+	 * @param schema
+	 * @return whether or not the Model contains the given Schema or an equivalent one
+	 */
+	public boolean containsEquivalent(Schema schema)
+	{
+		return schemata.contains(schema);
 	}
 
 	public int getNumberOfSchemata()
