@@ -342,7 +342,7 @@ public class CollectorApp extends Application
 		/**
 		 * @return the upgradeWarnings
 		 */
-		protected final List<String> getUpgradeWarnings()
+		public final List<String> getUpgradeWarnings()
 		{
 			return upgradeWarnings;
 		}
