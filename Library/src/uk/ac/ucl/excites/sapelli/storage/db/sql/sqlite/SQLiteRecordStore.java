@@ -551,15 +551,30 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized void release()
 		{
 			if(existsStatement != null)
+			{
 				existsStatement.close();
+				existsStatement = null;
+			}
 			if(insertStatement != null)
+			{
 				insertStatement.close();
+				insertStatement = null;
+			}
 			if(updateStatement != null)
+			{
 				updateStatement.close();
+				updateStatement = null;
+			}
 			if(deleteStatement != null)
+			{
 				deleteStatement.close();
+				deleteStatement = null;
+			}
 			if(countStatement != null)
+			{
 				countStatement.close();
+				countStatement = null;
+			}
 		}
 		
 	}

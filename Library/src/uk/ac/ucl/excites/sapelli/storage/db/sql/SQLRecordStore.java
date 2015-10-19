@@ -889,6 +889,31 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
+	 * Release any open resources associated with the database connection (without closing it).
+	 * 
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
+	 */
+	protected void release()
+	{
+		// Release resources for all tables:
+		if(modelsTable != null)
+			modelsTable.release();
+		if(schemataTable != null)
+			schemataTable.release();
+		for(STable table : tables.values())
+			table.release();
+	}
+	
+	@Override
+	protected void doClose() throws DBException
+	{
+		release();
+		
+		super.doClose(); // !!!
+	}
+	
+	/**
 	 * @author mstevens
 	 *
 	 */
@@ -931,7 +956,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public SQLTable(Schema schema)
 		{
-			this.tableName = getTableName(schema);
+			this.tableName = sanitiseIdentifier(schema.tableName);
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // to preserve column order we use a LinkedHashMap (i.e. a collection that is iterated in insertion-order)!
