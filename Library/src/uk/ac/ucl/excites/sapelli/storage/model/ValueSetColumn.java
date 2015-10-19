@@ -69,7 +69,18 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 */
 	public ValueSetColumn(String name, CS columnSet, boolean optional)
 	{
-		this(name, columnSet, optional, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
+		this(name, columnSet, optional, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param columnSet
+	 * @param optional
+	 * @param defaultValue
+	 */
+	public ValueSetColumn(String name, CS columnSet, boolean optional, VS defaultValue)
+	{
+		this(name, columnSet, optional, defaultValue, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
 	}
 	
 	/**
@@ -81,7 +92,20 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 */
 	public ValueSetColumn(String name, CS columnSet, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
-		super(name, optional);
+		this(name, columnSet, optional, null, includeSkipColsInStringSerialisation, includeVirtualColsInStringSerialisation);
+	}
+	
+	/**
+	 * @param name
+	 * @param columnSet
+	 * @param optional
+	 * @param defaultValue
+	 * @param includeSkipColsInStringSerialisation whether serialisation/deserialisation to/from String should include the subcolumns in skipColumns
+	 * @param includeVirtualColsInStringSerialisation whether serialisation/deserialisation to/from String should include virtual subcolumns
+	 */
+	public ValueSetColumn(String name, CS columnSet, boolean optional, VS defaultValue, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
+	{
+		super(name, optional, defaultValue);
 		if(columnSet == null || !columnSet.isSealed())
 			throw new IllegalArgumentException("RecordColumn needs a non-null, sealed columnSet to specify its subcolumns.");
 		this.columnSet = columnSet;

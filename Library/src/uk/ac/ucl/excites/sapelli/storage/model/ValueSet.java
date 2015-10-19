@@ -63,7 +63,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	protected final Object[] values;
 	
 	/**
-	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet.
+	 * Creates a new, ValueSet with the given ColumnSet, with each Column's value set to its defaultValue (usually {@code null}).
 	 * 
 	 * @param columnSet
 	 */
@@ -75,6 +75,9 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			throw new IllegalStateException("Schema must be sealed before records based on it can be created!");
 		this.columnSet = columnSet;
 		values = new Object[columnSet.getNumberOfColumns(false)];
+		// Initialise values with the defaultValue of each Column (usually null):
+		for(int c = 0; c < this.values.length; c++)
+			this.values[c] = columnSet.getColumn(c).defaultValue;
 	}
 	
 	/**

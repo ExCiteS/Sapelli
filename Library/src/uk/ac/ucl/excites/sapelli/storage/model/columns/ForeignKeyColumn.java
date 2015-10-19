@@ -43,7 +43,18 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 	 */
 	public ForeignKeyColumn(Schema foreignSchema, boolean optional)
 	{
-		this(foreignSchema.getName(), foreignSchema, optional);
+		this(foreignSchema.getName(), foreignSchema, optional, null);
+	}
+	
+	/**
+	 * @param foreignSchema
+	 * @param optional
+	 * @param defaultValue
+	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
+	 */
+	public ForeignKeyColumn(Schema foreignSchema, boolean optional, RecordReference defaultValue)
+	{
+		this(foreignSchema.getName(), foreignSchema, optional, defaultValue);
 	}
 
 	/**
@@ -53,6 +64,18 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
 	 */
 	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional)
+	{
+		this(name, foreignSchema, optional, null);
+	}
+
+	/**
+	 * @param name
+	 * @param foreignSchema
+	 * @param optional
+	 * @param defaultValue
+	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
+	 */
+	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional, RecordReference defaultValue)
 	{
 		super(name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
 		this.foreignSchema = foreignSchema;

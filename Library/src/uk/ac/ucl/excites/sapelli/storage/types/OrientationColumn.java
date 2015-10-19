@@ -32,9 +32,29 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	
 	static private final long serialVersionUID = 2L;
 	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param storeAzimuth
+	 * @param storePitch
+	 * @param storeRoll
+	 */
 	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
-		super(name, Orientation.COLUMN_SET, optional);
+		this(name, optional, storeAzimuth, storePitch, storeRoll, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param storeAzimuth
+	 * @param storePitch
+	 * @param storeRoll
+	 * @param defaultValue
+	 */
+	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll, Orientation defaultValue)
+	{
+		super(name, Orientation.COLUMN_SET, optional, defaultValue);
 		if(!storeAzimuth)
 			addSkipColumn(Orientation.COLUMN_AZIMUTH);
 		if(!storePitch)

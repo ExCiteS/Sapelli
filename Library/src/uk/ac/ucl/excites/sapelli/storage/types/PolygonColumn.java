@@ -38,18 +38,23 @@ public class PolygonColumn extends ListColumn<Polygon, Location>
 
 	public PolygonColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional);
+		this(name, optional, doublePrecision, storeAltitude, storeAccuracy, storeTime, storeProvider, null);
 	}
 	
-	private PolygonColumn(String name, Column<Location> locationCol, boolean optional)
+	public PolygonColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider, Polygon defaultValue)
 	{
-		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS));
+		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional, defaultValue);
+	}
+	
+	private PolygonColumn(String name, Column<Location> locationCol, boolean optional, Polygon defaultValue)
+	{
+		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS), defaultValue);
 	}
 	
 	@Override
 	public PolygonColumn copy()
 	{
-		return new PolygonColumn(name, singleColumn.copy(), optional);
+		return new PolygonColumn(name, singleColumn.copy(), optional, defaultValue);
 	}
 
 	@Override

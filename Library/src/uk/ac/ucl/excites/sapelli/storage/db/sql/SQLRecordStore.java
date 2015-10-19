@@ -2212,7 +2212,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(sqlCol != null)
 			{	// Equality constraint on non-composite (leaf) column...
 				Object sapValue = equalityConstr.getValue();
-				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one (unless the defaults are also put new Record instances)
 				bldr.append(sqlCol.name);
 				if(sapValue != null)
 				{

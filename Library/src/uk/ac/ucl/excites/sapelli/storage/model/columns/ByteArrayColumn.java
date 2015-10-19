@@ -41,15 +41,24 @@ public class ByteArrayColumn extends Column<byte[]>
 	static public final char SERIALISATION_SEPARATOR = ',';
 	
 	private final IntegerRangeMapping sizeField;
-	
+
 	/**
-	 * @param type
 	 * @param name
 	 * @param optional
 	 */
 	public ByteArrayColumn(String name, boolean optional)
 	{
-		super(name, optional);
+		this(name, optional, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 */
+	public ByteArrayColumn(String name, boolean optional, byte[] defaultValue)
+	{
+		super(name, optional, defaultValue);
 		this.sizeField = new IntegerRangeMapping(0, Integer.MAX_VALUE);
 	}
 
@@ -59,7 +68,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	@Override
 	public Column<byte[]> copy()
 	{
-		return new ByteArrayColumn(name, optional);
+		return new ByteArrayColumn(name, optional, defaultValue);
 	}
 
 	/* (non-Javadoc)

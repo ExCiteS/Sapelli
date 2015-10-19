@@ -139,13 +139,23 @@ public abstract class Column<T> implements Serializable
 	public final String name;
 	public final boolean optional;
 	private List<VirtualColumn<?, T>> virtualVersions;
+	public final T defaultValue;
 
-	public Column(String name, boolean optional)
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @throws IllegalArgumentException in case the defaultValue is invalid
+	 */
+	public Column(String name, boolean optional, T defaultValue) throws IllegalArgumentException
 	{
 		if(!IsValidName(name))
 			throw new IllegalArgumentException("Invalid column name (" + name + "), please use the static Column#SanitiseName method.");
 		this.name = name;
 		this.optional = optional;
+		this.defaultValue = defaultValue;
+		if(defaultValue != null)
+			validate(defaultValue);
 	}
 
 	/**
@@ -844,6 +854,7 @@ public abstract class Column<T> implements Serializable
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (optional ? 0 : 1);
 		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());
+		hash = 31 * hash + (defaultValue == null ? 0 : defaultValue.hashCode());
 		return hash;
 	}
 

@@ -54,7 +54,24 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	 */
 	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		super(name, Location.COLUMN_SET, optional);
+		this(name, optional, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeTime, storeProvider, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param doublePrecision whether or not to store lat/lon/alt as 64 bit (true) or 32 bit (false) values, this only affects binary storage, 64 bits values are used anywhere else
+	 * @param storeAltitude
+	 * @param storeBearing
+	 * @param storeSpeed
+	 * @param storeAccuracy
+	 * @param storeTime
+	 * @param storeProvider
+	 * @param defaultValue
+	 */
+	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeTime, boolean storeProvider, Location defaultValue)
+	{
+		super(name, Location.COLUMN_SET, optional, defaultValue);
 		// "Skip columns": skip the things we don't want to store binary:
 		if(!storeAltitude)
 			addSkipColumn(Location.COLUMN_ALTITUDE);

@@ -77,6 +77,18 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars)
 	{
+		return ForCharacterCount(name, optional, maxLengthChars, (String) null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param defaultValue
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, String defaultValue)
+	{
 		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_SERIALISATION_DELIMITER);
 	}
 	
@@ -89,7 +101,20 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, char serialisationDelimiter)
 	{
-		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_CHARSET, serialisationDelimiter);
+		return ForCharacterCount(name, optional, maxLengthChars, (String) null, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, String defaultValue, char serialisationDelimiter)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_CHARSET, defaultValue, serialisationDelimiter);
 	}
 	
 	/**
@@ -101,7 +126,20 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset)
 	{
-		return ForCharacterCount(name, optional, maxLengthChars, charset, DEFAULT_SERIALISATION_DELIMITER);
+		return ForCharacterCount(name, optional, maxLengthChars, charset, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset, String defaultValue)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, charset, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
 	}
 	
 	/**
@@ -114,9 +152,23 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset, char serialisationDelimiter)
 	{
+		return ForCharacterCount(name, optional, maxLengthChars, charset, null, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset, String defaultValue, char serialisationDelimiter)
+	{
 		if(maxLengthChars <= 0)
 			throw new IllegalArgumentException("maxLenghthChars needs to be at least 1 character to make sense, given " + maxLengthChars + " characters");
-		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset, serialisationDelimiter);
+		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset, defaultValue, serialisationDelimiter);
 	}
 	
 	//DYNAMIC--------------------------------------------------------
@@ -131,7 +183,17 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional)
 	{
-		this(name, optional, DEFAULT_SERIALISATION_DELIMITER);
+		this(name, optional, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 */
+	public StringColumn(String name, boolean optional, String defaultValue)
+	{
+		this(name, optional, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
 	}
 	
 	/**
@@ -141,7 +203,18 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional, char serialisationDelimiter)
 	{
-		this(name, optional, DEFAULT_MAX_LENGTH_BYTES, serialisationDelimiter);
+		this(name, optional, (String) null, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, String defaultValue, char serialisationDelimiter)
+	{
+		this(name, optional, DEFAULT_MAX_LENGTH_BYTES, defaultValue, serialisationDelimiter);
 	}
 	
 	/**
@@ -151,7 +224,18 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes)
 	{
-		this(name, optional, maxLengthBytes, DEFAULT_SERIALISATION_DELIMITER);
+		this(name, optional, maxLengthBytes, (String) null);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param defaultValue
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, String defaultValue)
+	{
+		this(name, optional, maxLengthBytes, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
 	}
 	
 	/**
@@ -162,7 +246,19 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, char serialisationDelimiter)
 	{
-		this(name, optional, maxLengthBytes, DEFAULT_CHARSET, serialisationDelimiter);
+		this(name, optional, maxLengthBytes, (String) null, serialisationDelimiter);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, String defaultValue, char serialisationDelimiter)
+	{
+		this(name, optional, maxLengthBytes, DEFAULT_CHARSET, defaultValue, serialisationDelimiter);
 	}
 	
 	/**
@@ -173,7 +269,19 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
-		this(name, optional, maxLengthBytes, charset, DEFAULT_SERIALISATION_DELIMITER);
+		this(name, optional, maxLengthBytes, charset, null);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset, String defaultValue)
+	{
+		this(name, optional, maxLengthBytes, charset, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
 	}
 	
 	/**
@@ -185,7 +293,20 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset, char serialisationDelimiter)
 	{
-		super(name, optional);
+		this(name, optional, maxLengthBytes, charset, null, serialisationDelimiter);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset, String defaultValue, char serialisationDelimiter)
+	{
+		super(name, optional, defaultValue);
 		if(maxLengthBytes <= 0)
 			throw new IllegalArgumentException("maxLenghthBytes needs to be at least 1 byte to make sense, given " + maxLengthBytes + " bytes");
 		if(charset == null)
@@ -199,7 +320,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	@Override
 	public StringColumn copy()
 	{
-		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName));
+		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), null);
 	}
 	
 	/**

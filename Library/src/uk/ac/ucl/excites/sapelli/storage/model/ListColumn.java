@@ -75,7 +75,20 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional)
 	{
-		this(name, singleColumn, optional, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
+		this(name, singleColumn, optional, null);
+	}
+	
+	/**
+	 * Creates a {@link ListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param defaultValue
+	 */
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, L defaultValue)
+	{
+		this(name, singleColumn, optional, defaultValue, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
 	}
 	
 	/**
@@ -92,7 +105,27 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 * 
 	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, Character separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		this(name, singleColumn, optional, null, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * Creates a {@link ListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param defaultValue
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 */
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, L defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
 	{
 		this(name, singleColumn, optional, DEFAULT_MAXIMUM_LENGTH, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
 	}
@@ -107,7 +140,21 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength)
 	{
-		this(name, singleColumn, optional, maxLength, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
+		this(name, singleColumn, optional, maxLength, null);
+	}
+	
+	/**
+	 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 * @param defaultValue
+	 */
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, L defaultValue)
+	{
+		this(name, singleColumn, optional, maxLength, defaultValue, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
 	}
 	
 	/**
@@ -127,7 +174,28 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
 	{
-		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		this(name, singleColumn, optional, maxLength, null, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 * @param defaultValue
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 */
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, L defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
 	}
 	
 	/**
@@ -141,7 +209,22 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 	{
-		this(name, singleColumn, optional, minLength, maxLength, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
+		this(name, singleColumn, optional, minLength, maxLength, null);
+	}
+	
+	/**
+	 * Creates a {@link ListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 * @param defaultValue
+	 */
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, L defaultValue)
+	{
+		this(name, singleColumn, optional, minLength, maxLength, defaultValue, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
 	}
 
 	/**
@@ -172,7 +255,39 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
 	{
-		super(name, optional);
+		this(name, singleColumn, optional, minLength, maxLength, null, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * Creates a {@link ListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * The {@code separator} char is used to separate individual list values in String serialisation.
+	 * If neither {@code separatorEscape} and {@code separatorEscapePrefix} are {@code null} occurrences
+	 * of the {@code separator} char inside String representations of individual list elements will be
+	 * escaped during serialisation of the list: occurrences of the {@code separator} char will be replaced
+	 * by {@code separatorEscapePrefix}+{@code separatorEscape}, and occurrences of {@code separatorEscapePrefix}
+	 * will be replaced by {@code separatorEscapePrefix}+{@code separatorEscapePrefix}. In this case the
+	 * {@code separator}, {@code separatorEscape} and {@code separatorEscapePrefix} chars must be all different.
+	 * When {@code separatorEscape} and {@code separatorEscapePrefix} are both {@code null} no escaping
+	 * of {@code separator} chars occurring inside String representations of individual list elements is
+	 * possible, and values (i.e. lists) containing elements whose String representation do contain the
+	 * {@code separator} char will be rejected.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 * @param defaultValue
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 */
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, L defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, optional, defaultValue);
 		if(singleColumn instanceof ListColumn)
 			throw new IllegalArgumentException("Cannot nest " + getClass().getSimpleName() + "s!");
 		this.singleColumn = singleColumn;
@@ -471,7 +586,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + sizeField.hashCode();
@@ -509,10 +624,26 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param name
 		 * @param singleColumn
 		 * @param optional
+		 * 
+		 * @see #ListColumn(String, Column, boolean)
 		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional)
 		{
 			super(name, singleColumn, optional);
+		}
+		
+		/**
+		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+		 * 
+		 * @param singleColumn
+		 * @param optional
+		 * @param defaultValue
+		 * 
+		 * @see #ListColumn(String, Column, boolean, List)
+		 */
+		public Simple(String name, Column<T> singleColumn, boolean optional, List<T> defaultValue)
+		{
+			super(name, singleColumn, optional, defaultValue);
 		}
 		
 		/**
@@ -535,16 +666,54 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		}
 		
 		/**
+		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param defaultValue
+		 * @param serialisationDelimiterOpen
+		 * @param serialisationDelimiterClose
+		 * @param separator
+		 * @param separatorEscape
+		 * @param separatorEscapePrefix
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+		 */
+		public Simple(String name, Column<T> singleColumn, boolean optional, List<T> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		{
+			super(name, singleColumn, optional, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		}
+		
+		/**
 		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
 		 * 
 		 * @param name
 		 * @param singleColumn
 		 * @param optional
 		 * @param maxLength
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int)
 		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength)
 		{
 			super(name, singleColumn, optional, maxLength);
+		}
+		
+		/**
+		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param maxLength
+		 * @param defaultValue
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int, List)
+		 */
+		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength, List<T> defaultValue)
+		{
+			super(name, singleColumn, optional, maxLength, defaultValue);
 		}
 		
 		/**
@@ -568,6 +737,27 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		}
 		
 		/**
+		 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param maxLength
+		 * @param defaultValue
+		 * @param serialisationDelimiterOpen
+		 * @param serialisationDelimiterClose
+		 * @param separator
+		 * @param separatorEscape
+		 * @param separatorEscapePrefix
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+		 */
+		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength, List<T> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		{
+			super(name, singleColumn, optional, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		}
+		
+		/**
 		 * Creates a {@link ListColumn.Simple} with the given minimum and maximum lengths.
 		 * 
 		 * @param name
@@ -575,10 +765,29 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param optional
 		 * @param minLength
 		 * @param maxLength
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int, int)
 		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 		{
 			super(name, singleColumn, optional, minLength, maxLength);
+		}
+		
+		/**
+		 * Creates a {@link ListColumn.Simple} with the given minimum and maximum lengths.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param minLength
+		 * @param maxLength
+		 * @param defaultValue
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int, int, List)
+		 */
+		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, List<T> defaultValue)
+		{
+			super(name, singleColumn, optional, minLength, maxLength, defaultValue);
 		}
 		
 		/**
@@ -600,6 +809,28 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
 		{
 			super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		}
+
+		/**
+		 * Creates a {@link ListColumn.Simple} with the given minimum and maximum lengths.
+		 * 
+		 * @param name
+		 * @param singleColumn
+		 * @param optional
+		 * @param minLength
+		 * @param maxLength
+		 * @param defaultValue
+		 * @param serialisationDelimiterOpen
+		 * @param serialisationDelimiterClose
+		 * @param separator
+		 * @param separatorEscape
+		 * @param separatorEscapePrefix
+		 * 
+		 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+		 */
+		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, List<T> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		{
+			super(name, singleColumn, optional, minLength, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
 		}
 
 		@Override
