@@ -320,10 +320,20 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	public Form getForm(Schema schema) throws UnknownModelException
 	{
-		Project project = getProject(schema.getModelID());
+		return getForm(getProject(schema.getModelID()), schema);
+	}
+	
+	/**
+	 * @param project
+	 * @param schema
+	 * @return the form that is backed by the given schema
+	 * @throws UnknownModelException when no matching Form is found
+	 */
+	public Form getForm(Project project, Schema schema) throws UnknownModelException
+	{
 		if(project != null)
 			for(Form f : project.getForms())
-				if(f.getSchema().equals(schema))
+				if(f.isProducesRecords() && f.getSchema().equals(schema))
 					return f;
 		throw new UnknownModelException(schema.getModelID(), schema.getModel().getName());
 	}
