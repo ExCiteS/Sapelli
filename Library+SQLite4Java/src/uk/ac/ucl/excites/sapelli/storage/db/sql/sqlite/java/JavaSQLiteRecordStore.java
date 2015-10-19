@@ -105,14 +105,15 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		//System.out.println("SQLite> Raw execute: " + sql);
+		if(loggingEnabled)
+			System.out.println("SQLite> Raw execute: " + sql);
 		try
 		{
 			db.exec(sql);
 		}
 		catch(SQLiteException sqlE)
 		{
-			throw new DBException(sqlE);
+			throw new DBException("Exception upon executing SQL: " + sql, sqlE);
 		}
 	}
 	
@@ -125,7 +126,8 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		try
 		{
 			int rows = db.getChanges();
-			//System.out.println("SQLite> Affected rows: " + rows);
+			if(loggingEnabled)
+				System.out.println("SQLite> Affected rows: " + rows);
 			return rows;
 		}
 		catch(SQLiteException e)
@@ -152,7 +154,8 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
-			//System.out.println("SQLite> Compile/reuse statement: " + sql);
+			if(loggingEnabled)
+				System.out.println("SQLite> Compile/reuse statement: " + sql);
 			return new JavaSQLiteStatement(db, sql, paramCols);
 		}
 		catch(SQLiteException sqliteE)

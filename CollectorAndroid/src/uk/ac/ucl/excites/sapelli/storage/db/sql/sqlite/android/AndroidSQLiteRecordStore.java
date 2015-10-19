@@ -85,7 +85,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		{
 			throw new DBException("Failed to open writable SQLite database", sqliteE);
 		}
-		Log.d(TAG, "Opened SQLite database: " + db.getPath());
+		if(loggingEnabled)
+			Log.d(TAG, "Opened SQLite database: " + db.getPath());
 		
 		// Set initialisation args:
 		setInitialisationArguments(helper.newDB, targetVersion, upgrader);
@@ -105,14 +106,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		Log.d(TAG, "Raw execute: " + sql);
+		if(loggingEnabled)
+			Log.d(TAG, "Raw execute: " + sql);
 		try
 		{
 			db.execSQL(sql);
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException(sqlE);
+			throw new DBException("Exception upon executing SQL: " + sql, sqlE);
 		}
 	}
 
@@ -196,7 +198,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			}
 			
 			// Log query & arguments:
-			if(BuildConfig.DEBUG)
+			if(BuildConfig.DEBUG && isLoggingEnabled())
 			{
 				if(LOG_QUALIFIED_QUERIES && sql.indexOf(PARAM_PLACEHOLDER) != -1)
 				{
@@ -268,6 +270,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected AndroidSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
+		if(loggingEnabled)
+			Log.d(TAG, "Compile statement: " + sql);
 		try
 		{
 			return new AndroidSQLiteStatement(this, db.compileStatement(sql), paramCols);
@@ -424,7 +428,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		@Override
 		public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 		{
-			//Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));			
+			if(loggingEnabled)
+				Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));				
 			return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 		}
 	}

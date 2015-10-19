@@ -70,14 +70,14 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.NotConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
-import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceByFlags;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceResolver;
+import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
@@ -138,7 +138,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * The names of tables that are protected.
 	 */
-	private final List<String> protectedTables = new ArrayList<String>();
+	private final Set<String> protectedTables = new HashSet<String>();
+	
+	protected boolean loggingEnabled = false;
 
 	/**
 	 * @param client
@@ -151,8 +153,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		this.valuePlaceHolder = valuePlaceHolder;
 		
 		// Protected tables:
-		this.protectedTables.add(client.getTableName(Model.MODEL_SCHEMA));
-		this.protectedTables.add(client.getTableName(Model.SCHEMA_SCHEMA));
+		this.protectedTables.add(sanitiseIdentifier(Model.MODEL_SCHEMA.tableName));
+		this.protectedTables.add(sanitiseIdentifier(Model.SCHEMA_SCHEMA.tableName));
 		// subclasses can add additional protected tables during initialisation
 	}
 	
@@ -200,8 +202,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * Subclasses may override this but *must* call super.
-	 * TODO somehow force the super() call using annotations?
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#doInitialise()
 	 */
@@ -270,6 +272,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return record != null;
 		else
 			return super.isStorable(record);
+	}
+	
+	/**
+	 * @return the loggingEnabled
+	 */
+	public boolean isLoggingEnabled()
+	{
+		return loggingEnabled;
+	}
+
+	/**
+	 * @param loggingEnabled the loggingEnabled to set
+	 */
+	public void setLoggingEnabled(boolean loggingEnabled)
+	{
+		this.loggingEnabled = loggingEnabled;
 	}
 
 	protected abstract void executeSQL(String sql) throws DBException;
@@ -787,9 +805,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @return
 	 */
-	public final List<String> getProtectedTableNames()
+	public final Set<String> getProtectedTableNames()
 	{
-		return protectedTables;
+		return Collections.unmodifiableSet(protectedTables);
 	}
 	
 	/**

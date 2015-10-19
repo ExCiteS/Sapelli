@@ -116,6 +116,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected void doInitialise() throws DBException
 	{
 		addProtectedTable("sqlite_master");
+		addProtectedTable("sqlite_sequence");
 		
 		super.doInitialise(); // !!!
 	}
@@ -560,7 +561,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(countStatement != null)
 				countStatement.close();
 		}
-
+		
 	}
 	
 	/**
