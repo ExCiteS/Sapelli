@@ -245,7 +245,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		if(client.hasDatabaseBeenUpgraded())
 		{
 			List<String> warnings = client.getUpgradeWarnings();
-			showWarningDialog(getString(R.string.dbUpgrade, client.getOldDatabaseVersion(), CollectorClient.CURRENT_COLLECTOR_RECORDSTORE_VERSION) + (!warnings.isEmpty() ? "\n" + listWarnings(R.string.dbUpgradeWarningsTitle, warnings) : ""));
+			showWarningDialog(getString(R.string.dbUpgrade, client.getOldDatabaseVersion(), CollectorClient.CURRENT_COLLECTOR_RECORDSTORE_VERSION) + (!warnings.isEmpty() ? "\n\n" + listWarnings(R.string.dbUpgradeWarningsTitle, warnings) : ""));
 		}
 		
 		// And finally...

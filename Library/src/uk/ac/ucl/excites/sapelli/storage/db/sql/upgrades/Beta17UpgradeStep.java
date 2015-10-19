@@ -152,7 +152,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		for(String tableName : upgradeOps.getAllTableNames(recordStore))
 			if(!keepTables.contains(tableName) && !keepTables.contains(upgradeOps.sanitiseIdentifier(recordStore, tableName)))
 			{
-				upgradeOps.addWarning("Deleting unknown/unupgradable table \'" + tableName + "\'");
+				upgradeOps.addWarning("Deleting unknown table \'" + tableName + "\'");
 				upgradeOps.dropTable(recordStore, tableName, false);
 			}
 		
