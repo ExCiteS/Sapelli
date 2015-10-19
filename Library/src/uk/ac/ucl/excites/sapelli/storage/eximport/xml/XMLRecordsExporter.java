@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportColumnValueStringProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -233,40 +234,46 @@ public class XMLRecordsExporter extends SimpleExporter
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
 	@Override
-	public void enter(ValueSetColumn<?, ?> recordCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		if(compositeMode == CompositeMode.String)
-			return; //this should never happen
+			return; // this should never happen
 		
 		// Push on columnStack:
-		super.enter(recordCol);
+		super.enter(valueSetCol);
 		
 		// Write null value comment if subrecord is null:
 		if(getColumnPointer().retrieveValue(currentRecord) == null)
-			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(recordCol.getName()), tabs));
-		else if(compositeMode == CompositeMode.Nested) 
+			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(valueSetCol.getName()), tabs));
+		else if(compositeMode == CompositeMode.Nested)
 		{	// If in nested tags mode and subrecord is not null, open parent tag:
-			writer.writeLine(StringUtils.addTabsFront("<" + recordCol.getName() + ">", tabs));
+			writer.writeLine(StringUtils.addTabsFront("<" + valueSetCol.getName() + ">", tabs));
 			tabs++;
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
 	@Override
-	public void leave(ValueSetColumn<?, ?> recordCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		if(compositeMode == CompositeMode.String)
-			return; //this should never happen
+			return; // this should never happen
 
 		// If in nested tags mode and subrecord is not null, close parent tag:
 		if(compositeMode == CompositeMode.Nested && getColumnPointer().retrieveValue(currentRecord) != null)
 		{
 			tabs--;
-			writer.writeLine(StringUtils.addTabsFront("</" + recordCol.getName() + ">", tabs));
+			writer.writeLine(StringUtils.addTabsFront("</" + valueSetCol.getName() + ">", tabs));
 		}
 		
 		// Pop columnStack:
-		super.leave(recordCol);
+		super.leave(valueSetCol);
 	}
 	
 	@Override

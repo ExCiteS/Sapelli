@@ -21,8 +21,10 @@ package uk.ac.ucl.excites.sapelli.storage.eximport.helpers;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
@@ -193,7 +195,7 @@ public abstract class ExImportColumnValueHelper
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 		 */
 		@Override
-		public final void enter(ValueSetColumn<?, ?> valueSetCol)
+		public final <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol)
 		{
 			// do nothing
 		}
@@ -204,7 +206,7 @@ public abstract class ExImportColumnValueHelper
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 		 */
 		@Override
-		public final void leave(ValueSetColumn<?, ?> valueSetCol)
+		public final <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 		{
 			// do nothing 
 		}

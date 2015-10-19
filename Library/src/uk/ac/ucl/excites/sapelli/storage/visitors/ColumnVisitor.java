@@ -18,7 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
@@ -83,9 +85,9 @@ public interface ColumnVisitor
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
-	public void enter(ValueSetColumn<?, ?> valueSetCol);
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol);
 	
-	public void leave(ValueSetColumn<?, ?> valueSetCol);
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol);
 	
 	public boolean allowLocationSelfTraversal();
 	

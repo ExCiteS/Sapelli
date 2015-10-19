@@ -23,8 +23,10 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -55,7 +57,7 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void enter(ValueSetColumn<?, ?> valueSetCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		columnStack.push(valueSetCol);
 	}
@@ -64,13 +66,13 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void leave(ValueSetColumn<?, ?> valueSetCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		if(columnStack.peek() != valueSetCol)
 			throw new IllegalStateException("Invalid column stack state!");
 		columnStack.pop();
 	}
-	
+
 	/**
 	 * Visit method for VirtualColumns. We treat them like any other column (i.e. we do *not* visit their target column directly). 
 	 * 
