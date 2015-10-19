@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -36,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnN
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -58,9 +60,10 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static public final int COLLECTOR_RECORDSTORE_V2 = 2;
 	
 	/**
-	 * Version used from Sapelli Collector v2.0 Beta 17:
-	 * 	- New: new way of storing serialised Models in {@link Model#MODEL_SCHEMA}
-	 *  - TODO: more?  
+	 * Version used from Sapelli Collector v2.0 Beta 17.
+	 * 
+	 * @see Beta17UpgradeStep
+	 * @see CollectorSQLRecordStoreUpgrader
 	 */
 	static public final int COLLECTOR_RECORDSTORE_V3 = 3;
 	
