@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * @author mstevens
@@ -58,7 +59,10 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 				if(schema == ProjectRecordStore.HFK_SCHEMA)
 					return "Relationship_HFKs";
 				// From old TransmissionClient:
-				// TODO ...
+				if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
+					return "Transmissions";
+				if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
+					return "Transmission_Parts";
 				// From old StorageClient:
 				if(schema == Model.MODEL_SCHEMA)
 					return "Models";
