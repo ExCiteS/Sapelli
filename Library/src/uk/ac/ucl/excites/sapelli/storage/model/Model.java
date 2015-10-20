@@ -283,13 +283,19 @@ public class Model implements Serializable
 	 */
 	protected int addSchema(Schema schema) throws ModelFullException
 	{
+		// Perform checks:
 		if(sealed)
 			throw new IllegalStateException("Cannot extend sealed model!");
 		if(schema == null)
 			throw new NullPointerException("Cannot add null Schema");
 		if(schemata.size() == MAX_SCHEMATA)
 			throw new ModelFullException("The model has reached the maximum of " + MAX_SCHEMATA + " schemata.");
+		for(Schema modelSchema : schemata)
+			if(modelSchema.name.equalsIgnoreCase(schema.name))
+				throw new IllegalArgumentException("Model does not allow more than one schema with the same name (\"" + schema.name + "\")!");
+		// Add schema:
 		schemata.add(schema);
+		// Return its schema number:
 		return schemata.size() - 1;
 	}
 	
