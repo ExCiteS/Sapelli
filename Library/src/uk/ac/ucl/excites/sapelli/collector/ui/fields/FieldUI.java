@@ -345,8 +345,6 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected abstract boolean isShowForward();
 
 	/**
-<<<<<<< HEAD
-=======
 	 * Allows subclasses to handle control events (i.e. pressing back/exit/forward)
 	 * in ways specific to their UI.
 	 * 
@@ -361,7 +359,6 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	}
 
 	/**
->>>>>>> be59fc0... Misc
 	 * Tells whether this FieldUI needs to have its onDisplay() method called when it appears on the screen.
 	 * 
 	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
