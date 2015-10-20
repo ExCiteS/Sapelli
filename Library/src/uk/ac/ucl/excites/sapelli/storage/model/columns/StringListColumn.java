@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
+import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -30,11 +32,13 @@ public class StringListColumn extends ListColumn.Simple<String>
 	private static final long serialVersionUID = 2L;
 
 	/**
-	 * Creates a {@link StringListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and maximum length of {@value ListColumn#DEFAULT_MAXIMUM_LENGTH}.
+	 * Creates a {@link StringListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
+	 * 
+	 * @see #ListColumn(String, Column, boolean)
 	 */
 	public StringListColumn(String name, StringColumn singleColumn, boolean optional)
 	{
@@ -42,16 +46,123 @@ public class StringListColumn extends ListColumn.Simple<String>
 	}
 	
 	/**
-	 * Creates a {@link StringListColumn} with minimum length of {@value ListColumn#DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * Creates a {@link StringListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param defaultValue
+	 * 
+	 * @see #ListColumn(String, Column, List)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, List<String> defaultValue)
+	{
+		super(name, singleColumn, optional, defaultValue);
+	}
+	
+	/**
+	 * Creates a {@link StringListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, char, char, char, Character, Character)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param defaultValue
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, List, char, char, char, Character, Character)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, List<String> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * Creates a {@link StringListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 * @param maxLength
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int)
 	 */
 	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength)
 	{
 		super(name, singleColumn, optional, maxLength);
+	}
+	
+	/**
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 * @param defaultValue
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, List)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, List<String> defaultValue)
+	{
+		super(name, singleColumn, optional, maxLength, defaultValue);
+	}
+	
+	/**
+	 * Creates a {@link StringListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+	
+	/**
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param maxLength
+	 * @param defaultValue
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, List<String> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
 	}
 	
 	/**
@@ -66,6 +177,62 @@ public class StringListColumn extends ListColumn.Simple<String>
 	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength)
 	{
 		super(name, singleColumn, optional, minLength, maxLength);
+	}
+	
+	/**
+	 * Creates a {@link StringListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 * @param defaultValue
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, List<String> defaultValue)
+	{
+		super(name, singleColumn, optional, minLength, maxLength, defaultValue);
+	}
+	
+	/**
+	 * Creates a {@link StringListColumn} with the given minimum and maximum lengths.
+	 * 
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, int, char, char, char, Character, Character)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+	}
+
+	/**
+	 * @param name
+	 * @param singleColumn
+	 * @param optional
+	 * @param minLength
+	 * @param maxLength
+	 * @param defaultValue
+	 * @param serialisationDelimiterOpen
+	 * @param serialisationDelimiterClose
+	 * @param separator
+	 * @param separatorEscape
+	 * @param separatorEscapePrefix
+	 * 
+	 * @see #ListColumn(String, Column, boolean, int, int, List, char, char, char, Character, Character)
+	 */
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, List<String> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	{
+		super(name, singleColumn, optional, minLength, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
 	}
 
 	@Override

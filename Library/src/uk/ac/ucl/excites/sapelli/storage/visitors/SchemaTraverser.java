@@ -23,7 +23,9 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -39,12 +41,12 @@ public abstract class SchemaTraverser implements ColumnVisitor
 
 	private final Stack<ValueSetColumn<?, ?>> parentStack = new Stack<ValueSetColumn<?, ?>>();
 	
-	public void traverse(Schema schema)
+	protected final void traverse(Schema schema)
 	{
 		traverse(schema, Collections.<Column<?>> emptySet());
 	}
 	
-	public void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
+	protected final void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
 	{
 		parentStack.clear();
 		schema.accept(this, skipColumns);
@@ -54,7 +56,7 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void enter(ValueSetColumn<?, ?> valueSetCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		parentStack.push(valueSetCol);
 	}
@@ -63,17 +65,17 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 	 */
 	@Override
-	public void leave(ValueSetColumn<?, ?> valueSetCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		if(parentStack.peek() != valueSetCol)
 			throw new IllegalStateException("Invalid parent stack state!");
 		parentStack.pop();
 	}
-	
+
 	/**
 	 * @return
 	 */
-	protected <C extends Column<?>> ColumnPointer<C> getColumnPointer(C currentColumn)
+	protected final <C extends Column<?>> ColumnPointer<C> getColumnPointer(C currentColumn)
 	{
 		return new ColumnPointer<C>(parentStack, currentColumn); // checks will be performed to ensure the currentColumn is really a child of the parent(s)
 	}

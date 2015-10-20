@@ -19,6 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.db.db4o;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -39,7 +42,7 @@ import com.db4o.query.Predicate;
 
 /**
  * @author mstevens, julia, Michalis Vitos
- * 
+ * @deprecated
  */
 public class DB4OProjectStore extends ProjectStore
 {
@@ -307,6 +310,18 @@ public class DB4OProjectStore extends ProjectStore
 	public void deleteSendSchedule(SendingSchedule schedule)
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+	}
+	
+	@Override
+	public void serialise(Project project, OutputStream out) throws IOException
+	{
+		throw new UnsupportedOperationException("serialise() not implemented");
+	}
+
+	@Override
+	public Project deserialise(InputStream in) throws IOException
+	{
+		throw new UnsupportedOperationException("deserialise() not implemented");
 	}
 	
 }

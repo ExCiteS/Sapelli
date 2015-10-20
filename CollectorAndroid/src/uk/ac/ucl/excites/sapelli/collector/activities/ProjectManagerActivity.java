@@ -50,6 +50,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.AboutFragment;
@@ -236,6 +238,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			Log.e(TAG, getString(R.string.projectStorageAccessFail), e);
 			showErrorDialog(getString(R.string.projectStorageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
 			return;
+		}
+		
+		// Check & report on database upgrade:
+		AndroidCollectorClient client = getCollectorClient(); 
+		if(client.hasDatabaseBeenUpgraded())
+		{
+			List<String> warnings = client.getUpgradeWarnings();
+			showWarningDialog(getString(R.string.dbUpgrade, client.getOldDatabaseVersion(), CollectorClient.CURRENT_COLLECTOR_RECORDSTORE_VERSION) + (!warnings.isEmpty() ? "\n\n" + listWarnings(R.string.dbUpgradeWarningsTitle, warnings) : ""));
 		}
 		
 		// And finally...
@@ -656,11 +666,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
 		//	Parser/loader warnings: 
 		if(!warnings.isEmpty())
-		{
-			bldr.append(getString(R.string.projectLoadingWarnings) + ":");
-			for(String warning : warnings)
-				bldr.append(" - " + warning);
-		}
+			bldr.append(listWarnings(R.string.projectLoadingWarnings, warnings));
 		//	Check file dependencies:
 		List<String> missingFiles = project.getMissingFilesRelativePaths(getFileStorageProvider());
 		if(!missingFiles.isEmpty())
@@ -737,15 +743,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	public void importSuccess(List<Record> records, List<String> warnings)
 	{
-		// Show parser warnings if needed: 
+		// Show parser warnings if needed:
 		if(!warnings.isEmpty())
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
-			bldr.append(getString(R.string.parsingWarnings) + ":");
-			for(String warning : warnings)
-				bldr.append(" - " + warning);
-			showWarningDialog(bldr.toString());
-		}
+			showWarningDialog(listWarnings(R.string.parsingWarnings, warnings));
 		// Store the records:
 		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
 		{
@@ -816,6 +816,18 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	public ProjectStore getProjectStore()
 	{
 		return projectStore;
+	}
+	
+	private String listWarnings(int titleStringId, List<String> warnings)
+	{
+		if(warnings.isEmpty())
+			return null;
+		//else:
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+		bldr.append(getString(titleStringId) + ":");
+		for(String warning : warnings)
+			bldr.append(" - " + warning);
+		return bldr.toString();
 	}
 
 }

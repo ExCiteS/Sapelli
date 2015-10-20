@@ -433,7 +433,7 @@ public class ProjectParser extends DocumentParser
 			
 			// Get column:
 			@SuppressWarnings("unchecked")
-			ColumnPointer<ComparableColumn<?>> columnPointer = (ColumnPointer<ComparableColumn<?>>) ColumnPointer.FromName(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found (but name sanitation will be used first)
+			ColumnPointer<ComparableColumn<?>> columnPointer = (ColumnPointer<ComparableColumn<?>>) ColumnPointer.ByName(form.getSchema(), columnName, true, true); // will throw IllegalArgumentException if no such column is found (but name sanitation will be used first)
 			
 			// Column check:
 			if(!(columnPointer.getColumn() instanceof ComparableColumn<?>))

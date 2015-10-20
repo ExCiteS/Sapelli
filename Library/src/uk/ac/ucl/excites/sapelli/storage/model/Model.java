@@ -18,18 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
-import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -83,31 +77,28 @@ public class Model implements Serializable
 	// Meta-Model:
 	static public final Model META_MODEL = new Model(-1, "MetaModel", true, StorageClient.SCHEMA_FLAGS_STORAGE_INTERNAL);
 	
-	// Model Schema: a "meta" schema for records that describe a Model
-	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName() + "s");
+	// Model Schema: a "meta" Schema for records that describe a Model
+	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName(), Model.class.getSimpleName() + "s");
 	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
 	static protected final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
-	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("compressedSerialisedObject", false));
-	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
+	static protected final ByteArrayColumn MODEL_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("serialisation", false));
+	static protected final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
 	static
 	{
-		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN));
-		MODEL_SCHEMA.seal();
+		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN), true /*seal!*/);
 	}
 	
-	// Meta Schema: a Schema to describe other Schema's
-	static public final Schema META_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName() + "ta");
-	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = META_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
-	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = META_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
-	static public final StringColumn META_NAME_COLUMN = META_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
-	static public final IntegerColumn META_FLAGS_COLUMN = META_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
+	// Schema Schema: a "meta" Schema for records that describe other Schemata
+	static public final Schema SCHEMA_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName(), Schema.class.getSimpleName() + "ta");
+	static public final ForeignKeyColumn SCHEMA_MODEL_ID_COLUMN = SCHEMA_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
+	static public final IntegerColumn SCHEMA_SCHEMA_NUMBER_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
+	static public final StringColumn SCHEMA_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
+	static public final IntegerColumn SCHEMA_FLAGS_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
+	static public final StringColumn SCHEMA_TABLE_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("tableName", true, Schema.MAX_SCHEMA_NAME_LENGTH * 2));
 	static
 	{
-		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
-		META_SCHEMA.seal();
+		SCHEMA_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(SCHEMA_MODEL_ID_COLUMN, SCHEMA_SCHEMA_NUMBER_COLUMN), true /*seal!*/);
 	}
-	
-	private static Compression OBJECT_COMPRESSION = Compression.DEFLATE;
 	
 	// Seal the Meta-Model:
 	static
@@ -121,18 +112,11 @@ public class Model implements Serializable
 	 * @param model
 	 * @param client
 	 * @return
-	 * @throws IOException
+	 * @throws Exception
 	 */
-	static public Record GetModelRecord(Model model, StorageClient client) throws IOException
+	static public Record GetModelRecord(Model model, StorageClient client) throws Exception
 	{
-		// Serialise Model object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();	
-		ObjectOutputStream objOut = new ObjectOutputStream(CompressorFactory.getCompressorOutputStream(OBJECT_COMPRESSION, rawOut));
-		objOut.writeObject(model);
-		objOut.flush();
-		objOut.close();
-		// Return new Model record:
-		return MODEL_SCHEMA.createRecord(model.id, model.name, rawOut.toByteArray(), model.hashCode());
+		return MODEL_SCHEMA.createRecord(model.id, model.name, client.serialiseModel(model), model.hashCode()); // use client to serialise Model object to byte[]
 	}
 	
 	/**
@@ -162,26 +146,21 @@ public class Model implements Serializable
 	 * @param modelRecord
 	 * @param client
 	 * @return
-	 * @throws NullPointerException
-	 * @throws IllegalArgumentException
-	 * @throws IOException
-	 * @throws ClassNotFoundException
+	 * @throws Exception if a problem occurs
 	 */
-	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
+	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws Exception
 	{
 		if(modelRecord == null)
 			throw new NullPointerException("The modelRecord cannot be null!");
 		if(modelRecord.getSchema() != MODEL_SCHEMA)
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
-		// Decompress & deserialise Schema object bytes:
-		ObjectInputStream objIn = new ObjectInputStream(CompressorFactory.getCompressorInputStream(OBJECT_COMPRESSION, new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord))));
-		Model model = (Model) objIn.readObject();
-		objIn.close();
+		// Deserialise Model from bytes:
+		Model model = client.deserialiseModel(MODEL_SERIALISATION_COLUMN.retrieveValue(modelRecord));
 		
 		// Perform check:
 		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))
-			throw new IllegalStateException("Model hashCode mismatch");
+			System.err.println("Model hashCode mismatch"); // don't throw an Exception, hashCode mismatches are not necessarily problematic and are to be expected if Storage model or Collector model classes change. 
 		// Note: if hashCode matches then id, name should match as well
 		
 		return model;
@@ -277,7 +256,7 @@ public class Model implements Serializable
 	 * @throws IOException
 	 * @see #GetModelRecord(Model)
 	 */
-	public Record getModelRecord(StorageClient client) throws IOException
+	public Record getModelRecord(StorageClient client) throws Exception
 	{
 		return GetModelRecord(this, client);
 	}
@@ -362,6 +341,31 @@ public class Model implements Serializable
 	{
 		return Collections.unmodifiableList(schemata);
 	}
+	
+	/**
+	 * Checks if the Model contains the given Schema, uses == comparison.
+	 * 
+	 * @param schema
+	 * @return whether or not the Model contains the given Schema
+	 */
+	public boolean contains(Schema schema)
+	{
+		for(Schema s : schemata)
+			if(s == schema)
+				return true;
+		return false;
+	}
+	
+	/**
+	 * Checks if the Model contains the given Schema or an equivalent one, uses {@link Schema#equals(Object)} which can be slow.
+	 * 
+	 * @param schema
+	 * @return whether or not the Model contains the given Schema or an equivalent one
+	 */
+	public boolean containsEquivalent(Schema schema)
+	{
+		return schemata.contains(schema);
+	}
 
 	public int getNumberOfSchemata()
 	{
@@ -398,7 +402,7 @@ public class Model implements Serializable
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName() + "_" + (name != null ? name + "_" : "") + "(ID=" + id + ")"; 
+		return getClass().getSimpleName() + "{" + (name != null ? name + "; " : "") + "ID=" + id + "}"; 
 	}
 	
 }

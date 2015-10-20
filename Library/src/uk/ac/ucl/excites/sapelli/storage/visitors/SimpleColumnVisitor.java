@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
@@ -29,13 +29,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 
 /**
  * A {@link ColumnVisitor} that treats all Column types the same.
@@ -51,7 +51,7 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	 * 
 	 * @param leafColumn
 	 */
-	public abstract <T> void visit(Column<T> column);
+	protected abstract <T> void visit(Column<T> column);
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn)
@@ -192,7 +192,7 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple)
 	 */
 	@Override
-	public <T> void visit(Simple<T> simpleListCol)
+	public <T> void visit(ListColumn.Simple<T> simpleListCol)
 	{
 		this.visit((Column<?>) simpleListCol);
 	}

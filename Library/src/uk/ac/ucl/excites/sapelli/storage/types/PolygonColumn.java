@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
+
+import java.util.Collection;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.Location;
-import uk.ac.ucl.excites.sapelli.storage.types.Polygon;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -38,24 +38,35 @@ public class PolygonColumn extends ListColumn<Polygon, Location>
 
 	public PolygonColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional);
+		this(name, optional, doublePrecision, storeAltitude, storeAccuracy, storeTime, storeProvider, null);
 	}
 	
-	private PolygonColumn(String name, Column<Location> locationCol, boolean optional)
+	public PolygonColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider, Polygon defaultValue)
 	{
-		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS));
+		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional, defaultValue);
+	}
+	
+	private PolygonColumn(String name, Column<Location> locationCol, boolean optional, Polygon defaultValue)
+	{
+		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS), defaultValue);
 	}
 	
 	@Override
 	public PolygonColumn copy()
 	{
-		return new PolygonColumn(name, singleColumn.copy(), optional);
+		return new PolygonColumn(name, singleColumn.copy(), optional, defaultValue);
 	}
 
 	@Override
 	protected Polygon getNewList(int minimumCapacity)
 	{
 		return new Polygon(minimumCapacity);
+	}
+	
+	@Override
+	protected Polygon getNewList(Collection<Location> points)
+	{
+		return new Polygon(points);
 	}
 	
 	@Override

@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -62,7 +63,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	protected final Object[] values;
 	
 	/**
-	 * Creates a new, "empty" (all {@code null}) ValueSet with the given ColumnSet.
+	 * Creates a new, ValueSet with the given ColumnSet, with each Column's value set to its defaultValue (usually {@code null}).
 	 * 
 	 * @param columnSet
 	 */
@@ -74,6 +75,9 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			throw new IllegalStateException("Schema must be sealed before records based on it can be created!");
 		this.columnSet = columnSet;
 		values = new Object[columnSet.getNumberOfColumns(false)];
+		// Initialise values with the defaultValue of each Column (usually null):
+		for(int c = 0; c < this.values.length; c++)
+			this.values[c] = columnSet.getColumn(c).defaultValue;
 	}
 	
 	/**
@@ -81,8 +85,11 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param columnSet
 	 * @param values to initialise the ValueSet with, number of values must match number of (real) columns in the ColumnSet and each value must be valid for the corresponding Column
+	 * @throws IllegalArgumentException in case of an incorrect number of values or an invalid value
+	 * @throws NullPointerException if a value is null on an non-optional column
+	 * @throws ClassCastException when a value cannot be converted/casted to the column's type {@code <T>}
 	 */
-	public ValueSet(CS columnSet, Object... values)
+	public ValueSet(CS columnSet, Object... values) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
 		this(columnSet);
 		if(values != null)
@@ -91,10 +98,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			{
 				// Init from given values:
 				for(int c = 0; c < this.values.length; c++)
-				{
-					Column<?> col = columnSet.getColumn(c);
-					col.storeObject(this, values[c]);
-				}
+					columnSet.getColumn(c).storeObject(this, values[c]); // validation will be applied
 			}
 			else
 				throw new IllegalArgumentException("Unexpected number of values (given: " + values.length + "; expected: " + this.values.length + ").");
@@ -106,12 +110,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param columnSet
 	 * @param serialisedValues String to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
-	 * @throws Exception 
+	 * @throws Exception when parsing serialisedValues fails (or they are invalid)
 	 */
 	public ValueSet(CS columnSet, String serialisedValues) throws Exception
 	{
 		this(columnSet);
-		parse(serialisedValues);
+		parse(serialisedValues); // validation will be applied
 	}
 
 	/**
@@ -120,12 +124,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param columnSet
 	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
 	 * @throws NullPointerException when schema is null
-	 * @throws IOException when reading serialisedValues fails
+	 * @throws IOException when reading serialisedValues fails (or they are invalid)
 	 */
 	public ValueSet(CS columnSet, byte[] serialisedValues) throws NullPointerException, IOException
 	{
 		this(columnSet);
-		fromBytes(serialisedValues);
+		fromBytes(serialisedValues); // validation will be applied
 	}
 	
 	/**
@@ -205,32 +209,93 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 
 	/**
-	 * Checks whether all non-optional columns have been assigned a (non-null) value in this ValueSet.
+	 * Checks whether all non-optional columns have been assigned a non-{@code null} value in this ValueSet.
 	 * 
-	 * @return whether of the all non-optional columns are filled
+	 * @return whether all of the non-optional columns are filled
+	 * 
+	 * @see {@link Column#isValuePresentOrOptional(ValueSet)}
 	 */
 	public boolean isFilled()
 	{
-		for(int c = 0; c < values.length; c++)
-			if(values[c] == null && !columnSet.getColumn(c).isOptional())
+		return isFilled(false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks, optionally recursive whether all non-optional columns have been assigned a non-{@code null} value in this ValueSet.
+	 * 
+	 * @param recurse whether or not to recursively check whether the non-optional subcolumns of composite columns also have a non-{@code null} value
+	 * @return whether all of the non-optional columns are filled
+	 * 
+	 * @see {@link Column#isValuePresentOrOptional(ValueSet,boolean)}
+	 */
+	public boolean isFilled(final boolean recurse)
+	{
+		return isFilled(this.columnSet, recurse);
+	}
+	
+	/**
+	 * Checks whether all non-optional columns from the given schema have been assigned a non-{@code null} value in this ValueSet.
+	 * The given ColumnSet must be this ValueSet's ColumnSet or a subset of it.
+	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
+	 * 
+	 * @param columnSet (subset of) the record's schema
+	 * @return whether all of the non-optional columns are filled
+	 * @throws IllegalArgumentException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
+	 * 
+	 * @see {@link Column#isValuePresentOrOptional(ValueSet)}
+	 */
+	protected boolean isFilled(ColumnSet columnSet) throws IllegalStateException
+	{
+		return isFilled(columnSet, false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks, optionally recursive, whether all non-optional columns from the given schema have been assigned a non-{@code null} value in this ValueSet.
+	 * The given ColumnSet must be this ValueSet's ColumnSet or a subset of it.
+	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
+	 * 
+	 * @param columnSet (subset of) the record's schema
+	 * @param recurse whether or not to recursively check whether the non-optional subcolumns of composite columns also have a non-{@code null} value
+	 * @return whether all of the non-optional columns are filled
+	 * @throws IllegalArgumentException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
+	 * 
+	 * @see {@link Column#isValuePresentOrOptional(ValueSet,boolean)}
+	 */
+	protected boolean isFilled(ColumnSet columnSet, final boolean recurse) throws IllegalStateException
+	{
+		for(Column<?> col : columnSet.getColumns(false))
+			if(!col.isValuePresentOrOptional(this, recurse))
 				return false; // null value in non-optional column	
 		return true;
 	}
 	
 	/**
-	 * Checks whether all non-optional columns from the given schema have been assigned a (non-null) value in this ValueSet.
-	 * The given schema must be a subset of the record's schema or the record's schema itself.
-	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
+	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
-	 * @param columnSet (subset of) the record's schema
-	 * @return whether of the all non-optional columns are filled
-	 * @throws IllegalArgumentException when the given schema contains a column(s) which is not part of the ColumnSet
+	 * @return whether there is a valid value for each column
+	 * 
+	 * @see {@link Column#isValueValid(ValueSet)}
 	 */
-	protected boolean isFilled(ColumnSet columnSet) throws IllegalStateException
+	public boolean isValid()
+	{
+		return isValid(false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
+	 * 
+	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have valid values
+	 * @return whether there is a valid value for each column
+	 * 
+	 * @see {@link Column#isValueValid(ValueSet,boolean)}
+	 */
+	public boolean isValid(final boolean recurse)
 	{
 		for(Column<?> col : columnSet.getColumns(false))
-			if(getValue(col) == null && !col.isOptional())
-				return false; // null value in non-optional column	
+			if(!col.isValueValid(this, recurse))
+				return false;	
 		return true;
 	}
 	
@@ -242,11 +307,19 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	
 	public String toString(boolean includeVirtual)
 	{
-		StringBuffer bff = new StringBuffer();
-		bff.append(columnSet.toString());
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("");
+		// ValueSet type:
+		bldr.append(getClass().getSimpleName());
+		// ColumnSet (type+name):
+		bldr.append("<" + columnSet.toString() + ">:[");
+		// Values:
+		bldr.openTransaction("; ");
 		for(Column<?> c : columnSet.getColumns(includeVirtual))
-			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
-		return bff.toString();
+			bldr.append(c.getName() + " = " + c.retrieveValueAsString(this));
+		bldr.commitTransaction();
+		bldr.append("]");
+		// Return result:
+		return bldr.toString();
 	}
 	
 	/**
@@ -300,9 +373,14 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Deserialise the values of a ValueSet from a String
+	 * Deserialise the values of a ValueSet from a String.
 	 * 
-	 * @param serialisedRecord
+	 * Note:
+	 * 	Sealed ColumnSets always have at least 1 column, which means that a serialisedValueSet should always
+	 * 	contain at least one value. The separator is only used in between values and not at the end of the String
+	 *	(see {@link #serialise()}), and thus the number of values is equal to the number of separator occurrences + 1.
+	 * 
+	 * @param serialisedValueSet
 	 * @param includeVirtual
 	 * @param skipColumns
 	 * @return
@@ -310,16 +388,16 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public ValueSet<CS> parse(String serialisedRecord, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public ValueSet<CS> parse(String serialisedValueSet, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
+		String[] parts = serialisedValueSet.split("\\" + SERIALISATION_SEPARATOR);  
 		if(parts.length != columnSet.getNumberOfColumns(includeVirtual))
-			throw new IllegalArgumentException("Unexpected number of values (got: " + parts.length + "; expected: " + columnSet.getNumberOfColumns(includeVirtual) + ") in serialised record (" + serialisedRecord +  ").");
+			throw new IllegalArgumentException("Unexpected number of values (got: " + parts.length + "; expected: " + columnSet.getNumberOfColumns(includeVirtual) + ") in serialised record (" + serialisedValueSet +  ").");
 		int p = 0;
 		for(Column<?> col : columnSet.getColumns(includeVirtual))
 		{
 			if(!(col instanceof VirtualColumn) && !skipColumns.contains(col)) // skip virtual columns & skipColumns (but *do* increment the counter p!)
-				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
+				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX)); // validation will be performed
 			p++;
 		}
 		return this;

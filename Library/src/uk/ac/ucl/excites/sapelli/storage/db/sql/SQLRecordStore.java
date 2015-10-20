@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.ListColumn.Simple;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -54,10 +54,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
@@ -78,16 +74,21 @@ import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceByFlags;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceResolver;
+import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
 /**
+ * Abstract {@link RecordStore} implementation which is backed by an SQL-based relational database.
+ * 
  * @author mstevens
  *
  * @param <SRS>
  * @param <STable>
  * @param <SColumn>
- * 
  */
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
@@ -96,73 +97,204 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	static protected final String SPACE = " ";
 	
 	// DYNAMIC -----------------------------------------------------------
-	private final int version;
 	private STable modelsTable;
 	private STable schemataTable;
+	private InitArguments initArgs;
+	
+	/**
+	 * Helper for {@link #retrieveRecords(RecordsQuery)}.
+	 */
+	private SelectRunner<Record, STable> recordSelectRunner = new SelectRunner<Record, STable>()
+	{
+		@Override
+		public List<Record> run(STable table, RecordsQuery query) throws DBException
+		{
+			return table.select(query);
+		}
+	};
+	
+	/**
+	 * Helper for {@link #retrieveRecordReferences(RecordsQuery)}.
+	 */
+	private SelectRunner<RecordReference, STable> recordReferenceSelectRunner = new SelectRunner<RecordReference, STable>()
+	{
+		@Override
+		public List<RecordReference> run(STable table, RecordsQuery query) throws DBException
+		{
+			return table.selectReferences(query);
+		}
+	};
 	
 	/**
 	 * Maps references to(!) "schemaMetaRecords" (records of Schema.META_SCHEMA, each describing a Schema) to the table corresponding to the described Schema
 	 */
 	private final Map<RecordReference, STable> tables;
 	
-	
 	/**
 	 * If non-null (all) SQL statements/queries will use parameters instead of literal values
 	 */
 	private final String valuePlaceHolder;
+	
+	/**
+	 * The names of tables that are protected.
+	 */
+	private final Set<String> protectedTables = new HashSet<String>();
+	
+	protected boolean loggingEnabled = false;
 
 	/**
 	 * @param client
-	 * @param version current (targeted) version of the database, if existing database is older it will be upgrader (see {@link #initialise(boolean, int, Upgrader)}).
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
 	 */
-	public SQLRecordStore(StorageClient client, int version, String valuePlaceHolder)
+	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
 		super(client, true); // make use of roll-back tasks
-		this.version = version;
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
+		
+		// Protected tables:
+		this.protectedTables.add(sanitiseIdentifier(Model.MODEL_SCHEMA.tableName));
+		this.protectedTables.add(sanitiseIdentifier(Model.SCHEMA_SCHEMA.tableName));
+		// subclasses can add additional protected tables during initialisation
 	}
 	
 	/**
-	 * Must be called from subclass constructor!
-	 * 
-	 * @param newDB whether or not the database file is new (i.e. empty)
-	 * @throws DBException
+	 * @param initArgs the initInfo to set
 	 */
-	protected void initialise(boolean newDB, int dbVersion, Upgrader upgrader) throws DBException
+	protected final void setInitialisationArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader upgrader)
 	{
-		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
-		if(newDB)
-			startTransaction();
+		this.initArgs = new InitArguments(newDB, targetVersion, upgrader);
+	}
+
+	protected final void addProtectedTable(String tableName) throws DBException
+	{
+		if(!isInitialising())
+			throw new DBException("Protected tables can only be added during initialisation");
+		//else:
+		if(tableName != null && !tableName.isEmpty())
+			protectedTables.add(tableName);
+		else
+			throw new DBException("Protected table name cannot be null or empty!");
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	private final class InitArguments
+	{
+		
+		public final boolean newDB;
+		public final int targetVersion;
+		public final SQLRecordStoreUpgrader upgrader;
+		
+		/**
+		 * @param newDB
+		 * @param targetVersion the version we want to database to be in or be upgrade to
+		 * @param upgrader
+		 */
+		public InitArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader upgrader)
+		{
+			this.newDB = newDB;
+			this.targetVersion = targetVersion;
+			this.upgrader = upgrader;
+		}
+		
+	}
+	
+	/**
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#doInitialise()
+	 */
+	protected void doInitialise() throws DBException
+	{
+		if(initArgs == null)
+			throw new DBException("Cannot initialise " + getClass().getSimpleName() + " because initialisation arguments have not been set!");
 		try
 		{
-			this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
-			this.schemataTable = getTable(Model.META_SCHEMA, newDB);
+			// Create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database):
+			if(initArgs.newDB)
+				startTransaction();
+			this.modelsTable = getTable(Model.MODEL_SCHEMA, initArgs.newDB);
+			this.schemataTable = getTable(Model.SCHEMA_SCHEMA, initArgs.newDB);
+			if(initArgs.newDB)
+				commitTransaction();
 			
-			// Upgrade if necessary:
-			if(dbVersion < version && upgrader != null)
-				upgrader.upgrade(this, dbVersion, version);
+			// Database version matters:
+			if(!initArgs.newDB)
+			{
+				// Upgrade existing database if necessary:
+				if(getVersion() < initArgs.targetVersion && initArgs.upgrader != null)
+					initArgs.upgrader.upgrade(this, initArgs.targetVersion); // will set the new version if successful
+			}
+			else
+				// Set version on new database:
+				setVersion(initArgs.targetVersion);
 		}
 		catch(DBException e)
 		{
-			rollbackTransactions();
+			try
+			{
+				rollbackTransactions();
+			}
+			catch(Exception ignore) {}
 			throw e;
 		}
-		if(newDB)
-			commitTransaction();
+		finally
+		{
+			initArgs = null;
+		}
+	}
+
+	/**
+	 * Gets the current version of the database.
+	 * 
+	 * @throws DBException 
+	 */
+	public abstract int getVersion() throws DBException;
+	
+	/**
+	 * Sets the current version of the database (persistently stored).
+	 * 
+	 * @param version
+	 * @throws DBException
+	 */
+	protected abstract void setVersion(int version) throws DBException;
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#isStorable(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	public boolean isStorable(Record record)
+	{
+		if(isInitialising())
+			return record != null;
+		else
+			return super.isStorable(record);
 	}
 	
+	/**
+	 * @return the loggingEnabled
+	 */
+	public boolean isLoggingEnabled()
+	{
+		return loggingEnabled;
+	}
+
+	/**
+	 * @param loggingEnabled the loggingEnabled to set
+	 */
+	public void setLoggingEnabled(boolean loggingEnabled)
+	{
+		this.loggingEnabled = loggingEnabled;
+	}
+
 	protected abstract void executeSQL(String sql) throws DBException;
 	
 	protected abstract int executeSQLReturnAffectedRows(String sql) throws DBException;
 	
 	protected abstract String sanitiseIdentifier(String identifier);
-	
-	protected String getTableName(Schema schema)
-	{
-		return sanitiseIdentifier(client.getTableName(schema));
-	}
 	
 	/**
 	 * Checks whether a table for the given schema exists in the database.
@@ -170,9 +302,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @param schema
 	 * @return
 	 */
-	protected boolean doesTableExist(Schema schema)
+	protected final boolean doesTableExist(Schema schema)
 	{
-		return doesTableExist(getTableName(schema));
+		return doesTableExist(sanitiseIdentifier(schema.tableName));
 	}
 	
 	/**
@@ -189,15 +321,36 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @return
 	 * @throws DBException
 	 */
-	protected STable getTable(Schema schema, boolean createWhenNotInDB) throws DBException
+	protected final STable getTable(Schema schema, boolean createWhenNotInDB) throws DBException
 	{
+		return getTable(schema, createWhenNotInDB, isInitialising()); // don't allow access to modelsTable & schemataTable unless we are initialising
+	}
+	
+	/**
+	 * @param schema
+	 * @param createWhenNotInDB
+	 * @param allowMeta whether or not to provide access to the modelsTable & schemataTable
+	 * @return
+	 * @throws DBException
+	 */
+	protected final STable getTable(Schema schema, boolean createWhenNotInDB, boolean allowMeta) throws DBException
+	{
+		// Check is we are ready:
+		if(!isInitialised() && !isInitialising())
+			throw new DBException(getClass().getSimpleName() + " is not initialised!");
 		// Check known tables:
 		STable table = null;
 		RecordReference schemaMetaRecordRef = null;
-		if(schema == Model.MODEL_SCHEMA)
-			table = modelsTable; // may still be null if getTable() was called from initialise()
-		else if(schema == Model.META_SCHEMA)
-			table = schemataTable; // may still be null if getTable() was called from initialise()
+		if(Model.META_MODEL.contains(schema))
+		{
+			if(!allowMeta)
+				throw new DBException("Direct manipulation of modelsTable or schemataTable is not allowed!");
+			//else:
+			if(schema == Model.MODEL_SCHEMA)
+				table = modelsTable; // may still be null if getTable() was called from initialise()
+			else if(schema == Model.SCHEMA_SCHEMA)
+				table = schemataTable; // may still be null if getTable() was called from initialise()
+		}
 		else
 		{
 			schemaMetaRecordRef = Schema.GetMetaRecordReference(schema); // get reference to schemaMetaRecord
@@ -208,7 +361,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		if(table == null)
 		{
 			table = getTableFactory().generateTable(schema);
-			if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
+			if(!Model.META_MODEL.contains(schema)) // the "tables" map is only for tables of "real" (non-meta) schemata!
 				tables.put(schemaMetaRecordRef, table);
 		}
 		
@@ -222,11 +375,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				table.create();
 
 				// Register the schema & its model; unless the table it is the modelsTable or the schemataTable itself:
-				if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA)
+				if(!Model.META_MODEL.contains(schema))
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel(), client));
-					schemataTable.insert(Schema.GetMetaRecord(schema));
+					schemataTable.insert(schema.getMetaRecord());
 				}
 			}
 			catch(Exception e)
@@ -302,7 +455,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				modelLoop : for(Model model : possiblyRemovableModels)
 				{
 					for(Schema schema : model.getSchemata())
-						if(doesTableExist(client.getTableName(schema)))
+						if(doesTableExist(schema))
 							continue modelLoop; // one of the model's schemata corresponds to a table, so we should not forget about this model
 					// None of the model's schemata correspond to a table, so unregister (i.e. "forget") the model in the modelsTable:
 					modelsTable.delete(Model.GetModelRecordReference(model));
@@ -322,6 +475,32 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			commitTransaction();
 		}
+	}
+	
+	protected Collection<Schema> getSchemata(Source source)
+	{
+		if(source.isNone())
+			return Collections.<Schema> emptyList();
+		else if(source.isAny())
+			return getAllKnownSchemata();
+		else
+			return source.getSchemata(new SourceResolver()
+			{
+				@Override
+				public Collection<Schema> resolve(SourceBySet sourceBySet)
+				{
+					return	sourceBySet.isByInclusion() ?
+								sourceBySet.getSchemata() :
+								getAllKnownSchemataExcept(sourceBySet.getSchemata());
+				}
+
+				@Override
+				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
+				{
+					 // TODO more efficient SQL-based implementation: SELECT * FROM Schemata WHERE flags & sourceByFlags.getFlags() = sourceByFlags.getFlags();
+					return sourceByFlags.filterSchemata(getAllKnownSchemata());
+				}
+			});
 	}
 	
 	protected List<Schema> getAllKnownSchemata()
@@ -349,7 +528,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				return Collections.<Schema> emptyList(); // we're done here
 			
 			// Query schemata table, using the given constraint:
-			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), constraint));
+			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.SCHEMA_SCHEMA), constraint));
 			if(schemaMetaRecords.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
@@ -371,7 +550,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				}
 				else
 				{	// No cached table, we will have to consult the models ...
-					RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+					RecordReference modelRef = Model.SCHEMA_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 					// ... first check the model cache:
 					Model model = modelCache.get(Model.MODEL_ID_COLUMN.retrieveValue(modelRef));
 					if(model == null)
@@ -380,7 +559,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 						modelCache.put(model.id, model); // remember model in cache
 					}
 					// Get the schema from the model object:
-					schema = model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+					schema = model.getSchema(Model.SCHEMA_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
 				}
 				
 				// Add schema to list:
@@ -403,15 +582,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @param schema
 	 * @return the stored version of the schema, or null if no records of this schema are currently stored
+	 * @deprecated
 	 */
 	protected Schema getStoredVersion(Schema schema)
 	{
 		try
 		{
-			Record schemaMetaRecord = Schema.GetMetaRecord(schema);
-			RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+			Record schemaMetaRecord = schema.getMetaRecord();
+			RecordReference modelRef = Model.SCHEMA_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 			Model model = Model.FromModelRecord(modelsTable.select(modelRef.getRecordQuery()), client); // model object obtained by deserialising model record
-			return model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+			return model.getSchema(Model.SCHEMA_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
 		}
 		catch(Exception e)
 		{
@@ -421,32 +601,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	protected abstract TableFactory<STable> getTableFactory();
-	
-	protected Collection<Schema> getSchemata(Source source)
-	{
-		if(source.isNone())
-			return Collections.<Schema> emptyList();
-		else if(source.isAny())
-			return getAllKnownSchemata();
-		else
-			return source.getSchemata(new SourceResolver()
-			{
-				@Override
-				public Collection<Schema> resolve(SourceBySet sourceBySet)
-				{
-					return	sourceBySet.isByInclusion() ?
-								sourceBySet.getSchemata() :
-								getAllKnownSchemataExcept(sourceBySet.getSchemata());
-				}
-
-				@Override
-				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
-				{
-					 // TODO more efficient SQL-based implementation: SELECT * FROM Schemata WHERE flags & sourceByFlags.getFlags() = sourceByFlags.getFlags();
-					return sourceByFlags.filterSchemata(getAllKnownSchemata());
-				}
-			});
-	}
 	
 	/**
 	 * Default implementation for SQL databases: first do a SELECT based on the key to verify whether the
@@ -532,7 +686,33 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public List<Record> retrieveRecords(RecordsQuery query)
 	{
-		List<Record> resultAcc = null;
+		return retrieveRecordValueSets(query, recordSelectRunner);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecordReferences(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
+	 */
+	@Override
+	public List<RecordReference> retrieveRecordReferences(RecordsQuery query)
+	{
+		return retrieveRecordValueSets(query, recordReferenceSelectRunner);
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <R>
+	 */
+	private interface SelectRunner<R extends RecordValueSet<?>, STable>
+	{
+		
+		public List<R> run(STable table, RecordsQuery query) throws DBException;
+		
+	}
+	
+	private <R extends RecordValueSet<?>> List<R> retrieveRecordValueSets(RecordsQuery query, SelectRunner<R, STable> selectRunner)
+	{
+		List<R> resultAcc = null;
 		// Run subqueries for each schema in the query, or all known schemata (if the query is for "any" schema):
 		for(Schema s : getSchemata(query.getSource()))
 		{
@@ -541,13 +721,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				STable table = getTable(s, false);
 				if(!table.isInDB())
 					continue; // table does no exist in DB, so there are no records to retrieve
-				List<Record> subResult = table.select(query);
+				List<R> subResult = selectRunner.run(table, query);
 				if(!subResult.isEmpty())
 				{
 					if(resultAcc == null)
-						resultAcc = subResult;
-					else
-						resultAcc.addAll(subResult);
+						resultAcc = new ArrayList<R>(subResult.size());
+					resultAcc.addAll(subResult);
 				}
 			}
 			catch(DBException dbE)
@@ -555,7 +734,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				dbE.printStackTrace(System.err);
 			}
 		}
-		return resultAcc != null ? resultAcc : Collections.<Record> emptyList();
+		return resultAcc != null ? resultAcc : Collections.<R> emptyList();
 	}
 
 	/* (non-Javadoc)
@@ -617,14 +796,169 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
+	 * To be overridden by subclasses.
+	 * 
+	 * @return
+	 */
+	public final Set<String> getProtectedTableNames()
+	{
+		return Collections.unmodifiableSet(protectedTables);
+	}
+	
+	/**
+	 * @return a {@link List} of the names of all tables in the database
+	 */
+	protected abstract List<String> getAllTableNames();
+	
+	/**
+	 * Drops the table with the given name. Use with care!
+	 * Will fail, with {@link DBException} thrown, if the table is protected and unless {@code force} is {@code true}.
+	 * 
+	 * @param tableName
+	 * @param force
+	 * @throws DBException
+	 */
+	protected void dropTable(String tableName, boolean force) throws DBException
+	{
+		if(!doesTableExist(tableName))
+		{	// Try sanitising:
+			tableName = sanitiseIdentifier(tableName);
+			if(!doesTableExist(tableName))
+				return; // there is no such table
+		}
+		//else:
+		if(!protectedTables.contains(tableName) || force)
+		{
+			// Get table instance:
+			STable table = null;
+			if(modelsTable.tableName.equals(tableName))
+				table = modelsTable;
+			else if(schemataTable.tableName.equals(tableName))
+				table = schemataTable;
+			else
+			{
+				// Delete schemata entry:
+				if(schemataTable.isInDB())
+					schemataTable.delete(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, tableName)));
+				
+				// Look for table in tables map:
+				RecordReference schemaRecRef = null;
+				for(Map.Entry<RecordReference, STable> entry : tables.entrySet())
+					if(entry.getValue().tableName.equals(tableName))
+					{
+						schemaRecRef = entry.getKey();
+						table = entry.getValue();
+						break;
+					}
+				
+				// Delete from tables map:
+				if(schemaRecRef != null)
+					tables.remove(schemaRecRef);
+			}
+			
+			// Release resources so we can drop:
+			release();
+			
+			// DROP table:
+			if(table != null)
+				table.drop();
+			else
+				executeSQL(generateDropTableStatement(tableName));
+		}
+		else
+			throw new DBException("Cannot delete protected table '" + tableName + "'!");
+	}
+	
+	protected String generateDropTableStatement(String tableName)
+	{
+		return String.format("DROP TABLE %s;", tableName);
+	}
+	
+	/**
+	 * Renames the table with the given old name to the given new name. Use with care!
+	 * Will fail, with {@link DBException} thrown, if the table is protected.
+	 * 
+	 * @param oldTableName
+	 * @param newTableName
+	 * @throws DBException
+	 */
+	protected void renameTable(String oldTableName, String newTableName) throws DBException
+	{
+		if(!doesTableExist(oldTableName))
+		{	// Try sanitising:
+			oldTableName = sanitiseIdentifier(oldTableName);
+			if(!doesTableExist(oldTableName))
+				return; // there is no such table
+		}
+		//else:
+		if(!protectedTables.contains(oldTableName))
+		{
+			// Sanitise:
+			newTableName = sanitiseIdentifier(newTableName);
+			
+			// Rename database table:
+			executeSQL(String.format("ALTER TABLE %1$s RENAME TO %2$s;", oldTableName, newTableName));
+			
+			// Query schemata table:
+			Record schemaMetaRecord = schemataTable.select(new FirstRecordQuery(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, oldTableName))));
+			if(schemaMetaRecord != null)
+			{
+				// Update schemata entry:
+				Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(schemaMetaRecord, newTableName);
+				schemataTable.update(schemaMetaRecord);
+			
+				// Delete table from tables map:
+				tables.remove(schemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed
+			}
+		}
+		else
+			throw new DBException("Cannot rename protected table '" + oldTableName + "'!");
+	}
+	
+	/**
+	 * Release any open resources associated with the database connection (without closing it).
+	 * 
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
+	 */
+	protected void release()
+	{
+		// Release resources for all tables:
+		if(modelsTable != null)
+			modelsTable.release();
+		if(schemataTable != null)
+			schemataTable.release();
+		for(STable table : tables.values())
+			table.release();
+	}
+	
+	@Override
+	protected void doClose() throws DBException
+	{
+		release();
+		
+		super.doClose(); // !!!
+	}
+	
+	/**
 	 * @author mstevens
 	 *
 	 */
 	public abstract class SQLTable
 	{
 
+		/**
+		 * Sanitised version of schema.tableName.
+		 */
 		public final String tableName;
+		
 		public final Schema schema;
+		
+		@SuppressWarnings("unchecked")
+		protected final RecordSelectionProjection recordSelectionProjection = new RecordSelectionProjection((STable) this);
+		
+		@SuppressWarnings("unchecked")
+		protected final RecordReferenceSelectionProjection recordReferenceSelectionProjection = new RecordReferenceSelectionProjection((STable) this);
 		
 		private Boolean existsInDB;
 		private TableCreationHelper creator;
@@ -646,12 +980,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected final IntegerColumn autoIncrementKeySapColumn;
 		protected SColumn autoIncrementKeySQLColumn;
 		
+		/**
+		 * Contains the SQLColumns that correspond to (parts of) the Schema's public key
+		 */
+		private Set<SColumn> keyPartSqlColumns;
+		
 		public SQLTable(Schema schema)
 		{
-			this.tableName = getTableName(schema);
+			this.tableName = sanitiseIdentifier(schema.tableName);
 			this.schema = schema;
 			// Init collections:
-			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // we use a LHP to preserve column order!
+			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // to preserve column order we use a LinkedHashMap (i.e. a collection that is iterated in insertion-order)!
 			composite2SqlColumns = new HashMap<ValueSetColumn<?, ?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
@@ -662,6 +1001,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public void addColumn(SColumn sqlColumn)
 		{
+			if(existsInDB != null)
+				throw new IllegalStateException("Cannot add columns to SQLTable that exists in the database or whose's creation has been attempted.");
+				
 			ColumnPointer<?> sourceCP = sqlColumn.sourceColumnPointer;
 			if(sourceCP == null || sourceCP.getColumn() == null)
 				throw new IllegalArgumentException("SQLColumn needs a valid sourceColumnPointer in order to be added to a SQLTable instance");
@@ -765,6 +1107,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
 		
+		public Set<SColumn> getKeyPartSQLColumns()
+		{
+			if(keyPartSqlColumns == null)
+			{
+				keyPartSqlColumns = new LinkedHashSet<SColumn>(); // to preserve column order we use a LinkedHashSet (i.e. a collection that is iterated in insertion-order)! 
+				for(Column<?> sapKeyPartCol : schema.getPrimaryKey().getColumns(false))
+					// sapKeyPartCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
+					for(SColumn sqlKeyPartCol : getSQLColumns(sapKeyPartCol))
+						CollectionUtils.addIgnoreNull(keyPartSqlColumns, sqlKeyPartCol);
+			}
+			return keyPartSqlColumns;
+		}
+		
 		/**
 		 * Store a record by INSERTing, if it is new, or UPDATEing if it existed.
 		 * 
@@ -802,7 +1157,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
 		{
 			return	isInDB() &&
-					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(recordOrReference)) ? 
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValuePresent(recordOrReference)) ? 
 						select(recordOrReference.getRecordQuery()) != null :
 						false;
 		}
@@ -887,17 +1242,31 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Selects records from the database table based on a RecordsQuery.
+		 * Selects {@link Record}s from the database table based on a {@link RecordsQuery}.
 		 * Assumes the table exists in the database!
 		 * 
 		 * @param query
-		 * @return a list, possibly empty
+		 * @return a {@link List} of {@link Record}s, possibly empty, never {@code null}
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
 		public List<Record> select(RecordsQuery query) throws DBException
 		{
-			return executeRecordSelection(new RecordSelectHelper((STable) this, query));
+			return executeRecordSelection(new RecordValueSetSelectHelper<Record>((STable) this, recordSelectionProjection, query));
+		}
+		
+		/**
+		 * Selects {@link RecordReference}s from the database table based on a {@link RecordsQuery}.
+		 * Assumes the table exists in the database!
+		 * 
+		 * @param query
+		 * @return a {@link List} of {@link RecordReference}s, possibly empty, never {@code null}
+		 * @throws DBException
+		 */
+		@SuppressWarnings("unchecked")
+		public List<RecordReference> selectReferences(RecordsQuery query) throws DBException
+		{
+			return executeRecordSelection(new RecordValueSetSelectHelper<RecordReference>((STable) this, recordReferenceSelectionProjection, query));
 		}
 		
 		/**
@@ -917,7 +1286,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				@Override
 				public List<Record> execute(ExtremeValueRecordQuery extremeValueRecordQuery) throws DBException
 				{
-					return executeRecordSelection(new RecordSelectHelper((STable) SQLTable.this, extremeValueRecordQuery)); 
+					return executeRecordSelection(new ExtremeValueRecordSelectHelper((STable) SQLTable.this, extremeValueRecordQuery)); 
 				}
 				
 				@Override
@@ -975,28 +1344,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			
 			// Perform the DROP operation:
-			executeSQL(generateDropTableStatement());
+			executeSQL(generateDropTableStatement(tableName));
 			// Note: if there is an exception the line below will not be executed but the roll-back task above will...
 			
 			// Now the table is gone...
 			existsInDB = false; // !!!
 		}
 		
-		protected String generateDropTableStatement()
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("DROP TABLE");
-			bldr.append(tableName);
-			bldr.append(";", false);
-			return bldr.toString();
-		}
-		
 		/**
-		 * @param selection
-		 * @return list of records (possibly empty)
+		 * @param recordValueSetSelectHelper
+		 * @return a {@link List} of {@link RecordValueSet}s (i.e. {@link Record}s or {@link RecordReference}s), possibly empty, never {@code null}
 		 * @throws DBException
 		 */
-		protected abstract List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException;
+		protected abstract <R extends RecordValueSet<?>> List<R> executeRecordSelection(RecordValueSetSelectHelper<R> recordValueSetSelectHelper) throws DBException;
 		
 		/**
 		 * Release any resources associated with this table
@@ -1087,7 +1447,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param record
+		 * @param recordOrReference
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
@@ -1098,13 +1458,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param record
+		 * @param recordOrReference
 		 * @param value
 		 */
-		public void store(Record record, SQLType value)
+		public void store(RecordValueSet<?> recordOrReference, SQLType value)
 		{
 			if(value != null)
-				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(record, true), mapping.toSapelliType(value));
+				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(recordOrReference, true), mapping.toSapelliType(value));
 		}
 		
 		/**
@@ -1191,6 +1551,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public STable generateTable(Schema schema) throws DBException;
 		
+		/**
+		 * @return whether or not boolean Columns are used to represent optional ValueSetColumns
+		 */
+		public boolean isUseBoolColsForOptionalValueSetCols();
+		
+		/**
+		 * Method to disable/enable usage of boolean Columns to represent optional ValueSetColumns at top-level.
+		 * Only for upgrade purposes.
+		 * 
+		 * @param enable
+		 * @throws DBException
+		 */
+		public void setUseBoolColsForOptionalValueSetCols(boolean enable) throws DBException;
+		
 	}
 	
 	/**
@@ -1209,6 +1583,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		
 		protected STable table;
+		
+		private boolean useBoolColsForOptionalValueSetCols = true;
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
@@ -1230,6 +1606,27 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected abstract STable createTable(Schema schema) throws DBException;
 		
 		/**
+		 * @return the useBoolColsForOptionalValueSetCols
+		 */
+		@Override
+		public boolean isUseBoolColsForOptionalValueSetCols()
+		{
+			return useBoolColsForOptionalValueSetCols;
+		}
+
+		/**
+		 * @param enable
+		 * @throws DBException 
+		 */
+		@Override
+		public void setUseBoolColsForOptionalValueSetCols(boolean enable) throws DBException
+		{
+			if(!isInitialising())
+				throw new DBException("Changing useBoolColsForOptionalValueSetCols is only allowed during initialisation/upgrade!");
+			this.useBoolColsForOptionalValueSetCols = enable;
+		}
+
+		/**
 		 * TODO implement ListColumns using normalisation:
 		 * 		generate Schema for a "subtable" with FK to this one --> generate table for it ... etc.
 		 * 		Table will then how a ListCol -> Table map ...
@@ -1241,7 +1638,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public abstract <L extends List<T>, T> void visitListColumn(ListColumn<L, T> listCol);
 
 		@Override
-		public <T> void visit(Simple<T> simpleListCol)
+		public <T> void visit(ListColumn.Simple<T> simpleListCol)
 		{
 			visitListColumn(simpleListCol);
 		}
@@ -1490,7 +1887,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected final STable table;
 		private final List<SColumn> parameterColumns;
 		protected TransactionalStringBuilder bldr;
-		protected String query;
+		private String query;
 		
 		protected DBException exception = null;
 		
@@ -1521,11 +1918,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public String getQuery() throws DBException
 		{
+			return getQuery(true); // close with ';' by default
+		}
+		
+		public String getQuery(boolean close) throws DBException
+		{
 			if(exception != null)
 				throw exception;
 			if(bldr != null)
 			{
-				query = bldr.toString();
+				query = bldr.toString() + (close ? ";" : "");
 				bldr = null;
 			}
 			return query;
@@ -1593,7 +1995,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 						bldr.append(sqlCol.retrieveAsLiteral(record, true));
 				}
 			bldr.commitTransaction(false);
-			bldr.append(");", false);
+			bldr.append(")", false);
 		}
 		
 	}
@@ -1606,19 +2008,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract class RecordByPrimaryKeyHelper extends StatementHelper
 	{
 		
-		protected final Set<SColumn> keyPartSqlCols;
-		
 		/**
 		 * @param table
 		 */
 		public RecordByPrimaryKeyHelper(STable table)
 		{
 			super(table);
-			keyPartSqlCols = new HashSet<SColumn>();
-			for(Column<?> sapKeyPartCol : table.schema.getPrimaryKey().getColumns(false))
-				// sapKeyPartCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
-				for(SColumn sqlKeyPartCol : table.getSQLColumns(sapKeyPartCol))
-					CollectionUtils.addIgnoreNull(keyPartSqlCols, sqlKeyPartCol);
 		}
 		
 		/**
@@ -1627,12 +2022,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected void appendWhereClause(RecordValueSet<?> recordOrReference)
 		{
 			bldr.append("WHERE");
-			if(keyPartSqlCols.size() > 1)
+			if(table.getKeyPartSQLColumns().size() > 1)
 			{
 				bldr.append("(");
 				bldr.openTransaction(" AND ");
 			}
-			for(SColumn keyPartSqlCol : keyPartSqlCols)
+			for(SColumn keyPartSqlCol : table.getKeyPartSQLColumns())
 			{
 				bldr.openTransaction(SPACE);
 				bldr.append(keyPartSqlCol.name);
@@ -1646,7 +2041,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(keyPartSqlCol.retrieveAsLiteral(recordOrReference, true));
 				bldr.commitTransaction();
 			}
-			if(keyPartSqlCols.size() > 1)
+			if(table.getKeyPartSQLColumns().size() > 1)
 			{
 				bldr.commitTransaction(false); // no space after "("
 				bldr.append(")", false); // no space before ")"
@@ -1689,7 +2084,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Columns names & values (except primary key parts):
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(!keyPartSqlCols.contains(sqlCol))
+				if(!table.getKeyPartSQLColumns().contains(sqlCol))
 				{
 					bldr.openTransaction(SPACE);
 					bldr.append(sqlCol.name);
@@ -1706,7 +2101,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.commitTransaction();
 			// WHERE clause:
 			appendWhereClause(record);
-			bldr.append(";", false);
 		}
 		
 	}
@@ -1743,7 +2137,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append(table.tableName);
 			// WHERE clause:
 			appendWhereClause(recordOrReference);
-			bldr.append(";", false);
 		}
 		
 	}
@@ -1856,7 +2249,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(sqlCol != null)
 			{	// Equality constraint on non-composite (leaf) column...
 				Object sapValue = equalityConstr.getValue();
-				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one (unless the defaults are also put new Record instances)
 				bldr.append(sqlCol.name);
 				if(sapValue != null)
 				{
@@ -1924,78 +2316,77 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * Helper class to build SELECT queries (parameterised or literal)
+	 * Interface that provides the projection(String) for different kinds of SELECT queries, used by {@link SelectHelper}.
 	 * 
 	 * @author mstevens
 	 */
-	protected class RecordSelectHelper extends RecordsByConstraintsHelper
+	protected interface SelectProjection
 	{
 		
 		/**
-		 * @param table
-		 * @param recordQuery
+		 * Must return a String which specifies the "projection" part of a SQL SELECT query.
+		 * For instance the "name, surname, dob" part from "SELECT name, surname, dob FROM Students;".
+		 * 
+		 * @return the projection String
 		 */
-		public RecordSelectHelper(STable table, RecordsQuery recordsQuery)
-		{
-			super(table);
-			
-			// Build SELECT query:
-			buildQuery(recordsQuery, "*"); // * = select all columns
-			bldr.append(";", false);
-		}
-
+		public String getProjectionString();
+		
+	}
+	
+	/**
+	 * Helper class to build different kinds SELECT queries (parameterised or literal).
+	 * 
+	 * @author mstevens
+	 *
+	 * @param <SP> the {@link SelectProjection} type
+	 */
+	protected class SelectHelper<SP extends SelectProjection> extends RecordsByConstraintsHelper
+	{
+		
+		public final SP projection;
+		
 		/**
 		 * @param table
-		 * @param extremeValueRecordQuery
+		 * @param projection
 		 */
-		public RecordSelectHelper(STable table, ExtremeValueRecordQuery extremeValueRecordQuery)
+		public SelectHelper(STable table, SP projection, boolean buildQueryNow)
 		{
-			super(table);
-			
-			SColumn extremeValueSqlCol = table.getSQLColumn(extremeValueRecordQuery.getColumnPointer());
-			if(extremeValueSqlCol == null)
-			{
-				exception = new DBException("Failed to generate SQL for extremeValueRecordQuery on column " + extremeValueRecordQuery.getColumnPointer().getQualifiedColumnName(table.schema));
-				return;
-			}
-			
-			// Build outer query:
-			bldr.append("SELECT * FROM");
-			bldr.append(table.tableName);
-			bldr.append("WHERE");
-			bldr.append(extremeValueSqlCol.name);
-			bldr.append(getComparisonOperator(Comparison.EQUAL));
-			bldr.append("(");
-			bldr.openTransaction(SPACE);
-			// Build subquery:
-			buildQuery(extremeValueRecordQuery.getRecordsQuery(), (extremeValueRecordQuery.isMax() ? "MAX" : "MIN") + "(" + extremeValueSqlCol.name + ")");
-			// Complete outer query:
-			bldr.commitTransaction(false);
-			bldr.append(")", false);
-			bldr.append("LIMIT 1;");
+			this(table, projection, null, buildQueryNow);
 		}
 		
 		/**
 		 * @param table
+		 * @param projection
+		 * @param recordsQuery
+		 * @param buildQueryNow whether or not to call {@link #buildQuery(RecordsQuery)} from this constructor
 		 */
-		protected RecordSelectHelper(STable table)
+		public SelectHelper(STable table, SP projection, RecordsQuery recordsQuery, boolean buildQueryNow)
 		{
 			super(table);
+			this.projection = projection;
+			
+			if(buildQueryNow)
+				// Build SELECT query:
+				buildQuery(recordsQuery);
 		}
 		
-		protected void buildQuery(RecordsQuery recordsQuery, String projection)
+		protected void buildQuery(RecordsQuery recordsQuery)
 		{
 			// Build query:
 			bldr.append("SELECT");
-			bldr.append(projection);
+			bldr.append(projection.getProjectionString());
 			bldr.append("FROM");
 			bldr.append(table.tableName);
-			// if there is not recordsQuery we are done here:
-			if(recordsQuery == null)
+			// if there is no recordsQuery we are done here, unless forceWhereClause() returns true:
+			if(recordsQuery == null && !forceWhereClause())
 				return;
 			//else:
 			// 	WHERE
 			appendWhereClause(recordsQuery);
+			// if there is no recordsQuery we are *really* done here:
+			if(recordsQuery == null)
+				return;
+			//else:
 			// 	GROUP BY
 			//		not supported (for now)
 			//	ORDER BY
@@ -2013,16 +2404,184 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append(Integer.toString(recordsQuery.getLimit()));
 			}
 		}
+		
+		/**
+		 * Can be overridden with a method returning {@code true}, in which case {@link #appendWhereClause(RecordsQuery)} will be called even when the {@link RecordsQuery} is {@code null}.
+		 * 
+		 * @return
+		 */
+		protected boolean forceWhereClause()
+		{
+			return false;
+		}
 
 	}
 	
 	/**
+	 * Class that provides the projection String and {@link SQLColumn}s for SELECT queries that result in {@link RecordValueSet}s (i.e. {@link Record}s or {@link RecordReference}s).
+	 * 
 	 * @author mstevens
 	 *
+	 * @param <R> the {@link RecordValueSet} type
 	 */
-	protected class RecordCountHelper extends RecordSelectHelper
+	protected abstract class RecordValueSetSelectionProjection<R extends RecordValueSet<?>> implements SelectProjection
+	{
+		
+		protected final STable table;
+		
+		public RecordValueSetSelectionProjection(STable table)
+		{
+			this.table = table;
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SelectProjection#getProjectionString()
+		 */
+		@Override
+		public String getProjectionString()
+		{
+			// List all columns returned by getProjectionColumns():
+			TransactionalStringBuilder projectionBldr = new TransactionalStringBuilder(", ");
+			for(SColumn sqlCol : getProjectionColumns())
+				projectionBldr.append(sqlCol.name);
+			return projectionBldr.toString();
+		}
+
+		public abstract R createRecordValueSet();
+		
+		/**
+		 * Must return the {@link SQLColumn}s that make up the SELECT projection. The returned {@link Collection}
+		 * must have a defined (i.e. fixed) iteration order.
+		 * If {@link #getProjectionString()} returns a listing of column names (e.g. "name, surname, dob") than
+		 * the Collection returned here must contain the same columns (and only those) in the same order.
+		 * If {@link #getProjectionString()} returns "*" (i.e. signifying all columns of the table) than the
+		 * Collection returned here must contain all columns of the table (and only those) in the order in which
+		 * they are placed in the table.
+		 * 
+		 * @return a {@link Collection} with the {@link SQLColumn}s that make up the projection
+		 */
+		public abstract Collection<SColumn> getProjectionColumns();
+		
+	}
+	
+	/**
+	 * Helper class to build SELECT queries (parameterised or literal) that result in {@link RecordValueSet}s (i.e. {@link Record}s or {@link RecordReference}s).
+	 * 
+	 * @author mstevens
+	 *
+	 * @param <R> the {@link RecordValueSet} type
+	 */
+	protected class RecordValueSetSelectHelper<R extends RecordValueSet<?>> extends SelectHelper<RecordValueSetSelectionProjection<R>>
 	{
 
+		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection)
+		{
+			this(table, projection, null);
+		}
+		
+		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection, boolean buildQueryNow)
+		{
+			this(table, projection, null, buildQueryNow);
+		}
+		
+		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection, RecordsQuery recordsQuery)
+		{
+			this(table, projection, recordsQuery, true);
+		}
+		
+		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection, RecordsQuery recordsQuery, boolean buildQueryNow)
+		{
+			super(table, projection, recordsQuery, buildQueryNow);
+		}
+		
+	}
+	
+	/**
+	 * A {@link SelectProjection} class for the execution of SELECT queries that result in {@link Record}s.
+	 * 
+	 * @author mstevens
+	 */
+	protected class RecordSelectionProjection extends RecordValueSetSelectionProjection<Record>
+	{
+
+		public RecordSelectionProjection(STable table)
+		{
+			super(table);
+		}
+
+		@Override
+		public String getProjectionString()
+		{
+			return "*"; // = all columns
+		}
+
+		@Override
+		public Record createRecordValueSet()
+		{
+			return table.schema.createRecord();
+		}
+
+		@Override
+		public Collection<SColumn> getProjectionColumns()
+		{
+			return table.sqlColumns.values();
+		}
+		
+	}
+	
+	/**
+	 * A {@link SelectProjection} class for the execution of SELECT queries that result in {@link RecordReference}s.
+	 * 
+	 * @author mstevens
+	 */
+	protected class RecordReferenceSelectionProjection extends RecordValueSetSelectionProjection<RecordReference>
+	{
+
+		public RecordReferenceSelectionProjection(STable table)
+		{
+			super(table);
+		}
+
+		@Override
+		public RecordReference createRecordValueSet()
+		{
+			return table.schema.createRecordReference();
+		}
+
+		@Override
+		public Collection<SColumn> getProjectionColumns()
+		{
+			return table.getKeyPartSQLColumns(); // only keyPartCols
+		}
+		
+	}
+	
+	/**
+	 * A {@link SelectProjection} class for the execution of SELECT COUNT(*) queries.
+	 * 
+	 * @author mstevens
+	 */
+	static private class CountProjection implements SelectProjection
+	{
+		
+		static private final CountProjection COUNT_PROJECTION = new CountProjection();
+
+		@Override
+		public String getProjectionString()
+		{
+			return "COUNT(*)";
+		}
+		
+	}
+	
+	/**
+	 * A {@link SelectHelper} class for the execution of SELECT COUNT(*) queries.
+	 * 
+	 * @author mstevens
+	 */
+	protected class RecordCountHelper extends SelectHelper<CountProjection>
+	{
+		
 		/**
 		 * @param table
 		 */
@@ -2037,17 +2596,140 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public RecordCountHelper(STable table, RecordsQuery recordsQuery)
 		{
-			super(table);
+			super(table, CountProjection.COUNT_PROJECTION, recordsQuery, true);
+		}
+		
+	}
+	
+	/**
+	 * A {@link SelectProjection} class for the execution of a the inner query of a {@link ExtremeValueRecordQuery}.
+	 * 
+	 * @author mstevens
+	 */
+	private class MinMaxProjection implements SelectProjection
+	{
+		
+		private final SColumn extremeValueSqlCol;
+		private final boolean max;
+		
+		public MinMaxProjection(SColumn extremeValueSqlCol, boolean max)
+		{
+			this.extremeValueSqlCol = extremeValueSqlCol;
+			this.max = max;
+		}
+		
+		@Override
+		public String getProjectionString()
+		{
+			return (max ? "MAX" : "MIN") + "(" + extremeValueSqlCol.name + ")";
+		}
+		
+	}
+	
+	/**
+	 * A {@link RecordValueSetSelectHelper} class for the execution of a {@link ExtremeValueRecordQuery}.
+	 * 
+	 * @author mstevens
+	 */
+	protected class ExtremeValueRecordSelectHelper extends RecordValueSetSelectHelper<Record>
+	{
+		
+		private final SColumn extremeValueSqlCol;
+		private final SelectHelper<MinMaxProjection> innerQueryHelper;
+
+		/**
+		 * @param table
+		 * @param extremeValueRecordQuery
+		 */
+		public ExtremeValueRecordSelectHelper(STable table, ExtremeValueRecordQuery extremeValueRecordQuery)
+		{
+			// Outer query:
+			super(table, new RecordSelectionProjection(table), null, false /*wait with building the query*/);
 			
-			// Build SELECT query:
-			buildQuery(recordsQuery, "COUNT(*)");
-			bldr.append(";", false);
+			// Get extremeValueSqlCol:
+			this.extremeValueSqlCol = table.getSQLColumn(extremeValueRecordQuery.getColumnPointer());
+			if(extremeValueSqlCol == null)
+			{
+				this.exception = new DBException("Failed to generate SQL for extremeValueRecordQuery on column " + extremeValueRecordQuery.getColumnPointer().getQualifiedColumnName(table.schema));
+				innerQueryHelper = null;
+				return;
+			}
+			
+			// Inner query:
+			innerQueryHelper = new SelectHelper<MinMaxProjection>(table, new MinMaxProjection(extremeValueSqlCol, extremeValueRecordQuery.isMax()), extremeValueRecordQuery.getRecordsQuery(), true);
+			
+			// Now build the full query:
+			buildQuery(new RecordsQuery(table.schema, 1 /*LIMIT 1*/));
+		}
+
+		@Override
+		protected boolean forceWhereClause()
+		{
+			return true;
+		}
+
+		@Override
+		protected void appendWhereClause(RecordsQuery recordsQuery)
+		{
+			if(exception != null && innerQueryHelper != null)
+				return;
+			bldr.append("WHERE");
+			bldr.append(extremeValueSqlCol.name);
+			bldr.append(getComparisonOperator(Comparison.EQUAL));
+			bldr.append("(");
+			bldr.openTransaction("");
+			// Insert subquery:
+			try
+			{
+				bldr.append(innerQueryHelper.getQuery(false));
+			}
+			catch(DBException dbE)
+			{
+				this.exception = dbE;
+				return;
+			}
+			// Complete outer query:
+			bldr.commitTransaction(false);
+			bldr.append(")", false);
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.StatementHelper#isParameterised()
+		 */
+		@Override
+		protected boolean isParameterised()
+		{
+			if(innerQueryHelper != null)
+				return innerQueryHelper.isParameterised();
+			return super.isParameterised();
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.StatementHelper#getParameterColumns()
+		 */
+		@Override
+		public List<SColumn> getParameterColumns()
+		{
+			if(innerQueryHelper != null)
+				return innerQueryHelper.getParameterColumns();
+			return super.getParameterColumns();
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordsByConstraintsHelper#getSapArguments()
+		 */
+		@Override
+		public List<Object> getSapArguments()
+		{
+			if(innerQueryHelper != null)
+				return innerQueryHelper.getSapArguments();
+			return super.getSapArguments();
 		}
 		
 	}
 
 	/**
-	 * Helper class to build DELETE statements (parameterised or literal) for multiple records
+	 * Helper class to build DELETE statements (parameterised or literal) for multiple records.
 	 * 
 	 * @author mstevens
 	 */
@@ -2068,7 +2750,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append(table.tableName);
 			// WHERE clause:
 			appendWhereClause(recordsQuery);
-			bldr.append(";", false);
 		}
 		
 	}

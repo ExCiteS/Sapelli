@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.Closeable;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
@@ -37,17 +38,17 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
  * @see http://www.sqlite.org/c3ref/stmt.html
  * @see http://en.wikipedia.org/wiki/Create,_read,_update_and_delete
  */
-public abstract class SapelliSQLiteStatement
+public abstract class SQLiteStatement implements Closeable
 {
 	
 	protected final List<SQLiteColumn<?, ?>> paramCols;
 	
-	public SapelliSQLiteStatement()
+	public SQLiteStatement()
 	{
 		this.paramCols = null;
 	}
 	
-	public SapelliSQLiteStatement(List<SQLiteColumn<?, ?>> paramCols)
+	public SQLiteStatement(List<SQLiteColumn<?, ?>> paramCols)
 	{
 		this.paramCols = paramCols;
 	}
@@ -125,14 +126,14 @@ public abstract class SapelliSQLiteStatement
 	
 	/**
 	 * Executes a SQL SELECT row query, i.e. the reading (the "R" in "CRUD") of (partial) records from a database table.
-	 * The results (0, 1 or more rows) are made accessible through a returned {@link ISQLiteCursor} instance.
+	 * The results (0, 1 or more rows) are made accessible through a returned {@link SQLiteCursor} instance.
 	 * 
 	 * *Not* supported unless subclass overrides this method, otherwise a {@link UnsupportedOperationException} will be thrown.
 	 *
-	 * @return an {@link ISQLiteCursor} to iterate over results
+	 * @return an {@link SQLiteCursor} to iterate over results
 	 * @throws DBException
 	*/
-	public ISQLiteCursor executeSelectRows() throws DBException
+	public SQLiteCursor executeSelectRows() throws DBException
 	{
 		throw new UnsupportedOperationException("executeR() is not supported on " + this.getClass().getName()); // !!!
 	}

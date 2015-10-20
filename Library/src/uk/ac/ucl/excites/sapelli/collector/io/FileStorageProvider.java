@@ -46,6 +46,11 @@ public class FileStorageProvider
 		DB,
 		
 		/**
+		 * Folder for back-ups of old database versions (put here before being upgrade by {@link Upgrader})
+		 */
+		OldDBVersions,
+		
+		/**
 		 * Folder for (media) attachments, files produced during data collection (e.g. photos, audio, video), grouped per project
 		 */
 		Attachments,
@@ -138,6 +143,8 @@ public class FileStorageProvider
 		{
 			case DB: 
 				return getDBFolder(create);
+			case OldDBVersions: 
+				return getOldDBVersionsFolder(create);
 			case Attachments:
 				return getAttachmentsFolder(create);
 			case Downloads:
@@ -229,6 +236,11 @@ public class FileStorageProvider
 	public File getDBFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.DB.name(), create);
+	}
+	
+	public File getOldDBVersionsFolder(boolean create) throws FileStorageException
+	{
+		return getSubFolder(getSapelliFolder(), Folder.OldDBVersions.name(), create);
 	}
 	
 	public File getCrashFolder(boolean create) throws FileStorageException

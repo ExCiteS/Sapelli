@@ -185,7 +185,9 @@
     <string name="successful_backup">Backup successful</string>
     <string name="backup_in">You can find your backup in:</string>
     <string name="backupFailDueTo">Failed to backup database(s), due to: %s</string>
-    <string name="share">Share&#8230;</string>
+    <string name="share">Share …</string>
+    <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
+    <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
     <string name="receiver">Receiver:</string>
     <string name="interval">Interval:</string>
     <string name="minutes">minutes</string>

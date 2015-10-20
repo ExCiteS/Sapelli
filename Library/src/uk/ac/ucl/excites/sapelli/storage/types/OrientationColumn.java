@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -33,9 +32,29 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	
 	static private final long serialVersionUID = 2L;
 	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param storeAzimuth
+	 * @param storePitch
+	 * @param storeRoll
+	 */
 	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
-		super(name, Orientation.COLUMN_SET, optional);
+		this(name, optional, storeAzimuth, storePitch, storeRoll, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param storeAzimuth
+	 * @param storePitch
+	 * @param storeRoll
+	 * @param defaultValue
+	 */
+	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll, Orientation defaultValue)
+	{
+		super(name, Orientation.COLUMN_SET, optional, defaultValue);
 		if(!storeAzimuth)
 			addSkipColumn(Orientation.COLUMN_AZIMUTH);
 		if(!storePitch)
@@ -51,7 +70,7 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	}
 
 	@Override
-	public Orientation getNewRecord()
+	public Orientation getNewValueSet()
 	{
 		return new Orientation();
 	}
@@ -81,9 +100,9 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	public void accept(ColumnVisitor visitor)
 	{
 		if(visitor.allowOrientationSelfTraversal())
-			super.accept(visitor, !visitor.skipNonBinarySerialisedOrientationSubColumns());
+			super.accept(visitor, !visitor.skipNonBinarySerialisedOrientationSubColumns()); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
-			visitor.visit(this);
+			visitor.visit(this); // visit as OrientationColumn (as a single whole)
 	}
 
 	@Override

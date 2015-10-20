@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
+
+import java.util.Collection;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.Line;
-import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -38,24 +38,35 @@ public class LineColumn extends ListColumn<Line, Location>
 
 	public LineColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional);
+		this(name, optional, doublePrecision, storeAltitude, storeAccuracy, storeTime, storeProvider, null);
 	}
 	
-	private LineColumn(String name, Column<Location> locationCol, boolean optional)
+	public LineColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider, Line defaultValue)
 	{
-		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS));
+		this(name, new LocationColumn("Point", false, doublePrecision, storeAltitude, false, false, storeAccuracy, storeTime, storeProvider), optional, defaultValue);
+	}
+	
+	private LineColumn(String name, Column<Location> locationCol, boolean optional, Line defaultValue)
+	{
+		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS), defaultValue);
 	}
 	
 	@Override
 	public LineColumn copy()
 	{
-		return new LineColumn(name, singleColumn.copy(), optional);
+		return new LineColumn(name, singleColumn.copy(), optional, defaultValue);
 	}
 
 	@Override
 	protected Line getNewList(int minimumCapacity)
 	{
 		return new Line(minimumCapacity);
+	}
+	
+	@Override
+	protected Line getNewList(Collection<Location> points)
+	{
+		return new Line(points);
 	}
 	
 	@Override

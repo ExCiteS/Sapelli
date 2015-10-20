@@ -18,12 +18,20 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
@@ -42,13 +50,21 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
@@ -78,7 +94,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//	Model:
 	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement", CollectorClient.SCHEMA_FLAGS_COLLECTOR_INTERNAL);
 	//	 Project schema:
-	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
+	static public final Schema PROJECT_SCHEMA = CollectorClient.CreateCollectorSchema(COLLECTOR_MANAGEMENT_MODEL, Project.class.getSimpleName(), Project.class.getSimpleName() + "s");
 	//		Columns:
 	static private final IntegerColumn PROJECT_ID_COLUMN = PROJECT_SCHEMA.addColumn(new IntegerColumn("id", false, Project.PROJECT_ID_FIELD));
 	static private final IntegerColumn PROJECT_FINGERPRINT_COLUMN = PROJECT_SCHEMA.addColumn(new IntegerColumn("fingerPrint", false, true, Project.PROJECT_FINGERPRINT_SIZE));
@@ -96,11 +112,10 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		// Unique index to ensure name+variant+version combinations are unique:
 		PROJECT_SCHEMA.addIndex(new Index("ProjectUnique", true, PROJECT_NAME_COLUMN, PROJECT_VARIANT_COLUMN, PROJECT_VERSION_COLUMN));
-		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN));
-		PROJECT_SCHEMA.seal(); // !!!
+		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN), true /*seal!*/);
 	}
 	//	 Form Schema Info (FSI) schema:
-	static public final Schema FSI_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
+	static public final Schema FSI_SCHEMA = CollectorClient.CreateCollectorSchema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
 	//		Columns:
 	static private final ForeignKeyColumn FSI_PROJECT_KEY_COLUMN = FSI_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn FSI_FORM_POSITION_COLUMN = FSI_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));
@@ -108,11 +123,10 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//		Set primary key & seal schema:
 	static
 	{
-		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN));
-		FSI_SCHEMA.seal(); // !!!
+		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN), true /*seal!*/);
 	}
 	//	 Held Foreign Key (HFK) schema: to store "held" foreign keys (RecordReferences) on Relationship fields
-	static public final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
+	static public final Schema HFK_SCHEMA = CollectorClient.CreateCollectorSchema(COLLECTOR_MANAGEMENT_MODEL, "RelationshipFK", "RelationshipFKs");
 	//		Columns:
 	static private final ForeignKeyColumn HFK_PROJECT_KEY_COLUMN = HFK_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn HFK_FORM_POSITION_COLUMN = HFK_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));
@@ -121,8 +135,21 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//		Set primary key & seal schema:
 	static
 	{
-		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN));
-		HFK_SCHEMA.seal(); // !!!
+		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN), true /*seal!*/);
+	}
+	// Seal the collector management model:
+	static
+	{
+		COLLECTOR_MANAGEMENT_MODEL.seal();
+	}
+	
+	// ColumnSet & columns used for Project serialisation (see serialise() & deserialise()): 
+	static private final ColumnSet PROJECT_SERIALISIATION_CS = new ColumnSet("ProjectSerialisation", false);
+	static private final ByteArrayColumn PROJECT_SERIALISIATION_XML_COLUMN = PROJECT_SERIALISIATION_CS.addColumn(new ByteArrayColumn("ProjectXMLBytes", false));
+	static private final ByteArrayListColumn PROJECT_SERIALISIATION_FSI_RECORDS_COLUMN = PROJECT_SERIALISIATION_CS.addColumn(new ByteArrayListColumn("ProjectFSIRecordsBytes", false, Project.MAX_FORMS));
+	static
+	{
+		PROJECT_SERIALISIATION_CS.seal();
 	}
 	
 	//	Record-sending schedule Schema
@@ -244,7 +271,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		
 		// Create ProjectDescriptor:
 		int id = PROJECT_ID_COLUMN.retrieveValue(projRec).intValue();
-		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValueSet(projRec);
+		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValuePresent(projRec);
 		ProjectDescriptor projDescr = new ProjectDescriptor(v1x ? ProjectDescriptor.PROJECT_ID_V1X_TEMP : id,
 															PROJECT_NAME_COLUMN.retrieveValue(projRec),
 															PROJECT_VARIANT_COLUMN.retrieveValue(projRec), // "" is treated as null,
@@ -639,5 +666,71 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		backuper.addStoreForBackup(recordStore);
 	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#serialise(uk.ac.ucl.excites.sapelli.collector.model.Project, java.io.OutputStream)
+	 */
+	@Override
+	public void serialise(Project project, OutputStream out) throws IOException
+	{
+		// Project XML bytes:
+		InputStream projectXMLFileIn = new FileInputStream(ProjectLoader.GetProjectXMLFile(getProjectFolder(project)));
+		ByteArrayOutputStream projectXMLBytesOut = new ByteArrayOutputStream();
+		IOUtils.copy(projectXMLFileIn, projectXMLBytesOut);
+		projectXMLFileIn.close();
+		projectXMLBytesOut.close();
+		
+		// FSI record bytes for each Form:
+		List<byte[]> fsiRecordBytesList = new ArrayList<>(project.getNumberOfForms());
+		for(Form form : project.getForms())
+		{
+			Record fsiRecord = retrieveFSIRecord(form); // we query the projectStore to save time...
+			if(fsiRecord == null) // ... but we don't rely on it:
+				fsiRecord = getFSIRecord(form); // may trigger optionality analysis
+			fsiRecordBytesList.add(fsiRecord.toBytes());
+		}
+		
+		// Create serialisedProject valueSet:
+		ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(PROJECT_SERIALISIATION_CS, projectXMLBytesOut.toByteArray(), fsiRecordBytesList);
+		
+		// Return as byte array:
+		BitOutputStream bitsOut = new BitWrapOutputStream(out);
+		serialisedProjectVS.writeToBitStream(bitsOut);
+		bitsOut.flush();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#deserialise(java.io.InputStream)
+	 */
+	@Override
+	public Project deserialise(InputStream in) throws IOException
+	{
+		// Deserialise valueSet:
+		BitInputStream bitsIn = new BitWrapInputStream(in);
+		ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(PROJECT_SERIALISIATION_CS);
+		serialisedProjectVS.readFromBitStream(bitsIn);
+		bitsIn.close();
+		
+		// Retrieve FSI records:
+		List<byte[]> fsiRecordBytesList = PROJECT_SERIALISIATION_FSI_RECORDS_COLUMN.retrieveValue(serialisedProjectVS);
+		final List<Record> fsiRecords = new ArrayList<Record>(fsiRecordBytesList.size());
+		for(byte[] fsiRecordBytes : fsiRecordBytesList)
+			fsiRecords.add(FSI_SCHEMA.createRecord(fsiRecordBytes));
 	
+		// Retrieve & parse Project XML:
+		return ProjectLoader.ParseProjectXML(
+			new ByteArrayInputStream(PROJECT_SERIALISIATION_XML_COLUMN.retrieveValue(serialisedProjectVS)),
+			new FormSchemaInfoProvider()
+			{
+				@Override
+				public List<String> getByPassableFieldIDs(Form form)
+				{
+					for(Record fsiRecord : fsiRecords)
+						if(FSI_FORM_POSITION_COLUMN.retrieveValue(fsiRecord).shortValue() == form.getPosition())
+							return ProjectRecordStore.this.getByPassableFieldIDs(fsiRecord);
+					return null;
+				}
+			});
+	}
+
 }

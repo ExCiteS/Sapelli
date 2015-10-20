@@ -23,7 +23,7 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -61,7 +61,7 @@ public abstract class BaseActivity extends AppCompatActivity
 		return app;
 	}
 	
-	public CollectorClient getCollectorClient()
+	public AndroidCollectorClient getCollectorClient()
 	{
 		return getCollectorApp().collectorClient;
 	}

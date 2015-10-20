@@ -23,11 +23,13 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageObserver;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
@@ -68,42 +70,93 @@ public abstract class TransmissionClient extends StorageClient
 	 * Flags used on "internal" Transmission layer Schemata
 	 */
 	static public final int SCHEMA_FLAGS_TRANSMISSION_INTERNAL = SCHEMA_FLAG_TRANSMISSION_LAYER;
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * 
+	 * @param model
+	 * @param name (will also be used as unprefixed tableName)
+	 * @param unprefixedTableName
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name)
+	{
+		return CreateTransmissionSchema(model, name, name, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Transmission layer table).
+	 * 
+	 * @param model
+	 * @param name
+	 * @param unprefixedTableName
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name, String unprefixedTableName)
+	{
+		return CreateTransmissionSchema(model, name, unprefixedTableName, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * 
+	 * @param model
+	 * @param name (will also be used as unprefixed tableName)
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name, int schemaFlags)
+	{
+		return CreateTransmissionSchema(model, name, name, schemaFlags);
+	}
+	
+	/**
+	 * Create new Schema with the given name and adds it to the given model.
+	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Transmission layer table).
+	 * 
+	 * @param model
+	 * @param name
+	 * @param unprefixedTableName
+	 * @param schemaFlags
+	 * @return
+	 */
+	static public Schema CreateTransmissionSchema(Model model, String name, String unprefixedTableName, int schemaFlags)
+	{
+		return new Schema(model, name, GetTransmissionPrefixedSchemaTableName(unprefixedTableName, schemaFlags), schemaFlags);
+	}
+	
+	/**
+	 * Generates a complete table name from the given unprefixed table name (prefixed to indicate it is a Transmission layer table).
+	 * 
+	 * @param unprefixedTableName
+	 * @param schemaFlags
+	 * @return the full table name
+	 */
+	static public String GetTransmissionPrefixedSchemaTableName(String unprefixedTableName, int schemaFlags)
+	{
+		if(!TestSchemaFlags(schemaFlags, SCHEMA_FLAG_TRANSMISSION_LAYER))
+			throw new IllegalArgumentException("SCHEMA_FLAG_TRANSMISSION flag expected to be set");
+		// Build tableName:
+		StringBuilder tableNameBldr = new StringBuilder("Transmission_");
+		tableNameBldr.append(unprefixedTableName);
+		// Return full table name:
+		return tableNameBldr.toString();
+	}
 
 	// DYNAMICS------------------------------------------------------
 	public final StoreHandle<TransmissionStore> transmissionStoreHandle = new StoreHandle<TransmissionStore>(new StoreCreator<TransmissionStore>()
 	{
 		@Override
-		public TransmissionStore createStore() throws DBException
+		public void createAndSetStore(StoreSetter<TransmissionStore> setter) throws DBException
 		{
-			return new TransmissionStore(TransmissionClient.this);
+			setter.setAndInitialise(new TransmissionStore(TransmissionClient.this));
 		}
 	});
 	
 	public TransmissionClient()
 	{
 		new TransmissionStorageObserver(); // no need to hold a reference to it, the object will register itself as a StorageObserver
-	}
-	
-	// DYNAMICS------------------------------------------------------	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
-	 */
-	@Override
-	public String getTableName(Schema schema)
-	{
-		if(schema == TransmissionStore.SENT_TRANSMISSION_SCHEMA)
-			return "Sent_Transmissions";
-		if(schema == TransmissionStore.SENT_TRANSMISSION_PART_SCHEMA)
-			return "Sent_Transmission_Parts";
-		if(schema == TransmissionStore.RECEIVED_TRANSMISSION_SCHEMA)
-			return "Received_Transmissions";
-		if(schema == TransmissionStore.RECEIVED_TRANSMISSION_PART_SCHEMA)
-			return "Received_Transmission_Parts";
-		if(schema == TransmissionStore.CORRESPONDENT_SCHEMA)
-			return "Correspondents";
-		if(schema == TransmissionStore.TRANSMITTABLE_RECORDS_SCHEMA)
-			return "TransmitableRecords";
-		return super.getTableName(schema);
 	}
 	
 	/**
@@ -124,6 +177,12 @@ public abstract class TransmissionClient extends StorageClient
 		return null;
 	}
 	
+	/**
+	 * TODO
+	 * 
+	 * @param schema
+	 * @return
+	 */
 	public abstract List<Correspondent> getReceiversFor(Schema schema);
 	
 	/**

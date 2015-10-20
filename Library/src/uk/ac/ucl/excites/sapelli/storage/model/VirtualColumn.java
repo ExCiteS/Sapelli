@@ -56,7 +56,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 
 	public VirtualColumn(Column<ST> sourceColumn, Column<TT> targetColumn, ValueMapper<TT, ST> valueMapper)
 	{
-		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional);
+		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional, sourceColumn.defaultValue == null ? null : valueMapper.mapValue(sourceColumn.defaultValue, null));
 		if(sourceColumn == null || targetColumn == null || valueMapper == null)
 			throw new NullPointerException("sourceColumn, targetColumn & valueMapper cannot be null!");
 		if(sourceColumn instanceof VirtualColumn || targetColumn instanceof VirtualColumn)
@@ -203,7 +203,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		 * Converts values from source type ST to target type TT
 		 * 
 		 * @param nonNullSourceValue the source value of type <ST>
-		 * @param valueSet an unmodifiable version of the valueSet in which the sourceValue occurs
+		 * @param valueSet an unmodifiable version of the valueSet in which the sourceValue occurs (may be null)
 		 * @return
 		 */
 		public abstract TT mapValue(ST nonNullSourceValue, UnmodifiableValueSet<?> valueSet);

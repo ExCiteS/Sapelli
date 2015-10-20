@@ -43,7 +43,7 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	
 	static private final long serialVersionUID = 2L;
 	
-	private Schema referencedSchema;
+	private final Schema referencedSchema;
 	
 	/**
 	 * Creates a new, but "empty", RecordReference which, once the column values have been set, can be used to reference a record of the given schema. 
@@ -53,7 +53,8 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	 */
 	protected RecordReference(Schema referencedSchema) throws NullPointerException
 	{
-		this(referencedSchema, (Object []) null);
+		super(referencedSchema.getPrimaryKey());
+		this.referencedSchema = referencedSchema;
 	}
 	
 	/**

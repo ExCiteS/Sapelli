@@ -19,6 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,7 +38,12 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -50,12 +58,16 @@ public abstract class MediaField extends Field
 	
 	static public final String ID_PREFIX = "media";
 	
+	static public final String FILES_VIRTUAL_COLOMN_TARGET_NAME = "Files";
+	static public final int MAX_FILENAME_LENGTH = 128;
+	
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	//protected int min;
 	protected boolean useNativeApp;
 	protected int max;
 	protected ChoiceField disableChoice;
+	protected final FileNameGenerator defaultFileNameGenerator;
 
 	/**
 	 * @param form
@@ -66,6 +78,8 @@ public abstract class MediaField extends Field
 	{
 		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
+		
+		defaultFileNameGenerator = new FileNameGenerator(this.id, form.isObfuscateMediaFiles(), form.isObfuscateMediaFiles(), getFileExtension());
 	}
 	
 	public abstract String getMediaType();
@@ -151,7 +165,14 @@ public abstract class MediaField extends Field
 	protected IntegerColumn createColumn(String name)
 	{
 		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
-		return new IntegerColumn(name, colOptional, (colOptional ? 0 : 1), max);
+		IntegerColumn intCol = new IntegerColumn(name, colOptional, (colOptional ? 0 : 1), max);
+		
+		// Add virtual column which will contain the filenames of all attachments:
+		intCol.addVirtualVersion(
+			new StringListColumn(FILES_VIRTUAL_COLOMN_TARGET_NAME, StringColumn.ForCharacterCount("File", false, MAX_FILENAME_LENGTH), colOptional, 0, max, '[', ']', '|', null, null),
+			new FileNameMapper(defaultFileNameGenerator));
+		
+		return intCol;
 	}
 	
 	public int getCount(Record record)
@@ -198,7 +219,7 @@ public abstract class MediaField extends Field
 	 */
 	public String generateFilename(Record record, int attachmentNumber)
 	{
-		return generateFilename(record, attachmentNumber, form.isObfuscateMediaFiles(), form.isObfuscateMediaFiles());
+		return defaultFileNameGenerator.generateFilename(record, attachmentNumber);
 	}
 	
 	/**
@@ -213,26 +234,7 @@ public abstract class MediaField extends Field
 	 */
 	public String generateFilename(Record record, int attachmentNumber, boolean obfuscateFilename, boolean obfuscateExtension)
 	{	
-		// Elements:
-		String dateTime = TimeUtils.getTimestampForFileName(form.getStartTime(record, true));
-		long deviceID = form.getDeviceID(record);
-		
-		// Assemble base filename
-		//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
-		String filename = FileHelpers.makeValidFileName(this.getID()) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
-		String extension = getFileExtension();
-		char extensionSeparator = '.';
-		
-		// Obfuscate filename and/or extension if necessary:
-		if(obfuscateFilename)
-			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(filename.getBytes()), 16, true); // Format: HEX(MD5(filename))
-		if(obfuscateExtension)
-		{
-			extensionSeparator = FILENAME_ELEMENT_SEPARATOR; // '_' instead of '.'
-			extension = ROT13.rot13NumRot5(extension).toUpperCase(); // Format: UPPERCASE(ROT13(extension))
-		}
-		
-		return filename + extensionSeparator + extension;
+		return new FileNameGenerator(id, obfuscateFilename, obfuscateExtension, getFileExtension()).generateFilename(record, attachmentNumber);
 	}
 	
 	/**
@@ -297,6 +299,129 @@ public abstract class MediaField extends Field
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
 		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.id.hashCode()); // do not use disableChoice itself to avoid potential endless loops!
 		return hash;
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static protected class FileNameMapper extends VirtualColumn.ValueMapper<List<String>, Long>
+	{
+		
+		private static final long serialVersionUID = 2L;
+		
+		private final FileNameGenerator fileNameGenerator;
+		
+		public FileNameMapper(FileNameGenerator fileNameGenerator)
+		{
+			this.fileNameGenerator = fileNameGenerator;
+		}
+
+		@Override
+		public List<String> mapValue(Long nonNullValue, UnmodifiableValueSet<?> valueSet)
+		{
+			int attachmentCount = nonNullValue.intValue();
+			List<String> filenames = new ArrayList<String>();
+			for(int attachmentNumber = 0; attachmentNumber < attachmentCount+1; attachmentNumber++) // DEBUG TODO REMOVE +1!!!!
+				filenames.add(fileNameGenerator.generateFilename(valueSet, attachmentNumber));
+			return filenames;
+		}
+
+		@Override
+		public int hashCode()
+		{
+			int hash = 1;
+			hash = 31 * hash + getClass().getName().hashCode();
+			hash = 31 * hash + fileNameGenerator.hashCode();
+			return hash; 
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static protected class FileNameGenerator implements Serializable
+	{
+		
+		private static final long serialVersionUID = 2L;
+		
+		private final String fieldID;
+		private final boolean obfuscateFilename;
+		private final boolean obfuscateExtension;
+		private final String fileExtension;
+		
+		/**
+		 * @param obfuscateFilename
+		 * @param obfuscateExtension
+		 */
+		public FileNameGenerator(String fieldID, boolean obfuscateFilename, boolean obfuscateExtension, String fileExtension)
+		{
+			this.fieldID = fieldID;
+			this.obfuscateFilename = obfuscateFilename;
+			this.obfuscateExtension = obfuscateExtension;
+			this.fileExtension = fileExtension;
+		}
+
+		/**
+		 * Generates a filename for the {@code attachmentNumber}-th attachment for this {@link MediaField} and the provided {@code record}.
+		 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
+		 * 
+		 * @param record
+		 * @param attachmentNumber
+		 * @param obfuscateFilename
+		 * @param obfuscateExtension
+		 * @return
+		 */
+		public String generateFilename(ValueSet<?> record, int attachmentNumber)
+		{	
+			// Elements:
+			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record, true));
+			long deviceID = Form.GetDeviceID(record);
+			
+			// Assemble base filename
+			//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
+			String filename = FileHelpers.makeValidFileName(fieldID) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
+			String ext = fileExtension;
+			char extensionSeparator = '.';
+			
+			// Obfuscate filename and/or extension if necessary:
+			if(obfuscateFilename)
+				filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(filename.getBytes()), 16, true); // Format: HEX(MD5(filename))
+			if(obfuscateExtension)
+			{
+				extensionSeparator = FILENAME_ELEMENT_SEPARATOR;	// '_' instead of '.'
+				ext = ROT13.rot13NumRot5(ext).toUpperCase(); 		// Format: UPPERCASE(ROT13(extension))
+			}
+			
+			// Return fully assembled filename:
+			return filename + extensionSeparator + ext;
+		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{
+			if(this == obj)
+				return true;
+			if(!(obj instanceof FileNameGenerator))
+				return false;
+			FileNameGenerator that = (FileNameGenerator) obj;
+			return	this.fieldID == that.fieldID &&
+					this.obfuscateFilename == that.obfuscateFilename &&
+					this.obfuscateExtension == that.obfuscateExtension &&
+					this.fileExtension == that.fileExtension;
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			int hash = 1;
+			hash = 31 * hash + fieldID.hashCode();
+			hash = 31 * hash + (obfuscateFilename ? 0 : 1);
+			hash = 31 * hash + (obfuscateExtension ? 0 : 1);
+			hash = 31 * hash + fileExtension.hashCode();
+			return hash;
+		}
+		
 	}
 	
 }

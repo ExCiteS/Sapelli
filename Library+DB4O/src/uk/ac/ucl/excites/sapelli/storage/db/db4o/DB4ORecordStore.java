@@ -33,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
@@ -173,7 +174,7 @@ public class DB4ORecordStore extends RecordStore
 				// We call this UPDATE-CASE-1
 			}
 			else // No it isn't, but perhaps there is a previously stored record with the same primary key value(s):
-				if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
+				if(autoIncrIDColumn == null || autoIncrIDColumn.isValuePresent(record))
 			{
 				previouslyStored = retrieveRecord(record.getRecordQuery()); // (may be null if there is no matching record)
 				// if previouslyStored is now != null than we are we call this UPDATE-CASE-2
@@ -285,6 +286,18 @@ public class DB4ORecordStore extends RecordStore
 			return result.subList(0, limit);
 		else
 			return result;
+	}
+	
+	@Override
+	public List<RecordReference> retrieveRecordReferences(RecordsQuery query)
+	{
+		List<Record> records = retrieveRecords(query);
+		if(records == null)
+			return null;
+		List<RecordReference> result = new ArrayList<RecordReference>(records.size());
+		for(Record record : records)
+			result.add(record.getReference());
+		return result;
 	}
 
 	/* (non-Javadoc)

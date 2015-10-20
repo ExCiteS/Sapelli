@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
@@ -40,7 +41,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 public class Schema extends ColumnSet implements Serializable
 {
 
-	// Statics------------------------------------------------------------
+	// STATICS ----------------------------------------------------------------
 	private static final long serialVersionUID = 2L;
 	
 	static public final String COLUMN_AUTO_KEY_NAME = "AutoKey";
@@ -63,14 +64,14 @@ public class Schema extends ColumnSet implements Serializable
 	static public final int MAX_SCHEMA_NAME_LENGTH = 256; // chars
 	
 	/**
-	 * Returns a "meta" record which describes the given schema (and contains a serialised version of it)
+	 * Returns a "meta" record which describes the given schema.
 	 * 
 	 * @param schema
 	 * @return
 	 */
 	static public Record GetMetaRecord(Schema schema)
 	{
-		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name, schema.flags);
+		return Model.SCHEMA_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name, schema.flags, schema.tableName);
 	}
 	
 	/**
@@ -82,10 +83,11 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	static public RecordReference GetMetaRecordReference(Schema schema)
 	{
-		return new RecordReference(Model.META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
+		return new RecordReference(Model.SCHEMA_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
-	// Dynamics-----------------------------------------------------------
+	// DYNAMICS ---------------------------------------------------------------
+	public final String tableName;
 	public final Model model;
 	public final int modelSchemaNumber;
 	public final int flags;
@@ -103,13 +105,43 @@ public class Schema extends ColumnSet implements Serializable
 	 * default schema flags a NullPointerException will be thrown.
 	 * 
 	 * @param model
-	 * @param name
+	 * @param name (will also be used as tableName)
 	 * @throws ModelFullException if the model is full
 	 * @throws NullPointerException
 	 */
 	public Schema(Model model, String name) throws ModelFullException, NullPointerException
 	{
-		this(model, name, model.getDefaultSchemaFlags());
+		this(model, name, name);
+	}
+
+	/**
+	 * Create a new schema instance which will be add to the provided {@link Model}.
+	 * The Schema will use the default schema flags of the Model, if the model does not have
+	 * default schema flags a NullPointerException will be thrown.
+	 * 
+	 * @param model
+	 * @param name
+	 * @param tableName alternative name to use when recreating database table for storing Records of this Schema (e.g. the plural form of the name)
+	 * @throws ModelFullException if the model is full
+	 * @throws NullPointerException
+	 */
+	public Schema(Model model, String name, String tableName) throws ModelFullException, NullPointerException
+	{
+		this(model, name, tableName, model.getDefaultSchemaFlags());
+	}
+	
+	/**
+	 * Create a new schema instance which will be add to the provided {@link Model}.
+	 * 
+	 * @param model
+	 * @param name (will also be used as tableName)
+	 * @param flags
+	 * @throws ModelFullException if the model is full
+	 * @throws NullPointerException
+	 */
+	public Schema(Model model, String name, int flags) throws ModelFullException, NullPointerException
+	{
+		this(model, name, name, flags);
 	}
 	
 	/**
@@ -117,17 +149,19 @@ public class Schema extends ColumnSet implements Serializable
 	 * 
 	 * @param model
 	 * @param name
+	 * @param tableName alternative name to use when recreating database table for storing Records of this Schema (e.g. the plural form of the name)
 	 * @param flags
 	 * @throws ModelFullException if the model is full
 	 * @throws NullPointerException
 	 */
-	public Schema(Model model, String name, int flags) throws ModelFullException, NullPointerException
+	public Schema(Model model, String name, String tableName, int flags) throws ModelFullException, NullPointerException
 	{
 		super((name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name), true);
 		if(this.name.length() > MAX_SCHEMA_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
+		this.tableName = tableName != null ? tableName : name;
 		this.model = model;
 		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 		this.flags = flags;
@@ -162,6 +196,14 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	/**
+	 * @return the tableName
+	 */
+	protected final String getTableName()
+	{
+		return tableName;
+	}
+
+	/**
 	 * @return the flags
 	 */
 	public int getFlags()
@@ -177,11 +219,11 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public boolean hasFlags(int flags)
 	{
-		return (this.flags & flags) == flags;
+		return StorageClient.TestSchemaFlags(this.flags, flags);
 	}
 	
 	/**
-	 * Returns a "meta" record which describes the schema (and contains a serialised version of it)
+	 * Returns a "meta" record which describes the schema.
 	 * 
 	 * @return meta Record
 	 * @see #GetMetaRecord(Schema)
@@ -237,7 +279,7 @@ public class Schema extends ColumnSet implements Serializable
 	{
 		if(this.primaryKey != null)
 			throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
-		if(sealed)
+		if(isSealed())
 			throw new IllegalStateException("Cannot set primary key on a sealed schema!");
 		// Also add as an index (+ do checks):
 		doAddIndex(primaryKey);
@@ -267,21 +309,16 @@ public class Schema extends ColumnSet implements Serializable
 		indexes.add(index);
 	}
 	
-	/**
-	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
-	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
-	 */
-	public void seal()
+	@Override
+	protected void sealTasks()
 	{
-		// Add automatic primary key to "external/client" schemata that don't have one yet:
+		// Add automatic primary key to Schemata that don't have one yet:
 		if(!hasPrimaryKey())
 		{
 			IntegerColumn autoKeyCol = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
-			addColumn(autoKeyCol, false);
+			this.addColumn(autoKeyCol, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
-		// Seal:
-		super.seal();
 	}
 		
 	/**
@@ -513,12 +550,6 @@ public class Schema extends ColumnSet implements Serializable
 		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
 		hash = 31 * hash + flags;
 		return hash;
-	}
-	
-	@Override
-	public String toString()
-	{
-		return "Schema " + name;
 	}
 	
 	public String getSpecification()

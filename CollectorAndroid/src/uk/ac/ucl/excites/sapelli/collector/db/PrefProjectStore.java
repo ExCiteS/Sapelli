@@ -19,6 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +47,7 @@ import android.util.Log;
  * @deprecated use ProjectRecordStore instead
  * 
  * @author Michalis Vitos, mstevens
+ * @deprecated
  */
 public class PrefProjectStore extends ProjectStore
 {
@@ -336,7 +340,7 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public void backup(StoreBackupper backuper, File destinationFolder)
 	{
-		// TODO implement preferences backup
+		throw new UnsupportedOperationException("preferences backup not implemented");
 	}
 
 	@Override
@@ -382,6 +386,18 @@ public class PrefProjectStore extends ProjectStore
 	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
 	{
 		return retrieveProject(projectID, projectFingerPrint);
+	}
+
+	@Override
+	public void serialise(Project project, OutputStream out) throws IOException
+	{
+		throw new UnsupportedOperationException("serialise() not implemented");
+	}
+
+	@Override
+	public Project deserialise(InputStream in) throws IOException
+	{
+		throw new UnsupportedOperationException("deserialise() not implemented");
 	}
 
 }

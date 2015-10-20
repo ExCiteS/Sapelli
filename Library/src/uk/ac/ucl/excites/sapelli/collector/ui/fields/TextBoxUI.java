@@ -84,7 +84,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				case email :
 				case phonenumber :
 				default :
-					if(!field.getColumn().isValidValue(text))
+					if(!((StringColumn) field.getColumn()).isValidValue(text))
 						// in fact this shouldn't happen, given that max length has already been checked
 						error = VALIDATION_ERROR_INVALID;
 					break;
@@ -143,7 +143,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 
 	protected String retrieveValue(Record record)
 	{
-		if(!field.getColumn().isValueSet(record))
+		if(!field.getColumn().isValuePresent(record))
 			return null;
 		switch(field.getContent())
 		{

@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -42,25 +43,29 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteIntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
+ * Abstract {@link SQLRecordStore} implementation which is backed by a SQLite database.
+ * 
  * @author mstevens
- *
  */
 public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>
 {
@@ -100,12 +105,23 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	/**
 	 * @param client
-	 * @param version
 	 */
-	public SQLiteRecordStore(StorageClient client, int version)
+	public SQLiteRecordStore(StorageClient client)
 	{
-		super(client, version, PARAM_PLACEHOLDER);
+		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#doInitialise()
+	 */
+	@Override
+	protected void doInitialise() throws DBException
+	{
+		addProtectedTable("sqlite_master");
+		addProtectedTable("sqlite_sequence");
+		
+		super.doInitialise(); // !!!
 	}
 
 	/* (non-Javadoc)
@@ -186,7 +202,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected boolean doesTableExist(String tableName)
 	{
-		ISQLiteCursor cursor = null;
+		SQLiteCursor cursor = null;
 		try
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
@@ -206,6 +222,37 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getAllTableNames()
+	 */
+	@Override
+	protected List<String> getAllTableNames()
+	{
+		SQLiteCursor cursor = null;
+		try
+		{
+			SQLiteStringColumn<String> nameCol = new SQLiteStringColumn<String>(this, "name", null, null);
+			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table'",
+									Collections.<SQLiteColumn<?, ?>> emptyList(),
+									Collections.<String> emptyList());
+			List<String> tableNames = new ArrayList<String>();
+			if(cursor != null)
+				while(cursor.moveToNext())
+					CollectionUtils.addIgnoreNull(tableNames, nameCol.getValueOrNull(cursor, 0));
+			return tableNames;
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err);
+			return Collections.<String> emptyList();
+		}
+		finally
+		{
+			if(cursor != null)
+				cursor.close();
+		}
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#hasFullIndexSupport()
 	 */
@@ -240,7 +287,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return an cursor to iterate over the results
 	 * @throws DBException
 	 */
-	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
+	protected abstract SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
 
 	@Override
 	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
@@ -296,7 +343,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return
 	 * @throws DBException
 	 */
-	protected abstract SapelliSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract SQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/**
 	 * 
@@ -305,11 +352,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SapelliSQLiteStatement existsStatement;
-		private SapelliSQLiteStatement insertStatement;
-		private SapelliSQLiteStatement updateStatement;
-		private SapelliSQLiteStatement deleteStatement;
-		private SapelliSQLiteStatement countStatement;
+		private SQLiteStatement existsStatement;
+		private SQLiteStatement insertStatement;
+		private SQLiteStatement updateStatement;
+		private SQLiteStatement deleteStatement;
+		private SQLiteStatement countStatement;
 
 		public SQLiteTable(Schema schema)
 		{
@@ -334,7 +381,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			
 			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
 			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
-			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(recordOrReference))
+			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValuePresent(recordOrReference))
 				return false;
 			
 			// Perform actual check by querying...
@@ -441,7 +488,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
-			SapelliSQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			SQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			
 			// Bind parameters:
 			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
@@ -457,30 +504,30 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordSelectHelper)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordValueSetSelectHelper)
 		 */
 		@Override
-		protected synchronized List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
+		protected <R extends RecordValueSet<?>> List<R> executeRecordSelection(RecordValueSetSelectHelper<R> recordValueSetSelectHelper) throws DBException
 		{
-			ISQLiteCursor cursor = null;
+			SQLiteCursor cursor = null;
 			try
 			{
 				// Execute query (also binds parameters) to get cursor:
-				cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
+				cursor = executeQuery(recordValueSetSelectHelper.getQuery(), recordValueSetSelectHelper.getParameterColumns(), recordValueSetSelectHelper.getSapArguments());
 				// Deal with cursor:
 				if(cursor == null || !cursor.hasRow())
 					// No results:
-					return Collections.<Record> emptyList();
+					return Collections.<R> emptyList();
 				else
 				{	// Process cursor rows and create corresponding records:
-					List<Record> result = new ArrayList<Record>();
+					List<R> result = new ArrayList<R>();
 					while(cursor.moveToNext())
 					{
-						Record record = schema.createRecord();
+						R recordOrReference = recordValueSetSelectHelper.projection.createRecordValueSet();
 						int i = 0;
-						for(SQLiteColumn<?, ?> sqliteCol : sqlColumns.values())
-							sqliteCol.store(record, cursor, i++);
-						result.add(record);
+						for(SQLiteColumn<?, ?> sqliteCol : recordValueSetSelectHelper.projection.getProjectionColumns())
+							sqliteCol.store(recordOrReference, cursor, i++);
+						result.add(recordOrReference);
 					}
 					return result;
 				}
@@ -507,17 +554,32 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized void release()
 		{
 			if(existsStatement != null)
+			{
 				existsStatement.close();
+				existsStatement = null;
+			}
 			if(insertStatement != null)
+			{
 				insertStatement.close();
+				insertStatement = null;
+			}
 			if(updateStatement != null)
+			{
 				updateStatement.close();
+				updateStatement = null;
+			}
 			if(deleteStatement != null)
+			{
 				deleteStatement.close();
+				deleteStatement = null;
+			}
 			if(countStatement != null)
+			{
 				countStatement.close();
+				countStatement = null;
+			}
 		}
-
+		
 	}
 	
 	/**
@@ -546,7 +608,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param recordOrReference
 		 * @throws DBException
 		 */
-		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, RecordValueSet<?> recordOrReference) throws DBException
+		public void retrieveAndBind(SQLiteStatement statement, int paramIdx, RecordValueSet<?> recordOrReference) throws DBException
 		{
 			bind(statement, paramIdx, retrieve(recordOrReference));
 		}
@@ -557,7 +619,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param sapValue
 		 * @throws DBException
 		 */
-		public void bindSapelliObject(SapelliSQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
+		public void bindSapelliObject(SQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
 		{
 			bind(statement, paramIdx, sapelliOjectToSQL(sapValue));
 		}
@@ -568,7 +630,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param value
 		 * @throws DBException
 		 */
-		public void bind(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException
+		public void bind(SQLiteStatement statement, int paramIdx, SQLType value) throws DBException
 		{
 			if(value != null)
 				bindNonNull(statement, paramIdx, value);
@@ -582,17 +644,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param value
 		 * @throws DBException
 		 */
-		protected abstract void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
+		protected abstract void bindNonNull(SQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
 		
 		/**
-		 * @param record
+		 * @param recordOrReference
 		 * @param cursor
 		 * @param columnIdx
 		 * @throws DBException
 		 */
-		public void store(Record record, ISQLiteCursor cursor, int columnIdx) throws DBException
+		public void store(RecordValueSet<?> recordOrReference, SQLiteCursor cursor, int columnIdx) throws DBException
 		{
-			store(record, getValueOrNull(cursor, columnIdx));
+			store(recordOrReference, getValueOrNull(cursor, columnIdx));
 		}
 		
 		/**
@@ -601,7 +663,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @return
 		 * @throws DBException
 		 */
-		public SQLType getValueOrNull(ISQLiteCursor cursor, int columnIdx) throws DBException
+		public SQLType getValueOrNull(SQLiteCursor cursor, int columnIdx) throws DBException
 		{
 			if(cursor.isNull(columnIdx))
 				return null;
@@ -614,7 +676,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @return
 		 * @throws DBException
 		 */
-		protected abstract SQLType getValue(ISQLiteCursor cursor, int columnIdx) throws DBException;
+		protected abstract SQLType getValue(SQLiteCursor cursor, int columnIdx) throws DBException;
 
 	}
 	
@@ -630,6 +692,36 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			return new SQLiteTable(schema);
 		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+		 */
+		@Override
+		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+		{
+			if(isUseBoolColsForOptionalValueSetCols() && valueSetCol.optional)
+			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
+				table.addColumn(new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, getColumnPointer(valueSetCol), new TypeMapping<Boolean, VS>()
+				{
+					@Override
+					public Boolean toSQLType(VS value)
+					{
+						return value != null;
+					}
+	
+					@Override
+					public VS toSapelliType(Boolean value)
+					{
+						if(value != null && value.booleanValue())
+							return valueSetCol.getNewValueSet();
+						else
+							return null;
+					}
+				}));
+			}
+			// !!!
+			super.enter(valueSetCol);
+		}
 		
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn)
@@ -638,7 +730,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, getColumnPointer(boolCol)));
+			table.addColumn(new SQLiteBooleanColumn.Simple(SQLiteRecordStore.this, getColumnPointer(boolCol)));
 		}
 		
 		@Override
@@ -860,12 +952,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Initialise
 			super(table);
 			
-			// Build statement:			
+			// Build statement:	
 			bldr.append("SELECT ROWID FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
 			appendWhereClause(null);
-			bldr.append(";", false);
 		}
 		
 	}

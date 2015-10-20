@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.types;
 
 import java.io.IOException;
 
@@ -32,7 +32,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -60,11 +62,28 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param addVirtuals
 	 * @return
 	 */
 	static public TimeStampColumn JavaMSTime(String name, boolean optional, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(Long.MIN_VALUE), 64 /*bits*/, true, false, true, optional, addVirtuals);
+		return JavaMSTime(name, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * Returns a TimeStampColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
+	 * the number of milliseconds since (or to, if negative) the Java/Unix epoch of 1970/01/01 00:00:00 UTC.
+	 * All times are stored as UTC (local timezone is NOT kept).
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals
+	 * @return
+	 */
+	static public TimeStampColumn JavaMSTime(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	{
+		return new TimeStampColumn(name, new TimeStamp(Long.MIN_VALUE), 64 /*bits*/, true, false, true, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -74,11 +93,28 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param addVirtuals
 	 * @return
 	 */
 	static public TimeStampColumn JavaMSLocalTime(String name, boolean optional, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(Long.MIN_VALUE), 64 /*bits*/, true, true, true, optional, addVirtuals);
+		return JavaMSLocalTime(name, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * Returns a TimeStampColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
+	 * the number of milliseconds since (or to, if negative) the Java/Unix epoch of 1970/01/01 00:00:00 UTC.
+	 * Local timezone IS kept.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals
+	 * @return
+	 */
+	static public TimeStampColumn JavaMSLocalTime(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	{
+		return new TimeStampColumn(name, new TimeStamp(Long.MIN_VALUE), 64 /*bits*/, true, true, true, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -87,11 +123,27 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param addVirtuals
 	 * @return
 	 */
 	static public TimeStampColumn Century21(String name, boolean optional, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC)), new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC)), true, true, false, optional, addVirtuals);
+		return Century21(name, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * Returns a TimeStampColumn that can hold any millisecond-accurate timestamp in the 21st century, including a local timezone reference.
+	 * Takes up 49 bits.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals
+	 * @return
+	 */
+	static public TimeStampColumn Century21(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	{
+		return new TimeStampColumn(name, new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC)), new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC)), true, true, false, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -100,11 +152,27 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param addVirtuals
 	 * @return
 	 */
 	static public TimeStampColumn Century21NoMS(String name, boolean optional, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC)), new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC)), false, true, false, optional, addVirtuals);
+		return Century21NoMS(name, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * Returns a TimeStampColumn that can hold any second-accurate timestamp in the 21st century, including a local timezone reference
+	 * Takes up 39 bits.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals
+	 * @return
+	 */
+	static public TimeStampColumn Century21NoMS(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	{
+		return new TimeStampColumn(name, new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC)), new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC)), false, true, false, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -115,11 +183,29 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param addVirtuals
 	 * @return
 	 */
 	static public TimeStampColumn Compact(String name, boolean optional, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC)), 30 /*bits*/, false, false, false, optional, addVirtuals);
+		return Compact(name, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * Returns a TimeStampColumn that only needs 30 bits.
+	 * This is achieved by using second-level accurate (instead of millisecond-level), by not storing the
+	 * local timezone, and by limiting the value range to a 34 year window starting on 2008/01/01
+	 * (taken because the first Android device was released in 2008).
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals
+	 * @return
+	 */
+	static public TimeStampColumn Compact(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	{
+		return new TimeStampColumn(name, new TimeStamp(new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC)), 30 /*bits*/, false, false, false, optional, defaultValue, addVirtuals);
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -136,8 +222,25 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * @param keepLocalTimezone whether or not to remember to local timezone
 	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any TimeStamp that fits in the allocated number of bits)
 	 * @param optional
+	 * @param addVirtuals whether or not the add the automatic virtual columns
 	 */
 	public TimeStampColumn(String name, TimeStamp lowBound, TimeStamp highBound, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
+	{
+		this(name, lowBound, highBound, keepMS, keepLocalTimezone, strictHighBound, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * @param name
+	 * @param lowBound earliest allowed DateTime (inclusive)
+	 * @param highBound latest allowed DateTime (exclusive)
+	 * @param keepMS whether to use millisecond-level (true) or second-level (false) accuracy
+	 * @param keepLocalTimezone whether or not to remember to local timezone
+	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any TimeStamp that fits in the allocated number of bits)
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals whether or not the add the automatic virtual columns
+	 */
+	public TimeStampColumn(String name, TimeStamp lowBound, TimeStamp highBound, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
 		this(	name,
 				new IntegerRangeMapping(	Math.round(lowBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d)),
@@ -146,6 +249,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 				keepLocalTimezone,
 				strictHighBound,
 				optional,
+				defaultValue,
 				addVirtuals);
 	}
 	
@@ -157,8 +261,25 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * @param keepLocalTimezone whether or not to remember to local timezone
 	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any DateTime that fits in the allocated number of bits)
 	 * @param optional
+	 * @param addVirtuals whether or not the add the automatic virtual columns
 	 */
 	public TimeStampColumn(String name, TimeStamp lowBound, int sizeBits, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
+	{
+		this(name, lowBound, sizeBits, keepMS, keepLocalTimezone, strictHighBound, optional, null, addVirtuals);
+	}
+	
+	/**
+	 * @param name
+	 * @param lowBound earliest allowed DateTime (inclusive)
+	 * @param the number of bits to use
+	 * @param keepMS whether to use millisecond-level (true) or second-level (false) accuracy
+	 * @param keepLocalTimezone whether or not to remember to local timezone
+	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any DateTime that fits in the allocated number of bits)
+	 * @param optional
+	 * @param defaultValue
+	 * @param addVirtuals whether or not the add the automatic virtual columns
+	 */
+	public TimeStampColumn(String name, TimeStamp lowBound, int sizeBits, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
 		this(	name,
 				IntegerRangeMapping.ForSize(	Math.round(lowBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d)),
@@ -167,17 +288,19 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 				keepLocalTimezone,
 				strictHighBound,
 				optional,
+				defaultValue,
 				addVirtuals);
 	}
 	
-	private TimeStampColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
+	private TimeStampColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		super(name, optional);
+		super(name, optional, defaultValue);
 		this.timeMapping = timeMapping;
 		this.keepMS = keepMS;
 		this.keepLocalTimezone = keepLocalTimezone;
 		this.strict = strictHighBound;
 		
+		// Add automatic virtual version if requested:
 		if(addVirtuals)
 		{
 			// Add virtual version with second-accurate local(!) time in "pretty ISO" format ("yyyy-MM-dd HH:mm:ss"), which should be correctly interpreted by (most) Excel installations.
@@ -239,7 +362,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	@Override
 	public TimeStampColumn copy()
 	{
-		TimeStampColumn cpy = new TimeStampColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional, false);
+		TimeStampColumn cpy = new TimeStampColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional, defaultValue, false);
 		for(VirtualColumn<?, TimeStamp> v : getVirtualVersions())
 			cpy.addVirtualVersion(v.copy());
 		return cpy;

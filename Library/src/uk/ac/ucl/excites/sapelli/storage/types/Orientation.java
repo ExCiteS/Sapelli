@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.storage.types;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 
 /**
  * A class representing 3-dimensional (device) orientation.
@@ -35,18 +34,11 @@ public class Orientation extends ValueSet<ColumnSet>
 	//Statics----------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	// Schema & columns
+	// ColumnSet & Columns:
 	static final public ColumnSet COLUMN_SET = new ColumnSet(Orientation.class.getSimpleName(), false);
-	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, true, false);	// optional signed 32 bit float
-	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true, true, false);		// optional signed 32 bit float
-	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true, true, false);		// optional signed 32 bit float
-	static
-	{	// Add columns to Schema & seal it:
-		COLUMN_SET.addColumn(COLUMN_AZIMUTH);
-		COLUMN_SET.addColumn(COLUMN_PITCH);
-		COLUMN_SET.addColumn(COLUMN_ROLL);
-		COLUMN_SET.seal();
-	}
+	static final public FloatColumn COLUMN_AZIMUTH	= COLUMN_SET.addColumn(new FloatColumn("Azimuth", true, true, false));				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_PITCH	= COLUMN_SET.addColumn(new FloatColumn("Pitch", true, true, false));				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_ROLL		= COLUMN_SET.addColumn(new FloatColumn("Roll", true, true, false), true /*seal!*/);	// optional signed 32 bit float
 	
 	/**
 	 * @param azimuth
@@ -62,11 +54,11 @@ public class Orientation extends ValueSet<ColumnSet>
 	}
 	
 	/**
-	 * Only to be used by {@link OrientationColumn#getNewRecord()}
+	 * Only to be used by {@link OrientationColumn#getNewValueSet()}
 	 */
-	public Orientation()
+	/*package*/ Orientation()
 	{
-		super(COLUMN_SET);
+		super(COLUMN_SET); // no default values!
 	}
 
 	/**

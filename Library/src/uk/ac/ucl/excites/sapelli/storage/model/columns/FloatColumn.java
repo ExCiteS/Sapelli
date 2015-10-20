@@ -47,9 +47,27 @@ public class FloatColumn extends NumberColumn<Double>
 		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_DOUBLE_PRECISION);
 	}
 	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param doublePrecision
+	 */
 	public FloatColumn(String name, boolean optional, boolean signed, boolean doublePrecision)
 	{
-		super(name, optional);
+		this(name, optional, signed, doublePrecision, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param doublePrecision
+	 * @param defaultValue
+	 */
+	public FloatColumn(String name, boolean optional, boolean signed, boolean doublePrecision, Double defaultValue)
+	{
+		super(name, optional, defaultValue);
 		this.doublePrecision = doublePrecision;
 		this.signed = signed;
 	}
@@ -83,9 +101,9 @@ public class FloatColumn extends NumberColumn<Double>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	public Object convert(Object value)
+	public Double convert(Object value)
 	{
-		return value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue()));
+		return (Double) (value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue())));
 	}
 	
 	/**

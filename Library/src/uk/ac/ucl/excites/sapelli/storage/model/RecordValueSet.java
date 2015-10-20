@@ -38,6 +38,23 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 
 	/**
 	 * @param columnSet
+	 */
+	public RecordValueSet(CS columnSet)
+	{
+		super(columnSet);
+	}
+
+	/**
+	 * @param columnSet
+	 * @param values
+	 */
+	public RecordValueSet(CS columnSet, Object... values)
+	{
+		super(columnSet, values);
+	}
+	
+	/**
+	 * @param columnSet
 	 * @param serialisedValues
 	 * @throws NullPointerException
 	 * @throws IOException
@@ -49,29 +66,12 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 
 	/**
 	 * @param columnSet
-	 * @param values
-	 */
-	public RecordValueSet(CS columnSet, Object... values)
-	{
-		super(columnSet, values);
-	}
-
-	/**
-	 * @param columnSet
 	 * @param serialisedValues
 	 * @throws Exception
 	 */
 	public RecordValueSet(CS columnSet, String serialisedValues) throws Exception
 	{
 		super(columnSet, serialisedValues);
-	}
-
-	/**
-	 * @param columnSet
-	 */
-	public RecordValueSet(CS columnSet)
-	{
-		super(columnSet);
 	}
 
 	/**

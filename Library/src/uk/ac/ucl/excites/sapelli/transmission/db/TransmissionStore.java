@@ -42,7 +42,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
@@ -56,6 +55,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
@@ -113,8 +113,8 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		CORRESPONDENT_SCHEMA.seal();
 	}
 	//	Transmission schemas:
-	static final public Schema SENT_TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "SentTransmission");
-	static final public Schema RECEIVED_TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "ReceivedTransmission");
+	static final public Schema SENT_TRANSMISSION_SCHEMA = TransmissionClient.CreateTransmissionSchema(TRANSMISSION_MANAGEMENT_MODEL, "Sent" + Transmission.class.getSimpleName(), "Sent" + Transmission.class.getSimpleName() + "s"); 
+	static final public Schema RECEIVED_TRANSMISSION_SCHEMA = TransmissionClient.CreateTransmissionSchema(TRANSMISSION_MANAGEMENT_MODEL, "Received" + Transmission.class.getSimpleName(), "Received" + Transmission.class.getSimpleName() + "s");
 	//	Transmission columns:
 	static final public IntegerColumn TRANSMISSION_COLUMN_ID = new IntegerColumn("ID", false, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_REMOTE_ID = new IntegerColumn("RemoteID", true, Transmission.TRANSMISSION_ID_FIELD);
@@ -153,7 +153,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	}
 	//	Transmission Part schemas:
 	static final public Schema SENT_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "SentTransmissionPart");
-	static final public Schema RECEIVED_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "RecieverTransmissionPart");
+	static final public Schema RECEIVED_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "ReceivedTransmissionPart");
 	//	Transmission Part columns:
 	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION = new ForeignKeyColumn(SENT_TRANSMISSION_SCHEMA, false);
 	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION = new ForeignKeyColumn(RECEIVED_TRANSMISSION_SCHEMA, false);
@@ -188,7 +188,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	static final public Schema TRANSMITTABLE_RECORDS_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmitableRecords");
 	//		Columns:
 	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_RECEIVER = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(CORRESPONDENT_SCHEMA, false));
-	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_SCHEMA = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(Model.META_SCHEMA, false));
+	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_SCHEMA = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(Model.SCHEMA_SCHEMA, false));
 	static public final ByteArrayColumn TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ByteArrayColumn("PKValueBytes", false));
 	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION = new ForeignKeyColumn(SENT_TRANSMISSION_SCHEMA, true);
 	//		Set PK and seal:
@@ -198,7 +198,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		TRANSMITTABLE_RECORDS_SCHEMA.seal();
 	}
 	//		ColumnPointer (helper):
-	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.META_SCHEMA_NUMBER_COLUMN);
+	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.SCHEMA_SCHEMA_NUMBER_COLUMN);
 	//	Seal the model:
 	static
 	{
@@ -529,8 +529,8 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		boolean received = tRec.getSchema().equals(RECEIVED_TRANSMISSION_SCHEMA);
 		int localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
-		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null;
-		Integer payloadType = TRANSMISSION_COLUMN_PAYLOAD_TYPE.isValueSet(tRec) ? TRANSMISSION_COLUMN_PAYLOAD_TYPE.retrieveValue(tRec).intValue() : null;
+		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValuePresent(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null;
+		Integer payloadType = TRANSMISSION_COLUMN_PAYLOAD_TYPE.isValuePresent(tRec) ? TRANSMISSION_COLUMN_PAYLOAD_TYPE.retrieveValue(tRec).intValue() : null;
 		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);

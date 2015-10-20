@@ -18,6 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectAlreadyStoredException;
@@ -225,5 +228,31 @@ public abstract class ProjectStore extends Store
 	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
 	
 	public abstract void deleteHeldForeignKey(Relationship relationship);
+	
+	/**
+	 * Must serialise the given Project instance and write the result to the given OutputStream.
+	 * The serialised representation must be self-contained (i.e. it must fully describe the Project) and be understood by {@link #deserialise(InputStream)}.
+	 * 
+	 * The given project is not necessarily already be stored in the ProjectStore, and if it is not, it won't be the method returns either.
+	 * The method implementation may use, but should *not* rely, on querying the ProjectStore itself.
+	 *  
+	 * @param project the Project instance to serialise
+	 * @param out the OutputStream to write to
+	 * @throws IOException in case an I/O error occurs
+	 */
+	public abstract void serialise(Project project, OutputStream out) throws IOException;
+	
+	/**
+	 * Must read a serialised Project (as produced by {@link #serialise(Project, OutputStream)}) from the given InputStream and deserialse it back to a Project instance.
+	 * May use but should not rely on querying the ProjectStore itself.
+	 * 
+	 * The given project is not necessarily already be stored in the ProjectStore, and if it is not, it won't be the method returns either.
+	 * The method implementation may use, but should *not* rely, on querying the ProjectStore itself.
+	 * 
+	 * @param in the InputStream to read from
+	 * @return the deserialised Project instance
+	 * @throws IOException in case an I/O error occurs
+	 */
+	public abstract Project deserialise(InputStream in) throws IOException;
 
 }

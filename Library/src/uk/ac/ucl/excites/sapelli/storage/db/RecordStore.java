@@ -32,8 +32,8 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -395,12 +395,20 @@ public abstract class RecordStore extends Store
 	}
 
 	/**
-	 * Retrieve records by query
+	 * Retrieve {@link Record}s by query
 	 * 
 	 * @param query
-	 * @return a list of records, possibly empty, never null
+	 * @return a {@link List} of {@link Record}s, possibly empty, never {@code null}
 	 */
 	public abstract List<Record> retrieveRecords(RecordsQuery query);
+
+	/**
+	 * Retrieve {@link RecordReference}s by query
+	 * 
+	 * @param query
+	 * @return a {@link List} of {@link RecordReference}s, possibly empty, never {@code null}
+	 */
+	public abstract List<RecordReference> retrieveRecordReferences(RecordsQuery query);
 	
 	/**
 	 * Retrieve a single record by SingleRecordQuery.
@@ -548,7 +556,10 @@ public abstract class RecordStore extends Store
 	 */
 	protected abstract boolean doDelete(Record record) throws DBException;
 	
-	/* (non-Javadoc)
+	/**
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
 	protected void doClose() throws DBException
