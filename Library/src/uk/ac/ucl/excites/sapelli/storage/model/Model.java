@@ -207,7 +207,7 @@ public class Model implements Serializable
 	{
 		if(!meta && !MODEL_ID_FIELD.inEffectiveRange(id))
 			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
-		if(name == null || name.isEmpty() || name.length() > MAX_MODEL_NAME_LENGTH)
+		if(name == null || name.trim().isEmpty() || name.length() > MAX_MODEL_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a model name of maximum " + MAX_MODEL_NAME_LENGTH + " characters");
 		this.id = id;
 		this.name = name;
@@ -240,8 +240,9 @@ public class Model implements Serializable
 	
 	/**
 	 * @return the defaultSchemaFlags
+	 * @throws NullPointerException if the Model doesn't have defaultSchemaFlags
 	 */
-	public int getDefaultSchemaFlags()
+	public int getDefaultSchemaFlags() throws NullPointerException
 	{
 		if(!hasDefaultSchemaFlags())
 			throw new NullPointerException("Model has no defaultSchemaFlags");

@@ -116,8 +116,7 @@ public class Schema extends ColumnSet implements Serializable
 
 	/**
 	 * Create a new schema instance which will be add to the provided {@link Model}.
-	 * The Schema will use the default schema flags of the Model, if the model does not have
-	 * default schema flags a NullPointerException will be thrown.
+	 * The Schema will use the default schema flags of the Model, if the model does not have default schema flags a NullPointerException will be thrown.
 	 * 
 	 * @param model
 	 * @param name
@@ -156,12 +155,12 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public Schema(Model model, String name, String tableName, int flags) throws ModelFullException, NullPointerException
 	{
-		super((name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name), true);
+		super((name == null || name.trim().isEmpty() ? model.getName() + "_Schema" + model.getNumberOfSchemata() : name), true);
 		if(this.name.length() > MAX_SCHEMA_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
-		this.tableName = tableName != null ? tableName : name;
+		this.tableName = tableName != null ? tableName : this.name;
 		this.model = model;
 		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 		this.flags = flags;
@@ -176,8 +175,6 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Only supported on "external"/"client" schemata (not on "internal" ones)
-	 * 
 	 * @return the modelID (unsigned 56 bit integer)
 	 */
 	public long getModelID()
@@ -186,8 +183,6 @@ public class Schema extends ColumnSet implements Serializable
 	}
 
 	/**
-	 * Only supported on "external"/"client" schemata (not on "internal" ones)
-	 * 
 	 * @return the modelSchemaNo (unsigned 4 bit integer)
 	 */
 	public int getModelSchemaNumber()
@@ -212,7 +207,7 @@ public class Schema extends ColumnSet implements Serializable
 	}
 
 	/**
-	 * Check whether the Schema has the given flags enabled
+	 * Check whether the Schema has the given flags enabled.
 	 * 
 	 * @param flags
 	 * @return
@@ -481,7 +476,7 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Check for equality
+	 * Check for equality.
 	 * 
 	 * @param obj object to compare this one with
 	 * @return whether or not the given Object is a Schema with the same ID & version as this one
@@ -511,6 +506,9 @@ public class Schema extends ColumnSet implements Serializable
 			Schema that = (Schema) obj;
 			// Compare as ColumnSets:
 			if(!super.equals(that, checkNames, checkColumns))
+				return false;
+			// Check tableName:
+			if(checkNames && !this.tableName.equals(that.tableName))
 				return false;
 			// Check Model id & the schema number of this schema within the model:
 			if(this.model.getID() != that.model.getID() || this.modelSchemaNumber != that.modelSchemaNumber)			
@@ -545,7 +543,8 @@ public class Schema extends ColumnSet implements Serializable
 	public int hashCode()
 	{
 		int hash = super.hashCode();
-		hash = 31 * hash + (model == null ? 0 : (int)(model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
+		hash = 31 * hash + tableName.hashCode();
+		hash = 31 * hash + ((int) (model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
 		hash = 31 * hash + modelSchemaNumber;
 		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
 		hash = 31 * hash + flags;

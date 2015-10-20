@@ -74,15 +74,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static public final int CURRENT_COLLECTOR_RECORDSTORE_VERSION = COLLECTOR_RECORDSTORE_V3;
 	
 	/**
-	 * ID for the reserved Collector Management Model ({@link ProjectRecordStore#COLLECTOR_MANAGEMENT_MODEL})
-	 */
-	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
-	static
-	{
-		AddReservedModel(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
-	}
-	
-	/**
 	 * Flag indicating that a Schema has been defined at the Collector layer of the Sapelli Library.
 	 * 
 	 * Note: flag bits 11, 12 & 13 are reserved for future Collector layer usage
@@ -110,80 +101,18 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static public final int SCHEMA_FLAGS_COLLECTOR_USER_DATA = 	SCHEMA_FLAGS_COLLECTOR_DATA | SCHEMA_FLAG_KEEP_HISTORY;
 	
 	/**
-	 * Create new Schema with the given name and adds it to the given model.
-	 * 
-	 * @param model
-	 * @param name (will also be used as unprefixed tableName)
-	 * @param unprefixedTableName
-	 * @return
+	 * ID for the reserved Collector Management Model ({@link ProjectRecordStore#COLLECTOR_MANAGEMENT_MODEL})
 	 */
-	static public Schema CreateCollectorSchema(Model model, String name)
-	{
-		return CreateCollectorSchema(model, name, name, model.getDefaultSchemaFlags());
-	}
+	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
 	
-	/**
-	 * Create new Schema with the given name and adds it to the given model.
-	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Collector layer table).
-	 * 
-	 * @param model
-	 * @param name
-	 * @param unprefixedTableName
-	 * @return
-	 */
-	static public Schema CreateCollectorSchema(Model model, String name, String unprefixedTableName)
+	// Add tableName prefixes & reserved model (in that order!):
+	static
 	{
-		return CreateCollectorSchema(model, name, unprefixedTableName, model.getDefaultSchemaFlags());
+		AddTableNamePrefix(SCHEMA_FLAG_COLLECTOR_LAYER, "Collector_");
+		AddTableNamePrefix(SCHEMA_FLAGS_COLLECTOR_DATA, "Data_");
+		AddReservedModel(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
 	}
-	
-	/**
-	 * Create new Schema with the given name and adds it to the given model.
-	 * 
-	 * @param model
-	 * @param name (will also be used as unprefixed tableName)
-	 * @param schemaFlags
-	 * @return
-	 */
-	static public Schema CreateCollectorSchema(Model model, String name, int schemaFlags)
-	{
-		return CreateCollectorSchema(model, name, name, schemaFlags);
-	}
-	
-	/**
-	 * Create new Schema with the given name and adds it to the given model.
-	 * The given unprefixed table name is use to generate a complete table name (prefixed to indicate it is a Collector layer table).
-	 * 
-	 * @param model
-	 * @param name
-	 * @param unprefixedTableName
-	 * @param schemaFlags
-	 * @return
-	 */
-	static public Schema CreateCollectorSchema(Model model, String name, String unprefixedTableName, int schemaFlags)
-	{
-		return new Schema(model, name, GetCollectorPrefixedSchemaTableName(unprefixedTableName, schemaFlags), schemaFlags);
-	}
-	
-	/**
-	 * Generates a complete table name from the given unprefixed table name (prefixed to indicate it is a Collector layer table).
-	 * 
-	 * @param unprefixedTableName
-	 * @param schemaFlags
-	 * @return
-	 */
-	static public String GetCollectorPrefixedSchemaTableName(String unprefixedTableName, int schemaFlags)
-	{
-		if(!TestSchemaFlags(schemaFlags, SCHEMA_FLAG_COLLECTOR_LAYER))
-			throw new IllegalArgumentException("SCHEMA_FLAG_COLLECTOR_LAYER flag expected to be set");
-		// Build tableName:
-		StringBuilder tableNameBldr = new StringBuilder("Collector_");
-		if(TestSchemaFlags(schemaFlags, SCHEMA_FLAGS_COLLECTOR_DATA))
-			tableNameBldr.append("Data_");
-		tableNameBldr.append(unprefixedTableName);
-		// Return full table name:
-		return tableNameBldr.toString();
-	}
-	
+		
 	/**
 	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
 	 * 

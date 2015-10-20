@@ -96,7 +96,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement", TransmissionClient.SCHEMA_FLAGS_TRANSMISSION_INTERNAL);
 	// Schema(s) & columns:
 	//	Correspondent schemas:
-	static final public Schema CORRESPONDENT_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Correspondent");
+	static final public Schema CORRESPONDENT_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, Correspondent.class.getSimpleName(), "s");
 	//	Correspondent columns:
 	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = CORRESPONDENT_SCHEMA.addColumn(new IntegerColumn("ID", false, false)); // unsigned 32 bits
 	static final public StringColumn CORRESPONDENT_COLUMN_NAME = CORRESPONDENT_SCHEMA.addColumn(StringColumn.ForCharacterCount("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_CHARS));
@@ -113,8 +113,8 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		CORRESPONDENT_SCHEMA.seal();
 	}
 	//	Transmission schemas:
-	static final public Schema SENT_TRANSMISSION_SCHEMA = TransmissionClient.CreateTransmissionSchema(TRANSMISSION_MANAGEMENT_MODEL, "Sent" + Transmission.class.getSimpleName(), "Sent" + Transmission.class.getSimpleName() + "s"); 
-	static final public Schema RECEIVED_TRANSMISSION_SCHEMA = TransmissionClient.CreateTransmissionSchema(TRANSMISSION_MANAGEMENT_MODEL, "Received" + Transmission.class.getSimpleName(), "Received" + Transmission.class.getSimpleName() + "s");
+	static final public Schema SENT_TRANSMISSION_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Sent" + Transmission.class.getSimpleName(), "s");
+	static final public Schema RECEIVED_TRANSMISSION_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Received" + Transmission.class.getSimpleName(), "s");
 	//	Transmission columns:
 	static final public IntegerColumn TRANSMISSION_COLUMN_ID = new IntegerColumn("ID", false, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_REMOTE_ID = new IntegerColumn("RemoteID", true, Transmission.TRANSMISSION_ID_FIELD);
@@ -152,8 +152,8 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		}
 	}
 	//	Transmission Part schemas:
-	static final public Schema SENT_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "SentTransmissionPart");
-	static final public Schema RECEIVED_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "ReceivedTransmissionPart");
+	static final public Schema SENT_TRANSMISSION_PART_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Sent" + Transmission.class.getSimpleName() + "Part", "s");
+	static final public Schema RECEIVED_TRANSMISSION_PART_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Received" + Transmission.class.getSimpleName() + "Part", "s");
 	//	Transmission Part columns:
 	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION = new ForeignKeyColumn(SENT_TRANSMISSION_SCHEMA, false);
 	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION = new ForeignKeyColumn(RECEIVED_TRANSMISSION_SCHEMA, false);
@@ -185,7 +185,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		}
 	}
 	//	Transmittable Records schema:
-	static final public Schema TRANSMITTABLE_RECORDS_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmitableRecords");
+	static final public Schema TRANSMITTABLE_RECORDS_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Transmittable" + Record.class.getSimpleName(), "s");
 	//		Columns:
 	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_RECEIVER = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(CORRESPONDENT_SCHEMA, false));
 	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_SCHEMA = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(Model.SCHEMA_SCHEMA, false));
