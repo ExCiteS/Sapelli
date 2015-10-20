@@ -318,6 +318,17 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	}
 	
 	/**
+	 * Whether or not to show the Back control above this fieldUI
+	 * This should *only* be overridden if {@link #handleControlEvent(Control)} is also overridden to perform a custom "back action"
+	 *  
+	 * @return
+	 */
+	protected boolean isShowBack()
+	{
+		return controller.canGoBack(false); // can we go back to a previous field or form
+	}
+	
+	/**
 	 * Whether or not to show the Cancel control above this fieldUI
 	 * May be overridden (e.g. by {@link PageUI}).
 	 *  
