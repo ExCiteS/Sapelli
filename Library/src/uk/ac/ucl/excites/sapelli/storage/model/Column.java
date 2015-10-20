@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLNameEncoder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
@@ -802,21 +803,20 @@ public abstract class Column<T> implements Serializable
 			return true;
 		if(this.getClass().isInstance(obj))
 		{
-			Column<T> other = (Column<T>) obj;
-			if(this.optional != other.optional)
+			Column<T> that = (Column<T>) obj;
+			if(this.optional != that.optional)
 				return false;
 			// Check names:
-			if(checkName && !this.name.equals(other.name))
+			if(checkName && !this.name.equals(that.name))
 				return false;
-			if(virtualVersions != null)
-			{
-				if(!virtualVersions.equals(other.virtualVersions))
-					return false;
-			}
-			else if(other.virtualVersions != null)
+			// Check virtual versions:
+			if(!Objects.equals(this.virtualVersions, that.virtualVersions))
+				return false;
+			// Check defaultValue:
+			if(!Objects.equals(this.defaultValue, that.defaultValue))
 				return false;
 			// Check restrictions (size/content):
-			return !checkRestrictions || equalRestrictions(other);
+			return !checkRestrictions || equalRestrictions(that);
 		}
 		else
 			return false;
