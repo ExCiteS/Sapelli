@@ -58,11 +58,29 @@ public class Record extends RecordValueSet<Schema>
 	 * Creates an initialised record
 	 * 
 	 * @param schema
-	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column
+	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column (the value for an auto-incrementing primary key is allowed to be null)
 	 */
 	protected Record(Schema schema, Object... values)
 	{
-		super(schema, values);
+		super(schema);
+		if(values != null)
+		{
+			Column<?> autoKeyCol = columnSet.getAutoIncrementingPrimaryKeyColumn();
+			if(this.values.length == values.length)
+			{
+				// Init from given values:
+				for(int c = 0; c < this.values.length; c++)
+				{
+					Column<?> col = columnSet.getColumn(c);
+					if(col == autoKeyCol && values[c] == null)
+						autoKeyCol.clearValue(this); // AutoKey value has not been set yet (we allow this)
+					else
+						col.storeObject(this, values[c]); // validation (and possibly conversion) will be applied
+				}
+			}
+			else
+				throw new IllegalArgumentException("Unexpected number of values (given: " + values.length + "; expected: " + this.values.length + ").");
+		}
 	}
 	
 	/**
