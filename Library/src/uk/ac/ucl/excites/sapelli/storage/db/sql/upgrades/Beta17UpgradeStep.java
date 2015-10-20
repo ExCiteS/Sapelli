@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
  *  - the new {@link Model#SCHEMA_NAME_COLUMN};
  *  - the renaming of existing tables according to the new names of certain internal tables and the way of generating and storing table names in general;
  *  - the name {@link Model#SCHEMA_TABLE_NAME_COLUMN}
- *  - the new use, in {@link SQLiteRecordStore}, of a top-level {@link SQLiteBooleanColumn} to represent optional {@link ValueSetColumn}s, in order to maintain the difference between a null ValueSet and an empty one.  
+ *  - the new use, in {@link SQLiteRecordStore}, of a top-level {@link SQLiteBooleanColumn} to represent {@link ValueSetColumn}s with all-optional subcolumns, in order to maintain the difference between a null ValueSet and an empty one.  
  * 
  * Note: This upgrade only works if the tableName for ProjectRecordStore#PROJECT_SCHEMA does not change (i.e. remains "Collector_Projects")
  * 
@@ -116,19 +116,19 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			// Remember (new) table so we don't delete the table below:
 			keepTables.add(schema.tableName); // !!!
 			
-			// Find all optional ValueSetColumns in the schema:
-			boolean hasOptionalValueSetCols = false;
+			// Check if schema has at least one (non-virtual) ValueSetColumn with all-optional subcolumns:
+			boolean hasValueSetColWithAllOptionalSubCols = false;
 			for(Column<?> col : schema.getColumns(false))
-				if(col instanceof ValueSetColumn<?, ?> && col.optional)
+				if(col instanceof ValueSetColumn<?, ?> && ((ValueSetColumn<?, ?>) col).hasAllOptionalSubColumns())
 				{
-					hasOptionalValueSetCols = true;
+					hasValueSetColWithAllOptionalSubCols = true;
 					break;
 				}
 			// If the schema has such columns then...
-			if(hasOptionalValueSetCols)
+			if(hasValueSetColWithAllOptionalSubCols)
 			{
 				// Temporarily disable the use of boolean columns to represent optional ValueSetColumns:
-				upgradeOps.getTableFactory(recordStore).setUseBoolColsForOptionalValueSetCols(false);
+				upgradeOps.getTableFactory(recordStore).setUseBoolColsForValueSetCols(false);
 				/* This is required because the tables currently existing in the db are incompatible with
 				 * the SQLRecordStore#SQLTable instance we would get for the schema if we wouldn't disable
 				 * this behaviour. Disabling the behaviour ensures we get a SQLTable that is compatible with
@@ -141,7 +141,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 				upgradeOps.dropTable(recordStore, schema.tableName, false);
 				
 				// Re-enable the use of boolean columns to represent optional ValueSetColumns:
-				upgradeOps.getTableFactory(recordStore).setUseBoolColsForOptionalValueSetCols(true);
+				upgradeOps.getTableFactory(recordStore).setUseBoolColsForValueSetCols(true);
 				
 				// Re-insert all records in new table (which will have the boolean column representing the ValueSetColumn):
 				recordStore.store(records);
