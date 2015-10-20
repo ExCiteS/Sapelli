@@ -98,7 +98,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			{
 				// Init from given values:
 				for(int c = 0; c < this.values.length; c++)
-					columnSet.getColumn(c).storeObject(this, values[c]); // validation will be applied
+					columnSet.getColumn(c).storeObject(this, values[c]); // validation (and possibly conversion) will be applied
 			}
 			else
 				throw new IllegalArgumentException("Unexpected number of values (given: " + values.length + "; expected: " + this.values.length + ").");
@@ -221,6 +221,19 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
+	 * Checks whether all non-optional columns have been assigned a non-{@code null} value in this ValueSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @return whether all of the non-optional columns are filled
+	 * 
+	 * @see {@link Column#isValuePresentOrOptional(ValueSet)}
+	 */
+	public boolean isFilled(Set<? extends Column<?>> skipColumns)
+	{
+		return isFilled(skipColumns, false); // don't recurse by default
+	}
+	
+	/**
 	 * Checks, optionally recursive whether all non-optional columns have been assigned a non-{@code null} value in this ValueSet.
 	 * 
 	 * @param recurse whether or not to recursively check whether the non-optional subcolumns of composite columns also have a non-{@code null} value
@@ -230,7 +243,21 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean isFilled(final boolean recurse)
 	{
-		return isFilled(this.columnSet, recurse);
+		return isFilled(this.columnSet, Collections.<Column<?>> emptySet(), recurse);
+	}
+	
+	/**
+	 * Checks, optionally recursive whether all non-optional columns have been assigned a non-{@code null} value in this ValueSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @param recurse whether or not to recursively check whether the non-optional subcolumns of composite columns also have a non-{@code null} value
+	 * @return whether all of the non-optional columns are filled
+	 * 
+	 * @see {@link Column#isValuePresentOrOptional(ValueSet,boolean)}
+	 */
+	public boolean isFilled(Set<? extends Column<?>> skipColumns, final boolean recurse)
+	{
+		return isFilled(this.columnSet, skipColumns, recurse);
 	}
 	
 	/**
@@ -246,7 +273,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	protected boolean isFilled(ColumnSet columnSet) throws IllegalStateException
 	{
-		return isFilled(columnSet, false); // don't recurse by default
+		return isFilled(columnSet, Collections.<Column<?>> emptySet(), false); // don't recurse by default
 	}
 	
 	/**
@@ -255,16 +282,17 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
 	 * 
 	 * @param columnSet (subset of) the record's schema
+	 * @param skipColumns a set of columns to ignore in this check
 	 * @param recurse whether or not to recursively check whether the non-optional subcolumns of composite columns also have a non-{@code null} value
 	 * @return whether all of the non-optional columns are filled
 	 * @throws IllegalArgumentException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
 	 * 
 	 * @see {@link Column#isValuePresentOrOptional(ValueSet,boolean)}
 	 */
-	protected boolean isFilled(ColumnSet columnSet, final boolean recurse) throws IllegalStateException
+	protected boolean isFilled(ColumnSet columnSet, Set<? extends Column<?>> skipColumns, final boolean recurse) throws IllegalStateException
 	{
 		for(Column<?> col : columnSet.getColumns(false))
-			if(!col.isValuePresentOrOptional(this, recurse))
+			if(!skipColumns.contains(col) && !col.isValuePresentOrOptional(this, recurse))
 				return false; // null value in non-optional column	
 		return true;
 	}
@@ -286,6 +314,20 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @return whether there is a valid value for each column
+	 * 
+	 * @see {@link Column#isValueValid(ValueSet)}
+	 */
+	public boolean isValid(Set<? extends Column<?>> skipColumns)
+	{
+		return isValid(skipColumns, false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
+	 * 
 	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have valid values
 	 * @return whether there is a valid value for each column
 	 * 
@@ -293,8 +335,23 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean isValid(final boolean recurse)
 	{
+		return isValid(Collections.<Column<?>> emptySet(), recurse);
+	}
+	
+	/**
+	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have valid values
+	 * @return whether there is a valid value for each column
+	 * 
+	 * @see {@link Column#isValueValid(ValueSet,boolean)}
+	 */
+	public boolean isValid(Set<? extends Column<?>> skipColumns, final boolean recurse)
+	{
 		for(Column<?> col : columnSet.getColumns(false))
-			if(!col.isValueValid(this, recurse))
+			if(!skipColumns.contains(col) && !col.isValueValid(this, recurse))
 				return false;	
 		return true;
 	}
