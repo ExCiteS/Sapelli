@@ -23,11 +23,10 @@ import java.text.ParseException;
 import org.joda.time.DateTimeZone;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 
 /**
@@ -39,7 +38,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
  * 
  * @author mstevens
  */
-public class Location extends Record
+public class Location extends ValueSet<ColumnSet>
 {
 
 	//Static---------------------------------------------------------
@@ -66,29 +65,24 @@ public class Location extends Record
 		}
 	}
 	
-	// Schema(s) & columns
-	//	Default Schema (used for Location instances), which uses 64 bit floats (doubles) for latitude, longitude & altitude:
-	static final public Schema SCHEMA = new Schema(Schema.InternalKind.Location);
-	static final public FloatColumn COLUMN_LATITUDE = new FloatColumn("Latitude", false, true, true);			// non-optional signed 64 bit float
-	static final public FloatColumn COLUMN_LONGITUDE = new FloatColumn("Longitude", false, true, true);			// non-optional signed 64 bit float
-	static final public FloatColumn COLUMN_ALTITUDE = new FloatColumn("Altitude", true, true, true);			// optional signed 64 bit float
-	static final public FloatColumn COLUMN_BEARING = new FloatColumn("Bearing", true, true, false);				// optional signed 32 bit float
-	static final public FloatColumn COLUMN_SPEED = new FloatColumn("Speed", true, true, false);					// optional signed 32 bit float
-	static final public FloatColumn COLUMN_ACCURACY = new FloatColumn("Accuracy", true, true, false);			// optional signed 32 bit float
-	static final public TimeStampColumn COLUMN_TIME = TimeStampColumn.JavaMSTime("TimeUTC", true, false);		// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
-	static final public IntegerColumn COLUMN_PROVIDER = new IntegerColumn("Provider", false, PROVIDER_FIELD);	// non-optional 2 bit unsigned integer
-	static
-	{	// Add columns to default Schema & seal it:
-		SCHEMA.addColumn(COLUMN_LATITUDE);
-		SCHEMA.addColumn(COLUMN_LONGITUDE);
-		SCHEMA.addColumn(COLUMN_ALTITUDE);
-		SCHEMA.addColumn(COLUMN_BEARING);
-		SCHEMA.addColumn(COLUMN_SPEED);
-		SCHEMA.addColumn(COLUMN_ACCURACY);
-		SCHEMA.addColumn(COLUMN_TIME);
-		SCHEMA.addColumn(COLUMN_PROVIDER);
-		SCHEMA.seal();
-	}
+	// ColumnSet & Columns:
+	static final public ColumnSet COLUMN_SET = new ColumnSet(Location.class.getSimpleName(), false);
+	// LATITUDE (non-optional signed 64 bit float):
+	static final public FloatColumn		COLUMN_LATITUDE		= COLUMN_SET.addColumn(new FloatColumn("Latitude", false, true, true));
+	// LONGITUDE (non-optional signed 64 bit float):
+	static final public FloatColumn		COLUMN_LONGITUDE	= COLUMN_SET.addColumn(new FloatColumn("Longitude", false, true, true));
+	// ALTITUDE (optional signed 64 bit float):
+	static final public FloatColumn		COLUMN_ALTITUDE		= COLUMN_SET.addColumn(new FloatColumn("Altitude", true, true, true));
+	// BEARING (optional signed 32 bit float):
+	static final public FloatColumn		COLUMN_BEARING		= COLUMN_SET.addColumn(new FloatColumn("Bearing", true, true, false));
+	// SPEED (optional signed 32 bit float):
+	static final public FloatColumn		COLUMN_SPEED		= COLUMN_SET.addColumn(new FloatColumn("Speed", true, true, false));
+	// ACCURACY (optional signed 32 bit float):
+	static final public FloatColumn		COLUMN_ACCURACY		= COLUMN_SET.addColumn(new FloatColumn("Accuracy", true, true, false));
+	// TIMESTAMP (optional signed 64 bit millisecond-accurate UTC timestamp; local timezone not kept; no virtual columns added):
+	static final public TimeStampColumn	COLUMN_TIME			= COLUMN_SET.addColumn(TimeStampColumn.JavaMSTime("TimeUTC", true, false)); 
+	// PROVIDER (non-optional 2 bit unsigned integer; with default value = PROVIDER_UNKNOWN):
+	static final public IntegerColumn	COLUMN_PROVIDER		= COLUMN_SET.addColumn(new IntegerColumn("Provider", false, PROVIDER_FIELD, Long.valueOf(PROVIDER_UNKNOWN) /*default val*/), true /*seal!*/);
 	
 	//Dynamic--------------------------------------------------------
 	
@@ -128,7 +122,7 @@ public class Location extends Record
 	 */
 	public Location(double lat, double lon, Double alt, Float bearing, Float speed, Float acc, TimeStamp time, int provider)
 	{
-		super(SCHEMA);
+		super(COLUMN_SET);
 		COLUMN_LATITUDE.storeValue(this, lat);
 		COLUMN_LONGITUDE.storeValue(this, lon);
 		COLUMN_ALTITUDE.storeValue(this, alt);
@@ -140,14 +134,12 @@ public class Location extends Record
 	}
 	
 	/**
-	 * Only to be used by  {@link LocationColumn#getNewRecord()}
+	 * Only to be used by {@link LocationColumn#getNewValueSet()}
 	 */
-	public Location()
+	/*package*/ Location()
 	{
-		super(SCHEMA);
-		COLUMN_LATITUDE.storeValue(this, 0.0d);
-		COLUMN_LONGITUDE.storeValue(this, 0.0d);
-		COLUMN_PROVIDER.storeValue(this, PROVIDER_UNKNOWN);
+		super(COLUMN_SET);
+		// no default lat & lon values!
 	}
 	
 	/**

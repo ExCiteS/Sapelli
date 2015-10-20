@@ -18,20 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
-import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -73,61 +67,56 @@ public class Model implements Serializable
 	 */
 	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // [0, 15]
 	
-	
 	/**
 	 * Maximum number of schemata in a model
 	 */
 	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
 	
-	// Model Schema: a "meta" schema for records that describe a Model
-	static public final Schema MODEL_SCHEMA = new Schema(InternalKind.Model);
-	static public final IntegerColumn MODEL_ID_COLUMN = new IntegerColumn("ID", false, Model.MODEL_ID_FIELD);
-	static private final StringColumn MODEL_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
-	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("compressedSerialisedObject", false);
-	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = new IntegerColumn("hashCode", false, true, Integer.SIZE);
+	static public final int MAX_MODEL_NAME_LENGTH = 128; // chars
+	
+	// Meta-Model:
+	static public final Model META_MODEL = new Model(-1, "MetaModel", true, StorageClient.SCHEMA_FLAGS_STORAGE_INTERNAL);
+	
+	// Model Schema: a "meta" Schema for records that describe a Model
+	static public final Schema MODEL_SCHEMA = new Schema(META_MODEL, Model.class.getSimpleName(), Model.class.getSimpleName() + "s");
+	static public final IntegerColumn MODEL_ID_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("ID", false, Model.MODEL_ID_FIELD));
+	static protected final StringColumn MODEL_NAME_COLUMN = MODEL_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", false, MAX_MODEL_NAME_LENGTH));
+	static protected final ByteArrayColumn MODEL_SERIALISATION_COLUMN = MODEL_SCHEMA.addColumn(new ByteArrayColumn("serialisation", false));
+	static protected final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = MODEL_SCHEMA.addColumn(new IntegerColumn("hashCode", false, true, Integer.SIZE));
 	static
 	{
-		MODEL_SCHEMA.addColumn(MODEL_ID_COLUMN);
-		MODEL_SCHEMA.addColumn(MODEL_NAME_COLUMN);
-		MODEL_SCHEMA.addColumn(MODEL_OBJECT_SERIALISATION_COLUMN);
-		MODEL_SCHEMA.addColumn(MODEL_OBJECT_HASHCODE_COLUMN);
-		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN));
-		MODEL_SCHEMA.seal();
+		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN), true /*seal!*/);
 	}
 	
-	// Meta Schema: a Schema to describe other Schema's
-	static public final Schema META_SCHEMA = new Schema(InternalKind.MetaSchema);
-	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn(Model.MODEL_SCHEMA, false);
-	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
-	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
+	// Schema Schema: a "meta" Schema for records that describe other Schemata
+	static public final Schema SCHEMA_SCHEMA = new Schema(META_MODEL, Schema.class.getSimpleName(), Schema.class.getSimpleName() + "ta");
+	static public final ForeignKeyColumn SCHEMA_MODEL_ID_COLUMN = SCHEMA_SCHEMA.addColumn(new ForeignKeyColumn(Model.MODEL_SCHEMA, false));
+	static public final IntegerColumn SCHEMA_SCHEMA_NUMBER_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
+	static public final StringColumn SCHEMA_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
+	static public final IntegerColumn SCHEMA_FLAGS_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
+	static public final StringColumn SCHEMA_TABLE_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("tableName", true, Schema.MAX_SCHEMA_NAME_LENGTH * 2));
 	static
 	{
-		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
-		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
-		META_SCHEMA.addColumn(META_NAME_COLUMN);
-		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
-		META_SCHEMA.seal();
+		SCHEMA_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(SCHEMA_MODEL_ID_COLUMN, SCHEMA_SCHEMA_NUMBER_COLUMN), true /*seal!*/);
 	}
 	
-	private static Compression OBJECT_COMPRESSION = Compression.DEFLATE;
+	// Seal the Meta-Model:
+	static
+	{
+		META_MODEL.seal();
+	}
 	
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
 	 * 
-	 * @param schema
+	 * @param model
+	 * @param client
 	 * @return
-	 * @throws IOException
+	 * @throws Exception
 	 */
-	static public Record GetModelRecord(Model model) throws IOException
+	static public Record GetModelRecord(Model model, StorageClient client) throws Exception
 	{
-		// Serialise Model object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();	
-		ObjectOutputStream objOut = new ObjectOutputStream(CompressorFactory.getCompressorOutputStream(OBJECT_COMPRESSION, rawOut));
-		objOut.writeObject(model);
-		objOut.flush();
-		objOut.close();
-		// Return new Model record:
-		return MODEL_SCHEMA.createRecord(model.id, model.name, rawOut.toByteArray(), model.hashCode());
+		return MODEL_SCHEMA.createRecord(model.id, model.name, client.serialiseModel(model), model.hashCode()); // use client to serialise Model object to byte[]
 	}
 	
 	/**
@@ -139,7 +128,7 @@ public class Model implements Serializable
 	 */
 	static public RecordReference GetModelRecordReference(Model model)
 	{
-		return new RecordReference(MODEL_SCHEMA, model.id);
+		return GetModelRecordReference(model.id);
 	}
 	
 	/**
@@ -153,46 +142,76 @@ public class Model implements Serializable
 		return new RecordReference(MODEL_SCHEMA, modelID);
 	}
 	
-	static public Model FromModelRecord(Record modelRecord) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
+	/**
+	 * @param modelRecord
+	 * @param client
+	 * @return
+	 * @throws Exception if a problem occurs
+	 */
+	static public Model FromModelRecord(Record modelRecord, StorageClient client) throws Exception
 	{
 		if(modelRecord == null)
 			throw new NullPointerException("The modelRecord cannot be null!");
 		if(modelRecord.getSchema() != MODEL_SCHEMA)
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
-		// Decompress & deserialise Schema object bytes:
-		ObjectInputStream objIn = new ObjectInputStream(CompressorFactory.getCompressorInputStream(OBJECT_COMPRESSION, new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord))));
-		Model model = (Model) objIn.readObject();
-		objIn.close();
+		// Deserialise Model from bytes:
+		Model model = client.deserialiseModel(MODEL_SERIALISATION_COLUMN.retrieveValue(modelRecord));
 		
 		// Perform check:
 		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))
-			throw new IllegalStateException("Model hashCode mismatch");
+			System.err.println("Model hashCode mismatch"); // don't throw an Exception, hashCode mismatches are not necessarily problematic and are to be expected if Storage model or Collector model classes change. 
 		// Note: if hashCode matches then id, name should match as well
 		
 		return model;
 	}
-
+	
 	// Dynamics-----------------------------------------------------------
 	public final long id;
 	private final String name;
 	private final List<Schema> schemata = new ArrayList<Schema>();
 	private boolean sealed = false;
-	
+	private final Integer defaultSchemaFlags;
+
 	/**
-	 * Creates a new model
+	 * Creates a new model, without default Schema flags
 	 * 
 	 * @param id
 	 * @param name
 	 */
 	public Model(long id, String name)
 	{
-		if(!MODEL_ID_FIELD.inEffectiveRange(id))
+		this(id, name, false, null);
+	}
+	
+	/**
+	 * Creates a new model
+	 * 
+	 * @param id
+	 * @param name
+	 * @param defaultSchemaFlags
+	 */
+	public Model(long id, String name, int defaultSchemaFlags)
+	{
+		this(id, name, false, defaultSchemaFlags);
+	}
+	
+	/**
+	 * Creates a new model
+	 * 
+	 * @param id
+	 * @param name
+	 * @param meta
+	 */
+	private Model(long id, String name, boolean meta, Integer defaultSchemaFlags)
+	{
+		if(!meta && !MODEL_ID_FIELD.inEffectiveRange(id))
 			throw new IllegalArgumentException("Model ID is not valid, must be from range " + MODEL_ID_FIELD.getEffectiveRangeString() + ".");
-		if(name == null || name.isEmpty())
-			throw new NullPointerException("Please provide a model name");
+		if(name == null || name.trim().isEmpty() || name.length() > MAX_MODEL_NAME_LENGTH)
+			throw new IllegalArgumentException("Please provide a model name of maximum " + MAX_MODEL_NAME_LENGTH + " characters");
 		this.id = id;
 		this.name = name;
+		this.defaultSchemaFlags = defaultSchemaFlags;
 	}
 	
 	/**
@@ -212,6 +231,50 @@ public class Model implements Serializable
 	}
 	
 	/**
+	 * @return whether or not the Model provides default Schema flags
+	 */
+	public boolean hasDefaultSchemaFlags()
+	{
+		return defaultSchemaFlags != null;
+	}
+	
+	/**
+	 * @return the defaultSchemaFlags
+	 * @throws NullPointerException if the Model doesn't have defaultSchemaFlags
+	 */
+	public int getDefaultSchemaFlags() throws NullPointerException
+	{
+		if(!hasDefaultSchemaFlags())
+			throw new NullPointerException("Model has no defaultSchemaFlags");
+		return defaultSchemaFlags;
+	}
+
+	/**
+	 * Returns "model record" which describes the model (and contains a serialised version of it)
+	 * 
+	 * @param client
+	 * @return
+	 * @throws IOException
+	 * @see #GetModelRecord(Model)
+	 */
+	public Record getModelRecord(StorageClient client) throws Exception
+	{
+		return GetModelRecord(this, client);
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) model record, describing the given model,
+	 * but avoids actually instantiating the whole model record itself. 
+	 * 
+	 * @return
+	 * @see #GetModelRecordReference(Model)
+	 */
+	public RecordReference getModelRecordReference()
+	{
+		return GetModelRecordReference(this);
+	}
+	
+	/**
 	 * Adds a given schema to the model (provided it is not sealed, nor full)
 	 * 
 	 * @param schema the schema to add
@@ -220,13 +283,19 @@ public class Model implements Serializable
 	 */
 	protected int addSchema(Schema schema) throws ModelFullException
 	{
+		// Perform checks:
 		if(sealed)
 			throw new IllegalStateException("Cannot extend sealed model!");
 		if(schema == null)
 			throw new NullPointerException("Cannot add null Schema");
 		if(schemata.size() == MAX_SCHEMATA)
 			throw new ModelFullException("The model has reached the maximum of " + MAX_SCHEMATA + " schemata.");
+		for(Schema modelSchema : schemata)
+			if(modelSchema.name.equalsIgnoreCase(schema.name))
+				throw new IllegalArgumentException("Model does not allow more than one schema with the same name (\"" + schema.name + "\")!");
+		// Add schema:
 		schemata.add(schema);
+		// Return its schema number:
 		return schemata.size() - 1;
 	}
 	
@@ -279,6 +348,31 @@ public class Model implements Serializable
 	{
 		return Collections.unmodifiableList(schemata);
 	}
+	
+	/**
+	 * Checks if the Model contains the given Schema, uses == comparison.
+	 * 
+	 * @param schema
+	 * @return whether or not the Model contains the given Schema
+	 */
+	public boolean contains(Schema schema)
+	{
+		for(Schema s : schemata)
+			if(s == schema)
+				return true;
+		return false;
+	}
+	
+	/**
+	 * Checks if the Model contains the given Schema or an equivalent one, uses {@link Schema#equals(Object)} which can be slow.
+	 * 
+	 * @param schema
+	 * @return whether or not the Model contains the given Schema or an equivalent one
+	 */
+	public boolean containsEquivalent(Schema schema)
+	{
+		return schemata.contains(schema);
+	}
 
 	public int getNumberOfSchemata()
 	{
@@ -286,7 +380,7 @@ public class Model implements Serializable
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = 1;
 		hash = 31 * hash + (int)(id ^ (id >>> 32));
@@ -310,6 +404,12 @@ public class Model implements Serializable
 					this.sealed == that.sealed;
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return getClass().getSimpleName() + "{" + (name != null ? name + "; " : "") + "ID=" + id + "}"; 
 	}
 	
 }

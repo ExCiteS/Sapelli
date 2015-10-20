@@ -18,45 +18,57 @@
 
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
-import android.view.ContextThemeWrapper;
 
 /**
  * Abstract super class for our activities.
  * 
- * Provides dialog methods.
+ * Provides dialog methods & other shared behaviour.
  * 
  * @author mstevens
  */
-public abstract class BaseActivity extends FragmentActivity
+public abstract class BaseActivity extends AppCompatActivity
 {
 	
-	private static final int HIDE_BUTTON = -1;
+	static private final int HIDE_BUTTON = -1;
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_OK = false;
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_CANCEL = false;
 	
-	protected CollectorApp app;
-	protected FileStorageProvider fileStorageProvider;
+	private CollectorApp app;
+	private FileStorageProvider fileStorageProvider;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		this.app = (CollectorApp) getApplication();
+		getCollectorApp(); // set app variable
 	}
 	
 	public CollectorApp getCollectorApp()
 	{
+		if(app == null)
+			app = (CollectorApp) getApplication();
 		return app;
+	}
+	
+	public AndroidCollectorClient getCollectorClient()
+	{
+		return getCollectorApp().collectorClient;
+	}
+	
+	public CollectorPreferences getPreferences()
+	{
+		return getCollectorApp().getPreferences();
 	}
 	
 	@Override
@@ -64,152 +76,267 @@ public abstract class BaseActivity extends FragmentActivity
 	{
 		super.onResume();
 
-		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
-		try
+		getFileStorageProvider(); // Initialise/check fileStorageProvider
+	}
+
+	/**
+	 * @return the fileStorageProvider
+	 */
+	public FileStorageProvider getFileStorageProvider()
+	{
+		if(fileStorageProvider == null)
 		{
-			fileStorageProvider = app.getFileStorageProvider();
-		}
-		catch(FileStorageRemovedException e)
-		{
-			e.printStackTrace(System.err);
-			// Inform the user and close the application
-			final Runnable useAlternativeStorage = new Runnable()
+			// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
+			try
 			{
-				@Override
-				public void run()
+				fileStorageProvider = getCollectorApp().getFileStorageProvider();
+			}
+			catch(FileStorageRemovedException e)
+			{
+				e.printStackTrace(System.err);
+				// Inform the user and close the application
+				final Runnable useAlternativeStorage = new Runnable()
 				{
-					// Clear the setting before restart
-					new CollectorPreferences(BaseActivity.this).clearSapelliFolder();
-				}
-			};
-			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
+					@Override
+					public void run()
+					{
+						// Clear the setting before restart
+						getPreferences().clearSapelliFolder();
+					}
+				};
+				showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.drawable.sapelli_logo, R.string.useAlternativeStorage, useAlternativeStorage, true, R.string.insertSDcard, null, true);
+			}
+			catch(FileStorageUnavailableException e)
+			{
+				e.printStackTrace(System.err);
+				// Inform the user and close the application
+				showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
+			}
 		}
-		catch(FileStorageUnavailableException e)
-		{
-			e.printStackTrace(System.err);
-			// Inform the user and close the application
-			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
-		}
+		return fileStorageProvider;
 	}
 
 	public void showOKDialog(int titleId, int messageId)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, messageId, null);
+	}
+
+	public void showOKDialog(int titleId, int messageId, Integer iconId)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, null, DEFAULT_FINISH_ON_DIALOG_OK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, int messageId)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, messageId, null);
+	}
+	
+	public void showOKDialog(String title, int messageId, Integer iconId)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, null, DEFAULT_FINISH_ON_DIALOG_OK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, String message)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, message, null);
+	}
+	
+	public void showOKDialog(int titleId, String message, Integer iconId)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, null, DEFAULT_FINISH_ON_DIALOG_OK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, String message)
 	{
-		showDialog(title, message, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, message, null);
+	}
+	
+	public void showOKDialog(String title, String message, Integer iconId)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, null, DEFAULT_FINISH_ON_DIALOG_OK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, int messageId, boolean finishOnOK)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, messageId, null, finishOnOK);
+	}
+	
+	public void showOKDialog(int titleId, int messageId, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, null, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, int messageId, boolean finishOnOK)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, messageId, null, finishOnOK);
+	}
+	
+	public void showOKDialog(String title, int messageId, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, null, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, String message, boolean finishOnOK)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, message, null, finishOnOK);
+	}
+	
+	public void showOKDialog(int titleId, String message, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, null, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, String message, boolean finishOnOK)
 	{
-		showDialog(title, message, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, message, null, finishOnOK);
+	}
+	
+	public void showOKDialog(String title, String message, Integer iconId, boolean finishOnOK)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, null, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, int messageId, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, messageId, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(int titleId, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, okTask, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, int messageId, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, messageId, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(String title, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, okTask, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(int titleId, String message, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(titleId, message, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(int titleId, String message, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, okTask, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKDialog(String title, String message, boolean finishOnOK, Runnable okTask)
 	{
-		showDialog(title, message, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+		showOKDialog(title, message, null, finishOnOK, okTask);
+	}
+	
+	public void showOKDialog(String title, String message, Integer iconId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(title, message, iconId, android.R.string.ok, okTask, finishOnOK, HIDE_BUTTON, null, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
 	public void showOKCancelDialog(int titleId, int messageId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(titleId, messageId, null, finishOnOK, okTask, finishOnCancel);
 	}
 
+	public void showOKCancelDialog(int titleId, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(getString(titleId), getString(messageId), iconId, android.R.string.ok, okTask, finishOnOK, android.R.string.cancel, null, finishOnCancel);
+	}
+	
 	public void showOKCancelDialog(String title, int messageId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(title, messageId, null, finishOnOK, okTask, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(String title, int messageId, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(title, getString(messageId), iconId, android.R.string.ok, okTask, finishOnOK, android.R.string.cancel, null, finishOnCancel);
 	}
 	
 	public void showOKCancelDialog(int titleId, String message, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(titleId, message, null, finishOnOK, okTask, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(int titleId, String message, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(getString(titleId), message, iconId, android.R.string.ok, okTask, finishOnOK, android.R.string.cancel, null, finishOnCancel);
 	}
 	
 	public void showOKCancelDialog(String title, String message, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(title, message, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+		showOKCancelDialog(title, message, null, finishOnOK, okTask, finishOnCancel);
 	}
 	
-	public void showYesNoDialog(int titleId, int messageId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	public void showOKCancelDialog(String title, String message, Integer iconId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
 	{
-		showDialog(getString(titleId), getString(messageId), R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showDialog(title, message, iconId, android.R.string.ok, okTask, finishOnOK, android.R.string.cancel, null, finishOnCancel);
+	}
+	
+	public void showYesNoDialog(int titleId, int messageId, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
+	{
+		showYesNoDialog(titleId, messageId, null, yesTask, finishOnYes, noTask, finishOnNo);
 	}
 
-	public void showYesNoDialog(String title, int messageId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	public void showYesNoDialog(int titleId, int messageId, Integer iconId, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
 	{
-		showDialog(title, getString(messageId), R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showDialog(getString(titleId), getString(messageId), iconId, R.string.yes, yesTask, finishOnYes, R.string.no, noTask, finishOnNo);
 	}
 	
-	public void showYesNoDialog(int titleId, String message, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	public void showYesNoDialog(String title, int messageId, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
 	{
-		showDialog(getString(titleId), message, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showYesNoDialog(title, messageId, null, yesTask, finishOnYes, noTask, finishOnNo);
 	}
 	
-	public void showYesNoDialog(String title, String message, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	public void showYesNoDialog(String title, int messageId, Integer iconId, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
 	{
-		showDialog(title, message, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+		showDialog(title, getString(messageId), iconId, R.string.yes, yesTask, finishOnYes, R.string.no, noTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(int titleId, String message, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
+	{
+		showYesNoDialog(titleId, message, null, yesTask, finishOnYes, noTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(int titleId, String message, Integer iconId, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
+	{
+		showDialog(getString(titleId), message, iconId, R.string.yes, yesTask, finishOnYes, R.string.no, noTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(String title, String message, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
+	{
+		showYesNoDialog(title, message, null, yesTask, finishOnYes, noTask, finishOnNo);
+	}
+	
+	public void showYesNoDialog(String title, String message, Integer iconId, Runnable yesTask, boolean finishOnYes, Runnable noTask, boolean finishOnNo)
+	{
+		showDialog(title, message, iconId, R.string.yes, yesTask, finishOnYes, R.string.no, noTask, finishOnNo);
 	}
 	
 	/**
 	 * @param title
 	 * @param message
+	 * @param iconId
 	 * @param postiveButtonId
-	 * @param finishOnPositive
 	 * @param positiveTask
+	 * @param finishOnPositive
 	 * @param negativeButtonId
 	 * @param finishOnNegative
 	 */
-	private void showDialog(String title, String message, int postiveButtonId, final boolean finishOnPositive, final Runnable positiveTask, int negativeButtonId, boolean finishOnNegative)
+	private void showDialog(String title, String message, Integer iconId, int postiveButtonId, final Runnable positiveTask, final boolean finishOnPositive, int negativeButtonId, final Runnable negativeTask, final boolean finishOnNegative)
 	{
 		// Builder:
-		AlertDialog.Builder bldr = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
-		
+		AlertDialog.Builder bldr = new AlertDialog.Builder(this);
 		// set title:
 		bldr.setTitle(title);
 		// set message:
 		bldr.setMessage(message);
+		// set icon:
+		if(iconId != null)
+			bldr.setIcon(iconId);
 		// set positive button:
 		bldr.setPositiveButton(postiveButtonId, finishOnPositive || positiveTask != null ? new DialogInterface.OnClickListener()
 		{
@@ -223,11 +350,14 @@ public abstract class BaseActivity extends FragmentActivity
 		} : null);
 		// set negative button:
 		if(negativeButtonId != HIDE_BUTTON)
-			bldr.setNegativeButton(negativeButtonId, finishOnNegative ? new DialogInterface.OnClickListener()
+			bldr.setNegativeButton(negativeButtonId, finishOnNegative || negativeTask != null ? new DialogInterface.OnClickListener()
 			{
 				public void onClick(DialogInterface dialog, int whichButton)
 				{
-					finish();
+					if(negativeTask != null)
+						negativeTask.run();
+					if(finishOnNegative)
+						finish();
 				}
 			} : null);
 		// set cancelable (only true if there no effects):

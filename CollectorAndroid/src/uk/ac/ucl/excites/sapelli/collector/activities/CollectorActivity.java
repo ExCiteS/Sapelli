@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
+import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
@@ -37,15 +38,18 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
+import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
-import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.DeviceControl;
-import uk.ac.ucl.excites.sapelli.util.KeyEventUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ActivityHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.shared.util.android.KeyEventUtils;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -100,6 +104,10 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
+		// Not doing this here can cause crashes -- http://stackoverflow.com/a/16939962/4186768
+		//	Use this rather than requestWindowFeature since we use appcompat-v7 -- see http://stackoverflow.com/a/25261208/4186768
+		supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+		
 		super.onCreate(savedInstanceState); // sets app, projectStore & recordStore members!
 		
 		// Retrieve the tmpPhotoLocation for the saved state
@@ -109,20 +117,25 @@ public class CollectorActivity extends ProjectActivity
 		// Scheduling...
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(4); // Creates a thread pool that can schedule commands to run after a given duration, or to execute periodically.
 		fixedTimerTriggerFutures = new HashMap<Trigger, ScheduledFuture<?>>();
-		
+
 		// Key press triggers
 		keyPressTriggers = new ArrayList<Trigger>();
 		keyCodeToTrigger = new SparseArray<Trigger>();
-		
+
 		// UI setup:
-		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
+		// Hide the action bar regardless of API level:
+		try
+		{
+			getSupportActionBar().hide(); // throws NPE when using a "NoActionBar" theme (which we do now, but we'll keep this code just in case that changes)
+		}
+		catch(Exception ignore) {}
 
 		// Set-up root layout
 		collectorView = new CollectorView(this);
 		setContentView(collectorView);
-		
+
 		// Enable HierarchyViewer in Debug versions
 		if(BuildConfig.DEBUG)
 		{
@@ -144,8 +157,8 @@ public class CollectorActivity extends ProjectActivity
 		super.onStart();
 		
 		// Show demo disclaimer if needed:
-		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getNameAndVersion() + ".\nFor demonstration purposes only.");
+		if(getCollectorApp().getBuildInfo().isDemoBuild())
+			showOKDialog("Disclaimer", "This is " + getCollectorApp().getBuildInfo().getNameAndVersion() + ".\nFor demonstration purposes only.");
 	}
 
 	@Override
@@ -215,12 +228,16 @@ public class CollectorActivity extends ProjectActivity
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
-			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
+			controller = new CollectorController(project, collectorView, projectStore, recordStore, getFileStorageProvider(), this);
 			collectorView.initialise(controller); // (re)initialise the UI !!!
 			
 			// Start project:
 			controller.startProject();
-
+			
+			// Set activity title & task description with project name
+			String activityTitle = getString(R.string.sapelli) + ": " + project.toString();
+			setTitle(activityTitle);
+			ActivityHelpers.setTaskDescription(this, activityTitle, ProjectRunHelpers.getShortcutBitmap(this, getFileStorageProvider(), project), Color.WHITE);
 		}
 	}
 
@@ -236,14 +253,13 @@ public class CollectorActivity extends ProjectActivity
 		
 		// Check for keytriggers...
 		Trigger keyTrigger = null;
-		//	"Any" key trigger:
+		// "Any" key trigger:
 		keyTrigger = anyKeyTrigger;
-		//	Specific key trigger:
-		if(keyTrigger == null)
+		// Specific key trigger:
+		if (keyTrigger == null)
 			keyTrigger = keyCodeToTrigger.get(keyCode);
-		//	Fire if we found a matching trigger:
-		if(keyTrigger != null)
-		{
+		// Fire if we found a matching trigger:
+		if (keyTrigger != null) {
 			controller.fireTrigger(keyTrigger);
 			return true;
 		}
@@ -265,7 +281,7 @@ public class CollectorActivity extends ProjectActivity
 				DeviceControl.increaseMediaVolume(this);
 				return true;
 		}
-		
+
 		// Pass to super...
 		return super.onKeyDown(keyCode, event);
 	}
@@ -276,8 +292,7 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
-		switch(keyCode)
-		{
+		switch (keyCode) {
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
@@ -364,7 +379,7 @@ public class CollectorActivity extends ProjectActivity
 			try
 			{
 				// Set up temp file (in the projects data folder)
-				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, fileStorageProvider.getTempFolder(true));
+				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, getFileStorageProvider().getTempFolder(true));
 				// Set-up intent:
 				Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 				takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
@@ -400,7 +415,7 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewAttachmentFile(fileStorageProvider, controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewAttachmentFile(getFileStorageProvider(), controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
 					photoUI.attachMedia(newPhoto);
 					controller.goForward(true);

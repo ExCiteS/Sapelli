@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -119,11 +120,13 @@ public class TextMessage extends Message
 	{
 		super(sender, receivedAt);
 		
-		// Read header:
-		//	Convert from chars and remove separator bits:
-		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
+		BitArrayOutputStream hdrFieldBitsOut = null;
+		BitArrayInputStream hdrFieldBitsIn = null;
 		try
 		{
+			// Read header:
+			//	Convert from chars and remove separator bits:
+			hdrFieldBitsOut = new BitArrayOutputStream();
 			for(int h = 0; h < HEADER_CHARS; h++)
 			{
 				// Read header char (7 bits):				
@@ -134,19 +137,20 @@ public class TextMessage extends Message
 				// Strip away the separator bit and write remaining 6 bit header part:
 				hdrFieldBitsOut.write(c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1)), TextSMSTransmission.BITS_PER_CHAR - 1, false); 
 			}
+			//	Read header fields:
+			hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
+			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(hdrFieldBitsIn);
+			payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(hdrFieldBitsIn);
+			partNumber = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
+			totalParts = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
+			hdrFieldBitsIn.close();
 		}
 		finally
 		{
-			hdrFieldBitsOut.close();
+			StreamHelpers.SilentClose(hdrFieldBitsOut);
+			StreamHelpers.SilentClose(hdrFieldBitsIn);
 		}
-		//	Read header fields:
-		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
-		sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(hdrFieldBitsIn);
-		payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(hdrFieldBitsIn);
-		partNumber = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
-		totalParts = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
-		hdrFieldBitsIn.close();
-		
+
 		// Set body:
 		body = content.substring(HEADER_CHARS);
 	}
@@ -191,19 +195,22 @@ public class TextMessage extends Message
 	public String getContent() throws Exception
 	{
 		StringBuilder blr = new StringBuilder();
+		BitArrayOutputStream hdrFieldBitsOut = null;
+		BitArrayInputStream hdrFieldBitsIn = null;
 		
-		//Write header:
-		//	Write header fields:
-		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
-		Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
-		Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);					// Payload hash (= CRC16 hash): takes up the next 16 bits
-		PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
-		PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
-		hdrFieldBitsOut.close();
-		//	Insert separator bits and convert to chars:
-		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
 		try
 		{
+			// Write header:
+			//	Write header fields:
+			hdrFieldBitsOut = new BitArrayOutputStream();
+			Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
+			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);					// Payload hash (= CRC16 hash): takes up the next 16 bits
+			PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
+			PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
+			hdrFieldBitsOut.close();
+			
+			//	Insert separator bits and convert to chars:
+			hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
 			while(hdrFieldBitsIn.bitsAvailable() >= TextSMSTransmission.BITS_PER_CHAR - 1)
 			{
 				int c = (HEADER_SEPARATOR_BIT << TextSMSTransmission.BITS_PER_CHAR - 1) + (int) hdrFieldBitsIn.readInteger(TextSMSTransmission.BITS_PER_CHAR - 1, false);; // the separator bit ensures none of the header chars will ever be 'ESC'
@@ -215,10 +222,11 @@ public class TextMessage extends Message
 		}
 		finally
 		{
-			hdrFieldBitsIn.close();
+			StreamHelpers.SilentClose(hdrFieldBitsOut);
+			StreamHelpers.SilentClose(hdrFieldBitsIn);
 		}
 		
-		//Write body:
+		// Write body:
 		blr.append(body);
 		
 		return blr.toString();

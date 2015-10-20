@@ -25,12 +25,15 @@ import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.media.MediaHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ResourcesHelpers;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
@@ -66,15 +69,15 @@ public class ProjectRunHelpers
 	 * Creates an intent to start the CollectorActivity, with given project, from a shortcut
 	 *
 	 * @param contextWrapper
-	 * @param project
+	 * @param projDescr
 	 * @param shortcutName
 	 * @return
 	 */
-	static private Intent getProjectRunIntent(Context contextWrapper, Project project, String shortcutName)
+	static private Intent getProjectRunIntent(Context contextWrapper, ProjectDescriptor projDescr, String shortcutName)
 	{
 		Intent i = new Intent(contextWrapper.getApplicationContext(), CollectorActivity.class);
-		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, project.getID());
-		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, project.getFingerPrint());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, projDescr.getID());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, projDescr.getFingerPrint());
 		if(shortcutName != null)
 			i.putExtra(CollectorActivity.INTENT_OPTIONAL_PARAM_SHORTCUT_NAME, shortcutName);
 		i.setAction(Intent.ACTION_MAIN);
@@ -82,15 +85,14 @@ public class ProjectRunHelpers
 	}
 
 	/**
-	 * Add a shortcut for Sapelli Collector to the Home screen
+	 * Add a shortcut for the Sapelli Collector Project Manager to the Home screen
 	 * 
 	 * @param context
 	 */
 	static public void createCollectorShortcut(Context context)
 	{
-		// Adding shortcut for MainActivity
+		// Adding shortcut for ProjectManagerActivity
 		Intent shortcutIntent = new Intent(context, ProjectManagerActivity.class);
-
 		shortcutIntent.setAction(Intent.ACTION_MAIN);
 
 		Intent addIntent = new Intent();
@@ -103,15 +105,50 @@ public class ProjectRunHelpers
 	}
 
 	/**
+	 * @param fileStorageProvider
+	 * @param project
+	 * @return
+	 */
+	static public File getShortcutImageFile(FileStorageProvider fileStorageProvider, Project project)
+	{
+		return fileStorageProvider.getProjectImageFile(project, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
+	}
+	
+	/**
+	 * @param contextWrapper
+	 * @param fileStorageProvider
+	 * @param project
+	 */
+	static public Drawable getShortcutDrawable(ContextWrapper contextWrapper, FileStorageProvider fileStorageProvider, Project project)
+	{
+		File shortcutImageFile = getShortcutImageFile(fileStorageProvider, project); 
+		return (FileHelpers.isReadableFile(shortcutImageFile) && MediaHelpers.isRasterImageFileName(shortcutImageFile.getName())) ?
+			Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) :
+			ResourcesHelpers.getDrawable(contextWrapper.getResources(), R.drawable.ic_sapelli_logo);
+	}
+	
+	/**
+	 * @param contextWrapper
+	 * @param fileStorageProvider
+	 * @param project
+	 */
+	static public Bitmap getShortcutBitmap(ContextWrapper contextWrapper, FileStorageProvider fileStorageProvider, Project project)
+	{
+		File shortcutImageFile = getShortcutImageFile(fileStorageProvider, project); 
+		return (FileHelpers.isReadableFile(shortcutImageFile) && MediaHelpers.isRasterImageFileName(shortcutImageFile.getName())) ?
+			BitmapFactory.decodeFile(shortcutImageFile.getAbsolutePath()) :
+			BitmapFactory.decodeResource(contextWrapper.getResources(), R.drawable.ic_sapelli_logo); 
+	}
+	
+	/**
 	 * Create shortcut(s) to open project in CollectorActivity
 	 *
+	 * @param contextWrapper
+	 * @param fileStorageProvider
 	 * @param project
 	 */
 	static public void createShortcut(ContextWrapper contextWrapper, FileStorageProvider fileStorageProvider, Project project)
 	{
-		// Icon image file:
-		File shortcutImageFile = fileStorageProvider.getProjectImageFile(project, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
-
 		// Shortcut name:
 		String shortcutName = project.toString();
 
@@ -123,7 +160,7 @@ public class ProjectRunHelpers
 		//-----------------------------------------------------
 		Intent androidLauncherIntent = getShortcutCreationIntent(contextWrapper, shortcutName, shortcutIntent, false);
 		// Get up icon bitmap (using build-in Sapelli icon if the shortcut file doesn't exist or is not a raster image):
-		Drawable iconResource = (FileHelpers.isReadableFile(shortcutImageFile) && MediaHelpers.isRasterImageFileName(shortcutImageFile.getName())) ? Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : contextWrapper.getResources().getDrawable(R.drawable.ic_sapelli_logo);
+		Drawable iconResource = getShortcutDrawable(contextWrapper, fileStorageProvider, project);
 		Bitmap icon = ((BitmapDrawable) iconResource).getBitmap();
 		// Resize the icon bitmap according to the default size:
 		int maxIconSize = (int) contextWrapper.getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size
@@ -140,6 +177,7 @@ public class ProjectRunHelpers
 		//-----------------------------------------------------
 		Intent sapelliLauncherIntent = getShortcutCreationIntent(contextWrapper, shortcutName, shortcutIntent, true);
 		// Set up shortcut icon path:
+		File shortcutImageFile = getShortcutImageFile(fileStorageProvider, project);
 		sapelliLauncherIntent.putExtra(SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); // launcher will use default Sapelli icon when path is null
 		// Fire the intent:
 		contextWrapper.sendBroadcast(sapelliLauncherIntent);
@@ -176,13 +214,13 @@ public class ProjectRunHelpers
 	 * @param contextWrapper
 	 * @param project
 	 */
-	static public void removeShortcut(ContextWrapper contextWrapper, Project project)
+	static public void removeShortcut(ContextWrapper contextWrapper, ProjectDescriptor projDescr)
 	{
 		// Shortcut name:
-		String shortcutName = project.toString();
+		String shortcutName = projDescr.toString();
 
 		// Remove in all launchers:
-		removeShortcut(contextWrapper, shortcutName, getProjectRunIntent(contextWrapper, project, shortcutName));
+		removeShortcut(contextWrapper, shortcutName, getProjectRunIntent(contextWrapper, projDescr, shortcutName));
 	}
 
 	/**

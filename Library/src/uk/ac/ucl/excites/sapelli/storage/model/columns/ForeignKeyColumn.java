@@ -19,7 +19,8 @@
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -28,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class ForeignKeyColumn extends RecordColumn<RecordReference>
+public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -42,7 +43,18 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	 */
 	public ForeignKeyColumn(Schema foreignSchema, boolean optional)
 	{
-		this(foreignSchema.getName(), foreignSchema, optional);
+		this(foreignSchema.getName(), foreignSchema, optional, null);
+	}
+	
+	/**
+	 * @param foreignSchema
+	 * @param optional
+	 * @param defaultValue
+	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
+	 */
+	public ForeignKeyColumn(Schema foreignSchema, boolean optional, RecordReference defaultValue)
+	{
+		this(foreignSchema.getName(), foreignSchema, optional, defaultValue);
 	}
 
 	/**
@@ -52,6 +64,18 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
 	 */
 	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional)
+	{
+		this(name, foreignSchema, optional, null);
+	}
+
+	/**
+	 * @param name
+	 * @param foreignSchema
+	 * @param optional
+	 * @param defaultValue
+	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
+	 */
+	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional, RecordReference defaultValue)
 	{
 		super(name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
 		this.foreignSchema = foreignSchema;
@@ -64,7 +88,7 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	}
 
 	@Override
-	public RecordReference getNewRecord()
+	public RecordReference getNewValueSet()
 	{
 		return foreignSchema.createRecordReference();
 	}
@@ -79,9 +103,9 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	public void accept(ColumnVisitor visitor)
 	{
 		if(visitor.allowForeignKeySelfTraversal())
-			super.accept(visitor, true);
+			super.accept(visitor, true); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
-			visitor.visit(this);
+			visitor.visit(this); // visit as ForeignKeyColumn (as a single whole)
 	}
 	
 	/**
@@ -96,7 +120,7 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + foreignSchema.hashCode();

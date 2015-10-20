@@ -20,24 +20,22 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.util.Stack;
 
+import android.content.Context;
+import android.view.View;
+import android.view.View.OnFocusChangeListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
+import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import android.content.Context;
-import android.view.Gravity;
-import android.view.View;
-import android.view.View.OnFocusChangeListener;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
-import android.widget.TextView;
 
 /**
  * Android version of MultiListUI
@@ -72,7 +70,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		if(newRecord)
 		{
 			// Set the value that was stored (if there is one):
-			if(!field.isNoColumn() && field.getColumn().isValueSet(record))
+			if(!field.isNoColumn() && field.getColumn().isValuePresent(record))
 			{
 				// Get selected leaf:
 				MultiListItem item = field.getItemForValue(field.getColumn().retrieveValue(record).intValue());
@@ -182,12 +180,11 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			clearPageInvalidMark(); // the user is currently interacting with the spinner(s), so don't annoy him/her with the red box			
 
 			MultiListSpinner spinner = (MultiListSpinner) parent;
-			MultiListAdapter adapter = spinner.getAdapter();
 			
 			revert(spinner);
 			
-			MultiListItem chosen = adapter.getItem(position);
-			if(chosen != adapter.nonSelectableItem && chosen != adapter.nullItem && !chosen.isLeaf())
+			MultiListItem chosen = spinner.getAdapter().getItem(position);
+			if(chosen != null && !chosen.isLeaf())
 				addNextList(chosen);
 		}
 
@@ -259,12 +256,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		@Override
 		public MultiListItem getSelectedItem()
 		{
-			MultiListAdapter adapter = getAdapter();
-			MultiListItem selected = adapter.getItem(getSelectedItemPosition());
-			if(selected != adapter.nonSelectableItem && selected != adapter.nullItem)
-				return selected;
-			else
-				return null;
+			return (MultiListItem) super.getSelectedItem();
 		}
 		
 		@Override
@@ -293,63 +285,21 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	}
 	
 	/**
-	 * Custom ArrayAdapter to allow simulation of the spinner being in an "unselected" state (not supported on Android).
-	 * 
+	 * @see AdvancedSpinnerAdapter
 	 * @author mstevens
-	 * 
-	 * @see <a href="http://stackoverflow.com/questions/9863378">http://stackoverflow.com/questions/9863378</a>
 	 */
-	private class MultiListAdapter extends ArrayAdapter<MultiListItem>
+	private class MultiListAdapter extends AdvancedSpinnerAdapter<MultiListItem>
 	{
-		
-		private MultiListItem nonSelectableItem;
-		private MultiListItem nullItem;
 		
 		public MultiListAdapter(Context context, MultiListItem parentItem)
 		{
-			super(context, android.R.layout.simple_spinner_item);
-			this.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			
-			// Insert "Please select" item if preSelect=false:
-			if(!parentItem.getField().isPreSelect())
-			{
-				nonSelectableItem = MultiListItem.GetDummyItem(field, context.getString(R.string.lstPleaseSelect));
-				this.add(nonSelectableItem);
-			}
-			
-			// Add real children:
-			for(MultiListItem item : parentItem.getChildren())
-				this.add(item); // Not using this.addAll(...) because it requires API level 11 (current minimum is 9)
-			
-			// If preSelect=true, but the field is optional...
-			if(parentItem.getField().isPreSelect() && parentItem.getField().isOptional())
-			{	// insert "null-selection" item such that "not answering" remains possible:
-				nullItem = MultiListItem.GetDummyItem(field, context.getString(R.string.lstUndoSelection));
-				this.add(nullItem);
-			}
-		}
-		
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent)
-		{
-			TextView v = (TextView) super.getView(position, null, parent);
-			if((nonSelectableItem != null && position == 0) || (nullItem != null && position == getCount() - 1))
-				v.setGravity(Gravity.CENTER); // Centre the text on the nonSelectedDefault item and on the nullItem
-			return v;
-		}
-		
-		@Override
-		public View getDropDownView(int position, View convertView, ViewGroup parent)
-		{
-			if(nonSelectableItem != null && position == 0)
-			{	// Hide the nonSelectedDefault item:
-				TextView dummyView = new TextView(getContext());
-	            dummyView.setHeight(0);
-	            //dummyView.setVisibility(View.GONE); //does not seem to make a difference
-	            return dummyView;
-			}
-			else
-				return super.getDropDownView(position, null, parent);
+			super(	context,
+					// If preSelect=false? insert "Please select" item:
+					!parentItem.getField().isPreSelect() ? context.getString(R.string.lstPleaseSelect) : null,
+					// If preSelect=true, but the field is optional, insert "null-selection" item such that "not answering" remains possible: 
+					parentItem.getField().isPreSelect() && parentItem.getField().isOptional() ? context.getString(R.string.lstUndoSelection) : null,
+					// The real children:
+					parentItem.getChildren());
 		}
 
 	}

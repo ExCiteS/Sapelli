@@ -38,41 +38,79 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
 
 	/**
-	 * Note (2013-07-13): Implementation used to be: return value.getZone().toTimeZone().getRawOffset(); But that is incorrect during summer time! The current
-	 * implementation could be shortened by using only Joda-time's DateTimeZone and no longer also the native TimeZone, like so return
-	 * value.getZone().getOffset(value.getMillis()); However that causes weird crashes in Joda-time (probably due to a bug in the library).
+	 * Returns the "raw" timezone offset in milliseconds.
+	 * 
+	 * <p><b>Note (2013-07-13):</b><br/>
+	 * 	Implementation used to be:<br/>
+	 * 		{@code return value.getZone().toTimeZone().getRawOffset();}<br/>
+	 * 	But that is incorrect during summer time!<br/>
+	 * 	Corrected implementation:<br/>
+	 * 		{@code return value.getZone().toTimeZone().getOffset(value.getMillis());}</p>
+	 * 	This could be shortened by using only Joda-time's DateTimeZone and no longer also the native TimeZone, like so:<br/>
+	 * 		{@code return value.getZone().getOffset(value.getMillis());}<br/>
+	 * 	However that causes weird crashes in Joda-time (probably due to a bug in the library).</p>
+	 * 
+	 * <p><b>Note (2015-10-14):</b><br/>
+	 * 	Did new, intensive testing (with Joda-time v2.8.2) but was unable to reproduce the crashes mentioned above.
+	 * 	Probably is was not a Joda-time bug after all. Changed implementation to the shorter Joda-time only one.</p>  
 	 * 
 	 * @param value
 	 * @return
 	 */
 	static public int getTimeZoneOffsetMS(DateTime value)
 	{
-		return value.getZone().toTimeZone().getOffset(value.getMillis());
+		return value.getZone().getOffset(value.getMillis());
 	}
 
+	/**
+	 * Returns the "raw" timezone offset in quarters of an hour.
+	 * 
+	 * @param value
+	 * @return
+	 */
 	static public int getTimeZoneOffsetQH(DateTime value)
 	{
 		return getTimeZoneOffsetMS(value) / QUARTER_OF_AN_HOUR_MS;
 	}
-
+	
 	/**
-	 * Note (2013-07-13): Implementation used to be:
-	 * 	return DateTimeZone.forTimeZone(uk.ac.ucl.excites.util.TimeUtils.getTimeZone(quarterHourOffset * QUARTER_OF_AN_HOUR_MS));
-	 * Seems to make no difference w.r.t. offset (although we do not get "named" zones this way, but the names could have been wrong anyway, due to DST)
+	 * Returns the "raw" timezone offset in hours.
 	 * 
-	 * @param quarterHourOffset
+	 * @param value
 	 * @return
 	 */
-	static public DateTimeZone getDateTimeZoneFor(int quarterHourOffset)
-	{
-		return DateTimeZone.forOffsetMillis(quarterHourOffset * QUARTER_OF_AN_HOUR_MS);
-	}
-
 	static public float getTimeZoneOffsetH(DateTime value)
 	{
 		return ((float) getTimeZoneOffsetMS(value)) / HOUR_MS;
 	}
-	
+
+	/**
+	 * Returns a DateTimeZone for the given quarters of an hour offset.
+	 * 
+	 * @param offsetQH offset to UTC in quarters of hours
+	 * @return a matching (but unnamed) DateTimeZone instance
+	 */
+	static public DateTimeZone getDateTimeZoneForQHOffset(int offsetQH)
+	{
+		return getDateTimeZoneForMSOffset(offsetQH * QUARTER_OF_AN_HOUR_MS);
+	}
+
+	/**
+	 * Returns a DateTimeZone for the given millisecond offset.
+	 * 
+	 * <p><b>Note (2013-07-13):</b><br/>
+	 * 	Implementation used to be:<br/>
+	 * 		{@code return DateTimeZone.forTimeZone(uk.ac.ucl.excites.util.TimeUtils.getTimeZone(offsetMS));}<br/>
+	 *	Seems to make no difference w.r.t. offset (although we do not get "named" zones this way, but the names could have been wrong anyway, due to DST).</p>
+	 * 
+	 * @param offsetMS offset to UTC in milliseconds
+	 * @return a matching (but unnamed) DateTimeZone instance
+	 */
+	static public DateTimeZone getDateTimeZoneForMSOffset(int offsetMS)
+	{
+		return DateTimeZone.forOffsetMillis(offsetMS);
+	}
+
 	/**
 	 * Current time in the current/default timezone
 	 * 
@@ -81,6 +119,40 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	static public TimeStamp now()
 	{
 		return new TimeStamp();
+	}
+	
+	/**
+	 * Returns the latest of the 2 given time stamps.
+	 * 
+	 * @param t1
+	 * @param t2
+	 * @return
+	 */
+	static public TimeStamp Latest(TimeStamp t1, TimeStamp t2)
+	{
+		if(t1 == null)
+			return t2;
+		if(t2 == null)
+			return t1;
+		else
+			return t1.msSinceEpoch >= t2.msSinceEpoch ? t1 : t2;
+	}
+	
+	/**
+	 * Returns the earliest of the 2 given time stamps.
+	 * 
+	 * @param t1
+	 * @param t2
+	 * @return
+	 */
+	static public TimeStamp Earliest(TimeStamp t1, TimeStamp t2)
+	{
+		if(t1 == null)
+			return t2;
+		if(t2 == null)
+			return t1;
+		else
+			return t1.msSinceEpoch <= t2.msSinceEpoch ? t1 : t2;
 	}
 
 	// DYNAMICS------------------------------------------------------
@@ -107,6 +179,8 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	}
 	
 	/**
+	 * Constructs a new TimeStamp with the given {@code msSinceEpoch} and the default time zone.
+	 * 
 	 * @param msSinceEpoch
 	 */
 	public TimeStamp(long msSinceEpoch)
@@ -124,6 +198,8 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	}
 	
 	/**
+	 * Constructs a new TimeStamp with the given {@code msSinceEpoch} and the given time zone.
+	 * 
 	 * @param msSinceEpoch
 	 * @param dateTimeZone
 	 */
@@ -171,7 +247,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	public DateTime toDateTime()
 	{
 		if(dateTime == null)
-			dateTime = new DateTime(msSinceEpoch, getDateTimeZoneFor(quarterHourOffsetWrtUTC));
+			dateTime = new DateTime(msSinceEpoch, getDateTimeZoneForQHOffset(quarterHourOffsetWrtUTC));
 		return dateTime;
 	}
 
@@ -211,14 +287,31 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 			return 1;
 	}
 	
+	/**
+	 * @param another - should not be null
+	 * @return whether or not this TimeStamp indicates a time (strictly) before the one indicated by the given TimeStamp
+	 */
 	public boolean isBefore(TimeStamp another)
 	{
 		return this.msSinceEpoch < another.msSinceEpoch;
 	}
 	
+	/**
+	 * @param another - should not be null
+	 * @return whether or not this TimeStamp indicates a time (strictly) after the one indicated by the given TimeStamp
+	 */
 	public boolean isAfter(TimeStamp another)
 	{
 		return another.msSinceEpoch < this.msSinceEpoch;
+	}
+	
+	/**
+	 * @param ms
+	 * @return a new TimeStamp instance which indicates a time that differs from this TimeStamp by the given amount of milliseconds (+/-)
+	 */
+	public TimeStamp shift(long ms)
+	{
+		return new TimeStamp(this.msSinceEpoch + ms, this.quarterHourOffsetWrtUTC);
 	}
 	
 	@Override

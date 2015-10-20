@@ -32,12 +32,16 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * Abstract superclass for Record storage back-ends
@@ -224,8 +228,25 @@ public abstract class RecordStore extends Store
 	 */
 	public boolean isStorable(Record record)
 	{
-		return 	record != null &&					// obviously it makes no sense to store null records
-				!record.getSchema().isInternal();	// records of "internal" schemata cannot be stored directly
+		return isStorable(record, false);
+	}
+	
+	protected final boolean isStorable(Record record, boolean allowMeta)
+	{
+		// Perform check to determine whether the Record can be stored:
+		//	Obviously it makes no sense to store null records:
+		if(record == null)
+			return false;
+		//	Unless explicitly allowed, meta model or schema records cannot be stored directly:
+		if(!allowMeta && record.getSchema().getModel() == Model.META_MODEL)
+			return false;
+		//	Check if the record has non-null values in each non-optional (sub)column, except the auto-incrementing PK column if there is one:
+		IntegerColumn autoKeyCol = record.getSchema().getAutoIncrementingPrimaryKeyColumn();
+		if(!record.isFilled(autoKeyCol != null ? Collections.<Column<?>> singleton(autoKeyCol) : Collections.<Column<?>> emptySet(), true))
+			return false;
+		//	(Add additional checks here)
+		// All OK:
+		return true;
 	}
 	
 	/**
@@ -257,9 +278,9 @@ public abstract class RecordStore extends Store
 		if(insert == null)
 			return; // record was unchanged
 		else if(insert)
-			client.recordInserted(record);
+			client.storageEvent(RecordOperation.Inserted, record.getReference());
 		else
-			client.recordUpdated(record);
+			client.storageEvent(RecordOperation.Updated, record.getReference());
 	}
 	
 	/**
@@ -290,7 +311,7 @@ public abstract class RecordStore extends Store
 		}
 		// Inform client if a real insert happened:
 		if(inserted)
-			client.recordInserted(record);
+			client.storageEvent(RecordOperation.Inserted, record.getReference());
 	}
 	
 	/**
@@ -325,13 +346,13 @@ public abstract class RecordStore extends Store
 		r = 0;
 		for(Record record : records)
 		{
-			if(insert[r] == null)
-				return; // record was unchanged
-			else if(insert[r])
-				client.recordInserted(record);
+			Boolean inserted = insert[r++];
+			if(inserted == null)
+				continue; // record was unchanged
+			else if(inserted)
+				client.storageEvent(RecordOperation.Inserted, record.getReference());
 			else
-				client.recordUpdated(record);
-			r++;
+				client.storageEvent(RecordOperation.Updated, record.getReference());
 		}
 	}
 	
@@ -391,12 +412,20 @@ public abstract class RecordStore extends Store
 	}
 
 	/**
-	 * Retrieve records by query
+	 * Retrieve {@link Record}s by query
 	 * 
 	 * @param query
-	 * @return a list of records, possibly empty, never null
+	 * @return a {@link List} of {@link Record}s, possibly empty, never {@code null}
 	 */
 	public abstract List<Record> retrieveRecords(RecordsQuery query);
+
+	/**
+	 * Retrieve {@link RecordReference}s by query
+	 * 
+	 * @param query
+	 * @return a {@link List} of {@link RecordReference}s, possibly empty, never {@code null}
+	 */
+	public abstract List<RecordReference> retrieveRecordReferences(RecordsQuery query);
 	
 	/**
 	 * Retrieve a single record by SingleRecordQuery.
@@ -407,6 +436,17 @@ public abstract class RecordStore extends Store
 	public abstract Record retrieveRecord(SingleRecordQuery query);
 
 	/**
+	 * Retrieve a single record pointed to by the given RecordReference.
+	 * 
+	 * @param recordReference
+	 * @return the resulting record or {@code null} if no matching record was found
+	 */
+	public Record retrieveRecord(RecordReference recordReference)
+	{
+		return retrieveRecord(recordReference.getRecordQuery());
+	}
+	
+	/**
 	 * Deletes a single record.
 	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
 	 * However, if an error occurs any open transaction will be rolled back!
@@ -416,6 +456,8 @@ public abstract class RecordStore extends Store
 	 */
 	public void delete(Record record) throws DBException
 	{
+		if(!isStorable(record))
+			return;
 		try
 		{
 			doDelete(record);
@@ -426,7 +468,7 @@ public abstract class RecordStore extends Store
 			throw e;
 		}
 		// Inform client:
-		client.recordDeleted(record);
+		client.storageEvent(RecordOperation.Deleted, record.getReference());
 	}
 	
 	/**
@@ -444,7 +486,7 @@ public abstract class RecordStore extends Store
 	}
 	
 	/**
-	 * Deletes all records that match the query
+	 * Deletes all records that match the query.
 	 * 
 	 * Default implementation, may be overridden.
 	 * 
@@ -454,6 +496,19 @@ public abstract class RecordStore extends Store
 	public void delete(RecordsQuery query) throws DBException
 	{
 		delete(retrieveRecords(query));
+	}
+	
+	/**
+	 * Deletes the single record which matches the query (if any)
+	 * 
+	 * Default implementation, may be overridden.
+	 * 
+	 * @param recordsQuery
+	 * @throws DBException
+	 */
+	public void delete(SingleRecordQuery query) throws DBException
+	{
+		delete(retrieveRecord(query));
 	}
 	
 	/**
@@ -470,8 +525,11 @@ public abstract class RecordStore extends Store
 		try
 		{
 			for(Record record : records)
-				if(doDelete(record))
-					deleted.add(record);
+				if(isStorable(record))
+				{
+					if(doDelete(record))
+						deleted.add(record);
+				}
 		}
 		catch(DBException e)
 		{
@@ -481,7 +539,7 @@ public abstract class RecordStore extends Store
 		commitTransaction();
 		// Inform client:
 		for(Record record : deleted)
-			client.recordDeleted(record);
+			client.storageEvent(RecordOperation.Deleted, record.getReference());
 	}
 	
 	/**
@@ -515,7 +573,10 @@ public abstract class RecordStore extends Store
 	 */
 	protected abstract boolean doDelete(Record record) throws DBException;
 	
-	/* (non-Javadoc)
+	/**
+	 * Subclasses may override this but *must* call super implementation.
+	 * TODO somehow force the super call using annotations?
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
 	protected void doClose() throws DBException

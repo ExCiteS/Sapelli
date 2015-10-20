@@ -18,12 +18,20 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
@@ -34,30 +42,39 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * A RecordStore based implementation of ProjectStore
@@ -70,9 +87,9 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	// STATICS---------------------------------------------
 	// Project storage model:
 	//	Model:
-	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement");
+	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(CollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement", CollectorClient.SCHEMA_FLAGS_COLLECTOR_INTERNAL);
 	//	 Project schema:
-	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
+	static public final Schema PROJECT_SCHEMA = CollectorClient.CreateSchemaWithSuffixedTableName(COLLECTOR_MANAGEMENT_MODEL, Project.class.getSimpleName(), "s");
 	//		Columns:
 	static private final IntegerColumn PROJECT_ID_COLUMN = PROJECT_SCHEMA.addColumn(new IntegerColumn("id", false, Project.PROJECT_ID_FIELD));
 	static private final IntegerColumn PROJECT_FINGERPRINT_COLUMN = PROJECT_SCHEMA.addColumn(new IntegerColumn("fingerPrint", false, true, Project.PROJECT_FINGERPRINT_SIZE));
@@ -90,23 +107,21 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		// Unique index to ensure name+variant+version combinations are unique:
 		PROJECT_SCHEMA.addIndex(new Index("ProjectUnique", true, PROJECT_NAME_COLUMN, PROJECT_VARIANT_COLUMN, PROJECT_VERSION_COLUMN));
-		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN));
-		PROJECT_SCHEMA.seal(); // !!!
+		PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN), true /*seal!*/);
 	}
 	//	 Form Schema Info (FSI) schema:
-	static public final Schema FSI_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
+	static public final Schema FSI_SCHEMA = CollectorClient.CreateSchema(COLLECTOR_MANAGEMENT_MODEL, "FormSchemaInfo");
 	//		Columns:
 	static private final ForeignKeyColumn FSI_PROJECT_KEY_COLUMN = FSI_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn FSI_FORM_POSITION_COLUMN = FSI_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));
-	static private final ListColumn.Simple<String> FSI_BYPASSABLE_FIELD_IDS_COLUMN = FSI_SCHEMA.addColumn(new ListColumn.Simple<String>("byPassableFieldIDs", StringColumn.ForCharacterCount("FieldID", false, Field.MAX_ID_LENGTH), true, Form.MAX_FIELDS));
+	static public final StringListColumn FSI_BYPASSABLE_FIELD_IDS_COLUMN = FSI_SCHEMA.addColumn(new StringListColumn("byPassableFieldIDs", StringColumn.ForCharacterCount("FieldID", false, Field.MAX_ID_LENGTH), true, Form.MAX_FIELDS));
 	//		Set primary key & seal schema:
 	static
 	{
-		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN));
-		FSI_SCHEMA.seal(); // !!!
+		FSI_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(FSI_PROJECT_KEY_COLUMN, FSI_FORM_POSITION_COLUMN), true /*seal!*/);
 	}
 	//	 Held Foreign Key (HFK) schema: to store "held" foreign keys (RecordReferences) on Relationship fields
-	static public final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
+	static public final Schema HFK_SCHEMA = CollectorClient.CreateSchemaWithSuffixedTableName(COLLECTOR_MANAGEMENT_MODEL, "RelationshipFK", "s");
 	//		Columns:
 	static private final ForeignKeyColumn HFK_PROJECT_KEY_COLUMN = HFK_SCHEMA.addColumn(new ForeignKeyColumn(PROJECT_SCHEMA, false));
 	static private final IntegerColumn HFK_FORM_POSITION_COLUMN = HFK_SCHEMA.addColumn(new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1));
@@ -115,8 +130,21 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	//		Set primary key & seal schema:
 	static
 	{
-		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN));
-		HFK_SCHEMA.seal(); // !!!
+		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN), true /*seal!*/);
+	}
+	// Seal the collector management model:
+	static
+	{
+		COLLECTOR_MANAGEMENT_MODEL.seal();
+	}
+	
+	// ColumnSet & columns used for Project serialisation (see serialise() & deserialise()): 
+	static private final ColumnSet PROJECT_SERIALISIATION_CS = new ColumnSet("ProjectSerialisation", false);
+	static private final ByteArrayColumn PROJECT_SERIALISIATION_XML_COLUMN = PROJECT_SERIALISIATION_CS.addColumn(new ByteArrayColumn("ProjectXMLBytes", false));
+	static private final ByteArrayListColumn PROJECT_SERIALISIATION_FSI_RECORDS_COLUMN = PROJECT_SERIALISIATION_CS.addColumn(new ByteArrayListColumn("ProjectFSIRecordsBytes", false, Project.MAX_FORMS));
+	static
+	{
+		PROJECT_SERIALISIATION_CS.seal();
 	}
 	
 	// DYNAMICS--------------------------------------------
@@ -151,10 +179,10 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		return projRec;
 	}
 	
-	private RecordReference getProjectRecordReference(Project project)
+	private RecordReference getProjectRecordReference(ProjectDescriptor projDescr)
 	{
-		return PROJECT_SCHEMA.createRecordReference(project.getID(),
-													project.getFingerPrint());
+		return PROJECT_SCHEMA.createRecordReference(projDescr.getID(),
+													projDescr.getFingerPrint());
 	}
 	
 	private Record getFSIRecord(Form form)
@@ -170,53 +198,90 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 												form.getPosition());
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.load.FormSchemaInfoProvider#getByPassableFieldIDs(uk.ac.ucl.excites.sapelli.collector.model.Form)
-	 */
-	@Override
-	public List<String> getByPassableFieldIDs(Form form)
+	private Record retrieveFSIRecord(Form form)
 	{
-		Record fsiRec = recordStore.retrieveRecord(getFSIRecordReference(form).getRecordQuery());
+		return recordStore.retrieveRecord(getFSIRecordReference(form));
+	}
+	
+	public List<String> getByPassableFieldIDs(Record fsiRec)
+	{
 		if(fsiRec == null)
 			return null;
 		else
 			return FSI_BYPASSABLE_FIELD_IDS_COLUMN.retrieveValue(fsiRec);
 	}
 	
-	private Project getProject(Record projRec)
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.load.FormSchemaInfoProvider#getByPassableFieldIDs(uk.ac.ucl.excites.sapelli.collector.model.Form)
+	 */
+	@Override
+	public List<String> getByPassableFieldIDs(Form form)
+	{
+		return getByPassableFieldIDs(retrieveFSIRecord(form));
+	}
+	
+	private ProjectDescriptor getProjectOrDescriptor(Record projRec)
 	{
 		if(projRec == null)
 			return null;
 		
+		// Create ProjectDescriptor:
+		int id = PROJECT_ID_COLUMN.retrieveValue(projRec).intValue();
+		boolean v1x = PROJECT_V1X_SCHEMA_VERSION_COLUMN.isValuePresent(projRec);
+		ProjectDescriptor projDescr = new ProjectDescriptor(v1x ? ProjectDescriptor.PROJECT_ID_V1X_TEMP : id,
+															PROJECT_NAME_COLUMN.retrieveValue(projRec),
+															PROJECT_VARIANT_COLUMN.retrieveValue(projRec), // "" is treated as null,
+															PROJECT_VERSION_COLUMN.retrieveValue(projRec),
+															PROJECT_FINGERPRINT_COLUMN.retrieveValue(projRec).intValue());
+		if(v1x)
+			projDescr.setV1XSchemaInfo(id, PROJECT_V1X_SCHEMA_VERSION_COLUMN.retrieveValue(projRec).intValue());
+		
+		// If the full project is cached return it instead of the descriptor:
+		Project project = cache.get(getCacheKey(projDescr.getID(), projDescr.getFingerPrint()));
+		if(project != null)
+			return project;
+		
+		return projDescr;
+	}
+	
+	private Project getProject(Record projRec)
+	{
+		return loadProject(getProjectOrDescriptor(projRec));
+	}
+	
+	private File getProjectFolder(ProjectDescriptor projDescr)
+	{
+		return fileStorageProvider.getProjectInstallationFolder(projDescr.getName(),
+																projDescr.getVariant(), 
+																projDescr.getVersion(),
+																false);
+	}
+	
+	private Project loadProject(ProjectDescriptor projDescr)
+	{
+		if(projDescr == null)
+			return null;
+		
+		// If the ProjectDescriptor is a full Project:
+		if(projDescr instanceof Project)
+			return (Project) projDescr;
+		
+		// Load project...
 		Project project = null;
 		
-		// Check cache first:
-		project = cache.get(getCacheKey(PROJECT_ID_COLUMN.retrieveValue(projRec).intValue(), PROJECT_FINGERPRINT_COLUMN.retrieveValue(projRec).intValue()));
+		// First check the cache:
+		project = cache.get(getCacheKey(projDescr.getID(), projDescr.getFingerPrint()));
 		
 		// Parse project if we didn't get it from the cache: 
 		if(project == null)
-		{			
-			String variant = PROJECT_VARIANT_COLUMN.retrieveValue(projRec);
-			project = ProjectLoader.ParseProject(	fileStorageProvider.getProjectInstallationFolder(	PROJECT_NAME_COLUMN.retrieveValue(projRec),
-																										variant.isEmpty() ? null : variant, 
-																										PROJECT_VERSION_COLUMN.retrieveValue(projRec),
-																										false),
-													this); // pass this as FormSchemaInfoProvider
+		{
+			project = ProjectLoader.ParseProjectXMLInFolder(getProjectFolder(projDescr), this); // pass this as FormSchemaInfoProvider
 			// Check if we have a project:
 			if(project == null)
-			{
-				try
-				{
-					recordStore.delete(projRec);
-				}
-				catch(DBException e)
-				{
-					e.printStackTrace();
-				}
-			}
+				delete(projDescr);
 			else
 				// Add to cache:
-				cacheProject(project);
+				cacheProject((Project) project);
 		}
 		return project;
 	}
@@ -235,9 +300,9 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		if(projRecs.isEmpty())
 			return Collections.<Project> emptyList();
-		List<Project> projects = new ArrayList<Project>();
+		List<Project> projects = new ArrayList<Project>(projRecs.size());
 		for(Record projRec : projRecs)
-			CollectionUtils.addIgnoreNull(projects, getProject(projRec));
+			CollectionUtils.addIgnoreNull(projects, loadProject(getProjectOrDescriptor(projRec)));
 		return projects;
 	}
 	
@@ -299,7 +364,25 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		return getProjects(recordStore.retrieveRecords(PROJECT_SCHEMA));
 	}
+	
+	@Override
+	public List<ProjectDescriptor> retrieveProjectsOrDescriptors()
+	{
+		List<Record> projRecs = recordStore.retrieveRecords(PROJECT_SCHEMA);
+		if(projRecs.isEmpty())
+			return Collections.<ProjectDescriptor> emptyList();
+		List<ProjectDescriptor> projDescrs = new ArrayList<ProjectDescriptor>(projRecs.size());
+		for(Record projRec : projRecs)
+			CollectionUtils.addIgnoreNull(projDescrs, getProjectOrDescriptor(projRec));
+		return projDescrs;
+	}
 
+	@Override
+	public Project retrieveProject(ProjectDescriptor descriptor)
+	{
+		return loadProject(descriptor);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(java.lang.String, java.lang.String, java.lang.String)
 	 */
@@ -312,13 +395,24 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 																			new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
 	}
 
+	private Record queryProjectRecordByIDFingerPrint(int projectID, int projectFingerPrint)
+	{
+		return recordStore.retrieveRecord(PROJECT_SCHEMA.createRecordReference(projectID, projectFingerPrint).getRecordQuery());
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
 	 */
 	@Override
 	public Project retrieveProject(int projectID, int projectFingerPrint)
 	{
-		return getProject(recordStore.retrieveRecord(PROJECT_SCHEMA.createRecordReference(projectID, projectFingerPrint).getRecordQuery()));
+		return getProject(queryProjectRecordByIDFingerPrint(projectID, projectFingerPrint));
+	}
+	
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return getProjectOrDescriptor(queryProjectRecordByIDFingerPrint(projectID, projectFingerPrint));
 	}
 	
 	/* (non-Javadoc)
@@ -349,16 +443,25 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public void delete(Project project)
 	{
+		delete((ProjectDescriptor) project);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#delete(uk.ac.ucl.excites.sapelli.collector.model.Project)
+	 */
+	@Override
+	public void delete(ProjectDescriptor projectDescriptor)
+	{
 		try
 		{
-			Constraint projectMatchConstraint = getProjectRecordReference(project).getRecordQueryConstraint();
+			Constraint projectMatchConstraint = getProjectRecordReference(projectDescriptor).getRecordQueryConstraint();
 			// Delete project record:
 			recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
 			// Delete associated FSI & HFK records:
 			recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
 			recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
 			// Remove project from cache:
-			cache.remove(getCacheKey(project.getID(), project.getFingerPrint()));
+			cache.remove(getCacheKey(projectDescriptor.getID(), projectDescriptor.getFingerPrint()));
 		}
 		catch(DBException e)
 		{
@@ -406,7 +509,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		Record hfkRecord = null;
 		try
 		{
-			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
+			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship));
 			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
 		}
 		catch(Exception e)
@@ -450,6 +553,72 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		backuper.addStoreForBackup(recordStore);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#serialise(uk.ac.ucl.excites.sapelli.collector.model.Project, java.io.OutputStream)
+	 */
+	@Override
+	public void serialise(Project project, OutputStream out) throws IOException
+	{
+		// Project XML bytes:
+		InputStream projectXMLFileIn = new FileInputStream(ProjectLoader.GetProjectXMLFile(getProjectFolder(project)));
+		ByteArrayOutputStream projectXMLBytesOut = new ByteArrayOutputStream();
+		IOUtils.copy(projectXMLFileIn, projectXMLBytesOut);
+		projectXMLFileIn.close();
+		projectXMLBytesOut.close();
+		
+		// FSI record bytes for each Form:
+		List<byte[]> fsiRecordBytesList = new ArrayList<>(project.getNumberOfForms());
+		for(Form form : project.getForms())
+		{
+			Record fsiRecord = retrieveFSIRecord(form); // we query the projectStore to save time...
+			if(fsiRecord == null) // ... but we don't rely on it:
+				fsiRecord = getFSIRecord(form); // may trigger optionality analysis
+			fsiRecordBytesList.add(fsiRecord.toBytes());
+		}
+		
+		// Create serialisedProject valueSet:
+		ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(PROJECT_SERIALISIATION_CS, projectXMLBytesOut.toByteArray(), fsiRecordBytesList);
+		
+		// Return as byte array:
+		BitOutputStream bitsOut = new BitWrapOutputStream(out);
+		serialisedProjectVS.writeToBitStream(bitsOut);
+		bitsOut.flush();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#deserialise(java.io.InputStream)
+	 */
+	@Override
+	public Project deserialise(InputStream in) throws IOException
+	{
+		// Deserialise valueSet:
+		BitInputStream bitsIn = new BitWrapInputStream(in);
+		ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(PROJECT_SERIALISIATION_CS);
+		serialisedProjectVS.readFromBitStream(bitsIn);
+		bitsIn.close();
+		
+		// Retrieve FSI records:
+		List<byte[]> fsiRecordBytesList = PROJECT_SERIALISIATION_FSI_RECORDS_COLUMN.retrieveValue(serialisedProjectVS);
+		final List<Record> fsiRecords = new ArrayList<Record>(fsiRecordBytesList.size());
+		for(byte[] fsiRecordBytes : fsiRecordBytesList)
+			fsiRecords.add(FSI_SCHEMA.createRecord(fsiRecordBytes));
+	
+		// Retrieve & parse Project XML:
+		return ProjectLoader.ParseProjectXML(
+			new ByteArrayInputStream(PROJECT_SERIALISIATION_XML_COLUMN.retrieveValue(serialisedProjectVS)),
+			new FormSchemaInfoProvider()
+			{
+				@Override
+				public List<String> getByPassableFieldIDs(Form form)
+				{
+					for(Record fsiRecord : fsiRecords)
+						if(FSI_FORM_POSITION_COLUMN.retrieveValue(fsiRecord).shortValue() == form.getPosition())
+							return ProjectRecordStore.this.getByPassableFieldIDs(fsiRecord);
+					return null;
+				}
+			});
 	}
 
 }

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,47 +33,94 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 
 /**
+ * MediaField base class.
+ * 
+ * Note:
+ * 	What we call the "V1X" column in here is somewhat confusingly named given that this way of
+ * 	storing information about media attachments was used up to and including v2.0 Beta 16. 
+ * 
  * @author mstevens, Michalis Vitos, benelliott
- *
  */
 public abstract class MediaField extends Field
 {
 
 	// STATIC -------------------------------------------------------
 	//static public final int DEFAULT_MIN = 0;
+	
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
+	
 	static public final boolean DEFAULT_SHOW_REVIEW = true;
+	
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
 	static public final String ID_PREFIX = "media";
 	
 	/**
-	 * no longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility: 
+	 * Up to 10 years after the StartTime of the Record
 	 */
-	static private final Pattern HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
-	
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
 	
-	static public final int V1X_ATTACHMENT_OFFSET = 0;
+	static private final StringListColumn GetVirtualFileNamesColumn(boolean optional, int max)
+	{
+		return new StringListColumn("Files", StringColumn.ForCharacterCount("File", false, MAX_FILENAME_LENGTH), optional, 0, max, '[', ']', '|', null, null);
+	}
+	
+	static public final int MAX_FILENAME_LENGTH = 128;
+	
+	/**
+	 * No longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility: 
+	 */
+	static private final Pattern V1X_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
+	
+	/**
+	 * Undoes the obfuscation of the extension on filenames that match the {@link #V1X_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT} pattern.
+	 * 
+	 * @param filename 
+	 * @return the deobfuscated extension if the input matched the pattern, else the input filename
+	 */
+	static public String undoHistoricExtensionObfuscation(String filename)
+	{
+		Matcher matcher = V1X_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
+		if(matcher.find() && matcher.groupCount() == 2)
+		{	// Got match!
+			/*
+			 * System.out.println("Found value: " + matcher.group(0)); // entire expression
+			 * System.out.println("Found value: " + matcher.group(1)); // hash part
+			 * System.out.println("Found value: " + matcher.group(2)); // ROT13-ed and uppercased extension
+			 */
+			return matcher.group(1) /*remains MD5 hash (cannot be undone)*/ + '.' + ROT13.rot13NumRot5(matcher.group(2)).toLowerCase();
+		}
+		else
+			// No match, return filename as-is:
+			return filename;
+	}
 	
 	// DYNAMIC ------------------------------------------------------
-	protected String approveButtonImageRelativePath;
-	protected String discardButtonImageRelativePath;
-	
 	//protected int min;
+	protected int max;
 	protected boolean useNativeApp;
 	protected boolean showReview;
-	protected int max;
-	
+
+	protected String approveButtonImageRelativePath;
+	protected String discardButtonImageRelativePath;
+
 	/**
 	 * @param form
 	 * @param id the id of the field, may be null (but not recommended)
@@ -119,7 +167,6 @@ public abstract class MediaField extends Field
 			throw new IllegalArgumentException("Max must be >= 1, supplied value is " + max + ".");
 		this.max = max;
 	}
-
 
 //	/**
 //	 * @param min the min to set
@@ -202,14 +249,25 @@ public abstract class MediaField extends Field
 	protected IntegerListColumn createColumn(String name)
 	{
 		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
-		return new IntegerListColumn(name, new IntegerColumn("creationTimeOffset", false, 0, MAX_ATTACHMENT_CREATION_TIME_OFFSET), colOptional, (colOptional ? 0 : 1), max);
-
+		IntegerListColumn intListCol = new IntegerListColumn(name, new IntegerColumn("creationTimeOffset", false, 0, MAX_ATTACHMENT_CREATION_TIME_OFFSET), colOptional, (colOptional ? 0 : 1), max);
+		
+		// Add virtual column which will contain the filenames of all attachments:
+		intListCol.addVirtualVersion(	GetVirtualFileNamesColumn(colOptional, max),
+										new FileNameGeneratorV2X(id, form.isObfuscateMediaFiles(), form.isObfuscateMediaFiles(), getFileExtension()));
+		
+		return intListCol;
 	}
 	
 	public IntegerColumn createV1XColumn()
 	{
 		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
-		return new IntegerColumn(getColumn().name, colOptional, (colOptional ? 0 : 1), max);
+		IntegerColumn intCol = new IntegerColumn(getColumn().name, colOptional, (colOptional ? 0 : 1), max);
+
+		// Add virtual column which will contain the filenames of all attachments:
+		intCol.addVirtualVersion(	GetVirtualFileNamesColumn(colOptional, max),
+									new FileNameGeneratorV1X(id, form.isObfuscateMediaFiles(), form.isObfuscateMediaFiles(), getFileExtension()));
+		
+		return intCol;
 	}
 	
 	@Override
@@ -257,7 +315,8 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Add the provided attachment file to the column corresponding to this field in the provided record. <br>
+	 * Add the provided attachment file to the column corresponding to this field in the provided record.
+	 * <br>
 	 * Note: does not actually alter the file system, only the record contents. The file is added to the file system as soon as it is requested through the
 	 * {@link #getNewAttachmentFile(FileStorageProvider, Record)} method.
 	 * 
@@ -309,8 +368,9 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Returns the creation time offset for an existing media file (the time offset in milliseconds between 
+	 * Returns the creation time offset for an existing media file (the time offset in milliseconds between
 	 * the record's creation and the creation of that file), given the {@code File} object itself.
+	 * 
 	 * @param file
 	 * @return the creation time offset
 	 */
@@ -324,9 +384,7 @@ public abstract class MediaField extends Field
 			// remove file extension before extracting creationTimeOffset (if obfuscated, name/ext separator is _ anyway)
 			int pos = deobfuscatedName.lastIndexOf(".");
 			if(pos > 0)
-			{
 				deobfuscatedName = deobfuscatedName.substring(0, pos);
-			}
 		}
 
 		// creationTimeOffset is the fourth part of the filename:
@@ -351,7 +409,7 @@ public abstract class MediaField extends Field
 	 */
 	public File getNewAttachmentFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
-		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
+		long creationTimeOffset = System.currentTimeMillis() - Form.GetStartTime(record, true).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
 		return new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename);
 	}
@@ -434,53 +492,39 @@ public abstract class MediaField extends Field
 	 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
 	 * 
 	 * @param record
+	 * @param creationTimeOffset
 	 * @param obfuscate
 	 * @return the generated filename
 	 */
 	public String generateFilename(Record record, long creationTimeOffset, boolean obfuscate)
 	{	
-		// Elements:
-		String dateTime = TimeUtils.getTimestampForFileName(form.getStartTime(record, true));
-		long deviceID = form.getDeviceID(record);
-		
-		// Assemble base filename
-		// Format: "FieldID_DeviceID_DateTime_CreationTimeOffset"
-		String filename = FileHelpers.makeValidFileName(this.getID()) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
-		String extension = getFileExtension();
-		char extensionSeparator = '.';
-		
-		// Obfuscate filename if necessary:
-		if(obfuscate)
-		{
-			// TODO - remove custom extension separator and rotate all at once?
-			filename = ROT13.rot13NumRot5(filename);
-			extensionSeparator = FILENAME_ELEMENT_SEPARATOR; // '_' instead of '.'
-			extension = ROT13.rot13NumRot5(extension).toUpperCase(); // Format: UPPERCASE(ROT13(extension))
-		}
-		return filename + extensionSeparator + extension;
+		return new FileNameGeneratorV2X(id, obfuscate, obfuscate, getFileExtension()).generateFilename(record, creationTimeOffset);
 	}
 	
 	/**
-	 * Undoes the obfuscation of the extension on filenames that match the {@link #HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT} pattern.
+	 * Generates a new filename for the next media attachment for this field. If obfuscation is enabled, the entire filename is obfuscated.
 	 * 
-	 * @param filename 
-	 * @return the deobfuscated extension if the input matched the pattern, else the input filename
+	 * @param record
+	 * @param attachmentNumber
+	 * @return the generated filename
 	 */
-	public static String undoHistoricExtensionObfuscation(String filename)
+	public String generateFilenameV1X(Record record, int attachmentNumber)
 	{
-		Matcher matcher = HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
-		if(matcher.find() && matcher.groupCount() == 2)
-		{	// Got match!
-			/*
-			 * System.out.println("Found value: " + matcher.group(0)); //entire expression
-			 * System.out.println("Found value: " + matcher.group(1)); //hash part
-			 * System.out.println("Found value: " + matcher.group(2)); //ROT13-ed and uppercased extension
-			 */
-			return ROT13.rot13NumRot5(matcher.group(1)) + '.' + ROT13.rot13NumRot5(matcher.group(2)).toLowerCase();
-		}
-		else
-			// No match, return filename as-is:
-			return filename;
+		return generateFilename(record, attachmentNumber, form.isObfuscateMediaFiles());
+	}
+	
+	/**
+	 * Generates a filename for a new attachment for this {@link MediaField} and the provided {@code record}.
+	 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
+	 * 
+	 * @param record
+	 * @param attachmentNumber
+	 * @param obfuscate
+	 * @return the generated filename
+	 */
+	public String generateFilenameV1X(Record record, int attachmentNumber, boolean obfuscate)
+	{	
+		return new FileNameGeneratorV1X(id, obfuscate, obfuscate, getFileExtension()).generateFilename(record, attachmentNumber);
 	}
 	
 	/* (non-Javadoc)
@@ -498,7 +542,46 @@ public abstract class MediaField extends Field
 		super.addFiles(filesSet, fileStorageProvider); // !!!
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
 	}
-
+	
+	/**
+	 * @param v1XRecord
+	 * @param findAndRenameFiles
+	 * @param fileStorageProvider
+	 * @return
+	 */
+	public Record convertV1XRecord(Record v1XRecord, boolean findAndRenameFiles, FileStorageProvider fileStorageProvider)	
+	{
+		File attachmentFolder = findAndRenameFiles ? fileStorageProvider.getProjectAttachmentFolder(form.project, false) : null;
+		IntegerColumn v1XColumn = createV1XColumn();
+		if(v1XColumn.isValuePresent(v1XRecord))
+			return null;
+		int attachmentCount = v1XColumn.retrieveValue(v1XRecord).intValue();
+		List<Long> creationTimeOffsets = new ArrayList<Long>(attachmentCount);
+		for(int attachmentNumber = 0; attachmentNumber < attachmentCount; attachmentNumber++)
+		{
+			Long fakeCreationTimeOffset = Long.valueOf(attachmentNumber * 100); // 100ms apart
+			creationTimeOffsets.add(fakeCreationTimeOffset);
+			if(findAndRenameFiles)
+			{
+				File v1XFile = new File(attachmentFolder, generateFilenameV1X(v1XRecord, attachmentNumber));
+				if(v1XFile.exists())
+					v1XFile.renameTo(new File(attachmentFolder, generateFilename(v1XRecord, fakeCreationTimeOffset)));
+			}
+		}
+		
+		// Create new record:
+		Record record = form.getSchema().createRecord();
+		for(Column<?> col : v1XRecord.getSchema().getColumns(false))
+			if(!col.equals(v1XColumn, true, false))
+				// Copy values of all columns except the v1x MediaField column:
+				col.storeObject(record, col.retrieveValue(v1XRecord));
+		// Set creationTimeOffsets in v2x MediaField column:
+		getColumn().storeValue(record, creationTimeOffsets);
+		
+		// Return new record:
+		return record;
+	}
+	
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -528,6 +611,194 @@ public abstract class MediaField extends Field
 		hash = 31 * hash + (showReview ? 0 : 1);
 		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());
 		return hash;
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <T>
+	 * @param <N>
+	 */
+	static protected abstract class FileNameGenerator<T, N extends Number> extends VirtualColumn.ValueMapper<List<String>, T> implements Serializable
+	{
+		
+		private static final long serialVersionUID = 2L;
+		
+		protected final String fieldID;
+		protected final boolean obfuscateFilename;
+		protected final boolean obfuscateExtension;
+		protected final String fileExtension;
+		
+		/**
+		 * @param obfuscateFilename
+		 * @param obfuscateExtension
+		 */
+		public FileNameGenerator(String fieldID, boolean obfuscateFilename, boolean obfuscateExtension, String fileExtension)
+		{
+			this.fieldID = fieldID;
+			this.obfuscateFilename = obfuscateFilename;
+			this.obfuscateExtension = obfuscateExtension;
+			this.fileExtension = fileExtension;
+		}
+		
+		/**
+		 * Generates a filename for the attachment with the given identifier for this {@link MediaField} and the provided {@code record}.
+		 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
+		 * 
+		 * @param record
+		 * @param attachmentIdentifier
+		 * @param obfuscateFilename
+		 * @param obfuscateExtension
+		 * @return
+		 */
+		public abstract String generateFilename(ValueSet<?> record, N attachmentIdentifier);
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if(this == obj)
+				return true;
+			if(!(obj instanceof FileNameGenerator))
+				return false;
+			FileNameGenerator<?, ?> that = (FileNameGenerator<?, ?>) obj;
+			return	this.fieldID == that.fieldID &&
+					this.obfuscateFilename == that.obfuscateFilename &&
+					this.obfuscateExtension == that.obfuscateExtension &&
+					this.fileExtension == that.fileExtension;
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			int hash = 1;
+			hash = 31 * hash + fieldID.hashCode();
+			hash = 31 * hash + (obfuscateFilename ? 0 : 1);
+			hash = 31 * hash + (obfuscateExtension ? 0 : 1);
+			hash = 31 * hash + fileExtension.hashCode();
+			return hash;
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static protected class FileNameGeneratorV2X extends FileNameGenerator<List<Long>, Long>
+	{
+		
+		private static final long serialVersionUID = 2L;
+		
+		public FileNameGeneratorV2X(String fieldID, boolean obfuscateFilename, boolean obfuscateExtension, String fileExtension)
+		{
+			super(fieldID, obfuscateFilename, obfuscateExtension, fileExtension);
+		}
+
+		/**
+		 * Generates a filename for the attachment with the given creationTimeOffset for this {@link MediaField} and the provided {@code record}.
+		 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
+		 * 
+		 * @param record
+		 * @param attachmentIdentifier
+		 * @param obfuscateFilename
+		 * @param obfuscateExtension
+		 * @return
+		 */
+		@Override
+		public String generateFilename(ValueSet<?> record, Long creationTimeOffset)
+		{
+			// Elements:
+			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record, true));
+			long deviceID = Form.GetDeviceID(record);
+			
+			// Assemble base filename
+			// Format: "FieldID_DeviceID_DateTime_CreationTimeOffset"
+			String filename = FileHelpers.makeValidFileName(fieldID) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
+			String ext = fileExtension;
+			char extensionSeparator = '.';
+			
+			// Obfuscate filename if necessary:
+			if(obfuscateFilename)
+				filename = ROT13.rot13NumRot5(filename);
+			if(obfuscateExtension)
+			{
+				extensionSeparator = FILENAME_ELEMENT_SEPARATOR; 	// '_' instead of '.'
+				ext = ROT13.rot13NumRot5(ext).toUpperCase(); 		// Format: UPPERCASE(ROT13(extension))
+			}
+			
+			// Return fully assembled filename:
+			return filename + extensionSeparator + ext;
+		}
+
+		@Override
+		public List<String> mapValue(List<Long> creationTimeOffsets, UnmodifiableValueSet<?> valueSet)
+		{
+			List<String> filenames = new ArrayList<String>(creationTimeOffsets.size());
+			for(Long creationTimeOffset : creationTimeOffsets)
+				filenames.add(generateFilename(valueSet, creationTimeOffset));
+			return Collections.unmodifiableList(filenames);
+		}
+
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static protected class FileNameGeneratorV1X extends FileNameGenerator<Long, Integer>
+	{
+		
+		private static final long serialVersionUID = 2L;
+		
+		public FileNameGeneratorV1X(String fieldID, boolean obfuscateFilename, boolean obfuscateExtension, String fileExtension)
+		{
+			super(fieldID, obfuscateFilename, obfuscateExtension, fileExtension);
+		}
+
+		/**
+		 * Generates a filename for the {@code attachmentNumber}-th attachment for this {@link MediaField} and the provided {@code record}.
+		 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
+		 * 
+		 * @param record
+		 * @param attachmentIdentifier
+		 * @param obfuscateFilename
+		 * @param obfuscateExtension
+		 * @return
+		 */
+		@Override
+		public String generateFilename(ValueSet<?> record, Integer attachmentNumber)
+		{	
+			// Elements:
+			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record, true));
+			long deviceID = Form.GetDeviceID(record);
+			
+			// Assemble base filename
+			//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
+			String filename = FileHelpers.makeValidFileName(fieldID) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
+			String ext = fileExtension;
+			char extensionSeparator = '.';
+			
+			// Obfuscate filename and/or extension if necessary:
+			if(obfuscateFilename)
+				filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(filename.getBytes()), 16, true); // Format: HEX(MD5(filename))
+			if(obfuscateExtension)
+			{
+				extensionSeparator = FILENAME_ELEMENT_SEPARATOR;	// '_' instead of '.'
+				ext = ROT13.rot13NumRot5(ext).toUpperCase(); 		// Format: UPPERCASE(ROT13(extension))
+			}
+			
+			// Return fully assembled filename:
+			return filename + extensionSeparator + ext;
+		}
+
+		@Override
+		public List<String> mapValue(Long nonNullValue, UnmodifiableValueSet<?> valueSet)
+		{
+			int attachmentCount = nonNullValue.intValue();
+			List<String> filenames = new ArrayList<String>(attachmentCount);
+			for(int attachmentNumber = 0; attachmentNumber < attachmentCount; attachmentNumber++)
+				filenames.add(generateFilename(valueSet, attachmentNumber));
+			return Collections.unmodifiableList(filenames);
+		}
+		
 	}
 	
 }

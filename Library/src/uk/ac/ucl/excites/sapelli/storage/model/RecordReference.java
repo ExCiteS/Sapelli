@@ -24,25 +24,26 @@ import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
+import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
  * Class representing a reference to another {@link Record}, identified by the value(s) of its primary key.
  * This is equivalent to a foreign key, as used to reference a record of another ("foreign") schema.
  * 
- * Implemented as a Record subclass, with an {@link PrimaryKey} instance (i.e. the primary key of the referenced, or "foreign" schema) as its schema.
+ * Implemented as {@link RecordValueSet}, with an {@link PrimaryKey} instance (i.e. the primary key of the referenced, or "foreign" schema) as its {@link ColumnSet}.
  * 
  * @author mstevens
  */
-public class RecordReference extends Record
+public class RecordReference extends RecordValueSet<PrimaryKey>
 {
 	
 	static private final long serialVersionUID = 2L;
 	
-	private Schema referencedSchema;
+	private final Schema referencedSchema;
 	
 	/**
 	 * Creates a new, but "empty", RecordReference which, once the column values have been set, can be used to reference a record of the given schema. 
@@ -52,7 +53,8 @@ public class RecordReference extends Record
 	 */
 	protected RecordReference(Schema referencedSchema) throws NullPointerException
 	{
-		this(referencedSchema, (Object []) null);
+		super(referencedSchema.getPrimaryKey());
+		this.referencedSchema = referencedSchema;
 	}
 	
 	/**
@@ -101,17 +103,18 @@ public class RecordReference extends Record
 	 * 
 	 * @param record the Record to be referenced ("pointed to"), also called the "foreign" record
 	 * @throws NullPointerException	if the Schema of the given Record does not have a primary key
+	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
 	 */
-	public RecordReference(Record record) throws NullPointerException
+	public RecordReference(Record record) throws NullPointerException, IncompletePrimaryKeyException
 	{
-		this(record.schema); // !!!
+		this(record.columnSet); // !!!
 		
 		// Copy the key part values:
-		for(Column<?> keyPartCol : schema.getColumns(false))
+		for(Column<?> keyPartCol : columnSet.getColumns(false))
 		{
 			Object keyPartValue = keyPartCol.retrieveValueCopy(record);
 			if(keyPartValue == null)
-				throw new IllegalArgumentException("Cannot construct RecordReference from record because key part \"" + keyPartCol.getName() + "\" has not been set");
+				throw new IncompletePrimaryKeyException("Cannot construct RecordReference from record because key part \"" + keyPartCol.getName() + "\" has not been set");
 			setValue(keyPartCol, keyPartValue);
 		}
 	}
@@ -127,15 +130,6 @@ public class RecordReference extends Record
 		this.referencedSchema = another.referencedSchema;
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getReference()
-	 */
-	@Override
-	public RecordReference getReference() throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("Cannot create a RecordReference to a RecordReference");
-	}
-	
 	/**
 	 * @return the referencedSchema
 	 */
@@ -148,10 +142,13 @@ public class RecordReference extends Record
 	 * Returns a {@link SingleRecordQuery} which can be used to find the referenced record in a RecordStore or Collection.
 	 * 
 	 * @return a query that looks for the record this reference points to
-	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
+	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQuery()
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQuery()
 	 */
-	public SingleRecordQuery getRecordQuery() throws IllegalStateException
+	@Override
+	public SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException
 	{
 		return new FirstRecordQuery(Source.From(referencedSchema), Order.UNDEFINED, getRecordQueryConstraint());
 	}
@@ -159,19 +156,23 @@ public class RecordReference extends Record
 	/**
 	 * Returns a {@link Constraint} that matches on the referenced record's primary key values.
 	 * 
-	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
+	 * @return a Constraint
+	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQueryConstraint()
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQueryConstraint()
 	 */
-	public Constraint getRecordQueryConstraint() throws IllegalStateException
+	@Override
+	public Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException
 	{
 		if(!isFilled())
-			throw new IllegalStateException("All values of the key must be set before a record selecting constraint/query can be created!");
+			throw new IncompletePrimaryKeyException("All values of the key must be set before a record selecting constraint/query can be created!");
 		
 		// Match for key parts:
 		AndConstraint constraints = new AndConstraint();
 		int c = 0;
 		for(Object keyPart : values)
-			constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
+			constraints.addConstraint(new EqualityConstraint(columnSet.getColumn(c++), keyPart));
 		
 		return constraints.reduce();
 	}

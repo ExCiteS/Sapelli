@@ -94,14 +94,14 @@ public final class ColumnOptionalityAdvisor
 
 	/**
 	 * Determines the optionality for the column that will back a given field.
-	 * The applied rule is as follows:
-	 * 	- optional fields get an optional column;
-	 * 	- non-optional fields get a non-optional column provided they *cannot* be by-passed, if they *can* be by-passed they get an optional column
+	 * The applied rule is as follows:<ul>
+	 * 	<li>optional fields get an optional column;</li>
+	 * 	<li>non-optional fields get a non-optional column provided they *cannot* be by-passed, if they *can* be by-passed they get an optional column.</li></ul>
 	 * 
-	 * For historic reference:
+	 * <p>For historic reference:
 	 * 	The old way to determine column optionality (before introduction of by-passable field detection) was:
 	 * 		columnOptionality = (field.optional != Optionalness.NEVER);
-	 * 	I.e. fields which optionality ALWAYS or NOT_IF_REACHED got an optional column, fields with optionality NEVER got a non-optional column. 
+	 * 	I.e. fields which optionality ALWAYS or NOT_IF_REACHED got an optional column, fields with optionality NEVER got a non-optional column.</p> 
 	 * 
 	 * @param fieldWithColumn the field for which to determine column optionality
 	 * @return the optionality value (true = optional, false = mandatory/non-optional) for the column that will back the given field

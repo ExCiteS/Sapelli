@@ -23,8 +23,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -32,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class FloatColumn extends ComparableColumn<Double>
+public class FloatColumn extends NumberColumn<Double>
 {	
 	
 	static private final long serialVersionUID = 2L;
@@ -48,9 +47,27 @@ public class FloatColumn extends ComparableColumn<Double>
 		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_DOUBLE_PRECISION);
 	}
 	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param doublePrecision
+	 */
 	public FloatColumn(String name, boolean optional, boolean signed, boolean doublePrecision)
 	{
-		super(name, optional);
+		this(name, optional, signed, doublePrecision, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param doublePrecision
+	 * @param defaultValue
+	 */
+	public FloatColumn(String name, boolean optional, boolean signed, boolean doublePrecision, Double defaultValue)
+	{
+		super(name, optional, defaultValue);
 		this.doublePrecision = doublePrecision;
 		this.signed = signed;
 	}
@@ -62,17 +79,17 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	/**
-	 * Float version of {@link FloatColumn#storeValue(Record, Double)}
+	 * Float version of {@link FloatColumn#storeValue(ValueSet, Double)}
 	 * 
-	 * @param record
+	 * @param valueSet
 	 * @param value
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public void storeValue(Record record, Float value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(ValueSet<?> valueSet, Float value) throws IllegalArgumentException, NullPointerException
 	{
 		Double doubleValue = (value != null ? Double.valueOf(value.floatValue()) : null);
-		storeValue(record, doubleValue);
+		storeValue(valueSet, doubleValue);
 	}
 	
 	/**
@@ -84,32 +101,32 @@ public class FloatColumn extends ComparableColumn<Double>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	public Object convert(Object value)
+	public Double convert(Object value)
 	{
-		return value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue()));
+		return (Double) (value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue())));
 	}
 	
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public double getPrimitiveDouble(Record record, double nullReplacement)
+	public double getPrimitiveDouble(ValueSet<?> valueSet, double nullReplacement)
 	{
-		Double doubleValue = retrieveValue(record);
+		Double doubleValue = retrieveValue(valueSet);
 		if(doubleValue == null)
 			return nullReplacement;
 		return doubleValue.doubleValue();
 	}
 	
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public float getPrimitiveFloat(Record record, float nullReplacement)
+	public float getPrimitiveFloat(ValueSet<?> valueSet, float nullReplacement)
 	{
-		Double doubleValue = retrieveValue(record);
+		Double doubleValue = retrieveValue(valueSet);
 		if(doubleValue == null)
 			return nullReplacement;
 		return doubleValue.floatValue();
@@ -212,7 +229,7 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (doublePrecision ? 0 : 1);

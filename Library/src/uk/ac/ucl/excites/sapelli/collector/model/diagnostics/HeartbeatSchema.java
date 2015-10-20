@@ -18,15 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.diagnostics;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
@@ -38,6 +39,8 @@ public class HeartbeatSchema extends Schema
 {
 	
 	static private final long serialVersionUID = 2L;
+	
+	static public final String HEARTBEAT_NAME = "Heartbeat";
 	
 	static public final TimeStampColumn	COLUMN_LOCAL_TIME = TimeStampColumn.Century21("LocalTime", false, true);
 	static public final IntegerColumn	COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", false, true, Long.SIZE);
@@ -56,7 +59,13 @@ public class HeartbeatSchema extends Schema
 	{
 		// Call Schema constructor (the schema will be added to the project model): 
 		super(	project.getModel(),
-				project.getModel().getName() + ":" + "Heartbeat");
+				project.getModel().getName() + ":" + HEARTBEAT_NAME,
+				CollectorClient.GetSchemaTableName(
+					null,
+					CollectorClient.SCHEMA_FLAGS_COLLECTOR_AUX_DATA,
+					Project.class.getSimpleName() + project.getID() + "_" + project.getFingerPrint() + "_" + HEARTBEAT_NAME,
+					null),
+				CollectorClient.SCHEMA_FLAGS_COLLECTOR_AUX_DATA);
 		// Add columns:
 		this.addColumn(COLUMN_LOCAL_TIME);
 		this.addColumn(COLUMN_DEVICE_ID);

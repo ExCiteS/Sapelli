@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.util;
 import android.content.Context;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 
 /**
  * Helper methods to deal with screen resolutions, density and px/dpi conversions 
@@ -88,7 +89,7 @@ public final class ScreenMetrics
 	 * @param pixels  a value in Pixels
 	 * @return the corresponding value in DIPs
 	 * */
-	public static float ConvertPxToDip(Context context, int pixels)
+	public static float ConvertPxToDip(Context context, float pixels)
 	{
 		DisplayMetrics dm = context.getResources().getDisplayMetrics();
 		return pixels / dm.density; // dm.density gives the scaling factor (= dm.densityDpi / DisplayMetrics.DENSITY_DEFAULT = dm.densityDpi / 160)
@@ -102,8 +103,7 @@ public final class ScreenMetrics
 	 * */
 	public static int ConvertDipToPx(Context context, float dips)
 	{
-		DisplayMetrics dm = context.getResources().getDisplayMetrics();
-		return Math.round(dips * dm.density); // dm.density gives the scaling factor (= dm.densityDpi / DisplayMetrics.DENSITY_DEFAULT = dm.densityDpi / 160)
+		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dips, context.getResources().getDisplayMetrics());
 	}
 	
 	public static void LogDisplayMetrics(Context context)

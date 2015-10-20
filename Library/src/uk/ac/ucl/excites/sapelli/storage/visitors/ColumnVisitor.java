@@ -18,25 +18,35 @@
 
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 
 /**
- * @author mstevens
+ * An interface for visitors that inspect columns.
+ * It has {@code visit(Column)} methods for each type of column.
+ * Additionally the {@code enter(ValueSetColumn)} and an {@code leave(ValueSetColumn)} methods are used to signal
+ * that the visitor is respectively entering or leaving a {@link ValueSetColumn} to inspect its subcolumns. 
  *
+ * @see <a href="https://en.wikipedia.org/wiki/Visitor_pattern">Visitor Design Pattern</a>
+ * @author mstevens
  */
 public interface ColumnVisitor
 {
@@ -48,10 +58,18 @@ public interface ColumnVisitor
 	public void visit(FloatColumn floatCol);
 	
 	public void visit(IntegerColumn intCol);
-		
+	
 	public void visit(StringColumn stringCol);
 	
+	public void visit(ByteArrayColumn byteArrayCol);
+	
 	public void visit(IntegerListColumn intListCol);
+	
+	public void visit(BooleanListColumn boolListCol);
+	
+	public void visit(StringListColumn stringListCol);
+	
+	public void visit(ByteArrayListColumn byteArrayListCol);
 	
 	public void visit(LineColumn lineCol);
 	
@@ -63,15 +81,13 @@ public interface ColumnVisitor
 	
 	public void visit(OrientationColumn orCol);
 	
-	public void visit(ByteArrayColumn byteArrayCol);
-	
 	public <T> void visit(ListColumn.Simple<T> simpleListCol);
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
-	public void enter(RecordColumn<?> recordCol);
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol);
 	
-	public void leave(RecordColumn<?> recordCol);
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol);
 	
 	public boolean allowLocationSelfTraversal();
 	

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.model.indexes;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 
@@ -29,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
  * 
  * @author mstevens
  */
-public class Index extends Schema
+public class Index extends ColumnSet
 {
 
 	static private final long serialVersionUID = 2L;
@@ -52,7 +53,7 @@ public class Index extends Schema
 	 */
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
-		super(InternalKind.Index, name);
+		super(name, false); // don't use virtual versions
 		
 		// We need at least one column:
 		if(columns == null || columns.length < 1)
@@ -68,17 +69,22 @@ public class Index extends Schema
 			else if(iCol instanceof VirtualColumn)
 				throw new IllegalArgumentException("Indexing of virtual columns is not supported!");
 			else
-				addColumn(iCol, false); // add column but *not* its virtual version
-				// Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
+				addRealColumn(iCol); // add column
+				// Note: the columns are not copied, just shared! (columns don't "know" to which ColumnSet(s) or Schema(ta) they belong)
 		
 		// Seal (no more columns can be added to the index):
 		seal();
 	}
 	
+	/**
+	 * Override to disable adding columns from the outside
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ColumnSet#addColumn(uk.ac.ucl.excites.sapelli.storage.model.Column, boolean, boolean)
+	 */
 	@Override
-	public <C extends Column<T>, T> C addColumn(C column) throws UnsupportedOperationException
+	public <C extends Column<T>, T> C addColumn(C column, boolean useVirtualVersions, boolean seal) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("adding columns to an existing index is not allowed");
+		throw new UnsupportedOperationException("Adding columns to an existing index is not allowed");
 	}
 
 	/**
@@ -89,27 +95,9 @@ public class Index extends Schema
 		return unique;
 	}
 	
-	@Override
-	public String toString()
-	{
-		return "Index " + name;
-	}
-	
 	public boolean isMultiColumn()
 	{
 		return getNumberOfColumns(false) > 1;
-	}
-	
-	@Override
-	public <I extends Index> I addIndex(I index) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("Cannot add indexes to an index");
-	}
-	
-	@Override
-	public void setPrimaryKey(PrimaryKey primaryKey) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("Cannot set a primary key on an index");
 	}
 	
 	@Override

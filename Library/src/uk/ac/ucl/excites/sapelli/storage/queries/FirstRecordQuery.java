@@ -23,6 +23,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * @author mstevens
@@ -48,6 +49,14 @@ public class FirstRecordQuery extends SingleRecordQuery
 	public FirstRecordQuery(Source source, Order order, Constraint... constraints)
 	{
 		super(new RecordsQuery(source, order, 1, constraints));
+	}
+
+	/**
+	 * @param recordsQuery
+	 */
+	public FirstRecordQuery(RecordsQuery recordsQuery)
+	{
+		super(recordsQuery);
 	}
 
 	/* (non-Javadoc)

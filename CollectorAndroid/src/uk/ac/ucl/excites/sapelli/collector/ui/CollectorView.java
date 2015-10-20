@@ -60,6 +60,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.WindowManager;
@@ -109,7 +110,15 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	public CollectorView(CollectorActivity activity)
 	{
-		super(activity);
+		/* Important:
+		 * 	The use of the ContextThemeWrapper below effectively overrides the theme which is applied to the CollectorActivity,
+		 * 	or the whole application, in the manifest (which is required to be an AppCompat theme because all our activities
+		 * 	inherit from AppCompatActivity). Because we override it here in CollectorView it affects the whole UI, although
+		 * 	the effect is only really visible on pages and (stand-alone) textual widgets. We use is android.R.style.Theme to
+		 * 	stick to the "classic" (Gingerbread-era) high-contrast grey/white-on-black look Sapelli users are used to, and in
+		 * 	which the styling of pages and textual widgets more closely matches that of decision trees. */  
+		super(new ContextThemeWrapper(activity, android.R.style.Theme)); // !!!
+		
 		this.activity = activity;
 		this.fieldUICache = new HashMap<Field, FieldUI<? extends Field, View, CollectorView>>();
 

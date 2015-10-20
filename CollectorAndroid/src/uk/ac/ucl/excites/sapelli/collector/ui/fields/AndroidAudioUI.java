@@ -20,13 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -40,6 +33,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.LinearLayout;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 
 /**
  * A subclass of AndroidMediaUI which allows for the capture and review of 

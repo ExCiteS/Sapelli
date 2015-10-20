@@ -18,13 +18,17 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectAlreadyStoredException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -128,6 +132,14 @@ public abstract class ProjectStore extends Store
 	public abstract List<Project> retrieveProjects();
 	
 	/**
+	 * Retrieves all projects as ProjectDescriptor or Project instances.
+	 * If the ProjectStore implements a caching mechanism than any cached Project objects will be returned as such (rather than as ProjectDescriptors).
+	 * 
+	 * @return
+	 */
+	public abstract <P extends ProjectDescriptor> List<P> retrieveProjectsOrDescriptors();
+	
+	/**
 	 * Retrieves specific Project
 	 * 
 	 * @return null if project was not found
@@ -154,6 +166,24 @@ public abstract class ProjectStore extends Store
 	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
 	
 	/**
+	 * Retrieves specific a project, returned as a ProjectDescriptor or a Project instance.
+	 * If the ProjectStore implements a caching mechanism than any cached Project objects will be returned as such (rather than as ProjectDescriptors).
+	 * 
+	 * @param projectID
+	 * @param projectFingerPrint
+	 * @return null if no such project was found
+	 */
+	public abstract ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint);
+	
+	/**
+	 * Retrieves specific Project, identified by ProjectDescriptor
+	 * 
+	 * @param descriptor
+	 * @return
+	 */
+	public abstract Project retrieveProject(ProjectDescriptor descriptor);
+	
+	/**
 	 * For backwards compatibility only
 	 * 
 	 * @param id
@@ -173,14 +203,47 @@ public abstract class ProjectStore extends Store
 	/**
 	 * Delete specific project
 	 * 
-	 * @return
+	 * @param project
 	 */
 	public abstract void delete(Project project);
+	
+	/**
+	 * Delete specific Project, identified by ProjectDescriptor
+	 * 
+	 * @param projectDescriptor
+	 */
+	public abstract void delete(ProjectDescriptor projectDescriptor);
 	
 	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	
 	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
 	
 	public abstract void deleteHeldForeignKey(Relationship relationship);
+	
+	/**
+	 * Must serialise the given Project instance and write the result to the given OutputStream.
+	 * The serialised representation must be self-contained (i.e. it must fully describe the Project) and be understood by {@link #deserialise(InputStream)}.
+	 * 
+	 * The given project is not necessarily already be stored in the ProjectStore, and if it is not, it won't be the method returns either.
+	 * The method implementation may use, but should *not* rely, on querying the ProjectStore itself.
+	 *  
+	 * @param project the Project instance to serialise
+	 * @param out the OutputStream to write to
+	 * @throws IOException in case an I/O error occurs
+	 */
+	public abstract void serialise(Project project, OutputStream out) throws IOException;
+	
+	/**
+	 * Must read a serialised Project (as produced by {@link #serialise(Project, OutputStream)}) from the given InputStream and deserialse it back to a Project instance.
+	 * May use but should not rely on querying the ProjectStore itself.
+	 * 
+	 * The given project is not necessarily already be stored in the ProjectStore, and if it is not, it won't be the method returns either.
+	 * The method implementation may use, but should *not* rely, on querying the ProjectStore itself.
+	 * 
+	 * @param in the InputStream to read from
+	 * @return the deserialised Project instance
+	 * @throws IOException in case an I/O error occurs
+	 */
+	public abstract Project deserialise(InputStream in) throws IOException;
 
 }

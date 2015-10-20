@@ -61,7 +61,7 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 	@Override
 	public boolean isValid(Record record)
 	{
-		return field.isNoColumn() || field.isOptional() || field.getColumn().isValueSet(record);
+		return field.isNoColumn() || field.isOptional() || field.getColumn().isValuePresent(record);
 	}
 
 	/* (non-Javadoc)

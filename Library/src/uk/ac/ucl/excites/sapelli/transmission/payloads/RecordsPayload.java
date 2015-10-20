@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
@@ -118,8 +119,6 @@ public class RecordsPayload extends Payload
 			if(!record.isFilled())
 				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping? TODO what with autoIncrementingPK? should such records be transferable at all?
 			Schema schema = record.getSchema();
-			if(schema.isInternal())
-				throw new IllegalArgumentException("Cannot directly transmit records of an internal schema.");
 			
 			// Model:
 			if(recordsBySchema.isEmpty())
@@ -419,12 +418,7 @@ public class RecordsPayload extends Payload
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(out);
 		}
 	}
 	
@@ -503,12 +497,7 @@ public class RecordsPayload extends Payload
 		}
 		finally
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
 		}
 	}
 	

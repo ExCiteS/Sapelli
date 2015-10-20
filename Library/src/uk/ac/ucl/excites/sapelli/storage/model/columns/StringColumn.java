@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -36,7 +37,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class StringColumn extends ComparableColumn<String>
+public class StringColumn extends ComparableColumn<String> implements ListLikeColumn<String>
 {
 	
 	//STATIC---------------------------------------------------------
@@ -44,7 +45,7 @@ public class StringColumn extends ComparableColumn<String>
 	
 	static private final Charset DEFAULT_CHARSET = UnicodeHelpers.UTF8;
 	static private final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
-	static private final char SERIALISATION_QUOTE = '\'';
+	static private final char DEFAULT_SERIALISATION_DELIMITER = '\'';
 	
 	/**
 	 * The number of characters that can fit in the given number of bytes when the given Charset is used to encode them.
@@ -76,26 +77,104 @@ public class StringColumn extends ComparableColumn<String>
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars)
 	{
-		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_CHARSET);
+		return ForCharacterCount(name, optional, maxLengthChars, (String) null);
 	}
 	
 	/**
 	 * @param name
 	 * @param optional
 	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
-	 * @param charset the charset to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, String defaultValue)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_SERIALISATION_DELIMITER);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param serialisationDelimiter
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, char serialisationDelimiter)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, (String) null, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, String defaultValue, char serialisationDelimiter)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_CHARSET, defaultValue, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
 	 * @return
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset)
 	{
+		return ForCharacterCount(name, optional, maxLengthChars, charset, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset, String defaultValue)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, charset, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param serialisationDelimiter
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset, char serialisationDelimiter)
+	{
+		return ForCharacterCount(name, optional, maxLengthChars, charset, null, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset, String defaultValue, char serialisationDelimiter)
+	{
 		if(maxLengthChars <= 0)
 			throw new IllegalArgumentException("maxLenghthChars needs to be at least 1 character to make sense, given " + maxLengthChars + " characters");
-		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset);
+		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset, defaultValue, serialisationDelimiter);
 	}
 	
 	//DYNAMIC--------------------------------------------------------
 	private final String charsetName;
 	private transient Charset charset;
+	private final char serialisationDelimiter;
 	private final IntegerRangeMapping sizeField;
 	
 	/**
@@ -104,7 +183,38 @@ public class StringColumn extends ComparableColumn<String>
 	 */
 	public StringColumn(String name, boolean optional)
 	{
-		this(name, optional, DEFAULT_MAX_LENGTH_BYTES, DEFAULT_CHARSET);
+		this(name, optional, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 */
+	public StringColumn(String name, boolean optional, String defaultValue)
+	{
+		this(name, optional, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, char serialisationDelimiter)
+	{
+		this(name, optional, (String) null, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, String defaultValue, char serialisationDelimiter)
+	{
+		this(name, optional, DEFAULT_MAX_LENGTH_BYTES, defaultValue, serialisationDelimiter);
 	}
 	
 	/**
@@ -114,61 +224,166 @@ public class StringColumn extends ComparableColumn<String>
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes)
 	{
-		this(name, optional, maxLengthBytes, DEFAULT_CHARSET);
+		this(name, optional, maxLengthBytes, (String) null);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param defaultValue
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, String defaultValue)
+	{
+		this(name, optional, maxLengthBytes, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
 	}
 	
 	/**
 	 * @param name
 	 * @param optional
 	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
-	 * @param charset the charset to use to encode/decode Strings to/from bytes
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, char serialisationDelimiter)
+	{
+		this(name, optional, maxLengthBytes, (String) null, serialisationDelimiter);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, String defaultValue, char serialisationDelimiter)
+	{
+		this(name, optional, maxLengthBytes, DEFAULT_CHARSET, defaultValue, serialisationDelimiter);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
-		super(name, optional);
+		this(name, optional, maxLengthBytes, charset, null);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset, String defaultValue)
+	{
+		this(name, optional, maxLengthBytes, charset, defaultValue, DEFAULT_SERIALISATION_DELIMITER);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset, char serialisationDelimiter)
+	{
+		this(name, optional, maxLengthBytes, charset, null, serialisationDelimiter);
+	}
+
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
+	 * @param charset the {@link Charset} to use to encode/decode Strings to/from bytes
+	 * @param defaultValue
+	 * @param serialisationDelimiter
+	 */
+	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset, String defaultValue, char serialisationDelimiter)
+	{
+		super(name, optional, defaultValue);
 		if(maxLengthBytes <= 0)
 			throw new IllegalArgumentException("maxLenghthBytes needs to be at least 1 byte to make sense, given " + maxLengthBytes + " bytes");
 		if(charset == null)
 			throw new NullPointerException("charset cannot be null!");
 		this.charsetName = charset.name(); // !!! (because charset is transient, due to Charset not being Serializable)
 		this.charset = charset;
+		this.serialisationDelimiter = serialisationDelimiter;
 		this.sizeField = new IntegerRangeMapping(0, maxLengthBytes); // empty Strings are allowed
 	}
 	
 	@Override
 	public StringColumn copy()
 	{
-		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName));
+		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), null);
 	}
 	
 	/**
-	 * @param value the String to parse, expected to be neither null nor "" and delimited by {@link StringColumn#SERIALISATION_QUOTE} (meaning that if it is meant to be an empty String it will be "''")
+	 * @return the serialisationDelimiter
+	 */
+	public char getSerialisationDelimiter()
+	{
+		return serialisationDelimiter;
+	}
+
+	/**
+	 * @param value the String to parse, expected to be neither null nor empty and delimited by {@link #serialisationDelimiter} (meaning that the resulting value is meant to be the empty String, and the serialisationDelimiter is "'", then the given valueString must be "''")
 	 * @return the parsed value
 	 */
 	@Override
-	public String parse(String value) throws ParseException
+	public String parse(String valueString) throws ParseException
 	{
-		if(value.length() < 2)
-			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", 0);
-		if(value.charAt(0) != SERIALISATION_QUOTE)
-			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", 0);
-		if(value.charAt(value.length() - 1) != SERIALISATION_QUOTE)
-			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", value.length() - 1);
-		return value.substring(1, value.length() - 1); // strip away the quotes
+		return parse(valueString, false); // delimited!
+	}
+
+	@Override
+	public String parse(String valueString, boolean undelimited) throws ParseException, IllegalArgumentException, NullPointerException
+	{
+		if(!undelimited)
+		{
+			// Perform delimiter checks:
+			if(valueString.length() < 2)
+				throw new ParseException("String is not delimited by " + serialisationDelimiter + "s", 0);
+			if(valueString.charAt(0) != serialisationDelimiter)
+				throw new ParseException("String does not begin with " + serialisationDelimiter, 0);
+			if(valueString.charAt(valueString.length() - 1) != serialisationDelimiter)
+				throw new ParseException("String does not end with " + serialisationDelimiter, valueString.length() - 1);
+			// Remove serialisationDelimiters:
+			return valueString.substring(1, valueString.length() - 1);
+		}
+		else
+			return valueString;
 	}
 	
 	/**
-	 * We wrap all Strings between {@link SERIALISATION_QUOTE}s to avoid that empty Strings are treated as null in {@link Column} and elsewhere
-	 * 
-	 * Warning, no escape takes place at this level! So occurrences of {@link SERIALISATION_QUOTE} within the value will be left unchanged.
+	 * We wrap all Strings between serialisationDelimiters to preserve the difference between a null String and an empty String value (because empty Strings are treated as null in {@link Column})
+	 * Warning: no escaping takes place at this level! So occurrences of serialisationDelimiter within the value will be left unchanged.
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
 	public String toString(String value)
 	{
-		return SERIALISATION_QUOTE + value + SERIALISATION_QUOTE; // surround with quotes
-		//TODO escape!!!!!
+		return toString(value, false); // delimited!
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn#toString(java.lang.Object, boolean)
+	 */
+	@Override
+	public String toString(String value, boolean undelimited)
+	{
+		return (undelimited ? "" : serialisationDelimiter) + value + (undelimited ? "" : serialisationDelimiter); // surround with serialisationDelimiter unless undelimited
+	}
+	
+	public boolean fits(String value)
+	{
+		return isValidValue(value);
 	}
 	
 	/**
@@ -234,8 +449,10 @@ public class StringColumn extends ComparableColumn<String>
 	{
 		if(otherColumn instanceof StringColumn)
 		{
-			StringColumn other = (StringColumn) otherColumn;
-			return this.getMaximumBytes() == other.getMaximumBytes() && this.getCharset().equals(other.getCharset());
+			StringColumn that = (StringColumn) otherColumn;
+			return	this.getMaximumBytes() == that.getMaximumBytes() &&
+					this.serialisationDelimiter == that.serialisationDelimiter &&
+					this.getCharset().equals(that.getCharset());
 		}
 		else
 			return false;
@@ -260,10 +477,11 @@ public class StringColumn extends ComparableColumn<String>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + getCharset().hashCode();
+		hash = 31 * hash + serialisationDelimiter;
 		hash = 31 * hash + sizeField.hashCode();
 		return hash;
 	}

@@ -19,6 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +31,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -39,16 +43,13 @@ import android.util.Log;
  * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
  * 
  * @author Michalis Vitos, mstevens
- */
-/**
- * @author mstevens
- *
+ * @deprecated
  */
 public class PrefProjectStore extends ProjectStore
 {
 	
 	// Statics----------------------------------------------
-	static protected final String TAG = "DB4OPrefDataAccess";
+	static protected final String TAG = "PrefProjctStore";
 	private static final String PREFERENCES_NAME = "PROJECT_STORAGE";
 	private static final String PREF_KEY_SEPARATOR = "_";
 	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT";
@@ -146,7 +147,7 @@ public class PrefProjectStore extends ProjectStore
 		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectFingerPrint), null);
 		if(folderPath != null)
 		{
-			Project p = ProjectLoader.ParseProject(folderPath);
+			Project p = ProjectLoader.ParseProjectXMLInFolder(folderPath);
 			if(p != null)
 			{
 				cacheProject(p); // cache the project (the cache will be initialised if needed)
@@ -198,7 +199,7 @@ public class PrefProjectStore extends ProjectStore
 				int projectFingerPrint = getProjectFingerPrint(entry.getKey());
 				if(getCachedProject(projectID, projectFingerPrint) == null)
 				{	// Parse the project if it is not already in the cache:
-					Project p = ProjectLoader.ParseProject(entry.getValue().toString());
+					Project p = ProjectLoader.ParseProjectXMLInFolder(entry.getValue().toString());
 					if(p != null)
 					{
 						if(p.getFingerPrint() != projectFingerPrint)
@@ -335,7 +336,44 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public void backup(StoreBackupper backuper, File destinationFolder)
 	{
-		// TODO implement preferences backup
+		throw new UnsupportedOperationException("preferences backup not implemented");
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Project> retrieveProjectsOrDescriptors()
+	{
+		return retrieveProjects();
+	}
+
+	@Override
+	public Project retrieveProject(ProjectDescriptor descriptor)
+	{
+		return retrieveProject(descriptor.getID(), descriptor.getFingerPrint());
+	}
+
+	@Override
+	public void delete(ProjectDescriptor projectDescriptor)
+	{
+		delete(retrieveProject(projectDescriptor));
+	}
+
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return retrieveProject(projectID, projectFingerPrint);
+	}
+
+	@Override
+	public void serialise(Project project, OutputStream out) throws IOException
+	{
+		throw new UnsupportedOperationException("serialise() not implemented");
+	}
+
+	@Override
+	public Project deserialise(InputStream in) throws IOException
+	{
+		throw new UnsupportedOperationException("deserialise() not implemented");
 	}
 
 }

@@ -26,8 +26,8 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class IntegerColumn extends ComparableColumn<Long>
+public class IntegerColumn extends NumberColumn<Long>
 {
 	
 	// STATICS -----------------------------------------------------------
@@ -57,7 +57,19 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional)
 	{
-		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_SIZE_BITS);
+		this(name, optional, (Long) null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn with the default number of bits ({@value #DEFAULT_SIZE_BITS}) and the default signedness ({@value #DEFAULT_SIGNEDNESS})
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, Long defaultValue)
+	{
+		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_SIZE_BITS, defaultValue);
 	}
 
 	/**
@@ -69,7 +81,20 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, int sizeBits)
 	{
-		this(name, optional, DEFAULT_SIGNEDNESS, sizeBits);
+		this(name, optional, sizeBits, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn of the specified size (in bits) and the default signedness ({@value #DEFAULT_SIGNEDNESS})
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param sizeBits	size in number of bits (minimum 1, maximum 64)
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, int sizeBits, Long defaultValue)
+	{
+		this(name, optional, DEFAULT_SIGNEDNESS, sizeBits, defaultValue);
 	}
 	
 	/**
@@ -81,7 +106,20 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed)
 	{
-		this(name, optional, signed, DEFAULT_SIZE_BITS);
+		this(name, optional, signed, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn with the default number of bits ({@value #DEFAULT_SIZE_BITS}) and the specified signedness
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, boolean signed, Long defaultValue)
+	{
+		this(name, optional, signed, DEFAULT_SIZE_BITS, defaultValue);
 	}
 	
 	/**
@@ -94,7 +132,21 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
-		this(name, optional, signed, sizeBits, false);
+		this(name, optional, signed, sizeBits, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn of the specified size (in bits) and the specified signedness
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param sizeBits	size in number of bits (minimum 1, maximum 64 or 63, depending on signed)
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits, Long defaultValue)
+	{
+		this(name, optional, signed, sizeBits, false, defaultValue);
 	}
 	
 	/**
@@ -109,7 +161,23 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits, boolean allowEmpty)
 	{
-		super(name, optional);
+		this(name, optional, signed, sizeBits, allowEmpty, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn of the specified size (in bits) and the specified signedness.
+	 * {@code sizeBits} can be 0 but to avoid this being done by accident {@code allowEmpty} must be {@code true} in that case.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param sizeBits	size in number of bits (minimum 0 or 1, depending on allowEmpty; maximum 64 or 63, depending on signed)
+	 * @param allowEmpty	whether or not to allow sizeBits to be 0
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits, boolean allowEmpty, Long defaultValue)
+	{
+		super(name, optional, defaultValue);
 		if(sizeBits < (allowEmpty ? 0 : 1) || sizeBits > (Long.SIZE - (signed ? 0 : 1)))
 			throw new IllegalArgumentException(	"Invalid size (" + sizeBits + " bits), allowed range for " +
 												(signed ? "" : "un") + "signed and " + (allowEmpty ? "" : "not ") + "allowed empty is [" +
@@ -130,7 +198,22 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue)
 	{
-		this(name, optional, minLogicalValue, maxLogicalValue, false);
+		this(name, optional, minLogicalValue, maxLogicalValue, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn that is just big enough to be able to store any integer
+	 * from the range [minLogicalValue; maxLogicalValue] (inclusive).
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param minLogicalValue
+	 * @param maxLogicalValue	must be strictly larger than minLogicalValue
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue, Long defaultValue)
+	{
+		this(name, optional, minLogicalValue, maxLogicalValue, false, defaultValue);
 	}
 	
 	/**
@@ -145,7 +228,23 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue, boolean allowEmpty)
 	{
-		this(name, optional, new IntegerRangeMapping(minLogicalValue, maxLogicalValue, allowEmpty));
+		this(name, optional, minLogicalValue, maxLogicalValue, allowEmpty, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn that is just big enough to be able to store any integer
+	 * from the range [minLogicalValue; maxLogicalValue] (inclusive).
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param minLogicalValue
+	 * @param maxLogicalValue
+	 * @param allowEmpty	when {@code false} minLogicalValue must be < maxLogicalValue, when {@code true} minLogicalValue must be <= maxLogicalValue
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue, boolean allowEmpty, Long defaultValue)
+	{
+		this(name, optional, new IntegerRangeMapping(minLogicalValue, maxLogicalValue, allowEmpty), defaultValue);
 	}
 	
 	/**
@@ -157,7 +256,20 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, IntegerRangeMapping rangeMapping)
 	{
-		super(name, optional);
+		this(name, optional, rangeMapping, null);
+	}
+	
+	/**
+	 * Creates an IntegerColumn that is just big enough to be able to store values accepted by the provided IntegerRangeMapping
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param rangeMapping
+	 * @param defaultValue
+	 */
+	public IntegerColumn(String name, boolean optional, IntegerRangeMapping rangeMapping, Long defaultValue)
+	{
+		super(name, optional, defaultValue);
 		this.rangeMapping = rangeMapping;
 		if(	rangeMapping.lowBound().compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0 ||
 			rangeMapping.highBound(false).compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0)
@@ -178,14 +290,14 @@ public class IntegerColumn extends ComparableColumn<Long>
 	/**
 	 * Integer version of {@link IntegerColumn#storeValue(Record, Long)}
 	 * 
-	 * @param record
+	 * @param valueSet
 	 * @param value
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public void storeValue(Record record, Integer value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(ValueSet<?> valueSet, Integer value) throws IllegalArgumentException, NullPointerException
 	{
-		storeValue(record, (Long) convert(value));
+		storeValue(valueSet, (Long) convert(value));
 	}
 
 	/**
@@ -198,32 +310,42 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	public Object convert(Object value)
+	public Long convert(Object value)
 	{
-		return value == null ? null : (value instanceof Long ? value : Long.valueOf(((Number) value).longValue()));
+		// Null:
+		if(value == null)
+			return null;
+		// Already a Long:
+		if(value instanceof Long)
+			return (Long) value;
+		// Enum:
+		if(value instanceof Enum)
+			return Long.valueOf(((Enum<?>) value).ordinal());
+		// Number:
+		return Long.valueOf(((Number) value).longValue()); // will fail if object is not a Number instance	
 	}
 
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public long getPrimitiveLong(Record record, long nullReplacement)
+	public long getPrimitiveLong(ValueSet<?> valueSet, long nullReplacement)
 	{
-		Long longValue = retrieveValue(record);
+		Long longValue = retrieveValue(valueSet);
 		if(longValue == null)
 			return nullReplacement;
 		return longValue.longValue();
 	}
 	
 	/**
-	 * @param record
+	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
 	 */
-	public int getPrimitiveInt(Record record, int nullReplacement)
+	public int getPrimitiveInt(ValueSet<?> valueSet, int nullReplacement)
 	{
-		Long longValue = retrieveValue(record);
+		Long longValue = retrieveValue(valueSet);
 		if(longValue == null)
 			return nullReplacement;
 		return longValue.intValue();
@@ -354,7 +476,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + size;

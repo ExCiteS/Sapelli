@@ -15,62 +15,68 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
-      
+-->
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/menuPrjMngr" >
+
+    <!-- action buttons -->
     <item
-        android:id="@+id/sender_settings_menuitem"
-        android:icon="@android:drawable/ic_menu_preferences"
-        android:onClick="openSenderSettings"
-        android:showAsAction="always"
-        android:title="@string/sender_settings_menuitem"/>
-    <!-- <item
-        android:id="@+id/statistics_menuitem"
-        android:icon="@android:drawable/ic_menu_info_details"
-        android:onClick="showStatistics"
-        android:showAsAction="always"
-        android:title="@string/statistics_menuitem"/> -->
+        android:id="@+id/action_load"
+        android:icon="@drawable/ic_action_add_white"
+        android:title="@string/add_new_project"
+        compat:showAsAction="ifRoom">
+		<menu><!-- include: projectload.xml --></menu>
+	</item>
     <item
-        android:id="@+id/create_shortcut"
-        android:icon="@android:drawable/ic_menu_directions"
-        android:onClick="createShortcut"
-        android:showAsAction="always"
-        android:title="@string/create_shortcut"/>
+        android:id="@+id/action_remove"
+        android:icon="@drawable/ic_delete_white_36dp"
+        android:onClick="removeProject"
+        android:title="@string/remove_project"
+        compat:showAsAction="ifRoom"/>
+    
     <item
-        android:id="@+id/remove_shortcut"
-        android:icon="@android:drawable/ic_menu_delete"
-        android:onClick="removeShortcut"
-        android:showAsAction="always"
-        android:title="@string/remove_shortcut"/>
-    <item
-        android:id="@+id/export_records_menuitem"
-        android:icon="@android:drawable/ic_menu_save"
-        android:onClick="exportRecords"
-        android:showAsAction="always"
-        android:title="@string/export_records_menuitem"/>
-    <!-- <item
-        android:id="@+id/import_records_menuitem"
-        android:icon="@drawable/ic_menu_archive"
-        android:onClick="importRecords"
-        android:showAsAction="always"
-        android:title="@string/import_records_menuitem"/> -->
+        android:id="@+id/action_eximback"
+        android:icon="@drawable/ic_swap_horiz_white_36dp"
+        android:title="@string/in_export"
+        compat:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/export_all"
+                android:icon="@drawable/ic_export_white_36dp"
+                android:onClick="exportRecords"
+                android:title="@string/exportAllProjTitle"/>
+            <item
+                android:id="@+id/import_records_menuitem"
+                android:icon="@drawable/ic_import_white_36dp"
+                android:onClick="importRecords"
+                android:title="@string/import_records_menuitem"/>
+            <item
+                android:id="@+id/backup"
+                android:icon="@drawable/ic_content_save_white_36dp"
+                android:onClick="backupSapelli"
+                android:title="@string/backup"/>
+            	<!-- android:icon="@android:drawable/ic_menu_save" -->
+        </menu>
+    </item>
+    
+	<item
+	    android:id="@+id/about_menuitem"
+	    android:icon="@drawable/ic_information_outline_white_36dp"
+	    android:onClick="openAboutDialog"
+	    android:title="@string/about"
+	    compat:showAsAction="ifRoom"/>
+		<!-- android:icon="@android:drawable/ic_menu_info_details" -->
+
+    <!-- (project specific:) -->
+    <!--
     <item
         android:id="@+id/delete_records_menuitem"
         android:icon="@android:drawable/ic_menu_delete"
         android:onClick="deleteRecords"
         android:showAsAction="always"
-        android:title="@string/delete_records_menuitem"/>   
-    <item
-        android:id="@+id/backup"
-        android:icon="@android:drawable/ic_menu_save"
-        android:onClick="backupSapelli"
-        android:showAsAction="always"
-        android:title="@string/backup"/>
-    <item
-        android:id="@+id/about_menuitem"
-        android:icon="@android:drawable/ic_menu_info_details"
-        android:onClick="openAboutDialog"
-        android:showAsAction="always"
-        android:title="@string/about"/>
-    
+        android:title="@string/delete_records_menuitem"/>
+    -->
+
 </menu>

@@ -56,7 +56,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 
 	public VirtualColumn(Column<ST> sourceColumn, Column<TT> targetColumn, ValueMapper<TT, ST> valueMapper)
 	{
-		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional);
+		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional, sourceColumn.defaultValue == null ? null : valueMapper.mapValue(sourceColumn.defaultValue, null));
 		if(sourceColumn == null || targetColumn == null || valueMapper == null)
 			throw new NullPointerException("sourceColumn, targetColumn & valueMapper cannot be null!");
 		if(sourceColumn instanceof VirtualColumn || targetColumn instanceof VirtualColumn)
@@ -77,7 +77,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 	
 	@Override
-	public void storeValue(Record record, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public void storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("VirtualColumns are read-only!");
 	}
@@ -85,17 +85,17 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	/**
 	 * Overridden to retrieve value from sourceColum and convert it.
 	 *  
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
 	 */
 	@Override
-	public TT retrieveValue(Record record)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> TT retrieveValue(VS valueSet)
 	{
 		// Retrieve value from sourceColumn:
-		ST sourceValue = sourceColumn.retrieveValue(record);
+		ST sourceValue = sourceColumn.retrieveValue(valueSet);
 		if(sourceValue == null)
 			return null;
 		// Return converted value:
-		return valueMapper.mapValue(sourceValue);
+		return valueMapper.mapValue(sourceValue, new UnmodifiableValueSet<CS>(valueSet));
 	}
 
 	@Override
@@ -202,10 +202,11 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		/**
 		 * Converts values from source type ST to target type TT
 		 * 
-		 * @param nonNullValue
+		 * @param nonNullSourceValue the source value of type <ST>
+		 * @param valueSet an unmodifiable version of the valueSet in which the sourceValue occurs (may be null)
 		 * @return
 		 */
-		public abstract TT mapValue(ST nonNullValue);
+		public abstract TT mapValue(ST nonNullSourceValue, UnmodifiableValueSet<?> valueSet);
 		
 		public abstract int hashCode();
 		

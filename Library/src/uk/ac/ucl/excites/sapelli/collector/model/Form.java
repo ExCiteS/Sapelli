@@ -26,8 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
@@ -37,10 +39,11 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
@@ -90,6 +93,32 @@ public class Form implements WarningKeeper
 	public static final TimeStampColumn COLUMN_TIMESTAMP_END = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
+	
+	public static TimeStamp GetStartTime(ValueSet<?> record)
+	{
+		return GetStartTime(record, false);
+	}
+	
+	public static TimeStamp GetStartTime(ValueSet<?> record, boolean asStoredBinary)
+	{
+		if(asStoredBinary)
+			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
+		else
+			return COLUMN_TIMESTAMP_START.retrieveValue(record);
+	}
+	
+	public static TimeStamp GetEndTime(ValueSet<?> record)
+	{
+		if(record.getColumnSet().containsColumn(COLUMN_TIMESTAMP_END))
+			return COLUMN_TIMESTAMP_END.retrieveValue(record);
+		else
+			return null;
+	}
+	
+	public static long GetDeviceID(ValueSet<?> record)
+	{
+		return COLUMN_DEVICE_ID.retrieveValue(record);
+	}
 	
 	// The Screen Transition type between different Screens
 	public static enum ScreenTransition
@@ -178,7 +207,9 @@ public class Form implements WarningKeeper
 		if(project == null || id == null || (trimmedID = id.trim()).isEmpty())
 			throw new IllegalArgumentException("A project and non-empty, non-whitespace id are required!");
 		if(trimmedID.length() > MAX_ID_LENGTH)
-			throw new IllegalArgumentException("Form ID \"" + id + "\" is too long (max length: " + MAX_ID_LENGTH + ").");
+			throw new IllegalArgumentException("Form id \"" + id + "\" is too long (max length: " + MAX_ID_LENGTH + ").");
+		if(trimmedID.equalsIgnoreCase(HeartbeatSchema.HEARTBEAT_NAME))
+			throw new IllegalArgumentException(HeartbeatSchema.HEARTBEAT_NAME + " is not a valid Form id");
 		
 		this.project = project;
 		this.id = trimmedID;
@@ -732,9 +763,10 @@ public class Form implements WarningKeeper
 		else
 		{
 			// Create new Schema:
-			schema = new Schema(project.getModel(),
-								project.getModel().getName() + ":" + id);
-			
+			schema = CollectorClient.CreateSchema(	project.getModel(),
+													/*schema name:*/ project.getModel().getName() + ":" + id,
+													CollectorClient.SCHEMA_FLAGS_COLLECTOR_USER_DATA,
+													/*unprefixed table name:*/ Project.class.getSimpleName() + project.id + "_" + project.fingerPrint + "_" + Form.class.getSimpleName() + getPosition());
 			/* Add implicit columns
 			 * 	StartTime & DeviceID together form the primary key of our records.
 			 * 	These columns are implicitly added, together with EndTime if the
@@ -819,32 +851,6 @@ public class Form implements WarningKeeper
 		}
 		else
 			return null;
-	}
-	
-	public TimeStamp getStartTime(Record record)
-	{
-		return getStartTime(record, false);
-	}
-	
-	public TimeStamp getStartTime(Record record, boolean asStoredBinary)
-	{
-		if(asStoredBinary)
-			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
-		else
-			return COLUMN_TIMESTAMP_START.retrieveValue(record);
-	}
-	
-	public TimeStamp getEndTime(Record record)
-	{
-		if(isStoreEndTime())
-			return COLUMN_TIMESTAMP_END.retrieveValue(record);
-		else
-			return null;
-	}
-	
-	public long getDeviceID(Record record)
-	{
-		return COLUMN_DEVICE_ID.retrieveValue(record);
 	}
 	
 	public void finish(Record record)

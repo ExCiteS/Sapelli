@@ -21,9 +21,9 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
-import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.media.MediaHelpers;
+import com.larvalabs.svgandroid.SVGBuilder;
+import com.larvalabs.svgandroid.SVGDrawable;
+
 import android.content.Context;
 import android.content.res.Resources;
 import android.support.v4.view.ViewCompat;
@@ -32,9 +32,9 @@ import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-
-import com.larvalabs.svgandroid.SVGBuilder;
-import com.larvalabs.svgandroid.SVGDrawable;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.media.MediaHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.BitmapUtils;
 
 /**
  * An {@link Item} which displays an image loaded from a file or a drawable resource.

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
@@ -16,112 +16,132 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
-
+ <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+    <string name="app_name">Sapelli Collector</string>
+    <string name="sapelli">Sapelli</string>
+    <string name="collector">Collector</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="done">Done</string>
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
-    
-    <string name="app_name">Sapelli Collector</string>
-    <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&quot;&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators.</string>
-    <string name="license">&lt;a href=&quot;http://github.com/ExCiteS/Sapelli&quot;&gt;Source code available&lt;/a&gt; under the terms of the &lt;a href=&quot;http://www.apache.org/licenses/LICENSE-2.0&quot;&gt;Apache License, Version 2.0&lt;/a&gt;.</string>
+    <string name="not_available">n/a</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
+    <string name="by_ucl_excites_html">&amp;lt;a href="http://sapelli.org"&amp;gt;Sapelli&amp;lt;/a&amp;gt; is a project by &amp;lt;a href="http://ucl.ac.uk/excites"&amp;gt;UCL ExCiteS&amp;lt;/a&amp;gt; &amp; collaborators.</string>
+    <string name="license">&amp;lt;a href="http://github.com/ExCiteS/Sapelli"&amp;gt;Source code available&amp;lt;/a&amp;gt; under the terms of the &amp;lt;a href="http://www.apache.org/licenses/LICENSE-2.0"&amp;gt;Apache License, Version 2.0&amp;lt;/a&amp;gt;.</string>
     <string name="project_manager">Project Manager</string>
-    <string name="available_projects">Available projects</string>
+    <string name="switch_project">Switch to project:</string>
+    <string name="no_projects">No projects loaded.</string>
+    <string name="tab_main">Main</string>
+    <string name="tab_transmission">Transmission</string>
+    <string name="tab_details">Details</string>
     <string name="run_project">Run project</string>
     <string name="remove_project">Remove project</string>
-    <string name="load_new_projects">Add projects</string>
-    <string name="load_project">Load Project</string>
+    <string name="add_new_project">Add project</string>
+    <string name="load_project">Load project</string>
     <string name="browse">Browse</string>
-    <string name="scan_qr_code">Scan QR Code</string>
+    <string name="scan_qr_code">Scan QR code</string>
+    <string name="enter_url">Enter URL</string>
+    <string name="enter_url_title">Load project from URL</string>
+    <string name="enterURLMsg">Please enter a URL (or local path) from which to fetch a Sapelli project file:</string>
     <string name="software_and_device_info">App &amp; device info</string>
-    <string name="shortcuts">Shortcuts</string>
-    <string name="create_shortcut">Create Shortcut</string>
-    <string name="remove_shortcut">Remove Shortcut</string>
+    <string name="shortcut">Shortcut</string>
     <string name="take_photo">Take photo</string>
-    <string name="sender_settings_menuitem">Data Sender Settings</string>
+    <string name="transmission_settings">Transmission Settings</string>
     <string name="copy_db_menuitem">Dump databases</string>
-    <string name="about">About &#8230;</string>
-    <string name="statistics_menuitem">Statistics</string>
-    <string name="export_records_menuitem">Export records</string>
+    <string name="about">About</string>
+    <string name="statistics">Statistics</string>
+    <string name="export_records">Export records</string>
     <string name="import_records_menuitem">Import records</string>
-    <string name="delete_records_menuitem">Delete records</string>
-    <string name="title_activity_dropbox">Dropbox Authentication</string>
-    <string name="title_activity_main">Sapelli Background Service</string>
-    <string name="service_name">excitesbackgroundservice</string>
-    <string name="start_service">Start Service</string>
-    <string name="stop_service">Stop Service</string>
-    <string name="notification">The Service is running.</string>
-    <string name="show_statistics">Show</string>
-    <string name="app_usage_statistics">Statistics on App usage</string>
+    <string name="delete">Delete</string>
+    <string name="delete_data">Delete data</string>
+    <string name="in_export">In- &amp; export</string>
+    <string name="more_options">Additional options</string>
     <string name="settings">Settings</string>
     <string name="pleaseSelect">Please select a Sapelli file</string>
     <string name="noBareXMLProjects">The loading of bare XML files is no longer supported. Please package your project in a .sap file.</string>
-    <string name="unsupportedExtension">Unsupport Sapelli project file extension (%1$s), supported extensions are %2$s.</string>
-    <string name="projectLoading">Loading project&#8230;</string>
+    <string name="unsupportedExtension">Unsupported Sapelli project file extension (%1$s), supported extensions are %2$s.</string>
+    <string name="projectLoading">Loading project …</string>
+    <string name="projectRemoving">Removing project …</string>
     <string name="sapelliFileLoadFailure">Failed to load or store Sapelli project (source: %1$s).\nCause: %2$s</string>
     <string name="parsingWarnings">Parsing issues</string>
     <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">These files could not be found</string>
-    <string name="downloading">Downloading&#8230;</string>
+    <string name="downloading">Downloading …</string>
     <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
-    
     <string name="photoCameraErrorFatal">Cannot detect camera to take mandatory picture; cancelling record and exiting project&#8230;</string>
     <string name="videoCameraErrorFatal">Cannot detect camera to record mandatory video; cancelling record and exiting project&#8230;</string>
     <string name="photoCameraErrorSkip">Cannot detect camera to take picture; skipping field \"%1$s\"&#8230;</string>
     <string name="videoCameraErrorSkip">Cannot detect camera to record video; skipping field \"%1$s\"&#8230;</string>
-    
+    <string name="data">Collected data</string>
+    <string name="records">Records</string>
+    <string name="media_files">Media files</string>
+    <string name="name">Name</string>
+    <string name="id">ID</string>
+    <string name="variant">Variant</string>
+    <string name="version">Version</string>
+    <string name="fingerprint">Finger print</string>
+    <string name="numForms">Number of forms</string>
+    <string name="modelID">Model ID</string>
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>
-    <string name="useAlternativeStorage">Try another&#8230;</string>
-    <string name="insertSDcard">Retry current&#8230;</string>
-    
-    <string name="txtNullModeCreate">&#8212; Touch to set &#8212;</string>
-	<string name="txtNullModeEdit">&#8212; Touch to edit &#8212;</string>
-	<string name="txtNullModeDisabled">(no value set)</string>
+    <string name="useAlternativeStorage">Try another …</string>
+    <string name="insertSDcard">Retry current …</string>
+    <string name="txtNullModeCreate">— Touch to set —</string>
+    <string name="txtNullModeEdit">— Touch to edit —</string>
+    <string name="txtNullModeDisabled">(no value set)</string>
     <string name="txtValidationErrorMissing">Non-optional field requires a value.</string>
-	<string name="txtValidationErrorShort">Minimum length of %d characters not reached.</string>
-	<string name="txtValidationErrorLong">Maximum length of %d characters exceeded.</string>
-	<string name="txtValidationErrorrPattern">Pattern mismatch</string>
-	<string name="txtValidationErrorInvalid">Invalid input.</string>
-	<string name="txtValidationErrorInvalidNumber">Invalid numeric input.</string>
-	<string name="txtValidationOptionalHint">To leave blank, hit backspace until cross appears.</string>
-	
-	<string name="lstPleaseSelect">&#8212; Please select &#8212;</string>
-	<string name="lstUndoSelection">&#8212; No selection &#8212;</string>
-    
+    <string name="txtValidationErrorShort">Minimum length of %d characters not reached.</string>
+    <string name="txtValidationErrorLong">Maximum length of %d characters exceeded.</string>
+    <string name="txtValidationErrorrPattern">Pattern mismatch</string>
+    <string name="txtValidationErrorInvalid">Invalid input.</string>
+    <string name="txtValidationErrorInvalidNumber">Invalid numeric input.</string>
+    <string name="txtValidationOptionalHint">To leave blank, hit backspace until cross appears.</string>
+    <string name="lstPleaseSelect">— Please select —</string>
+    <string name="lstUndoSelection">— No selection —</string>
     <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
     <string name="enableLocationProvider">Please enable location provider (%s) in device settings.</string>
     <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>
     <string name="selectProject">Please select a project.</string>
-    <string name="removeProjectConfirm">Are you sure that you want to remove the project?</string>
+    <string name="removeProjectConfirm">Are you sure you want to remove project \"%s\"?\nNo collected data will be deleted.</string>
     <string name="demoLoadFail">Could not load demo project.</string>
     <string name="chooseSapelliFile">Choose a .sapelli or .sap  file</string>
-    
     <string name="projectLoadFailure">Could not find project %1$s[id: %2$d; fingerprint: %3$d].</string>
     <string name="shortcutRemoved">Shortcut was removed.</string>
     <string name="noProjectSpecified">CollectorActivity started without project-specifying intent parameters, don\'t know which project to load.</string>
-    
+    <string name="criteria">Criteria</string>
+    <string name="output">Output</string>
+    <string name="expand_transmission">Expand Transmission Settings</string>
+    <string name="expand_export">Expand Export Settings</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="send">Send Data</string>
+    <string name="receive">Receive Data</string>
+    <string name="add_project">Please add a project by clicking the \"＋\" above…</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
+    <string name="load_projects">Loading projects</string>
     <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
+    <string name="exportEtc">Export…</string>
     <string name="exportSelection">Select records to export:</string>
     <string name="exportSelectedProj">All records of %s</string>
-    <string name="exportAllProj">All records of all projects</string>
+    <string name="exportAllProjTitle">Export all projects</string>
+    <string name="exportAllProjMsg">Here you can export records of all projects, even deleted ones.</string>
     <string name="exportDateRange">Date range:</string>
     <string name="exportDateRangeFrom">From %s</string>
     <string name="exportDateRangeTo">To %s</string>
     <string name="exportDateRangeAnytime">anytime</string>
     <string name="exportDestination">Destination:</string>
     <string name="exportFormat">Output format:</string>
-    <string name="exportXMLMode">Represent composite columns as:</string>
+    <string name="exportXMLMode">Composite columns:</string>
     <string name="exportCSVSeparator">CSV separator:</string>
     <string name="exportRemove">Delete records after successful export</string>
     <string name="exportFetching">Fetching records…</string>
     <string name="exportQueryFailed">Failed to query for records, due to: %s.</string>
     <string name="exportNoRecordsFound">No records meeting export criteria were found.</string>
-    <string name="exportXRecords">Exporting %d records…</string>
+    <string name="exportXRecords">Exporting %d records …</string>
     <string name="exportSuccessTitle">Success</string>
     <string name="exportSuccessMsg">Successfully exported %1$d records to %2$s.</string>
     <string name="exportPartialSuccessTitle">Partial success</string>
@@ -131,14 +151,15 @@
     <string name="exportFailureMsg">Failed to export any records to %1$s, due to: %2$s.</string>
     <string name="exportDeleteFailureMsg">Failed to delete (some of) the records, due to: %s.</string>
     <string name="exportNothing">There was nothing to export.</string>
-    <string name="exportDeletingX">Deleting %d records&#8230;</string>
-    <string name="exporting_data">Exporting data&#8230;</string>
-    <string name="importFromX">Importing records from %s&#8230;</string>
-    
+    <string name="exporting_data">Exporting data …</string>
+    <string name="importFromX">Importing records from %s …</string>
+    <string name="storingXRecords">Storing %d records …</string>
+    <string name="deletingXRecords">Deleting %d records …</string>
+    <string name="mediaScanning">Scanning for media files</string>
     <string name="deleteNoRecordsFound">No records found.</string>
     <string name="deleteRecordsConfirmation">Are you sure you want to delete all %1$d records associated with project %2$s?</string>
-    <string name="deleteAttachmentsConfirmation">Do you also wish to delete the %d attachments (photos, audio or video recordings)?</string>
-
+    <string name="deleteAttachmentsConfirmation">Do you also wish to delete the %d media files (photos, audio or video recordings) associated with the records?</string>
+    <string name="deleteRecordsAndMediaConfirmation">Are you sure you want to delete all %1$d records and %2$d associated media files (photos, audio or video recordings) collected using project %3$s?</string>
     <string name="backup">Back-up</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>
     <string name="folderCrashes">Crash reports</string>
@@ -150,13 +171,22 @@
     <string name="preBackupExportMsg">You have chosen to back-up the folder with exported data. Do you which to include a new export of all project data, or only previous exports?</string>
     <string name="preBackupExportFormatMsg">Found %d records to export.\nPlease specify the export format:</string>
     <string name="preBackupExportYes">Yes, include new export</string>
-    <string name="backup_continue">Back-up process will continue&#8230;</string>
-    <string name="backup_progress_init">Preparing for back-up&#8230;</string>
-    <string name="backup_progress_db">Backing-up database(s)&#8230;</string>
-    <string name="backup_progress_zipping">Creating back-up package&#8230;</string>
+    <string name="backup_continue">Back-up process will continue …</string>
+    <string name="backup_progress_init">Preparing for back-up …</string>
+    <string name="backup_progress_db">Backing-up database(s) …</string>
+    <string name="backup_progress_zipping">Creating back-up package …</string>
     <string name="successful_backup">Backup successful</string>
     <string name="backup_in">You can find your backup in:</string>
     <string name="backupFailDueTo">Failed to backup database(s), due to: %s</string>
-    <string name="share">Share&#8230;</string>
-    
+    <string name="share">Share …</string>
+    <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
+    <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
+    <string name="title_activity_dropbox">Dropbox Authentication</string>
+    <string name="title_activity_main">Sapelli Background Service</string>
+    <string name="service_name">excitesbackgroundservice</string>
+    <string name="start_service">Start Service</string>
+    <string name="stop_service">Stop Service</string>
+    <string name="notification">The Service is running.</string>
+    <string name="show_statistics">Show</string>
+    <string name="app_usage_statistics">Statistics on App usage</string>
 </resources>

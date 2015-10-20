@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
-import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -36,34 +35,36 @@ public abstract class TransmissionClient extends StorageClient
 {
 
 	// STATICS-------------------------------------------------------
-	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
-
-	// DYNAMICS------------------------------------------------------
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
+	/**
+	 * Flag indicating that a Schema has been defined at the Transmission layer of the Sapelli Library
 	 */
-	@Override
-	public List<Model> getReservedModels()
+	static private final int SCHEMA_FLAG_TRANSMISSION_LAYER =	1 << 6;
+	
+	/**
+	 * Schema flag indicating that records of the Schema can be transmitted using the Transmission/Payload classes
+	 */
+	static public final int SCHEMA_FLAG_TRANSMITTABLE = 		1 << 7;
+	
+	// Note: flag bits 8 & 9 are reserved for future Transmission layer usage
+	
+	/**
+	 * Flags used on "internal" Transmission layer Schemata
+	 */
+	static public final int SCHEMA_FLAGS_TRANSMISSION_INTERNAL = SCHEMA_FLAG_TRANSMISSION_LAYER;
+	
+	/**
+	 * ID for the reserved Transmission Management Model ({@link TransmissionStore#TRANSMISSION_MANAGEMENT_MODEL})
+	 */
+	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0;
+	
+	// Add tableName prefix & reserved model (in that order!):
+	static
 	{
-		List<Model> reserved = super.getReservedModels();
-		reserved.add(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
-		return reserved;
+		AddTableNamePrefix(SCHEMA_FLAG_TRANSMISSION_LAYER, "Transmission_");
+		AddReservedModel(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
-	 */
-	@Override
-	public String getTableName(Schema schema)
-	{
-		if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
-			return "Transmissions";
-		if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
-			return "Transmission_Parts";
-		return super.getTableName(schema);
-	}
-	
+	// DYNAMICS------------------------------------------------------	
 	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
 	
 	public abstract Payload createPayload(int nonBuiltinType);

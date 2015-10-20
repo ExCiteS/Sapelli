@@ -1,22 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-	Sapelli data collection platform: http://sapelli.org
-	
-	Copyright 2012-2014 University College London - ExCiteS group
-	
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-	
-	    http://www.apache.org/licenses/LICENSE-2.0
-	
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
- -->
- <resources>
+<resources>
 
     <!--
          Declare custom theme attributes that allow changing which styles are
@@ -24,9 +6,20 @@
          ?android:attr/buttonBarStyle is new as of API 11 so this is
          necessary to support previous API levels.
     -->
-    <declare-styleable name="ButtonBarContainerTheme">
-        <attr name="buttonBarStyle" format="reference" />
-        <attr name="buttonBarButtonStyle" format="reference" />
-    </declare-styleable>
 
+    <attr name="switchStyle1" format="reference" />
+
+    <declare-styleable name="Switch">
+        <attr name="textLeft" format="string" />
+        <attr name="textRight" format="string" />
+        <attr name="switchMinWidth1" format="dimension" />
+        <attr name="switchPadding1" format="dimension" />
+        <attr name="colorUnChecked" format="color" />
+        <attr name="colorChecked" format="color" />
+        <attr name="backgroundDrawable" format="reference" />
+        <attr name="switchDrawable" format="dimension" />
+        <attr name="innerPadding" format="dimension" />
+        <attr name="isChecked" format="boolean" />
+    </declare-styleable>
+    
 </resources>
