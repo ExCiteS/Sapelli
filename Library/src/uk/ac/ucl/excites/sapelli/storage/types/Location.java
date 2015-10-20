@@ -67,14 +67,22 @@ public class Location extends ValueSet<ColumnSet>
 	
 	// ColumnSet & Columns:
 	static final public ColumnSet COLUMN_SET = new ColumnSet(Location.class.getSimpleName(), false);
-	static final public FloatColumn		COLUMN_LATITUDE		= COLUMN_SET.addColumn(new FloatColumn("Latitude", false, true, true));							// non-optional signed 64 bit float
-	static final public FloatColumn		COLUMN_LONGITUDE	= COLUMN_SET.addColumn(new FloatColumn("Longitude", false, true, true));						// non-optional signed 64 bit float
-	static final public FloatColumn		COLUMN_ALTITUDE		= COLUMN_SET.addColumn(new FloatColumn("Altitude", true, true, true));							// optional signed 64 bit float
-	static final public FloatColumn		COLUMN_BEARING		= COLUMN_SET.addColumn(new FloatColumn("Bearing", true, true, false));							// optional signed 32 bit float
-	static final public FloatColumn		COLUMN_SPEED		= COLUMN_SET.addColumn(new FloatColumn("Speed", true, true, false));							// optional signed 32 bit float
-	static final public FloatColumn		COLUMN_ACCURACY		= COLUMN_SET.addColumn(new FloatColumn("Accuracy", true, true, false));							// optional signed 32 bit float
-	static final public TimeStampColumn	COLUMN_TIME			= COLUMN_SET.addColumn(TimeStampColumn.JavaMSTime("TimeUTC", true, false));						// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
-	static final public IntegerColumn	COLUMN_PROVIDER		= COLUMN_SET.addColumn(new IntegerColumn("Provider", false, PROVIDER_FIELD), true /*seal!*/);	// non-optional 2 bit unsigned integer
+	// LATITUDE (non-optional signed 64 bit float):
+	static final public FloatColumn		COLUMN_LATITUDE		= COLUMN_SET.addColumn(new FloatColumn("Latitude", false, true, true));
+	// LONGITUDE (non-optional signed 64 bit float):
+	static final public FloatColumn		COLUMN_LONGITUDE	= COLUMN_SET.addColumn(new FloatColumn("Longitude", false, true, true));
+	// ALTITUDE (optional signed 64 bit float):
+	static final public FloatColumn		COLUMN_ALTITUDE		= COLUMN_SET.addColumn(new FloatColumn("Altitude", true, true, true));
+	// BEARING (optional signed 32 bit float):
+	static final public FloatColumn		COLUMN_BEARING		= COLUMN_SET.addColumn(new FloatColumn("Bearing", true, true, false));
+	// SPEED (optional signed 32 bit float):
+	static final public FloatColumn		COLUMN_SPEED		= COLUMN_SET.addColumn(new FloatColumn("Speed", true, true, false));
+	// ACCURACY (optional signed 32 bit float):
+	static final public FloatColumn		COLUMN_ACCURACY		= COLUMN_SET.addColumn(new FloatColumn("Accuracy", true, true, false));
+	// TIMESTAMP (optional signed 64 bit millisecond-accurate UTC timestamp; local timezone not kept; no virtual columns added):
+	static final public TimeStampColumn	COLUMN_TIME			= COLUMN_SET.addColumn(TimeStampColumn.JavaMSTime("TimeUTC", true, false)); 
+	// PROVIDER (non-optional 2 bit unsigned integer; with default value = PROVIDER_UNKNOWN):
+	static final public IntegerColumn	COLUMN_PROVIDER		= COLUMN_SET.addColumn(new IntegerColumn("Provider", false, PROVIDER_FIELD, Long.valueOf(PROVIDER_UNKNOWN) /*default val*/), true /*seal!*/);
 	
 	//Dynamic--------------------------------------------------------
 	
@@ -132,7 +140,6 @@ public class Location extends ValueSet<ColumnSet>
 	{
 		super(COLUMN_SET);
 		// no default lat & lon values!
-		COLUMN_PROVIDER.storeValue(this, PROVIDER_UNKNOWN); // default provider
 	}
 	
 	/**
