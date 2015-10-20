@@ -116,8 +116,7 @@ public class Schema extends ColumnSet implements Serializable
 
 	/**
 	 * Create a new schema instance which will be add to the provided {@link Model}.
-	 * The Schema will use the default schema flags of the Model, if the model does not have
-	 * default schema flags a NullPointerException will be thrown.
+	 * The Schema will use the default schema flags of the Model, if the model does not have default schema flags a NullPointerException will be thrown.
 	 * 
 	 * @param model
 	 * @param name
@@ -161,7 +160,7 @@ public class Schema extends ColumnSet implements Serializable
 			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
-		this.tableName = tableName != null ? tableName : name;
+		this.tableName = tableName != null ? tableName : this.name;
 		this.model = model;
 		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 		this.flags = flags;

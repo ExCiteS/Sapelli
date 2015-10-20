@@ -240,8 +240,9 @@ public class Model implements Serializable
 	
 	/**
 	 * @return the defaultSchemaFlags
+	 * @throws NullPointerException if the Model doesn't have defaultSchemaFlags
 	 */
-	public int getDefaultSchemaFlags()
+	public int getDefaultSchemaFlags() throws NullPointerException
 	{
 		if(!hasDefaultSchemaFlags())
 			throw new NullPointerException("Model has no defaultSchemaFlags");
