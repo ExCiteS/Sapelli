@@ -321,7 +321,7 @@ public abstract class MediaField extends Field
 		{
 			int attachmentCount = nonNullValue.intValue();
 			List<String> filenames = new ArrayList<String>();
-			for(int attachmentNumber = 0; attachmentNumber < attachmentCount+1; attachmentNumber++) // DEBUG TODO REMOVE +1!!!!
+			for(int attachmentNumber = 0; attachmentNumber < attachmentCount; attachmentNumber++)
 				filenames.add(fileNameGenerator.generateFilename(valueSet, attachmentNumber));
 			return filenames;
 		}
