@@ -249,7 +249,7 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
-	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is optional(!).
+	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is non-optional(!).
 	 * Use with care!
 	 * 
 	 * @param valueSet the valueSet in which to clear the value, may not be {@code null}
@@ -259,6 +259,19 @@ public abstract class Column<T> implements Serializable
 	public final void clearValue(ValueSet<?> valueSet) throws IllegalArgumentException, NullPointerException
 	{
 		storeValueUnchecked(valueSet, null);
+	}
+	
+	/**
+	 * Resets the value of this column in the given valueSet to the {@link #defaultValue} (usually {@code null}), even if the column is non-optional(!).
+	 * Use with care!
+	 * 
+	 * @param valueSet
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 */
+	public final void resetValue(ValueSet<?> valueSet) throws IllegalArgumentException, NullPointerException
+	{
+		storeValueUnchecked(valueSet, defaultValue);
 	}
 
 	/**

@@ -268,10 +268,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public boolean isStorable(Record record)
 	{
-		if(isInitialising())
-			return record != null;
-		else
-			return super.isStorable(record);
+		return super.isStorable(record, isInitialising()); // allow storing of meta records only during initialisation/upgrade
 	}
 	
 	/**
@@ -1552,18 +1549,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public STable generateTable(Schema schema) throws DBException;
 		
 		/**
-		 * @return whether or not boolean Columns are used to represent optional ValueSetColumns
+		 * @return whether or not the TableFactory will insert a top-level Boolean column to represent a ValueSetColumn with all-optional subcolumns
 		 */
-		public boolean isUseBoolColsForOptionalValueSetCols();
-		
+		public boolean isUseBoolColsForValueSetCols();
+
 		/**
-		 * Method to disable/enable usage of boolean Columns to represent optional ValueSetColumns at top-level.
-		 * Only for upgrade purposes.
-		 * 
-		 * @param enable
-		 * @throws DBException
+		 * @param enable if {@code true} the TableFactory will insert a top-level Boolean column to represent a ValueSetColumn with all-optional subcolumns
+		 * @throws DBException 
 		 */
-		public void setUseBoolColsForOptionalValueSetCols(boolean enable) throws DBException;
+		public void setUseBoolColsForValueSetCols(boolean enable) throws DBException;
 		
 	}
 	
@@ -1584,7 +1578,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		protected STable table;
 		
-		private boolean useBoolColsForOptionalValueSetCols = true;
+		private boolean useBoolColsForValueSetCols = true;
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
@@ -1605,25 +1599,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		protected abstract STable createTable(Schema schema) throws DBException;
 		
-		/**
-		 * @return the useBoolColsForOptionalValueSetCols
-		 */
 		@Override
-		public boolean isUseBoolColsForOptionalValueSetCols()
+		public boolean isUseBoolColsForValueSetCols()
 		{
-			return useBoolColsForOptionalValueSetCols;
+			return useBoolColsForValueSetCols;
 		}
 
-		/**
-		 * @param enable
-		 * @throws DBException 
-		 */
 		@Override
-		public void setUseBoolColsForOptionalValueSetCols(boolean enable) throws DBException
+		public void setUseBoolColsForValueSetCols(boolean enable) throws DBException
 		{
 			if(!isInitialising())
-				throw new DBException("Changing useBoolColsForOptionalValueSetCols is only allowed during initialisation/upgrade!");
-			this.useBoolColsForOptionalValueSetCols = enable;
+				throw new DBException("Changing useBoolColsForValueSetCols is only allowed during initialisation/upgrade!");
+			this.useBoolColsForValueSetCols = enable;
 		}
 
 		/**
