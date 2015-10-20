@@ -196,6 +196,14 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 		return schemaColumn;
 	}
 	
+	public boolean hasAllOptionalSubColumns()
+	{
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(!subCol.optional)
+				return false;
+		return true;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
