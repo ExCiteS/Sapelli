@@ -346,6 +346,12 @@ public class CollectorApp extends Application
 		{
 			return upgradeWarnings;
 		}
+		
+		public final void forgetAboutUpgrade()
+		{
+			oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
+			upgradeWarnings = Collections.<String> emptyList();
+		}
 
 		@Override
 		public void logError(String msg, Throwable throwable)

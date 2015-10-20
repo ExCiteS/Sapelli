@@ -246,6 +246,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		{
 			List<String> warnings = client.getUpgradeWarnings();
 			showWarningDialog(getString(R.string.dbUpgrade, client.getOldDatabaseVersion(), CollectorClient.CURRENT_COLLECTOR_RECORDSTORE_VERSION) + (!warnings.isEmpty() ? "\n\n" + listWarnings(R.string.dbUpgradeWarningsTitle, warnings) : ""));
+			client.forgetAboutUpgrade(); // otherwise the dialog box appears for every subsequent onResume()
 		}
 		
 		// And finally...
