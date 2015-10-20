@@ -51,7 +51,7 @@ public abstract class JumpSource
 		this.nextFieldArgs = argumentsForNextField;
 	}
 
-	public boolean hasNextFieldArguements()
+	public boolean hasNextFieldArguments()
 	{
 		return nextFieldArgs != null && nextFieldArgs != FieldParameters.EMPTY;
 	}
