@@ -83,7 +83,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
- * @author Julia, Michalis Vitos, mstevens
+ * @author Julia, Michalis Vitos, mstevens, benelliott
  * 
  */
 public class ProjectManagerActivity extends BaseActivity implements StoreUser, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback, ListView.OnItemClickListener, RecordsTasks.ImportCallback
