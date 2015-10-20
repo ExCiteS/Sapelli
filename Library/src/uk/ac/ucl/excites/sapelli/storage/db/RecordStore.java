@@ -33,10 +33,12 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
@@ -226,10 +228,25 @@ public abstract class RecordStore extends Store
 	 */
 	public boolean isStorable(Record record)
 	{
-		return 	// obviously it makes no sense to store null records:
-				record != null &&
-				// meta model or schema records cannot be stored directly:
-				record.getSchema().getModel() != Model.META_MODEL;
+		return isStorable(record, false);
+	}
+	
+	protected final boolean isStorable(Record record, boolean allowMeta)
+	{
+		// Perform check to determine whether the Record can be stored:
+		//	Obviously it makes no sense to store null records:
+		if(record == null)
+			return false;
+		//	Unless explicitly allowed, meta model or schema records cannot be stored directly:
+		if(!allowMeta && record.getSchema().getModel() == Model.META_MODEL)
+			return false;
+		//	Check if the record has non-null values in each non-optional (sub)column, except the auto-incrementing PK column if there is one:
+		IntegerColumn autoKeyCol = record.getSchema().getAutoIncrementingPrimaryKeyColumn();
+		if(!record.isFilled(autoKeyCol != null ? Collections.<Column<?>> singleton(autoKeyCol) : Collections.<Column<?>> emptySet(), true))
+			return false;
+		//	(Add additional checks here)
+		// All OK:
+		return true;
 	}
 	
 	/**

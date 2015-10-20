@@ -268,10 +268,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public boolean isStorable(Record record)
 	{
-		if(isInitialising())
-			return record != null;
-		else
-			return super.isStorable(record);
+		return super.isStorable(record, isInitialising()); // allow storing of meta records only during initialisation/upgrade
 	}
 	
 	/**
