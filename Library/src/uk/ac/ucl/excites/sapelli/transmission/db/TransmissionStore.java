@@ -107,10 +107,9 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	//	Set primary key, add indexes & seal schema:
 	static
 	{
-		CORRESPONDENT_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey(CORRESPONDENT_SCHEMA.getName() + "_PK", CORRESPONDENT_COLUMN_ID));
 		CORRESPONDENT_SCHEMA.addIndex(new Index(CORRESPONDENT_COLUMN_TRANSMISSION_TYPE, false));
 		CORRESPONDENT_SCHEMA.addIndex(new Index(CORRESPONDENT_COLUMN_USER_DELETED, false));
-		CORRESPONDENT_SCHEMA.seal();
+		CORRESPONDENT_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey(CORRESPONDENT_SCHEMA.getName() + "_PK", CORRESPONDENT_COLUMN_ID), true /*seal!*/);
 	}
 	//	Transmission schemas:
 	static final public Schema SENT_TRANSMISSION_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Sent" + Transmission.class.getSimpleName(), "s");
@@ -147,8 +146,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 				schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT);
 				schema.addColumn(TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT);
 			}
-			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", TRANSMISSION_COLUMN_ID));
-			schema.seal();
+			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", TRANSMISSION_COLUMN_ID), true /*seal!*/);
 		}
 	}
 	//	Transmission Part schemas:
@@ -176,12 +174,13 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 			schema.addColumn(COLUMN_RECEIVED_AT);
 			schema.addColumn(TRANSMISSION_PART_COLUMN_BODY);
 			schema.addColumn(TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH);
-			schema.setPrimaryKey(PrimaryKey.WithColumnNames(
-				(schema == SENT_TRANSMISSION_PART_SCHEMA ?
-					TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION :
-					TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION),
-				TRANSMISSION_PART_COLUMN_NUMBER));
-			schema.seal();
+			schema.setPrimaryKey(
+				PrimaryKey.WithColumnNames(
+					(schema == SENT_TRANSMISSION_PART_SCHEMA ?
+						TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION :
+						TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION),
+					TRANSMISSION_PART_COLUMN_NUMBER),
+				true /*seal!*/);
 		}
 	}
 	//	Transmittable Records schema:
@@ -194,8 +193,7 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	//		Set PK and seal:
 	static
 	{
-		TRANSMITTABLE_RECORDS_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(TRANSMITTABLE_RECORDS_RECEIVER, TRANSMITTABLE_RECORDS_COLUMN_SCHEMA, TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES));
-		TRANSMITTABLE_RECORDS_SCHEMA.seal();
+		TRANSMITTABLE_RECORDS_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(TRANSMITTABLE_RECORDS_RECEIVER, TRANSMITTABLE_RECORDS_COLUMN_SCHEMA, TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES), true /*seal!*/);
 	}
 	//		ColumnPointer (helper):
 	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.SCHEMA_SCHEMA_NUMBER_COLUMN);
