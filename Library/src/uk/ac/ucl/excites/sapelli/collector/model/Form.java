@@ -763,10 +763,10 @@ public class Form implements WarningKeeper
 		else
 		{
 			// Create new Schema:
-			schema = CollectorClient.CreateCollectorSchema(	project.getModel(),
-															/*schema name:*/ project.getModel().getName() + ":" + id,
-															/*unprefixed table name:*/ Project.class.getSimpleName() + project.id + "_" + project.fingerPrint + "_" + Form.class.getSimpleName() + getPosition(),
-															CollectorClient.SCHEMA_FLAGS_COLLECTOR_USER_DATA);
+			schema = CollectorClient.CreateSchema(	project.getModel(),
+													/*schema name:*/ project.getModel().getName() + ":" + id,
+													CollectorClient.SCHEMA_FLAGS_COLLECTOR_USER_DATA,
+													/*unprefixed table name:*/ Project.class.getSimpleName() + project.id + "_" + project.fingerPrint + "_" + Form.class.getSimpleName() + getPosition());
 			/* Add implicit columns
 			 * 	StartTime & DeviceID together form the primary key of our records.
 			 * 	These columns are implicitly added, together with EndTime if the

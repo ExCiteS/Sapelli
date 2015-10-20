@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -129,11 +130,126 @@ public abstract class StorageClient implements StorageObserver
 	 * 
 	 * @param flagsValue
 	 * @param flagsPattern
-	 * @return TODO
+	 * @return whether or not all the flags in the flagsPattern are set in the flagsValue 
 	 */
 	static public boolean TestSchemaFlags(int flagsValue, int flagsPattern)
 	{
 		return (flagsValue & flagsPattern) == flagsPattern;
+	}
+	
+	static private final Map<Integer, String> TABLENAME_PREFIXES = new LinkedHashMap<Integer, String>(); // using LinkedHashMap to preserve insertion order
+	
+	static protected void AddTableNamePrefix(int flagsPattern, String tableNamePrefix)
+	{
+		TABLENAME_PREFIXES.put(flagsPattern, tableNamePrefix);
+	}
+	
+	/**
+	 * Generates a complete table name for a Schema with the given name, flags, "unprefixed" basic table name (may be null), and table name suffix (may be null).
+	 * 
+	 * @param schemaName
+	 * @param schemaFlags
+	 * @param unprefixedTableName may be {@code null}, in which schemaName is used
+	 * @param tableNameSuffix may be {@code null}
+	 * @return
+	 */
+	static public String GetSchemaTableName(String schemaName, int schemaFlags, String unprefixedTableName, String tableNameSuffix)
+	{
+		if(schemaName == null && unprefixedTableName == null)
+			return null;
+		StringBuilder bldr = new StringBuilder();
+		// Prefix(es):
+		for(Map.Entry<Integer, String> entry : TABLENAME_PREFIXES.entrySet())
+			if(TestSchemaFlags(schemaFlags, entry.getKey().intValue()))
+				bldr.append(entry.getValue());
+		// Table name (or Schema name):
+		bldr.append(unprefixedTableName != null ? unprefixedTableName : schemaName);
+		// Suffix:
+		if(tableNameSuffix != null)
+			bldr.append(tableNameSuffix);
+		// Return full table name:
+		return bldr.toString();
+	}
+	
+	/**
+	 * @param model cannot be null, will be used to provide the schema flags (if the Model doesn't have default schema flags a NullPointerException will be thrown)
+	 * @param schemaName will also be used as tableName
+	 * @return
+	 */
+	static public Schema CreateSchema(Model model, String schemaName)
+	{
+		return CreateSchema(model, schemaName, null, schemaName, null);
+	}
+	
+	/**
+	 * @param model cannot be null
+	 * @param schemaName will also be used as tableName
+	 * @return
+	 */
+	static public Schema CreateSchema(Model model, String schemaName, int schemaFlags)
+	{
+		return CreateSchema(model, schemaName, schemaFlags, schemaName, null);
+	}
+	
+	/**
+	 * @param model cannot be null, will be used to provide the schema flags (if the Model doesn't have default schema flags a NullPointerException will be thrown)
+	 * @param schemaName
+	 * @param unprefixedTableName if null the schemaName will be used instead
+	 * @return
+	 */
+	static public Schema CreateSchema(Model model, String schemaName, String unprefixedTableName)
+	{
+		return CreateSchema(model, schemaName, null, unprefixedTableName, null);
+	}
+	
+	/**
+	 * @param model cannot be null
+	 * @param schemaName
+	 * @param schemaFlags
+	 * @param unprefixedTableName if null the schemaName will be used instead
+	 * @return
+	 */
+	static public Schema CreateSchema(Model model, String schemaName, int schemaFlags, String unprefixedTableName)
+	{
+		return CreateSchema(model, schemaName, schemaFlags, unprefixedTableName, null);
+	}
+	
+	/**
+	 * @param model cannot be null, will be used to provide the schema flags (if the Model doesn't have default schema flags a NullPointerException will be thrown)
+	 * @param schemaName
+	 * @param tableNameSuffix
+	 * @return
+	 */
+	static public Schema CreateSchemaWithSuffixedTableName(Model model, String schemaName, String tableNameSuffix)
+	{
+		return CreateSchema(model, schemaName, null, schemaName, tableNameSuffix);
+	}
+	
+	/**
+	 * @param model cannot be null
+	 * @param schemaName
+	 * @param schemaFlags
+	 * @param tableNameSuffix
+	 * @return
+	 */
+	static public Schema CreateSchemaWithSuffixedTableName(Model model, String schemaName, int schemaFlags, String tableNameSuffix)
+	{
+		return CreateSchema(model, schemaName, schemaFlags, schemaName, tableNameSuffix);
+	}
+	
+	/**
+	 * @param model cannot be null
+	 * @param schemaName
+	 * @param schemaFlags may be null, in which case the default schema flags of the Model will be used (if it doesn't have any a NullPointerException will be thrown)
+	 * @param unprefixedTableName if null the schemaName will be used instead
+	 * @param tableNameSuffix may be null
+	 * @return
+	 */
+	static protected Schema CreateSchema(Model model, String schemaName, Integer schemaFlags, String unprefixedTableName, String tableNameSuffix)
+	{
+		if(schemaFlags == null)
+			schemaFlags = model.getDefaultSchemaFlags();
+		return new Schema(model, schemaName, GetSchemaTableName(schemaName, schemaFlags, unprefixedTableName, tableNameSuffix), schemaFlags.intValue());
 	}
 	
 	// DYNAMICS -----------------------------------------------------
