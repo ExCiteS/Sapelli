@@ -38,8 +38,8 @@ import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -53,8 +53,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
  * MediaField base class.
  * 
  * Note:
- * 	What we call the "V1X" column in here is somewhat confusingly named given that this way of
- * 	storing information about media attachments was used up to and including v2.0 Beta 16. 
+ * 	What we call the "V1X" column in here is somewhat confusingly named given that this way
+ * 	of storing information about media attachments was used up to and including v2.0 Beta 16.
  * 
  * @author mstevens, Michalis Vitos, benelliott
  */
@@ -510,7 +510,7 @@ public abstract class MediaField extends Field
 	 */
 	public String generateFilenameV1X(Record record, int attachmentNumber)
 	{
-		return generateFilename(record, attachmentNumber, form.isObfuscateMediaFiles());
+		return generateFilenameV1X(record, attachmentNumber, form.isObfuscateMediaFiles());
 	}
 	
 	/**
@@ -549,17 +549,17 @@ public abstract class MediaField extends Field
 	 * @param fileStorageProvider
 	 * @return
 	 */
-	public Record convertV1XRecord(Record v1XRecord, boolean findAndRenameFiles, FileStorageProvider fileStorageProvider)	
+	public List<Long> convertV1XColumnValue(Record v1XRecord, boolean findAndRenameFiles, FileStorageProvider fileStorageProvider)	
 	{
 		File attachmentFolder = findAndRenameFiles ? fileStorageProvider.getProjectAttachmentFolder(form.project, false) : null;
 		IntegerColumn v1XColumn = createV1XColumn();
-		if(v1XColumn.isValuePresent(v1XRecord))
+		if(!v1XColumn.isValuePresent(v1XRecord))
 			return null;
 		int attachmentCount = v1XColumn.retrieveValue(v1XRecord).intValue();
 		List<Long> creationTimeOffsets = new ArrayList<Long>(attachmentCount);
 		for(int attachmentNumber = 0; attachmentNumber < attachmentCount; attachmentNumber++)
 		{
-			Long fakeCreationTimeOffset = Long.valueOf(attachmentNumber * 100); // 100ms apart
+			Long fakeCreationTimeOffset = Long.valueOf((attachmentNumber + 1) * 100); // 100ms apart and 1st one 100ms after record StartTime 
 			creationTimeOffsets.add(fakeCreationTimeOffset);
 			if(findAndRenameFiles)
 			{
@@ -568,18 +568,7 @@ public abstract class MediaField extends Field
 					v1XFile.renameTo(new File(attachmentFolder, generateFilename(v1XRecord, fakeCreationTimeOffset)));
 			}
 		}
-		
-		// Create new record:
-		Record record = form.getSchema().createRecord();
-		for(Column<?> col : v1XRecord.getSchema().getColumns(false))
-			if(!col.equals(v1XColumn, true, false))
-				// Copy values of all columns except the v1x MediaField column:
-				col.storeObject(record, col.retrieveValue(v1XRecord));
-		// Set creationTimeOffsets in v2x MediaField column:
-		getColumn().storeValue(record, creationTimeOffsets);
-		
-		// Return new record:
-		return record;
+		return creationTimeOffsets;
 	}
 	
 	@Override
@@ -595,7 +584,8 @@ public abstract class MediaField extends Field
 					this.max == that.max &&
 					this.useNativeApp == that.useNativeApp &&
 					this.showReview == that.showReview &&
-					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
+					Objects.equals(this.approveButtonImageRelativePath, that.approveButtonImageRelativePath) &&
+					Objects.equals(this.discardButtonImageRelativePath, that.discardButtonImageRelativePath);
 		}
 		else
 			return false;
@@ -609,6 +599,7 @@ public abstract class MediaField extends Field
 		hash = 31 * hash + max;
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
 		hash = 31 * hash + (showReview ? 0 : 1);
+		hash = 31 * hash + (approveButtonImageRelativePath == null ? 0 : approveButtonImageRelativePath.hashCode());
 		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());
 		return hash;
 	}
@@ -616,8 +607,8 @@ public abstract class MediaField extends Field
 	/**
 	 * @author mstevens
 	 *
-	 * @param <T>
-	 * @param <N>
+	 * @param <T> type of the MediaField Column (v1x: Long; v2x: List<Long>)
+	 * @param <N> type of the attachmentIdentifier (v1x: Integer; v2x: Long)
 	 */
 	static protected abstract class FileNameGenerator<T, N extends Number> extends VirtualColumn.ValueMapper<List<String>, T> implements Serializable
 	{
@@ -658,13 +649,13 @@ public abstract class MediaField extends Field
 		{
 			if(this == obj)
 				return true;
-			if(!(obj instanceof FileNameGenerator))
+			if(!getClass().isInstance(obj))
 				return false;
 			FileNameGenerator<?, ?> that = (FileNameGenerator<?, ?>) obj;
-			return	this.fieldID == that.fieldID &&
+			return	this.fieldID.equals(that.fieldID) &&
 					this.obfuscateFilename == that.obfuscateFilename &&
 					this.obfuscateExtension == that.obfuscateExtension &&
-					this.fileExtension == that.fileExtension;
+					this.fileExtension.equals(that.fileExtension);
 		}
 		
 		@Override
@@ -711,7 +702,7 @@ public abstract class MediaField extends Field
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename
-			// Format: "FieldID_DeviceID_DateTime_CreationTimeOffset"
+			// Format: "FieldID_DeviceID_StartTime_CreationTimeOffset"
 			String filename = FileHelpers.makeValidFileName(fieldID) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
 			String ext = fileExtension;
 			char extensionSeparator = '.';
@@ -771,7 +762,7 @@ public abstract class MediaField extends Field
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename
-			//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
+			//	Format: "FieldID_DeviceID_StartTime_#AttachmentNumber"
 			String filename = FileHelpers.makeValidFileName(fieldID) + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
 			String ext = fileExtension;
 			char extensionSeparator = '.';
