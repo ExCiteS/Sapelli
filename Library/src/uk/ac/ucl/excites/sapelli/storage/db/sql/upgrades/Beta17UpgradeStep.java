@@ -11,6 +11,8 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.TableConverter;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.TransparentTableConverter;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeOperations;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
@@ -72,7 +74,6 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		
 		List<Record> newModelRecs = new ArrayList<Record>();
 		List<Schema> schemata = new ArrayList<Schema>();
-		List<Schema> schemataWithTables = new ArrayList<Schema>();
 		
 		// Loop over the Model recordReferences:
 		for(RecordReference modelRecRef : modelRecRefs)
@@ -102,23 +103,26 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		// List for the names of all tables that should be kept:
 		Set<String> keepTables = new HashSet<String>(recordStore.getProtectedTableNames());
 		
-		// Loop over all schemata to find out which ones have a table:
+		// Loop over all schemata:
 		for(Schema schema : schemata)
-			// Check if there is a table, with the old name (which is not necessarily different from the new name), for the schema:
-			if(upgradeOps.doesTableExist(recordStore, getOldTableName(schema)))
-				schemataWithTables.add(schema);
-			
-		// Loop over all schemata with an existing table and rename/recreate the table, create new Schemata records (and the table that contains them):
-		for(Schema schema : schemataWithTables)
 		{
+			// Check if there is a table, with the old name (which is not necessarily different from the new name), for the schema:
+			if(!upgradeOps.doesTableExist(recordStore, getOldTableName(schema)))
+				continue; // if there is no table we are done with this Schema
+			
+			// Remember (new) table so we don't delete the table below:
+			keepTables.add(schema.tableName); // !!!
+			
 			//	Store new schemata record:
 			recordStore.store(schema.getMetaRecord()); // this also achieves adding new "flags" and "tableName" columns
+			
 			//	Rename table if necessary:
 			String oldName = getOldTableName(schema);
 			if(!oldName.equals(schema.tableName))
 				upgradeOps.renameTable(recordStore, oldName, schema.tableName);
-			// Remember (new) table so we don't delete the table below:
-			keepTables.add(schema.tableName); // !!!
+			
+			// Get a TableConverter for the schema:
+			TableConverter tableConverter = getTableConverter(schema);
 			
 			// Check if schema has at least one (non-virtual) ValueSetColumn with all-optional subcolumns:
 			boolean hasValueSetColWithAllOptionalSubCols = false;
@@ -128,28 +132,32 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 					hasValueSetColWithAllOptionalSubCols = true;
 					break;
 				}
-			// If the schema has such columns then...
+			
+			// Check if we need to do anything:
+			if(tableConverter instanceof TransparentTableConverter && !hasValueSetColWithAllOptionalSubCols)
+				// this schema/table does not need conversion.
+				continue;
+			
 			if(hasValueSetColWithAllOptionalSubCols)
-			{
 				// Temporarily disable the use of boolean columns to represent optional ValueSetColumns:
 				upgradeOps.getTableFactory(recordStore).setUseBoolColsForValueSetCols(false);
 				/* This is required because the tables currently existing in the db are incompatible with
 				 * the SQLRecordStore#SQLTable instance we would get for the schema if we wouldn't disable
 				 * this behaviour. Disabling the behaviour ensures we get a SQLTable that is compatible with
 				 * the table as it exists in the db, enabling us to ... */
-				
-				// ... get all current records:
-				List<Record> records = recordStore.retrieveRecords(schema);
+			
+			// ... get all current records by querying the db with the oldSchema:
+			List<Record> oldRecords = recordStore.retrieveRecords(tableConverter.getOldSchema());
 
-				// Drop table (this will also get rid of the above-mentioned SQLTable instance):
-				upgradeOps.dropTable(recordStore, schema.tableName, false);
-				
+			// Drop table (this will also get rid of the above-mentioned SQLTable instance):
+			upgradeOps.dropTable(recordStore, schema.tableName, false);
+			
+			if(hasValueSetColWithAllOptionalSubCols)
 				// Re-enable the use of boolean columns to represent optional ValueSetColumns:
 				upgradeOps.getTableFactory(recordStore).setUseBoolColsForValueSetCols(true);
 				
-				// Re-insert all records in new table (which will have the boolean column representing the ValueSetColumn):
-				recordStore.store(records);
-			}
+			// Re-insert all converted records in new table (which will have the boolean column representing the ValueSetColumn):
+			recordStore.store(tableConverter.convertRecords(oldRecords));
 		}
 		
 		// Delete unknown/unupgradable tables:
@@ -160,16 +168,10 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 				upgradeOps.dropTable(recordStore, tableName, false);
 			}
 		
-		// Do client specific upgrade work:
-		clientSpecificUpgradeWork(recordStore, upgradeOps, schemataWithTables);
-		
 		// Upgrade step done!
 	}
 	
-	protected void clientSpecificUpgradeWork(SQLRecordStore<?, ?, ?> recordStore, UpgradeOperations upgradeOps, List<Schema> schemataWithTables) throws DBException
-	{
-		// does nothing by default
-	}
+	protected abstract TableConverter getTableConverter(Schema newSchema) throws DBException;
 	
 	/**
 	 * @param schema
