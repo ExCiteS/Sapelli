@@ -18,9 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -40,38 +44,51 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 				fileStorageProvider.getOldDBVersionsFolder(false),
 				// Steps:
 				//	v2->v3:
-				CollectorBeta17UpgradeStep(client)
+				new CollectorBeta17UpgradeStep(client, fileStorageProvider)
 				/*...*/);
 	}
 
-	static private UpgradeStep<CollectorClient> CollectorBeta17UpgradeStep(CollectorClient client)
+	static private class CollectorBeta17UpgradeStep extends Beta17UpgradeStep<CollectorClient>
 	{
-		return new Beta17UpgradeStep<CollectorClient>(client, CollectorClient.COLLECTOR_RECORDSTORE_V2, CollectorClient.COLLECTOR_RECORDSTORE_V3)
+
+		private final FileStorageProvider fileStorageProvider;
+		
+		public CollectorBeta17UpgradeStep(CollectorClient client, FileStorageProvider fileStorageProvider)
 		{
-			@Override
-			protected String getOldTableName(Schema schema)
-			{
-				// From old CollectorClient:
-				if(schema == ProjectRecordStore.PROJECT_SCHEMA)
-					return "Collector_Projects";
-				if(schema == ProjectRecordStore.FSI_SCHEMA)
-					return "Project_FormSchemaInfo";
-				if(schema == ProjectRecordStore.HFK_SCHEMA)
-					return "Relationship_HFKs";
-				// From old TransmissionClient:
-				if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
-					return "Transmissions";
-				if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
-					return "Transmission_Parts";
-				// From old StorageClient:
-				if(schema == Model.MODEL_SCHEMA)
-					return "Models";
-				if(schema == Model.SCHEMA_SCHEMA)
-					return "Schemata";
-				else
-					return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
-			}
-		};
+			super(client, CollectorClient.COLLECTOR_RECORDSTORE_V2, CollectorClient.COLLECTOR_RECORDSTORE_V3);
+			this.fileStorageProvider = fileStorageProvider;
+		}
+		
+		@Override
+		protected String getOldTableName(Schema schema)
+		{
+			// From old CollectorClient:
+			if(schema == ProjectRecordStore.PROJECT_SCHEMA)
+				return "Collector_Projects";
+			if(schema == ProjectRecordStore.FSI_SCHEMA)
+				return "Project_FormSchemaInfo";
+			if(schema == ProjectRecordStore.HFK_SCHEMA)
+				return "Relationship_HFKs";
+			// From old TransmissionClient:
+			if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
+				return "Transmissions";
+			if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
+				return "Transmission_Parts";
+			// From old StorageClient:
+			if(schema == Model.MODEL_SCHEMA)
+				return "Models";
+			if(schema == Model.SCHEMA_SCHEMA)
+				return "Schemata";
+			else
+				return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
+		}
+
+		@Override
+		protected void clientSpecificUpgradeWork(SQLRecordStore<?, ?, ?> recordStore, UpgradeOperations upgradeOps, List<Schema> schemataWithTables) throws DBException
+		{
+			// TODO
+		}
+			
 	}
 	
 }
