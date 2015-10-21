@@ -18,13 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
-import java.util.List;
-
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -84,9 +81,10 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 		}
 
 		@Override
-		protected void clientSpecificUpgradeWork(SQLRecordStore<?, ?, ?> recordStore, UpgradeOperations upgradeOps, List<Schema> schemataWithTables) throws DBException
+		protected TableConverter getTableConverter(Schema newSchema) throws DBException
 		{
-			// TODO
+			return new TransparentTableConverter(newSchema);
+			// TODO media field conversion
 		}
 			
 	}

@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +30,14 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TableFactory;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 
 /**
  * @author mstevens
@@ -243,60 +244,153 @@ public abstract class SQLRecordStoreUpgrader
 			SQLRecordStoreUpgrader.this.warnings.addAll(warnings);
 		}
 		
-		/**
-		 * TODO needs testing, not sure I ever got this to really work
-		 * 
-		 * @param recordStore
-		 * @param newSchema must already contain the new Columns
-		 * @param replacers
-		 * @return the converted records, which are yet to be inserted!
-		 * @throws DBException
-		 */
-		@SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
-		public List<Record> replace(SQLRecordStore<?, ?, ?> recordStore, Schema newSchema, List<ColumnReplacer<?, ?>> replacers) throws DBException
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	public interface TableConverter
+	{
+		
+		public Schema getNewSchema();
+		
+		public Schema getOldSchema();
+		
+		public List<Record> convertRecords(List<Record> oldRecords);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public final class TransparentTableConverter implements TableConverter
+	{
+		
+		private final Schema newSchema;
+		
+		public TransparentTableConverter(Schema newSchema)
 		{
-			if(!recordStore.doesTableExist(newSchema)) // only based on schema name (no STable object is instantiated)
-				return Collections.<Record> emptyList();
-			
-			// get Schema object as currently stored
-			Schema oldSchema = recordStore.getStoredVersion(newSchema);
-			if(oldSchema == null /*|| !oldSchema.containsEquivalentColumn(oldColumn)*/)
-				throw new DBException("TODO"); // TODO
-			
-			// get STable for oldSchema:
-			SQLTable oldTable = recordStore.getTableFactory().generateTable(oldSchema);
-			// get STable for newSchema:
-			//STable newTable = getTableFactory().generateTable(newSchema);
-			
-			// Retrieve all records currently in the (old) table:
-			List<Record> oldRecords = oldTable.select(new RecordsQuery(oldTable.schema));
-			
-			// Drop old table:
-			oldTable.drop();
-			oldTable.release();
-			
-			// Create new table:
-			//newTable.create();
-			
-			// Convert & store records:
-			List<Record> newRecords = new ArrayList<Record>(oldRecords.size());
-			for(Record oldRec : oldRecords)
+			this.newSchema = newSchema;
+		}
+
+		@Override
+		public Schema getNewSchema()
+		{
+			return newSchema;
+		}
+
+		@Override
+		public Schema getOldSchema()
+		{
+			return newSchema;
+		}
+
+		@Override
+		public List<Record> convertRecords(List<Record> oldRecords)
+		{
+			return oldRecords;
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public abstract class ColumnsReplacer implements TableConverter
+	{
+		
+		private final Model newModel;
+		private final Schema newSchema;
+		
+		public ColumnsReplacer(Schema newSchema)
+		{
+			this.newSchema = newSchema;
+			this.newModel = newSchema.model;
+		}
+		
+		@Override
+		public Schema getNewSchema()
+		{
+			return newSchema;
+		}
+		
+		@Override
+		public Schema getOldSchema()
+		{
+			// Construct a fake recreation of the Schema (and its Model) with "v1x" MediaField columns, this "oldSchema" should be compatible with table as it currently exists in the database:
+			Model oldModel;
+			if(newModel.hasDefaultSchemaFlags())
+				oldModel = new Model(newModel.id, newModel.name, newModel.getDefaultSchemaFlags());
+			else
+				oldModel = new Model(newModel.id, newModel.name);
+			// Insert fake versions of the schemata occurring in the Model before the one we care about:
+			for(int s = 0; s < newSchema.modelSchemaNumber; s++)
+				new Schema(oldModel, "Fake", "FakeTable", 0);
+			// Create (& insert into the oldModel) a replica of the newSchema, with the old version of the columns that have been changed:
+			Schema oldSchema = new Schema(oldModel, newSchema.getName(), newSchema.tableName, newSchema.flags);
+			for(Column<?> newColumn : newSchema.getColumns(false))
+				if(isColumnUnchanged(newColumn))
+					oldSchema.addColumn(newColumn);
+				else
+					oldSchema.addColumn(getOldColumn(newColumn));
+			// Set PK & seal oldSchema:
+			if(newSchema.hasPrimaryKey())
 			{
-				Record newRec = newSchema.createRecord();
-				cols : for(Column<?> oldCol : oldSchema.getColumns(false))
+				PrimaryKey newPK = newSchema.getPrimaryKey();
+				PrimaryKey oldPK;
+				if(newPK instanceof AutoIncrementingPrimaryKey)
 				{
-					for(ColumnReplacer<?, ?> replacer : replacers) // loop over replacers to see if one of them deals with the current oldCol
-						if(replacer.replace(oldCol, newRec, oldRec))
-							continue cols; // value was converted or skipped
-					//else (oldCol is not replaced or deleted):
-					newSchema.getEquivalentColumn(oldCol).storeObject(newRec, oldCol.retrieveValue(oldRec));
+					IntegerColumn newAutoIncrPKCol = ((AutoIncrementingPrimaryKey) newPK).getColumn();
+					oldPK = new AutoIncrementingPrimaryKey(newPK.getName(), isColumnUnchanged(newAutoIncrPKCol) ? newAutoIncrPKCol : (IntegerColumn) getOldColumn(newAutoIncrPKCol));
 				}
-				//newTable.insert(newRec);
-				newRecords.add(newRec);
+				else
+				{
+					List<Column<?>> oldPKCols = new ArrayList<Column<?>>();
+					for(Column<?> newPKCol : newPK.getColumns(false))
+						oldPKCols.add(isColumnUnchanged(newPKCol) ? newPKCol : getOldColumn(newPKCol));
+					oldPK = new PrimaryKey(newPK.getName(), oldPKCols.toArray(new Column<?>[oldPKCols.size()]));
+				}
+				oldSchema.setPrimaryKey(oldPK, true); // and seal
 			}
-			
+			else
+				oldSchema.seal();
+			// Note: non-PK indexes are no replicated, this should not be necessary to query the old table.
+			// Insert fake versions of the schemata occurring in the Model after the one we care about:
+			while(oldModel.getNumberOfSchemata() < newModel.getNumberOfSchemata())
+				new Schema(oldModel, "Fake", "FakeTable", 0);
+			// Seal oldModel:
+			oldModel.seal();
+			return oldSchema;
+		}
+		
+		@Override
+		public List<Record> convertRecords(List<Record> oldRecords)
+		{
+			List<Record> newRecords = new ArrayList<Record>(oldRecords.size());
+			for(Record oldRecord : oldRecords)
+			{
+				// Create new record:
+				Record newRecord = newSchema.createRecord();
+				newRecords.add(newRecord);
+				// Copy or convert values:
+				for(Column<?> newColumn : newSchema.getColumns(false))
+					if(isColumnUnchanged(newColumn))
+						newColumn.copyValue(oldRecord, newRecord);
+					else
+						newColumn.storeObject(newRecord, convertValue(newColumn, oldRecord));
+			}
 			return newRecords;
 		}
+		
+		protected abstract boolean isColumnUnchanged(Column<?> newColumn);
+		
+		/**
+		 * @param newColumn
+		 * @return the old version of the given column
+		 */
+		protected abstract Column<?> getOldColumn(Column<?> newColumn);
+		
+		protected abstract Object convertValue(Column<?> newColumn, Record oldRecord);
 		
 	}
 	
@@ -307,63 +401,6 @@ public abstract class SQLRecordStoreUpgrader
 	{
 		
 		public void upgradePerformed(int fromVersion, int toVersion, List<String> warnings);
-		
-	}
-	
-	/**
-	 * TODO needs testing, not sure I ever got this to really work
-	 * 
-	 * @author mstevens
-	 *
-	 * @param <OT>
-	 * @param <NT>
-	 */
-	public abstract class ColumnReplacer<OT, NT>
-	{
-		
-		final Column<OT> oldColumn;
-		
-		final Column<NT> newColumn;
-		
-		/**
-		 * @param oldColumn must be top-level
-		 * @param newColumn must be top-level, may be null if oldColumn is being deleted instead of replaced
-		 */
-		public ColumnReplacer(Column<OT> oldColumn, Column<NT> newColumn)
-		{
-			this.oldColumn = oldColumn;
-			this.newColumn = newColumn;
-		}
-		
-		public boolean replace(Column<?> oldCol, Record newRec, Record oldRec)
-		{
-			if(oldCol.equals(oldColumn))
-			{
-				if(newColumn != null) // if newColumn == null the oldColumn has been deleted without a replacement
-					newColumn.storeValue(newRec, convert(oldColumn.retrieveValue(oldRec)));
-				return true; // value was replaces (or skipped)
-			}
-			return false;
-		}
-		
-		public abstract NT convert(OT originalValue);
-		
-	}
-
-	/**
-	 * TODO needs testing, not sure I ever got this to really work
-	 * 
-	 * @author mstevens
-	 *
-	 * @param <OT>
-	 */
-	public abstract class ColumnDeleter<OT> extends ColumnReplacer<OT, Void>
-	{
-
-		public ColumnDeleter(Column<OT> oldColumn)
-		{
-			super(oldColumn, null);
-		}
 		
 	}
 	
