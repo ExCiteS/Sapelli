@@ -521,6 +521,8 @@ public abstract class Column<T> implements Serializable
 
 	/**
 	 * Writes the given (non-{@code null}) value to the given {@link BitOutputStream} without checks.
+	 * If this is an optional column the "presence"-bit should already have been written to the
+	 * bitStream before this method is called.
 	 *
 	 * @param value the value to be written, assumed to be non-{@code null}
 	 * @param bitStream the {@link BitOutputStream} to write to, assumed to be non-{@code null}
@@ -707,7 +709,7 @@ public abstract class Column<T> implements Serializable
 	{
 		return toString() 	+ " ["	+ (optional ? "optional" : "required") + "; "
 									+ (this instanceof VirtualColumn ? "virtual; " : "")
-									+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits"
+									+ getMinimumSize() + (isVariableSize() ? ("-" + getMaximumSize()) : "") + " bits"
 							+ "]";
 	}
 

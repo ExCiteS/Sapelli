@@ -402,9 +402,9 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	@Override
 	protected void write(String value, BitOutputStream bitStream) throws IOException
 	{
-		//Write length:
+		// Write length:
 		sizeField.write(StringUtils.sizeBytes(value, getCharset()), bitStream);
-		//Write actual string:
+		// Write actual string:
 		bitStream.write(value, getCharset());
 	}
 
@@ -426,7 +426,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	@Override
 	protected int _getMaximumSize()
 	{
-		return sizeField.size() + getMaximumBytes() * Byte.SIZE;
+		return sizeField.size() + (getMaximumBytes() * Byte.SIZE);
 	}
 	
 	public int getMaximumBytes()
