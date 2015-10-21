@@ -151,16 +151,16 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	{
 		if(this.getClass().isInstance(otherColumn))
 		{
-			VirtualColumn<?, ?> otherVirtualColumn = (VirtualColumn<?, ?>) otherColumn;
-			return 	this.targetColumn.equals(otherVirtualColumn.targetColumn) &&
-					this.valueMapper.equals(otherVirtualColumn.valueMapper);
+			VirtualColumn<?, ?> that = (VirtualColumn<?, ?>) otherColumn;
+			return 	this.targetColumn.equals(that.targetColumn) &&
+					this.valueMapper.equals(that.valueMapper);
 			// Note: do not include sourceColumn here otherwise we create an endless loop!
 		}
 		return false;
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + targetColumn.hashCode();

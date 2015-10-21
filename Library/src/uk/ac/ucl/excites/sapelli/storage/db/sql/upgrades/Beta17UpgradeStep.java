@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeOperations;
@@ -71,6 +72,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		
 		List<Record> newModelRecs = new ArrayList<Record>();
 		List<Schema> schemata = new ArrayList<Schema>();
+		List<Schema> schemataWithTables = new ArrayList<Schema>();
 		
 		// Loop over the Model recordReferences:
 		for(RecordReference modelRecRef : modelRecRefs)
@@ -100,17 +102,19 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		// List for the names of all tables that should be kept:
 		Set<String> keepTables = new HashSet<String>(recordStore.getProtectedTableNames());
 		
-		// Loop over all schemata to rename/recreate existing tables, create new Schemata records (and the table that contains them):
+		// Loop over all schemata to find out which ones have a table:
 		for(Schema schema : schemata)
+			// Check if there is a table, with the old name (which is not necessarily different from the new name), for the schema:
+			if(upgradeOps.doesTableExist(recordStore, getOldTableName(schema)))
+				schemataWithTables.add(schema);
+			
+		// Loop over all schemata with an existing table and rename/recreate the table, create new Schemata records (and the table that contains them):
+		for(Schema schema : schemataWithTables)
 		{
-			// Check if there is a table, with the old name, for the schema:
-			String oldName = getOldTableName(schema);
-			if(!upgradeOps.doesTableExist(recordStore, oldName))
-				continue; // there no table for this schema
-			//else...
 			//	Store new schemata record:
 			recordStore.store(schema.getMetaRecord()); // this also achieves adding new "flags" and "tableName" columns
 			//	Rename table if necessary:
+			String oldName = getOldTableName(schema);
 			if(!oldName.equals(schema.tableName))
 				upgradeOps.renameTable(recordStore, oldName, schema.tableName);
 			// Remember (new) table so we don't delete the table below:
@@ -156,7 +160,15 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 				upgradeOps.dropTable(recordStore, tableName, false);
 			}
 		
+		// Do client specific upgrade work:
+		clientSpecificUpgradeWork(recordStore, upgradeOps, schemataWithTables);
+		
 		// Upgrade step done!
+	}
+	
+	protected void clientSpecificUpgradeWork(SQLRecordStore<?, ?, ?> recordStore, UpgradeOperations upgradeOps, List<Schema> schemataWithTables) throws DBException
+	{
+		// does nothing by default
 	}
 	
 	/**

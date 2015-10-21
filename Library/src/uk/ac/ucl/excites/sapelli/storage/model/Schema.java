@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
@@ -521,18 +521,9 @@ public class Schema extends ColumnSet implements Serializable
 				return false;
 			// Columns are already checked at ColumnSet level
 			// Check indexes:
-			if(checkIndexes) // also checks primary key
-			{
-				// Check number of indexes:
-				if(this.getIndexes().size() != that.getIndexes().size())
-					return false;
-				// Compare indexes:
-				Iterator<Index> myIndexes = this.getIndexes().iterator();
-				Iterator<Index> otherIndexes = that.getIndexes().iterator();
-				while(myIndexes.hasNext() /** otherIndexes.hasNext() */)
-					if(!myIndexes.next().equals(otherIndexes.next(), checkNames, checkColumns))
-						return false;
-			}
+			if(checkIndexes && !Objects.equals(this.getIndexes(), that.getIndexes())) // also checks primary key
+				return false;
+			// Fully equal:
 			return true;
 		}
 		else
