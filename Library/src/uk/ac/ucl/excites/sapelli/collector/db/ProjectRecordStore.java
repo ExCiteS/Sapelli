@@ -45,7 +45,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -55,6 +54,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreWrapper;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -81,7 +81,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
  * 
  * @author mstevens
  */
-public class ProjectRecordStore extends ProjectStore implements StoreHandle.StoreUser, FormSchemaInfoProvider
+public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoProvider
 {
 	
 	// STATICS---------------------------------------------
@@ -148,8 +148,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	}
 	
 	// DYNAMICS--------------------------------------------
-	private final CollectorClient client;
-	private final RecordStore recordStore;
+	private final RecordStoreWrapper<CollectorClient> rsWrapper;
 	private final FileStorageProvider fileStorageProvider;
 	private final Map<Long, Project> cache;
 	
@@ -160,8 +159,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	 */
 	public ProjectRecordStore(CollectorClient client, FileStorageProvider fileStorageProvider) throws DBException
 	{
-		this.client = client;
-		this.recordStore = client.recordStoreHandle.getStore(this);
+		this.rsWrapper = new RecordStoreWrapper<CollectorClient>(client);
 		this.fileStorageProvider = fileStorageProvider;
 		this.cache = new HashMap<Long, Project>();
 	}
@@ -200,7 +198,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	
 	private Record retrieveFSIRecord(Form form)
 	{
-		return recordStore.retrieveRecord(getFSIRecordReference(form));
+		return rsWrapper.recordStore.retrieveRecord(getFSIRecordReference(form));
 	}
 	
 	public List<String> getByPassableFieldIDs(Record fsiRec)
@@ -317,7 +315,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public Project add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
 	{
-		if(!isStored(project, !recordStore.hasFullIndexSupport()))
+		if(!isStored(project, !rsWrapper.recordStore.hasFullIndexSupport()))
 			// Go ahead with storing project:
 			doAdd(project);
 		// Return if successful:
@@ -333,11 +331,11 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		try
 		{	// Note: we use insert() instead of store() to not allow updates
 			// Store project record:
-			recordStore.insert(getProjectRecord(project));
+			rsWrapper.recordStore.insert(getProjectRecord(project));
 			// Store an FSI record for each record-producing form:
 			for(Form form : project.getForms())
 				if(form.isProducesRecords())
-					recordStore.insert(getFSIRecord(form));
+					rsWrapper.recordStore.insert(getFSIRecord(form));
 			// Cache the project:
 			cacheProject(project);
 		}
@@ -362,13 +360,13 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public List<Project> retrieveProjects()
 	{
-		return getProjects(recordStore.retrieveRecords(PROJECT_SCHEMA));
+		return getProjects(rsWrapper.recordStore.retrieveRecords(PROJECT_SCHEMA));
 	}
 	
 	@Override
 	public List<ProjectDescriptor> retrieveProjectsOrDescriptors()
 	{
-		List<Record> projRecs = recordStore.retrieveRecords(PROJECT_SCHEMA);
+		List<Record> projRecs = rsWrapper.recordStore.retrieveRecords(PROJECT_SCHEMA);
 		if(projRecs.isEmpty())
 			return Collections.<ProjectDescriptor> emptyList();
 		List<ProjectDescriptor> projDescrs = new ArrayList<ProjectDescriptor>(projRecs.size());
@@ -389,7 +387,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public Project retrieveProject(String name, String variant, String version)
 	{
-		return getProject(recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
+		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
 																			new EqualityConstraint(PROJECT_NAME_COLUMN, name),
 																			new EqualityConstraint(PROJECT_VARIANT_COLUMN, variant != null ? variant : ""),
 																			new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
@@ -397,7 +395,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 
 	private Record queryProjectRecordByIDFingerPrint(int projectID, int projectFingerPrint)
 	{
-		return recordStore.retrieveRecord(PROJECT_SCHEMA.createRecordReference(projectID, projectFingerPrint).getRecordQuery());
+		return rsWrapper.recordStore.retrieveRecord(PROJECT_SCHEMA.createRecordReference(projectID, projectFingerPrint).getRecordQuery());
 	}
 	
 	/* (non-Javadoc)
@@ -421,7 +419,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public Project retrieveV1Project(int schemaID, int schemaVersion)
 	{
-		return getProject(recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
+		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
 																			new EqualityConstraint(PROJECT_ID_COLUMN, schemaID),
 																			new EqualityConstraint(PROJECT_V1X_SCHEMA_VERSION_COLUMN, schemaVersion))));
 	}
@@ -432,7 +430,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public List<Project> retrieveProjectVersions(int projectID)
 	{
-		return getProjects(recordStore.retrieveRecords(new RecordsQuery(Source.From(PROJECT_SCHEMA),
+		return getProjects(rsWrapper.recordStore.retrieveRecords(new RecordsQuery(Source.From(PROJECT_SCHEMA),
 																		Order.By(PROJECT_VERSION_COLUMN),
 																		new EqualityConstraint(PROJECT_ID_COLUMN, projectID))));		
 	}
@@ -456,10 +454,10 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		{
 			Constraint projectMatchConstraint = getProjectRecordReference(projectDescriptor).getRecordQueryConstraint();
 			// Delete project record:
-			recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
+			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
 			// Delete associated FSI & HFK records:
-			recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
-			recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
+			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
+			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
 			// Remove project from cache:
 			cache.remove(getCacheKey(projectDescriptor.getID(), projectDescriptor.getFingerPrint()));
 		}
@@ -492,7 +490,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		try
 		{
-			recordStore.store(getHFKRecord(relationship, foreignKey));
+			rsWrapper.recordStore.store(getHFKRecord(relationship, foreignKey));
 		}
 		catch(DBException e)
 		{
@@ -509,7 +507,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		Record hfkRecord = null;
 		try
 		{
-			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship));
+			hfkRecord = rsWrapper.recordStore.retrieveRecord(getHFKRecordReference(relationship));
 			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
 		}
 		catch(Exception e)
@@ -529,7 +527,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		try
 		{
-			recordStore.delete(getHFKRecordReference(relationship));
+			rsWrapper.recordStore.delete(getHFKRecordReference(relationship));
 		}
 		catch(DBException e)
 		{
@@ -543,7 +541,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	protected void doClose() throws DBException
 	{
-		client.recordStoreHandle.doneUsing(this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
+		rsWrapper.doClose();
 	}
 
 	/* (non-Javadoc)
@@ -552,7 +550,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	@Override
 	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
-		backuper.addStoreForBackup(recordStore);
+		rsWrapper.backup(backuper, destinationFolder);
 	}
 
 	/* (non-Javadoc)
@@ -620,5 +618,5 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 				}
 			});
 	}
-
+	
 }

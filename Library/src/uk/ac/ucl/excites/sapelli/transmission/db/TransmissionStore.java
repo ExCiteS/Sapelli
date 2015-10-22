@@ -18,16 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.db;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreWrapper;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -65,7 +62,7 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission
  * 
  * @author mstevens, Michalis Vitos
  */
-public abstract class TransmissionStore extends Store implements StoreHandle.StoreUser
+public abstract class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 {
 	
 	// STATICS---------------------------------------------
@@ -126,17 +123,13 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	}
 	
 	// DYNAMICS--------------------------------------------
-	private final TransmissionClient client;
-	private final RecordStore recordStore;
-
 	/**
 	 * @param client
 	 * @throws DBException
 	 */
 	public TransmissionStore(TransmissionClient client) throws DBException
 	{
-		this.client = client;
-		this.recordStore = client.recordStoreHandle.getStore(this);
+		super(client);
 	}
 	
 	/**
@@ -421,24 +414,6 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			}
 			catch(Exception ignore) {}
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
-	 */
-	@Override
-	protected void doClose() throws DBException
-	{
-		client.recordStoreHandle.doneUsing(this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
-	 */
-	@Override
-	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
-	{
-		backuper.addStoreForBackup(recordStore);
 	}
 	
 }
