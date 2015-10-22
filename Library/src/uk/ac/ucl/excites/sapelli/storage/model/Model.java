@@ -168,7 +168,7 @@ public class Model implements Serializable
 	
 	// Dynamics-----------------------------------------------------------
 	public final long id;
-	private final String name;
+	public final String name;
 	private final List<Schema> schemata = new ArrayList<Schema>();
 	private boolean sealed = false;
 	private final Integer defaultSchemaFlags;

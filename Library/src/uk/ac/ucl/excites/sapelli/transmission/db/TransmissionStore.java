@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.db;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,13 +25,11 @@ import java.util.List;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
-import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreWrapper;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -75,7 +72,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTr
  * 
  * @author mstevens, Michalis Vitos, benelliott
  */
-public class TransmissionStore extends Store implements StoreHandle.StoreUser
+public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 {
 	
 	// STATICS---------------------------------------------
@@ -204,17 +201,13 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 	}
 	
 	// DYNAMICS--------------------------------------------
-	private final TransmissionClient client;
-	private final RecordStore recordStore;
-
 	/**
 	 * @param client
 	 * @throws DBException
 	 */
 	public TransmissionStore(TransmissionClient client) throws DBException
 	{
-		this.client = client;
-		this.recordStore = client.recordStoreHandle.getStore(this);
+		super(client);
 	}
 	
 	public void store(Correspondent correspondent) throws Exception
@@ -820,24 +813,6 @@ public class TransmissionStore extends Store implements StoreHandle.StoreUser
 		
 		// Return result:
 		return recs;
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
-	 */
-	@Override
-	protected void doClose() throws DBException
-	{
-		client.recordStoreHandle.doneUsing(this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
-	 */
-	@Override
-	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
-	{
-		backuper.addStoreForBackup(recordStore);
 	}
 	
 	/**

@@ -216,6 +216,20 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
+	 * Retrieves previously stored value for this column at a given {@code from} ValueSet and 
+	 * stores is in this column of the given {@code to} ValueSet. Performs optionality check and validation.
+	 * 
+	 * @param from the {@link ValueSet} to retrieve the value from, should not be {@code null}
+	 * @param to the valueSet in which to store the value, may not be {@code null}
+	 * @throws IllegalArgumentException when this column is not part of one of the ValueSets' {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if one of the ValueSets is {@code null}
+	 */
+	public void copyValue(ValueSet<?> from, ValueSet<?> to)
+	{
+		storeValue(to, retrieveValue(from));
+	}
+	
+	/**
 	 * Stores the given {@code <T>} value in this column on the given valueSet. Performs optionality check and validation.
 	 *
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
@@ -521,6 +535,8 @@ public abstract class Column<T> implements Serializable
 
 	/**
 	 * Writes the given (non-{@code null}) value to the given {@link BitOutputStream} without checks.
+	 * If this is an optional column the "presence"-bit should already have been written to the
+	 * bitStream before this method is called.
 	 *
 	 * @param value the value to be written, assumed to be non-{@code null}
 	 * @param bitStream the {@link BitOutputStream} to write to, assumed to be non-{@code null}
@@ -707,7 +723,7 @@ public abstract class Column<T> implements Serializable
 	{
 		return toString() 	+ " ["	+ (optional ? "optional" : "required") + "; "
 									+ (this instanceof VirtualColumn ? "virtual; " : "")
-									+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits"
+									+ getMinimumSize() + (isVariableSize() ? ("-" + getMaximumSize()) : "") + " bits"
 							+ "]";
 	}
 

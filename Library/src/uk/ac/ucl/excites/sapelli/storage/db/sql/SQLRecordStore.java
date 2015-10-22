@@ -350,7 +350,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		else
 		{
-			schemaMetaRecordRef = Schema.GetMetaRecordReference(schema); // get reference to schemaMetaRecord
+			schemaMetaRecordRef = schema.getMetaRecordReference(); // get reference to schemaMetaRecord
 			table = tables.get(schemaMetaRecordRef); // lookup in tables cache
 		}
 		

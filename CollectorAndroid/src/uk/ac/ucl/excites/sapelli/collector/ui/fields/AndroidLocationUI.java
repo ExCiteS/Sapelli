@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -100,7 +100,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
-				View gpsIcon = new ResourceImageItem(context.getResources(), R.drawable.gps_location_svg).setBackgroundColor(Color.BLACK).getView(context);
+				View gpsIcon = new ImageItem(context.getResources(), R.drawable.gps_location_svg).setBackgroundColor(Color.BLACK).getView(context);
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				gpsIcon.setPadding(padding, padding, padding, padding);
 				waitView.addView(gpsIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));

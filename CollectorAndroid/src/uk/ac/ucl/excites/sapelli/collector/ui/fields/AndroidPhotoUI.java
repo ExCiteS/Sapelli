@@ -21,24 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 import java.io.FileOutputStream;
 
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.android.BitmapUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -58,6 +40,23 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.ViewSwitcher;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
+import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.BitmapUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * Built-in camera view
@@ -293,9 +292,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				Item<?> captureButton = null;
 				File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(captureImgFile))
-					captureButton = new FileImageItem(captureImgFile);
+					captureButton = new ImageItem(captureImgFile);
 				else
-					captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_photo_svg);
+					captureButton = new ImageItem(getContext().getResources(), R.drawable.button_photo_svg);
 				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(captureButton);
 			}
@@ -326,9 +325,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				Item<?> approveButton = null;
 				File approveImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
-					approveButton = new FileImageItem(approveImgFile);
+					approveButton = new ImageItem(approveImgFile);
 				else
-					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
+					approveButton = new ImageItem(getContext().getResources(), R.drawable.button_tick_svg);
 				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(approveButton);
 				
@@ -336,9 +335,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				Item<?> discardButton = null;
 				File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(discardImgFile))
-					discardButton = new FileImageItem(discardImgFile);
+					discardButton = new ImageItem(discardImgFile);
 				else
-					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_delete_svg);
+					discardButton = new ImageItem(getContext().getResources(), R.drawable.button_delete_svg);
 				discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(discardButton);
 			}

@@ -27,6 +27,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -36,7 +37,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @param <L> the list type (extends List<T>)
  * @param <T> the content type
  * 
- * @author mstevens
+ * @author mstevens, benelliott
  */
 public abstract class ListColumn<L extends List<T>, T> extends Column<L> implements ListLikeColumn<L>
 {
@@ -291,7 +292,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		if(singleColumn instanceof ListColumn)
 			throw new IllegalArgumentException("Cannot nest " + getClass().getSimpleName() + "s!");
 		this.singleColumn = singleColumn;
-		this.sizeField = new IntegerRangeMapping(minLength, maxLength);
+		this.sizeField = new IntegerRangeMapping(minLength, maxLength, true); // allow "empty" (0-sized) in case the list must always have exactly one element (no fewer, no more)
 		this.serialisationDelimiterOpen = serialisationDelimiterOpen;
 		this.serialisationDelimiterClose = serialisationDelimiterClose;
 		this.separator = separator;
@@ -534,35 +535,6 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		return sizeField.size() + (getMinimumLength() * singleColumn.getMinimumSize());
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
-	 */
-	@Override
-	protected boolean equalRestrictions(Column<L> otherColumn)
-	{
-		if(otherColumn instanceof ListColumn)
-		{
-			try
-			{
-				@SuppressWarnings("unchecked")
-				ListColumn<L, T> that = (ListColumn<L, T>) otherColumn;
-				return	this.sizeField.equals(that.sizeField) &&
-						this.serialisationDelimiterOpen == that.serialisationDelimiterOpen &&
-						this.serialisationDelimiterClose == that.serialisationDelimiterClose &&
-						this.separator == that.separator &&
-						this.separatorEscape == that.separatorEscape &&
-						this.separatorEscapePrefix == that.separatorEscapePrefix &&
-						this.singleColumn.equals(that.singleColumn); 
-			}
-			catch(ClassCastException cce)
-			{
-				cce.printStackTrace(System.err);
-				return false;
-			}
-		}
-		return false;
-	}
-
 	/**
 	 * @return the maxLength
 	 */
@@ -583,6 +555,35 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	public String getTypeString()
 	{
 		return singleColumn.getTypeString() + List.class.getSimpleName();
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
+	 */
+	@Override
+	protected boolean equalRestrictions(Column<L> otherColumn)
+	{
+		if(otherColumn instanceof ListColumn)
+		{
+			try
+			{
+				@SuppressWarnings("unchecked")
+				ListColumn<L, T> that = (ListColumn<L, T>) otherColumn;
+				return	this.sizeField.equals(that.sizeField) &&
+						this.serialisationDelimiterOpen == that.serialisationDelimiterOpen &&
+						this.serialisationDelimiterClose == that.serialisationDelimiterClose &&
+						this.separator == that.separator &&
+						Objects.deepEquals(this.separatorEscape, that.separatorEscape) &&
+						Objects.deepEquals(this.separatorEscapePrefix, that.separatorEscapePrefix) &&
+						this.singleColumn.equals(that.singleColumn); 
+			}
+			catch(ClassCastException cce)
+			{
+				cce.printStackTrace(System.err);
+				return false;
+			}
+		}
+		return false;
 	}
 	
 	@Override

@@ -983,7 +983,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	
 	private void parseArgument(JumpSource source, XMLAttributes tagAttributes) throws Exception
 	{
-		if(!source.hasNextFieldArguements())
+		if(!source.hasNextFieldArguments())
 			source.setNextFieldArguments(new FieldParameters());
 		source.getNextFieldArguments().put(	tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_PARAM, true, false),
 											tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_VALUE, false, true));

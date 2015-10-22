@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ItemHelpers;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
@@ -464,7 +464,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(field.form.project, choice.getImageRelativePath());
 		if(FileHelpers.isReadableFile(imageFile))
 			// render image:
-			item = new FileImageItem(imageFile);
+			item = new ImageItem(imageFile);
 		else
 		{	// render "alt" text instead of image:
 			String alt = getAltText(choice, standAlone);
