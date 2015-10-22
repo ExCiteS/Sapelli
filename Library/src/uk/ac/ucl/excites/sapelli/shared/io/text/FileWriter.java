@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.shared.io;
+package uk.ac.ucl.excites.sapelli.shared.io.text;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,7 +26,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 
-import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 
 /**
  * Text-based file writer class
@@ -52,8 +53,7 @@ public class FileWriter
 	/**
 	 * We create this writer, providing the full filepath (e.g. "/my/path/myfile.raw")
 	 * 
-	 * @param fullPath
-	 *            The full filepath (e.g. "/my/path/myfile.raw")
+	 * @param fullPath The full filepath (e.g. "/my/path/myfile.raw")
 	 */
 	public FileWriter(String fullPath, String characterEncoding) throws IllegalCharsetNameException, UnsupportedCharsetException
 	{
@@ -63,8 +63,7 @@ public class FileWriter
 	/**
 	 * We create this writer, providing the full filepath (e.g. "/my/path/myfile.raw")
 	 * 
-	 * @param fullPath
-	 *            The full filepath (e.g. "/my/path/myfile.raw")
+	 * @param fullPath The full filepath (e.g. "/my/path/myfile.raw")
 	 */
 	public FileWriter(String fullPath, Charset charset)
 	{
@@ -127,13 +126,9 @@ public class FileWriter
 		
 		// Open file for writing:
 		FileOutputStream fos = new FileOutputStream(file, append);
-		
-		// If not appending, insert UTF-x BOM (the OutputStreamWriter does not do this!):
-		if(!append && UnicodeHelpers.getBom(charset) != null)
-			fos.write(UnicodeHelpers.getBom(charset));
-		
-		// Instantiate OutputStreamWriter:
-		writer = new OutputStreamWriter(fos, charset);
+
+		// If not appending, the UTF-x BOM will be inserted by the GetWriter() method (the itself OutputStreamWriter does not do this!):
+		writer = UnicodeBOM.GetWriter(fos, charset, append);
 	}
 
 	public void close()
