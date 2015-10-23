@@ -154,8 +154,7 @@ public final class DeviceControl
 	 * Set AirplaneMode
 	 * 
 	 * @param context
-	 * @param enabled
-	 *            (True to set the device in Airplane Mode)
+	 * @param enabled pass {@code true} to put the device in airplane mode, and {@code false} to leave airplane mode
 	 */
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@SuppressWarnings("deprecation")
@@ -164,7 +163,7 @@ public final class DeviceControl
 		try
 		{
 			// If airplane mode is on, value 0, else value is 1
-			if(canToogleAirplaneMode())
+			if(canSetAirplaneMode())
 			{
 				Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, enabled ? 1 : 0);
 
@@ -182,7 +181,7 @@ public final class DeviceControl
 		}
 	}
 
-	public static boolean canToogleAirplaneMode()
+	public static boolean canSetAirplaneMode()
 	{
 		return (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) ? true : false;
 	}

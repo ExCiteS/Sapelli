@@ -324,7 +324,7 @@ public class DeviceID
 			if(DeviceControl.inAirplaneMode(context))
 			{
 				inAirplaneMode = true;
-				if(DeviceControl.canToogleAirplaneMode())
+				if(DeviceControl.canSetAirplaneMode())
 				{
 					DeviceControl.disableAirplaneMode(context);
 					int counter = 0;
