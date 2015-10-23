@@ -25,12 +25,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+
+import org.apache.commons.io.FileUtils;
 
 /**
  * File I/O helpers
  * 
  * @author mstevens, Michalis Vitos
- * 
  */
 public final class FileHelpers
 {
@@ -124,6 +126,20 @@ public final class FileHelpers
 	public static boolean deleteFile(String filePath)
 	{
 		return (new File(filePath)).delete();
+	}
+	
+	/**
+	 * Quietly deletes a bunch of {@link File}s. 
+	 * 
+	 * @param files list of files to quietly delete (may be {@code null})
+	 * 
+	 * @see FileUtils#deleteQuietly(File)
+	 */
+	public static void deleteQuietly(Collection<File> files)
+	{
+		if(files != null)
+			for(File file : files)
+				FileUtils.deleteQuietly(file);
 	}
 
 	/**
