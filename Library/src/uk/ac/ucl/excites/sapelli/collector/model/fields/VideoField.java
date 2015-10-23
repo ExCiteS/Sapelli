@@ -26,48 +26,29 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
  * @author Michalis Vitos, mstevens, benelliott
  *
  */
-public class VideoField extends MediaField
+public class VideoField extends CameraField
 {
 
-	// STATICS--------------------------------------------------------
+	// STATICS-------------------------------------------------------
 	static private final String MEDIA_TYPE_MP4 = "VIDEO_MP4";
 	static private final String EXTENSION_MP4 = "mp4";
 
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
 
-	// DYNAMICS-------------------------------------------------------
+	// DYNAMICS------------------------------------------------------
 	private String startRecImageRelativePath;
 	private String stopRecImageRelativePath;
-	private boolean useFrontFacingCamera;
 
 	public VideoField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
-		useNativeApp = DEFAULT_USE_NATIVE_APP;
-		useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
-	}
-
-	/**
-	 * @return the useFrontFacingCamera
-	 */
-	public boolean isUseFrontFacingCamera()
-	{
-		return useFrontFacingCamera;
-	}
-
-	/**
-	 * @param useFrontFacingCamera
-	 *            the useFrontFacingCamera to set
-	 */
-	public void setUseFrontFacingCamera(boolean useFrontFacingCamera)
-	{
-		this.useFrontFacingCamera = useFrontFacingCamera;
+		super(form, id, caption, DEFAULT_USE_NATIVE_APP, DEFAULT_USE_FRONT_FACING_CAMERA);
 	}
 
 	@Override
@@ -118,6 +99,7 @@ public class VideoField extends MediaField
 	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
 		super.addFiles(filesSet, fileStorageProvider); // !!!
+		
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
 	}
@@ -136,11 +118,9 @@ public class VideoField extends MediaField
 		if(obj instanceof VideoField)
 		{
 			VideoField that = (VideoField) obj;
-			return super.equals(that) && // MediaField#equals(Object)
-					(this.startRecImageRelativePath != null ? this.startRecImageRelativePath.equals(that.startRecImageRelativePath)
-							: that.startRecImageRelativePath == null) &&
-					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath)
-							: that.stopRecImageRelativePath == null);
+			return	super.equals(that) && // CameraField#equals(Object)
+					Objects.equals(this.startRecImageRelativePath, that.startRecImageRelativePath) &&
+					Objects.equals(this.stopRecImageRelativePath, that.stopRecImageRelativePath);
 		}
 		else
 			return false;
@@ -149,7 +129,7 @@ public class VideoField extends MediaField
 	@Override
 	public int hashCode()
 	{
-		int hash = super.hashCode(); // MediaField#hashCode()
+		int hash = super.hashCode(); // CameraField#hashCode()
 		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
 		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
 		return hash;

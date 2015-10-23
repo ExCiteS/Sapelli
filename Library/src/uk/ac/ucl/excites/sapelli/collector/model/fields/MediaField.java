@@ -123,14 +123,16 @@ public abstract class MediaField extends Field
 
 	/**
 	 * @param form
-	 * @param id the id of the field, may be null (but not recommended)
-	 * @param caption the caption of the field, may be null
+	 * @param id
+	 * @param caption
+	 * @param useNativeApp default {@link #useNativeApp} value
 	 */
-	public MediaField(Form form, String id, String caption)
+	public MediaField(Form form, String id, String caption, boolean useNativeApp)
 	{
 		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);
 		setShowReview(DEFAULT_SHOW_REVIEW);
+		this.useNativeApp = useNativeApp;
 	}
 	
 	public abstract String getMediaType();

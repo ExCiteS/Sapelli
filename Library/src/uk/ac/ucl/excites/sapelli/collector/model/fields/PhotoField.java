@@ -26,15 +26,16 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
  * @author Michalis Vitos, mstevens
  *
  */
-public class PhotoField extends MediaField
+public class PhotoField extends CameraField
 {
 
-	//STATICS--------------------------------------------------------
+	// STATICS-------------------------------------------------------
 	static private final String MEDIA_TYPE_JPEG = "PHOTO_JPEG";
 	static private final String EXTENSION_JPEG = "jpg";
 	
@@ -49,34 +50,14 @@ public class PhotoField extends MediaField
 	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
 	static public final FlashMode DEFAULT_FLASH_MODE = FlashMode.AUTO;
 	
-	//DYNAMICS-------------------------------------------------------
-	private boolean useFrontFacingCamera;
+	// DYNAMICS------------------------------------------------------
 	private FlashMode flashMode;
 	private String captureButtonImageRelativePath;
 	
-	
 	public PhotoField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
-		useNativeApp = DEFAULT_USE_NATIVE_APP;
-		useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
+		super(form, id, caption, DEFAULT_USE_NATIVE_APP, DEFAULT_USE_FRONT_FACING_CAMERA);
 		flashMode = DEFAULT_FLASH_MODE;
-	}
-
-	/**
-	 * @return the useFrontFacingCamera
-	 */
-	public boolean isUseFrontFacingCamera()
-	{
-		return useFrontFacingCamera;
-	}
-
-	/**
-	 * @param useFrontFacingCamera the useFrontFacingCamera to set
-	 */
-	public void setUseFrontFacingCamera(boolean useFrontFacingCamera)
-	{
-		this.useFrontFacingCamera = useFrontFacingCamera;
 	}
 
 	/**
@@ -122,7 +103,7 @@ public class PhotoField extends MediaField
 	{
 		return EXTENSION_JPEG;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
 	 */
@@ -130,6 +111,7 @@ public class PhotoField extends MediaField
 	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
 		super.addFiles(filesSet, fileStorageProvider); // !!!
+		
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
 	}
 
@@ -147,10 +129,9 @@ public class PhotoField extends MediaField
 		if(obj instanceof PhotoField)
 		{
 			PhotoField that = (PhotoField) obj;
-			return	super.equals(that) && // MediaField#equals(Object)
-					this.useFrontFacingCamera == that.useFrontFacingCamera &&
-					this.flashMode == that.flashMode &&
-					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null);
+			return	super.equals(that) && // CameraField#equals(Object)
+					this.flashMode.ordinal() == that.flashMode.ordinal() &&
+					Objects.equals(this.captureButtonImageRelativePath, that.captureButtonImageRelativePath);
 		}
 		else
 			return false;
@@ -159,8 +140,7 @@ public class PhotoField extends MediaField
 	@Override
 	public int hashCode()
 	{
-		int hash = super.hashCode(); // MediaField#hashCode()
-		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
+		int hash = super.hashCode(); // CameraField#hashCode()
 		hash = 31 * hash + flashMode.ordinal();
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
 		return hash;

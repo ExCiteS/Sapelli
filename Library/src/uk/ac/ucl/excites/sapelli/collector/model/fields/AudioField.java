@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -34,21 +35,22 @@ import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 public class AudioField extends MediaField
 {
 
+	// STATICS-------------------------------------------------------
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	static private final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
 	static private final String EXTENSION_3GPP = "3gp";
 
+	// DYNAMICS------------------------------------------------------
 	private String startRecImageRelativePath;
 	private String stopRecImageRelativePath;
 	private String playAudioImageRelativePath;
 	private String stopAudioImageRelativePath;
-
+	
 	public AudioField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
-		useNativeApp = DEFAULT_USE_NATIVE_APP;
+		super(form, id, caption, DEFAULT_USE_NATIVE_APP);
 	}
-
+	
 	/**
 	 * @return the startRecImageRelativePath
 	 */
@@ -136,6 +138,7 @@ public class AudioField extends MediaField
 	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
 		super.addFiles(filesSet, fileStorageProvider); // !!!
+		
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, playAudioImageRelativePath));
@@ -157,10 +160,10 @@ public class AudioField extends MediaField
 		{
 			AudioField that = (AudioField) obj;
 			return	super.equals(that) && // MediaField#equals(Object)
-					(this.startRecImageRelativePath != null ? this.startRecImageRelativePath.equals(that.startRecImageRelativePath) : that.startRecImageRelativePath == null) &&
-					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath) : that.stopRecImageRelativePath == null) &&
-					(this.playAudioImageRelativePath != null ? this.playAudioImageRelativePath.equals(that.playAudioImageRelativePath) : that.playAudioImageRelativePath == null) &&
-					(this.stopAudioImageRelativePath != null ? this.stopAudioImageRelativePath.equals(that.stopAudioImageRelativePath) : that.stopAudioImageRelativePath == null);
+					Objects.equals(this.startRecImageRelativePath,	that.startRecImageRelativePath) &&
+					Objects.equals(this.stopRecImageRelativePath,	that.stopRecImageRelativePath) &&
+					Objects.equals(this.playAudioImageRelativePath,	that.playAudioImageRelativePath) &&
+					Objects.equals(this.stopAudioImageRelativePath,	that.stopAudioImageRelativePath);
 		}
 		else
 			return false;
