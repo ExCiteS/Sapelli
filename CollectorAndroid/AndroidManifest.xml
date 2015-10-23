@@ -132,6 +132,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- <receiver
+            android:name="uk.ac.ucl.excites.sapelli.sender.gsm.SentSMSReceiver"
+            android:enabled="true"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="uk.ac.ucl.excites.sapelli.SENT_SMS" />
+                <action android:name="uk.ac.ucl.excites.sapelli.DELIVERED_SMS" />
+            </intent-filter>
+        </receiver> -->
+
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Text"
             android:exported="true"

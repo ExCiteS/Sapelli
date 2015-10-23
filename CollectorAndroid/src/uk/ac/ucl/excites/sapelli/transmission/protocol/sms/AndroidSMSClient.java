@@ -21,16 +21,6 @@ package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 import java.util.ArrayList;
 import java.util.Random;
 
-import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.util.SMSStatusReport;
-
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -39,6 +29,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.util.SMSStatusReport;
 
 public class AndroidSMSClient implements SMSClient
 {
@@ -256,5 +255,40 @@ public class AndroidSMSClient implements SMSClient
 		//Return pending intent:
 		return PendingIntent.getBroadcast(context, 0, new Intent(intentAction), PendingIntent.FLAG_ONE_SHOT);
 	}
+	
+	// From AlermManager branch: (TODO use some of this)
+	/*private PendingIntent setupSentCallback(final int messageID)
+	{
+		return setupSentCallback(messageID, 1, 1);
+	}
+
+	private PendingIntent setupSentCallback(final int messageID, final int part, final int numParts)
+	{
+		// Create intent
+		Intent intent = new Intent(SentSMSReceiver.SENT_SMS_RECEIVER_ACTION);
+		intent.putExtra(SentSMSReceiver.MESSAGE_ID, messageID);
+		intent.putExtra(SentSMSReceiver.PART, part);
+		intent.putExtra(SentSMSReceiver.NUMBER_OF_PART, numParts);
+
+		// Return pending intent:
+		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+	}
+
+	private PendingIntent setupDeliveredCallback(final int messageID)
+	{
+		return setupDeliveredCallback(messageID, 1, 1);
+	}
+
+	private PendingIntent setupDeliveredCallback(final int messageID, final int part, final int numParts)
+	{
+		// Create intent
+		Intent intent = new Intent(SentSMSReceiver.DELIVERED_SMS_RECEIVER_ACTION);
+		intent.putExtra(SentSMSReceiver.MESSAGE_ID, messageID);
+		intent.putExtra(SentSMSReceiver.PART, part);
+		intent.putExtra(SentSMSReceiver.NUMBER_OF_PART, numParts);
+
+		// Return pending intent:
+		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+	}*/
 
 }
