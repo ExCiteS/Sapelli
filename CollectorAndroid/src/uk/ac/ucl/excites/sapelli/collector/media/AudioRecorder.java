@@ -36,9 +36,10 @@ public class AudioRecorder
 	
 	static private final String TAG = "AudioRecorder";
 	
+	static public final short MAX_AMPLITUDE = Short.MAX_VALUE; // 32767
+	
 	private MediaRecorder mediaRecorder;
-	private File audioFile;
-	private boolean isRecording;
+	private volatile boolean recording;
 
 	/**
 	 * Sets up the audio recorder to produce a file with the given filename in the given folder
@@ -46,26 +47,27 @@ public class AudioRecorder
 	 * @param dataFolder
 	 * @param filename
 	 */
-	public AudioRecorder(File audioFile)
+	public AudioRecorder()
 	{
-		this.audioFile = audioFile;
-		isRecording = false;
+		recording = false;
 	}
 
 	/**
 	 * Starts a new recording.
 	 */
-	public void start() throws Exception
+	public void start(File outputFile) throws Exception
 	{
+		if(recording)
+			throw new IllegalStateException(getClass().getSimpleName() + " is already recording!");
 		mediaRecorder = new MediaRecorder();
 		mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-		mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP); //TODO make configurable
-		mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB); //TODO make configurable
-		mediaRecorder.setOutputFile(audioFile.getAbsolutePath());
+		mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP); // TODO make configurable
+		mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB); // TODO make configurable
+		mediaRecorder.setOutputFile(outputFile.getAbsolutePath());
 		mediaRecorder.prepare();
 		mediaRecorder.start();
-		isRecording = true;
-		//Log.d(TAG, "Started recording audio (output file: " + audioFile.getAbsolutePath() + ").");
+		recording = true;
+		//Log.d(TAG, "Started recording audio (output file: " + outputFile.getAbsolutePath() + ").");
 	}
 
 	/**
@@ -75,14 +77,30 @@ public class AudioRecorder
 	 */
 	public void stop() throws Exception
 	{
-		if (isRecording)
+		if(recording)
 		{
+			recording = false;
 			mediaRecorder.stop();
 			mediaRecorder.reset();
 			mediaRecorder.release();
 			mediaRecorder = null;
 			//Log.d(TAG, "Stopped recording audio (output file: " + audioFile.getAbsolutePath() + ").");
 		}
+	}
+	
+	/**
+	 * @return the isRecording
+	 */
+	public boolean isRecording()
+	{
+		return recording;
+	}
+	
+	public int getMaxAmplitude()
+	{
+		if(recording && mediaRecorder != null)
+			return mediaRecorder.getMaxAmplitude();
+		return -1;
 	}
 	
 }

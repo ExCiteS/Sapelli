@@ -301,19 +301,26 @@ public class CollectorActivity extends ProjectActivity
 		return super.onKeyUp(keyCode, event);
 	}
 	
+	/**
+	 * Catch every touch event here, and only pass them on to their 'receiving' objects if the UI
+	 * has not already been blocked from receiving any new interactions for the time being. This is
+	 * used to prevent unwanted extra clicks when the first click is still being processed.
+	 */
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event)
 	{ 
 		if(controller == null)
 			return false; // just in case...
 		if(controller.isUIBlocked())
-		{
-			// controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
-			return true;
+		{	/* Something has requested that interactions be blocked, so do not
+			 * send touch event to receiving object (so no super call)... */
+			//controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
+			return true; // we have consumed this motion event, so return true
 		}
 		else
-		{
-			// controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
+		{	/* UI is not blocked, so send the touch event to the receiving object
+			 * using the super call */
+			//controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
 			return super.dispatchTouchEvent(event);
 		}
 	}
@@ -363,7 +370,8 @@ public class CollectorActivity extends ProjectActivity
 		if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE)) // check if the device is able to handle PhotoField Intents
 		{ // Device cannot take photos
 			Log.i(TAG, "Cannot take photo due to device limitation.");
-			photoUI.mediaDone(null, true); // skip the PhotoField field (pass null to indicate no file was created)
+			photoUI.attachMedia(null);
+			controller.goForward(false); // skip the PhotoField
 		}
 		else
 		{ // Device can take photos
@@ -384,7 +392,8 @@ public class CollectorActivity extends ProjectActivity
 				if(tmpPhotoFile != null)
 					tmpPhotoFile.delete();
 				Log.e(TAG, "setPhoto() error", e);
-				photoUI.mediaDone(null, true);
+				photoUI.attachMedia(null);
+				controller.goForward(false);
 			}
 		}
 	}
@@ -406,25 +415,30 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(getFileStorageProvider(), controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewAttachmentFile(getFileStorageProvider(), controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
-					photoUI.mediaDone(newPhoto, true);
+					photoUI.attachMedia(newPhoto);
+					controller.goForward(true);
 				}
 				catch(Exception e)
 				{ // could not rename the file
 					tmpPhotoFile.delete();
-					photoUI.mediaDone(null, true);
+					photoUI.attachMedia(null);
+					controller.goForward(false);
 				}
 			}
-			else
-				photoUI.mediaDone(null, true);
+			else {
+				photoUI.attachMedia(null);
+				controller.goForward(false);
+			}
 		}
 		else
 		// if(resultCode == RESULT_CANCELED)
 		{
 			if(tmpPhotoFile != null)
 				tmpPhotoFile.delete(); // Delete the tmp file from the device
-			photoUI.mediaDone(null, true);
+			photoUI.attachMedia(null);
+			controller.goForward(true);
 		}
 	}
 

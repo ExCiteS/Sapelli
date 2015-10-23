@@ -81,7 +81,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
-				View compassIcon = new ImageItem(context.getResources(), R.drawable.compass_svg).setBackgroundColor(Color.BLACK).getView(context);
+				View compassIcon = new ImageItem(context.getResources(), R.drawable.compass).setBackgroundColor(Color.BLACK).getView(context);
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				compassIcon.setPadding(padding, padding, padding, padding);
 				waitView.addView(compassIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));

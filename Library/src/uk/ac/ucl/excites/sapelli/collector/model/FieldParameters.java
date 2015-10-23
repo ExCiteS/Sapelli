@@ -85,6 +85,15 @@ public class FieldParameters extends Parameters
 	}
 	
 	/**
+	 * @param key
+	 * @return the previous value for the key (or null if there was no such mapping)
+	 */
+	public String remove(String key)
+	{
+		return keyValuePairs.remove(key);
+	}
+	
+	/**
 	 * Warning don't clear arguments from the FieldParameters kept by Field or Trigger instances! Create copy first.
 	 * 
 	 * @param key

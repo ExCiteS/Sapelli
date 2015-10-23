@@ -24,8 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
-import org.apache.commons.io.FileUtils;
-
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -473,6 +471,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(!currFormSession.form.isProducesRecords()) //!!!
 			return;
 		
+		// Delete any files that were "queued" for deletion but not actually deleted yet:
+		currFormSession.deleteDiscardedAttachments();
+		
+		// NOTE: no need to touch the added files since they were added on creation
+		
+		// Clear the list of added files so they cannot be deleted accidentally:
+		currFormSession.clearAddedAttachments(); // !!! (this "persists" the new attachments)
+		
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
@@ -491,10 +497,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			return;
 		}
 	
-		// Persist attachments (which are already in the correct folder) by forgetting about them,
-		//	so they are not deleted when the controller is stopped (e.g. upon activity destroy).
-		currFormSession.getMediaAttachments().clear(); // !!!
-	
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currFormSession.form.isVibrateOnSave())
@@ -508,26 +510,32 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	/**
 	 * Makes the record null & deletes any media attachments.
 	 * 
-	 * Note:
-	 * 	Making the record null is necessary to avoid that unsaved foreign records are used
-	 * 	(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
-	 * 	a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
-	 *  Doing so is risky however because an NPE will be thrown (likely crashing the app)
-	 *  when some FieldUI or controller method attempts to (illegally!) use the record
-	 *  after this discard operation. Obviously that shouldn't happen but we've had several
-	 *  cases in which it did. However, all (known) cases have been resolved and any new
-	 *  similar cases would be revealed soon by an NPE and/or crash. 
+	 * Notes:
+	 * 	 -	Making the record {@code null} is necessary to avoid that unsaved foreign records
+	 * 		are used (i.e. referred to with a foreign key value) when returning to a BelongsTo
+	 * 		field in a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
+	 * 		Doing so is risky however because an NPE will be thrown (likely crashing the app)
+	 * 		when some FieldUI or controller method attempts to (illegally!) use the record
+	 * 		after this discard operation. Obviously that shouldn't happen but we've had several
+	 * 		cases in which it did. However, all (known) cases have been resolved and any new
+	 * 		similar cases would be revealed soon by an NPE and/or crash.
+	 * 	 -	Files that were create during this session must be deleted
+	 * 	 -	Files that were created AND discarded during this session will already have been deleted.
+	 * 	 -	Files that were discard during this session but created earlier should not be deleted! Their deletion is cancelled because the whole session is cancelled.
 	 * 
+	 * @see FormSession#discardAttachment(File)
 	 */
 	protected void discardRecordAndAttachments()
 	{
-		// Discard record:
-		currFormSession.record = null; // !!!
+		// delete any files that were added but are now being discarded:
+		currFormSession.deleteAddedAttachments();
+		// See notes above about discarded files.
 		
-		// Delete any attachments:
-		for(File attachment : currFormSession.getMediaAttachments())
-			FileUtils.deleteQuietly(attachment);
-		currFormSession.getMediaAttachments().clear();
+		// Clear the files that were discarded during this session (whose deletion is cancelled):
+		currFormSession.clearDiscardedAttachments(); // (so they cannot be deleted accidently!)
+		
+		// Discard record itself:
+		currFormSession.record = null; // !!!
 	}
 	
 	@Override
@@ -536,16 +544,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(withPage)
 			return true;
 		// else (not with page):
-		// 	Deal with leaves:
+		//	Deal with leaves:
 		if(cf.isLeaf())
 			return false; // this should never happen
 		// Add the choice options to the log files
 		addLogLine("CHOICE_OPTIONS", cf.getChildren().toString());
-		// 	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
+		//	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(IsFieldEnabled(currFormSession, child))
 				return true;
-		// 	This ChoiceField currently has no enabled children, so we should skip it:
+		//	This ChoiceField currently has no enabled children, so we should skip it:
 		goForward(false);
 		return false;
 	}
@@ -553,19 +561,15 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	@Override
 	public boolean enterMediaField(MediaField mf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage)
-			return true;
-		else
-		{
-			if(mf.isMaxReached(currFormSession.record))
-			{ // Maximum number of attachments for this field is reached:
-				goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
-				return false;
-			}
-			return true;
-		}
+		// we no longer skip media fields when max reached, so always return true
+		return true;
 	}
 	
+	/**
+	 * @param lf  the LocationField
+	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
+	 * @return whether or not a UI update is required after entering the field
+	 */
 	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
@@ -983,6 +987,21 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	{
 		return fileStorageProvider;
 	}
+	
+	public long getFormStartTime()
+	{
+		return currFormSession.startTime;
+	}
+	
+	public void addAttachment(File file)
+	{
+		currFormSession.addAttachment(file);
+	}
+	
+	public void discardAttachment(File file)
+	{
+		currFormSession.discardAttachment(file);
+	}
 
 	protected void startLocationListener(LocationField locField)
 	{
@@ -998,11 +1017,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected abstract void stopLocationListener();
 	
 	public abstract Location getCurrentBestLocation();
-	
-	public void addMediaAttachment(File mediaAttachment)
-	{
-		currFormSession.addMediaAttachment(mediaAttachment);
-	}
 	
 	protected abstract void vibrate(int durationMS);
 	

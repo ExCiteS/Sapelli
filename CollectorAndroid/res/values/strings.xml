@@ -82,6 +82,10 @@
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
     <string name="notification">The Service is running.</string>
+    <string name="photoCameraErrorFatal">Cannot detect camera to take mandatory picture; cancelling record and exiting project&#8230;</string>
+    <string name="videoCameraErrorFatal">Cannot detect camera to record mandatory video; cancelling record and exiting project&#8230;</string>
+    <string name="photoCameraErrorSkip">Cannot detect camera to take picture; skipping field \"%1$s\"&#8230;</string>
+    <string name="videoCameraErrorSkip">Cannot detect camera to record video; skipping field \"%1$s\"&#8230;</string>
     <string name="data">Collected data</string>
     <string name="records">Records</string>
     <string name="media_files">Media files</string>
