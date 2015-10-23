@@ -302,7 +302,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 			switch(control)
 			{
 				case Back:
-					show &= controller.canGoBack(false); // can we go back to a previous field or form
+					show &= isShowBack();
 					break;
 				case Cancel:
 					show &= isShowCancel();
