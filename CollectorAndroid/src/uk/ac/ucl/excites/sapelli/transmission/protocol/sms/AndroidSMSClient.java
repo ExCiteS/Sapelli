@@ -78,7 +78,7 @@ public class AndroidSMSClient implements SMSClient
 	{	
 		// Increment message ID!:
 		MESSAGE_ID++;
-		//Try sending:
+		// Try sending:
 		try
 		{
 			Log.d(TAG, "Try sending Text SMS with length of " + textSMS.getContent().length() + " chars, and content: " + textSMS.getContent());
