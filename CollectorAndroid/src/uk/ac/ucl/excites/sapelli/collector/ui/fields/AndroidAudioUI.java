@@ -203,17 +203,17 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 			paint = new Paint();
 		}
 
-	    @Override
-	    protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight)
-	    {
-	    	// (re)calculate level dimensions:
-	    	levelHeight = ((float) height / NUM_LEVELS) - LEVEL_PADDING;
-	    	levelWidth = VOLUME_WIDTH_FRACTION * width;
-	    	levelLeft = (width - levelWidth) / 2;
-	    	levelRight = (width + levelWidth) / 2;
-	    	
-	    	super.onSizeChanged(width, height, oldWidth, oldHeight);
-	    }
+		@Override
+		protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight)
+		{
+			// (re)calculate level dimensions:
+			levelHeight = ((float) height / NUM_LEVELS) - LEVEL_PADDING;
+			levelWidth = VOLUME_WIDTH_FRACTION * width;
+			levelLeft = (width - levelWidth) / 2;
+			levelRight = (width + levelWidth) / 2;
+
+			super.onSizeChanged(width, height, oldWidth, oldHeight);
+		}
 
 		/**
 		 * Illuminate the number of levels specified by levelsToIlluminate.

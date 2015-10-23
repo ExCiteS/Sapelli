@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -55,7 +56,12 @@ public class FormSession
 	// DYNAMIC ------------------------------------------------------
 	protected final Form form;
 	protected final Mode mode;
-	protected Record record; //TODO make final? do we really need to make the record null in Controller#discardRecordAndAttachments()?
+	
+	/**
+	 * Note we should make this final for the reason explained here: {@link Controller#discardRecordAndAttachments()}. 
+	 */
+	protected Record record;
+	
 	public final long startTime;
 	
 	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
@@ -221,9 +227,7 @@ public class FormSession
 	 */
 	public void deleteDiscardedAttachments()
 	{
-		if(discardedAttachments != null)
-			for(File file : discardedAttachments)
-				FileUtils.deleteQuietly(file);
+		FileHelpers.deleteQuietly(discardedAttachments);
 	}
 	
 	/**
@@ -231,9 +235,7 @@ public class FormSession
 	 */
 	public void deleteAddedAttachments()
 	{
-		if(addedAttachments != null)
-			for(File file : addedAttachments)
-				FileUtils.deleteQuietly(file);
+		FileHelpers.deleteQuietly(addedAttachments);
 	}
 	
 	public void clearDiscardedAttachments()

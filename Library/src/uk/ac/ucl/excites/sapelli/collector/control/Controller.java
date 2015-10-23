@@ -470,15 +470,15 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	{
 		if(!currFormSession.form.isProducesRecords()) //!!!
 			return;
-				
+		
 		// Delete any files that were "queued" for deletion but not actually deleted yet:
 		currFormSession.deleteDiscardedAttachments();
 		
 		// NOTE: no need to touch the added files since they were added on creation
 		
 		// Clear the list of added files so they cannot be deleted accidentally:
-		currFormSession.clearAddedAttachments(); // !!!
-				
+		currFormSession.clearAddedAttachments(); // !!! (this "persists" the new attachments)
+		
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
@@ -511,27 +511,28 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	 * Makes the record null & deletes any media attachments.
 	 * 
 	 * Notes:
-	 * 	 - 	Making the record null is necessary to avoid that unsaved foreign records are used
-	 * 		(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
-	 * 		a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
-	 *  	Doing so is risky however because an NPE will be thrown (likely crashing the app)
-	 *  	when some FieldUI or controller method attempts to (illegally!) use the record
-	 *  	after this discard operation. Obviously that shouldn't happen but we've had several
-	 *  	cases in which it did. However, all (known) cases have been resolved and any new
-	 *  	similar cases would be revealed soon by an NPE and/or crash.
-	 *   -	Files that were created AND discarded during this session will already have been deleted.
-	 *   -	Files that were discard during this session but created earlier should not be deleted! Their deletion is cancelled because the whole session is cancelled.
+	 * 	 -	Making the record {@code null} is necessary to avoid that unsaved foreign records
+	 * 		are used (i.e. referred to with a foreign key value) when returning to a BelongsTo
+	 * 		field in a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
+	 * 		Doing so is risky however because an NPE will be thrown (likely crashing the app)
+	 * 		when some FieldUI or controller method attempts to (illegally!) use the record
+	 * 		after this discard operation. Obviously that shouldn't happen but we've had several
+	 * 		cases in which it did. However, all (known) cases have been resolved and any new
+	 * 		similar cases would be revealed soon by an NPE and/or crash.
+	 * 	 -	Files that were create during this session must be deleted
+	 * 	 -	Files that were created AND discarded during this session will already have been deleted.
+	 * 	 -	Files that were discard during this session but created earlier should not be deleted! Their deletion is cancelled because the whole session is cancelled.
 	 * 
 	 * @see FormSession#discardAttachment(File)
 	 */
 	protected void discardRecordAndAttachments()
 	{
-		// delete any files that were added but have now been discarded:
+		// delete any files that were added but are now being discarded:
 		currFormSession.deleteAddedAttachments();
 		// See notes above about discarded files.
 		
-		// Clear the list of deleted files:
-		currFormSession.clearDiscardedAttachments();
+		// Clear the files that were discarded during this session (whose deletion is cancelled):
+		currFormSession.clearDiscardedAttachments(); // (so they cannot be deleted accidently!)
 		
 		// Discard record itself:
 		currFormSession.record = null; // !!!
@@ -543,16 +544,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(withPage)
 			return true;
 		// else (not with page):
-		// 	Deal with leaves:
+		//	Deal with leaves:
 		if(cf.isLeaf())
 			return false; // this should never happen
 		// Add the choice options to the log files
 		addLogLine("CHOICE_OPTIONS", cf.getChildren().toString());
-		// 	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
+		//	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(IsFieldEnabled(currFormSession, child))
 				return true;
-		// 	This ChoiceField currently has no enabled children, so we should skip it:
+		//	This ChoiceField currently has no enabled children, so we should skip it:
 		goForward(false);
 		return false;
 	}
