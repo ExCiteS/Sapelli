@@ -84,17 +84,15 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		for(Control.Type control : Control.Type.values())
 			newControlStates[control.ordinal()] = fieldUI.getControlState(control); // takes into account the current FormMode
 		
-		// Is this different from the currently shown controls?
-		if(!Arrays.equals(newControlStates, controlStates))
-		{
-			controlStates = newControlStates;
-			updateControlStates(controlStates);
-		}
+		// Set new control states (if different from current):
+		setControlStates(newControlStates);
 	}
 	
 	protected abstract void updateForm(Form newForm);
 	
-	public void setControlStates(State[] newControlStates) {
+	protected void setControlStates(State[] newControlStates)
+	{
+		// Is this different from the currently shown controls?
 		if(!Arrays.equals(newControlStates, controlStates))
 		{
 			controlStates = newControlStates;
@@ -137,14 +135,14 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + controlType.name(), controller.getCurrentField().id);
 		
 		// pass the control event to the current field UI in case it wants to do something unusual:
-		if (!collectorUI.getCurrentFieldUI().handleControlEvent(controlType)) {
-		// if the field UI didn't do anything with the control event, then handle in the default way:
+		if(!collectorUI.getCurrentFieldUI().handleControlEvent(controlType))
+		{	// if the field UI (completely) "consume" the control event, then (also) handle in the default way:
 			switch(controlType)
 			{
-				case Back :				
+				case Back :
 					controller.goBack(true);
 					break;
-				case Cancel : 
+				case Cancel :
 					controller.cancelAndRestartForm();
 					break;
 				case Forward :

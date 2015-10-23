@@ -159,7 +159,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			case SINGLE_ITEM_REVIEW:
 			case SINGLE_ITEM_REVIEW_FROM_GALLERY:
 				if(reviewView == null)
-					reviewView = new ReviewView(context);				
+					reviewView = new ReviewView(context);
 				// Set file to review:
 				reviewView.setReviewFile(getFileToReview());
 				// Return view:
@@ -638,8 +638,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			// Update gallery contents & capture button if necessary...
 			PickerAdapter adapter = pickerView.getAdapter();
 			if(mediaItemsChanged)
-			{
-				// An item has been added or deleted so reload gallery items					
+			{	// An item has been added or deleted so reload gallery items:
 				//Log.d(TAG, "Media items changed, updating gallery...");
 				
 				adapter.clear(); // reset adapter

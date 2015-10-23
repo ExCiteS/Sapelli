@@ -124,7 +124,8 @@ public class FormSession
 		this.currFieldAndArguments = nextFieldAndArguments;
 	}
 	
-	public void addCurrentFieldToHistory() {
+	public void addCurrentFieldToHistory()
+	{
 		fieldAndArgumentHistory.push(currFieldAndArguments);
 	}
 	
