@@ -29,120 +29,109 @@ import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
- * @author Michalis Vitos, mstevens
+ * @author Michalis Vitos, mstevens, benelliott
  *
  */
-public class PhotoField extends CameraField
+public class VideoField extends CameraField
 {
 
 	// STATICS-------------------------------------------------------
-	static private final String MEDIA_TYPE_JPEG = "PHOTO_JPEG";
-	static private final String EXTENSION_JPEG = "jpg";
-	
-	static public enum FlashMode
-	{
-		AUTO,
-		ON,
-		OFF
-	}
-	
+	static private final String MEDIA_TYPE_MP4 = "VIDEO_MP4";
+	static private final String EXTENSION_MP4 = "mp4";
+
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
-	static public final FlashMode DEFAULT_FLASH_MODE = FlashMode.AUTO;
-	
+
 	// DYNAMICS------------------------------------------------------
-	private FlashMode flashMode;
-	private String captureButtonImageRelativePath;
-	
-	public PhotoField(Form form, String id, String caption)
+	private String startRecImageRelativePath;
+	private String stopRecImageRelativePath;
+
+	public VideoField(Form form, String id, String caption)
 	{
 		super(form, id, caption, DEFAULT_USE_NATIVE_APP, DEFAULT_USE_FRONT_FACING_CAMERA);
-		flashMode = DEFAULT_FLASH_MODE;
-	}
-
-	/**
-	 * @return the flashMode
-	 */
-	public FlashMode getFlashMode()
-	{
-		return flashMode;
-	}
-
-	/**
-	 * @param flashMode the flashMode to set
-	 */
-	public void setFlashMode(FlashMode flashMode)
-	{
-		this.flashMode = flashMode;
-	}
-	
-	/**
-	 * @return the captureButtonImageRelativePath
-	 */
-	public String getCaptureButtonImageRelativePath()
-	{
-		return captureButtonImageRelativePath;
-	}
-
-	/**
-	 * @param captureButtonImageRelativePath the captureButtonImageRelativePath to set
-	 */
-	public void setCaptureButtonImageRelativePath(String captureButtonImageRelativePath)
-	{
-		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
 	}
 
 	@Override
 	public String getMediaType()
 	{
-		return MEDIA_TYPE_JPEG;
+		return MEDIA_TYPE_MP4;
 	}
 
 	@Override
 	protected String getFileExtension(String mediaType)
 	{
-		return EXTENSION_JPEG;
+		return EXTENSION_MP4;
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
+	/**
+	 * @return the startRecImageRelativePath
 	 */
+	public String getStartRecImageRelativePath()
+	{
+		return startRecImageRelativePath;
+	}
+
+	/**
+	 * @param startRecImageRelativePath the startRecImageRelativePath to set
+	 */
+	public void setStartRecImageRelativePath(String startRecImageRelativePath)
+	{
+		this.startRecImageRelativePath = startRecImageRelativePath;
+	}
+
+	/**
+	 * @return the stopVideoImageRelativePath
+	 */
+	public String getStopRecImageRelativePath()
+	{
+		return stopRecImageRelativePath;
+	}
+
+	/**
+	 * @param stopVideoImageRelativePath the stopVideoImageRelativePath to set
+	 */
+	public void setStopRecImageRelativePath(String stopRecImageRelativePath)
+	{
+		this.stopRecImageRelativePath = stopRecImageRelativePath;
+	}
+
 	@Override
 	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
 		super.addFiles(filesSet, fileStorageProvider); // !!!
 		
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
 	}
 
 	@Override
-	public <V, UI extends CollectorUI<V, UI>> MediaUI<PhotoField,V, UI> createUI(UI collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> MediaUI<VideoField, V, UI> createUI(UI collectorUI)
 	{
-		return collectorUI.createPhotoUI(this);
+		return collectorUI.createVideoUI(this);
 	}
-	
+
 	@Override
 	public boolean equals(Object obj)
 	{
 		if(this == obj)
 			return true; // references to same object
-		if(obj instanceof PhotoField)
+		if(obj instanceof VideoField)
 		{
-			PhotoField that = (PhotoField) obj;
+			VideoField that = (VideoField) obj;
 			return	super.equals(that) && // CameraField#equals(Object)
-					this.flashMode.ordinal() == that.flashMode.ordinal() &&
-					Objects.equals(this.captureButtonImageRelativePath, that.captureButtonImageRelativePath);
+					Objects.equals(this.startRecImageRelativePath, that.startRecImageRelativePath) &&
+					Objects.equals(this.stopRecImageRelativePath, that.stopRecImageRelativePath);
 		}
 		else
 			return false;
 	}
-	
+
 	@Override
 	public int hashCode()
 	{
 		int hash = super.hashCode(); // CameraField#hashCode()
-		hash = 31 * hash + flashMode.ordinal();
-		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
+		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
 		return hash;
 	}
 	

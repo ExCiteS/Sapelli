@@ -100,7 +100,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
-				View gpsIcon = new ImageItem(context.getResources(), R.drawable.gps_location_svg).setBackgroundColor(Color.BLACK).getView(context);
+				View gpsIcon = new ImageItem(context.getResources(), R.drawable.gps_location).setBackgroundColor(Color.BLACK).getView(context);
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				gpsIcon.setPadding(padding, padding, padding, padding);
 				waitView.addView(gpsIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));

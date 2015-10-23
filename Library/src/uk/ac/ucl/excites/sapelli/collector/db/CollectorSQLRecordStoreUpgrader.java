@@ -18,13 +18,21 @@
 
 package uk.ac.ucl.excites.sapelli.collector.db;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
@@ -45,6 +53,14 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 				/*...*/);
 	}
 
+	/**
+	 * Applies all upgrades of {@link Beta17UpgradeStep} along with the change of the
+	 * MediaField column type, and the renaming of existing MediaField attachment files.
+	 * 
+	 * @author mstevens
+	 * 
+	 * @see Beta17UpgradeStep
+	 */
 	static private class CollectorBeta17UpgradeStep extends Beta17UpgradeStep<CollectorClient>
 	{
 
@@ -83,8 +99,56 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 		@Override
 		protected TableConverter getTableConverter(Schema newSchema) throws DBException
 		{
-			return new TransparentTableConverter(newSchema);
-			// TODO media field conversion
+			// Find the form the schema is backing (if it is):
+			Form form = null;
+			try
+			{
+				form = client.getForm(newSchema);
+			}
+			catch(Exception e) {}
+			
+			// Check if we have a form:
+			if(form == null)
+				return new TransparentTableConverter(newSchema);
+			
+			// Just to be sure:
+			if(!newSchema.equals(form.getSchema()))
+				throw new DBException("Form schema mismatch!");
+			
+			// Find MediaFields and store them in a mapping of column name to field...
+			final Map<String, MediaField> mediaFields = new HashMap<String, MediaField>();
+			for(Field field : form.getFields())
+				if(field instanceof MediaField)
+					mediaFields.put(field.getColumn().name, (MediaField) field);
+			
+			// If there are no media fields we don't need to replace any columns:
+			if(mediaFields.isEmpty())
+				return new TransparentTableConverter(newSchema);
+			
+			// Return ColumnsReplacer which will generate oldSchema with the v1x MediaField columns
+			//	and convert oldRecords to new ones (as well as rename the media attachment files):
+			return new ColumnsReplacer(newSchema)
+			{
+				@Override
+				protected boolean isColumnUnchanged(Column<?> newColumn)
+				{
+					return !mediaFields.containsKey(newColumn.name);
+				}
+				
+				@Override
+				protected Column<?> getOldColumn(Column<?> newColumn)
+				{
+					return mediaFields.get(newColumn.name).createV1XColumn();
+				}
+				
+				@Override
+				protected Object convertValue(Column<?> newColumn, Record oldRecord)
+				{
+					MediaField mf = mediaFields.get(newColumn.name);
+					// Convert value & rename attachment files:
+					return mf.convertV1XColumnValue(oldRecord, true, fileStorageProvider);
+				}
+			};
 		}
 			
 	}

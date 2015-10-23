@@ -175,9 +175,9 @@ public final class ProjectTasks
 							if(field instanceof MediaField)
 							{
 								MediaField mf = (MediaField) field;
-								for(int i = 0; i < mf.getCount(record); i++)
+								for(int i = 0; i < mf.getAttachmentCount(record); i++)
 								{
-									File attachment = mf.getMediaFile(fileSP, record, i);
+									File attachment = mf.getAttachment(fileSP, record, i);
 									if(attachment.exists())
 										attachments.add(attachment);
 								}

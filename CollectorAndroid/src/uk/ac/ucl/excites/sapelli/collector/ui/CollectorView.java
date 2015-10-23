@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
@@ -49,6 +50,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidOrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidVideoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
@@ -341,6 +343,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public AndroidPhotoUI createPhotoUI(PhotoField pf)
 	{
 		return new AndroidPhotoUI(pf, controller, this);
+	}
+	
+	@Override
+	public AndroidVideoUI createVideoUI(VideoField vf)
+	{
+		return new AndroidVideoUI(vf, controller, this);
 	}
 
 	@Override
