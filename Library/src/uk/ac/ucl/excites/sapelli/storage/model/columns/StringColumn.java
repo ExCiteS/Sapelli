@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 
+import org.apache.commons.io.Charsets;
+
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.text.CharsetHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
@@ -43,7 +45,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	//STATIC---------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	static private final Charset DEFAULT_CHARSET = UnicodeHelpers.UTF8;
+	static private final Charset DEFAULT_CHARSET = Charsets.UTF_8;
 	static private final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
 	static private final char DEFAULT_SERIALISATION_DELIMITER = '\'';
 	
@@ -66,7 +68,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static int BytesNeededFor(int maxLengthChars, Charset charset)
 	{
-		return (int) Math.ceil(maxLengthChars * charset.newEncoder().maxBytesPerChar());
+		return (int) Math.ceil(maxLengthChars * CharsetHelpers.GetMaxBytesPerChar(charset));
 	}
 	
 	/**
