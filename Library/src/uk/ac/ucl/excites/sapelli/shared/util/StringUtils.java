@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.io.Charsets;
+
 /**
  * @author mstevens
  *
@@ -62,7 +64,7 @@ public final class StringUtils
 	 */
 	static public int sizeBytes(String string)
 	{
-		return string.getBytes(UnicodeHelpers.UTF8).length;
+		return sizeBytes(string, Charsets.UTF_8);
 	}
 	
 	static public String addVariableFrontPadding(String str, int desiredLength, char padding)
@@ -216,9 +218,9 @@ public final class StringUtils
 	
 	static public String capitalizeFirstLetter(String original)
 	{
-	    if(original.length() == 0)
-	        return original;
-	    return original.substring(0, 1).toUpperCase(Locale.getDefault()) + original.substring(1);
+		if(original.length() == 0)
+			return original;
+		return original.substring(0, 1).toUpperCase(Locale.getDefault()) + original.substring(1);
 	}
 	
 }
