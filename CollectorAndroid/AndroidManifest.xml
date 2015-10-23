@@ -143,7 +143,7 @@
         </receiver> -->
 
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Text"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.IncomingSMSBroadcastReceiver$Text"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>
@@ -152,7 +152,7 @@
         </receiver>
         
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSBroadcastReceiver$Binary"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.IncomingSMSBroadcastReceiver$Binary"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>

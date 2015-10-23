@@ -265,7 +265,7 @@ public class AndroidSMSClient implements SMSClient
 	private PendingIntent setupSentCallback(final int messageID, final int part, final int numParts)
 	{
 		// Create intent
-		Intent intent = new Intent(SentSMSReceiver.SENT_SMS_RECEIVER_ACTION);
+		Intent intent = new Intent(OutgoingSMSBroadcastReceiver.SENT_SMS_RECEIVER_ACTION);
 		intent.putExtra(SentSMSReceiver.MESSAGE_ID, messageID);
 		intent.putExtra(SentSMSReceiver.PART, part);
 		intent.putExtra(SentSMSReceiver.NUMBER_OF_PART, numParts);
@@ -282,7 +282,7 @@ public class AndroidSMSClient implements SMSClient
 	private PendingIntent setupDeliveredCallback(final int messageID, final int part, final int numParts)
 	{
 		// Create intent
-		Intent intent = new Intent(SentSMSReceiver.DELIVERED_SMS_RECEIVER_ACTION);
+		Intent intent = new Intent(OutgoingSMSBroadcastReceiver.DELIVERED_SMS_RECEIVER_ACTION);
 		intent.putExtra(SentSMSReceiver.MESSAGE_ID, messageID);
 		intent.putExtra(SentSMSReceiver.PART, part);
 		intent.putExtra(SentSMSReceiver.NUMBER_OF_PART, numParts);

@@ -33,7 +33,7 @@ import android.content.Intent;
  * 
  * @author benelliott
  */
-public abstract class SMSBroadcastReceiver extends BroadcastReceiver
+public abstract class IncomingSMSBroadcastReceiver extends BroadcastReceiver
 {
 	
 	/**
@@ -67,7 +67,7 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 	 */
 	protected abstract boolean isBinary();
 	
-	public static class Binary extends SMSBroadcastReceiver
+	public static class Binary extends IncomingSMSBroadcastReceiver
 	{
 
 		@Override
@@ -78,7 +78,7 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 		
 	}
 	
-	public static class Text extends SMSBroadcastReceiver
+	public static class Text extends IncomingSMSBroadcastReceiver
 	{
 
 		@Override
