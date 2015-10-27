@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
 import java.text.ParseException;
 
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -301,8 +302,8 @@ public class RuleConstraint extends Constraint
 			RuleConstraint that = (RuleConstraint) obj;
 			return	this.lhsColumnPointer.equals(that.lhsColumnPointer) &&
 					this.comparison == that.comparison &&
-					(this.rhsValue != null ? this.rhsValue.equals(that.rhsValue) : that.rhsValue == null) &&
-					(this.rhsColumnPointer != null ? this.rhsColumnPointer.equals(that.rhsColumnPointer) : that.rhsColumnPointer == null);
+					Objects.deepEquals(this.rhsValue, that.rhsValue) &&
+					Objects.equals(this.rhsColumnPointer, that.rhsColumnPointer);
 		}
 		return false;
 	}

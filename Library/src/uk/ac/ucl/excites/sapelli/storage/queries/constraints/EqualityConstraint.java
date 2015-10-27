@@ -135,7 +135,7 @@ public class EqualityConstraint extends Constraint
 		{
 			EqualityConstraint that = (EqualityConstraint) obj;
 			return	this.columnPointer.equals(that.columnPointer) &&
-					(this.value != null ? this.value.equals(that.value) : that.value == null);
+					Objects.deepEquals(this.value, that.value);
 		}
 		return false;
 	}
