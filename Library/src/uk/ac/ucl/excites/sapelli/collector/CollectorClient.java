@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
@@ -114,18 +115,18 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	}
 		
 	/**
-	 * Returns the modelID to use for the {@link Model} of the given {@link Project}.  
+	 * Returns the modelID to use for the {@link Model} of the given {@link Project} or {@link ProjectDescriptor}.  
 	 * 
-	 * @param project
+	 * @param projDescr
 	 * @return unsigned 56 bit integer
 	 * @throws IllegalArgumentException in case of a clash with a reserved Model
 	 */
-	static public long GetModelID(Project project) throws IllegalArgumentException
+	static public long GetModelID(ProjectDescriptor projDescr) throws IllegalArgumentException
 	{
-		long modelID =	((((long) project.getFingerPrint()) & 0xffffffffl) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
-						project.getID();																 // Project id takes up next 24 bits
+		long modelID =	((((long) projDescr.getFingerPrint()) & 0xffffffffl) << Project.PROJECT_ID_SIZE) +	// Project finger print takes up first 32 bits
+						projDescr.getID();	
 		if(GetReservedModel(modelID) != null)
-			throw new IllegalArgumentException("Model ID computed for Project \"" + project.toString(false) + "\" clashes with reserved model ID (" + modelID + ")!");
+			throw new IllegalArgumentException("Model ID computed for Project \"" + projDescr.toString(false) + "\" clashes with reserved model ID (" + modelID + ")!");
 		return modelID;
 	}
 	
