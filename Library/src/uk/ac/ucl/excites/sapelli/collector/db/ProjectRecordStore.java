@@ -279,7 +279,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			projDescr.setV1XSchemaInfo(id, PROJECT_V1X_SCHEMA_VERSION_COLUMN.retrieveValue(projRec).intValue());
 		
 		// If the full project is cached return it instead of the descriptor:
-		Project project = cache.get(getCacheKey(projDescr.getID(), projDescr.getFingerPrint()));
+		Project project = cache.get(getCacheKey(projDescr));
 		if(project != null)
 			return project;
 		
@@ -312,7 +312,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		Project project = null;
 		
 		// First check the cache:
-		project = cache.get(getCacheKey(projDescr.getID(), projDescr.getFingerPrint()));
+		project = cache.get(getCacheKey(projDescr));
 		
 		// Parse project if we didn't get it from the cache: 
 		if(project == null)
@@ -330,12 +330,12 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	
 	private void cacheProject(Project project)
 	{
-		cache.put(getCacheKey(project.getID(), project.getFingerPrint()), project);
+		cache.put(getCacheKey(project), project);
 	}
 	
-	private long getCacheKey(int projectID, int projectFingerPrint)
+	private long getCacheKey(ProjectDescriptor projDescr)
 	{
-		return (long) projectID << 32 | projectFingerPrint & 0xFFFFFFFFl;
+		return CollectorClient.GetModelID(projDescr);
 	}
 	
 	private List<Project> getProjects(List<Record> projRecs)
@@ -503,7 +503,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
 			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
 			// Remove project from cache:
-			cache.remove(getCacheKey(projectDescriptor.getID(), projectDescriptor.getFingerPrint()));
+			cache.remove(getCacheKey(projectDescriptor));
 		}
 		catch(DBException e)
 		{
