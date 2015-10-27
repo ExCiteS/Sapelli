@@ -22,6 +22,9 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.collections4.map.LRUMap;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
@@ -58,6 +61,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -200,7 +204,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		TRANSMISSION_MANAGEMENT_MODEL.seal();
 	}
 	
+	static private final int MAX_CACHE_SIZE = 32; 
+	
 	// DYNAMICS--------------------------------------------
+	private final Map<Integer, Transmission<?>> sentCache;
+	private final Map<Integer, Transmission<?>> receivedCache;
+	
 	/**
 	 * @param client
 	 * @throws DBException
@@ -208,6 +217,13 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	public TransmissionStore(TransmissionClient client) throws DBException
 	{
 		super(client);
+		this.sentCache = Collections.synchronizedMap(new LRUMap<Integer, Transmission<?>>(MAX_CACHE_SIZE));
+		this.receivedCache = Collections.synchronizedMap(new LRUMap<Integer, Transmission<?>>(MAX_CACHE_SIZE));
+	}
+	
+	protected Map<Integer, Transmission<?>> getCache(boolean received)
+	{
+		return received ? receivedCache : sentCache;
 	}
 	
 	public void store(Correspondent correspondent) throws Exception
@@ -415,6 +431,9 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		else
 			// Set local transmissionID in object as on the record: 
 			transmission.setLocalID(TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord).intValue());
+		
+		// Keep in cache:
+		getCache(transmission.received).put(transmission.getLocalID(), transmission);
 	}
 	
 	public void store(Transmission<?> transmission) throws Exception
@@ -493,7 +512,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 */
 	protected Transmission<?> retrieveTransmissionByQuery(RecordsQuery multiRecordQuery) throws IllegalStateException
 	{
-		List<Transmission<?>> results = retrieveTransmissions(multiRecordQuery);
+		List<Transmission<?>> results = retrieveTransmissionsByQuery(multiRecordQuery);
 		if(results.size() > 1)
 			throw new IllegalStateException("Found more than 1 matching transmission for query");
 		if(results.isEmpty())
@@ -502,7 +521,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			return results.get(0);
 	}
 	
-	protected List<Transmission<?>> retrieveTransmissions(RecordsQuery multiRecordQuery)
+	protected List<Transmission<?>> retrieveTransmissionsByQuery(RecordsQuery multiRecordQuery)
 	{
 		List<Transmission<?>> transmissions = new ArrayList<Transmission<?>>();
 		for(Record record : recordStore.retrieveRecords(multiRecordQuery))
@@ -516,9 +535,15 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		if(tRec == null)
 			return null; // no such transmission found
 		
-		// Values:
+		// Essential values:
 		boolean received = tRec.getSchema().equals(RECEIVED_TRANSMISSION_SCHEMA);
 		int localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
+		
+		// Check cache:
+		if(getCache(received).containsKey(localID))
+			return getCache(received).get(localID);
+		
+		// Other values:
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
 		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValuePresent(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null;
 		Integer payloadType = TRANSMISSION_COLUMN_PAYLOAD_TYPE.isValuePresent(tRec) ? TRANSMISSION_COLUMN_PAYLOAD_TYPE.retrieveValue(tRec).intValue() : null;
@@ -526,7 +551,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
-		// columns only occurs on receiving side:
+		//	Columns only occurring on receiving side:
 		int numberOfSentResendRequests = received ? TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.retrieveValue(tRec).intValue() : 0;
 		TimeStamp lastResendReqSentAt =	received ? TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
 		
@@ -576,7 +601,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	}
 	
 	/**
-	 * Retrieve a sent or received transmission by its local ID
+	 * Retrieve a sent or received transmission by its local ID.
 	 * 
 	 * @param received if {@code true} the transmission was received on the local device, if {@code false} it was created for sending from the local device to another one
 	 * @param localID
@@ -585,6 +610,10 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 */
 	public Transmission<?> retrieveTransmission(boolean received, int localID) throws Exception
 	{
+		// Check cache:
+		if(getCache(received).containsKey(localID))
+			return getCache(received).get(localID);
+		// else:
 		return transmissionFromRecord(recordStore.retrieveRecord(getTransmissionSchema(received).createRecordReference(localID)));
 	}
 	
@@ -615,6 +644,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	}
 	
 	/**
+	 * Retrieve a sent or received SMS transmission by its type (binary/textual), correspondent, remote(!) ID, payload hash, and number of parts.
+	 * 
 	 * @param received
 	 * @param type
 	 * @param correspondent
@@ -627,6 +658,21 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	public Transmission<?> retrieveTransmission(boolean received, Transmission.Type type, Correspondent correspondent, int remoteID, int payloadHash, int numberOfParts) throws IllegalStateException
 	{
 		return retrieveTransmissionByQuery(getTransmissionsQuery(received, type, null, remoteID, correspondent, payloadHash, numberOfParts));
+	}
+	
+	/**
+	 * Retrieve a sent or received SMS transmission by its local ID, type (binary/textual) and number of parts.
+	 * 
+	 * @param received if {@code true} the transmission was received on the local device, if {@code false} it was created for sending from the local device to another one
+	 * @param localID
+	 * @param binary
+	 * @param numberOfParts
+	 * 
+	 * @return the Transmission with the given {@code localID}, or {@code null} if no such transmission was found.
+	 */
+	public SMSTransmission<?> retrieveSMSTransmission(boolean received, int localID, boolean binary, int numberOfParts) throws Exception
+	{
+		return (SMSTransmission<?>) retrieveTransmissionByQuery(getTransmissionsQuery(received, binary ? Type.BINARY_SMS : Type.TEXTUAL_SMS, localID, null, null, null, numberOfParts));
 	}
 
 	/**
@@ -641,7 +687,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		List<SMSTransmission<?>> incompleteSMSTs = new ArrayList<SMSTransmission<?>>();
 		
 		// query DB for transmissions which are incomplete (have "null" as their receivedAt value):
-		for(Transmission<?> t : retrieveTransmissions(new RecordsQuery(Source.From(getTransmissionSchema(true)), EqualityConstraint.IsNull(COLUMN_RECEIVED_AT))))
+		for(Transmission<?> t : retrieveTransmissionsByQuery(new RecordsQuery(Source.From(getTransmissionSchema(true)), EqualityConstraint.IsNull(COLUMN_RECEIVED_AT))))
 			if(t instanceof SMSTransmission)
 				incompleteSMSTs.add((SMSTransmission<?>) t); // cast these transmissions as SMSTransmissions
 		
