@@ -22,7 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
@@ -693,22 +693,25 @@ public abstract class Transmission<C extends Correspondent>
 	 * 
 	 * @author mstevens
 	 */
-	public class SentCallback implements StoreUser
+	public class SentCallback
 	{
 
-		private TransmissionStore tStore;
-		
 		protected void store()
 		{
 			try
 			{
-				if(tStore == null || tStore.isClosed())
-					tStore = client.transmissionStoreHandle.getStore(this);
-				tStore.store(Transmission.this);
+				client.transmissionStoreHandle.executeNoDBEx(new StoreHandle.StoreOperation<TransmissionStore, Exception>()
+				{
+					@Override
+					public void execute(TransmissionStore store) throws Exception
+					{
+						store.store(Transmission.this);
+					}
+				});
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace(System.err);
+				client.logError("Error upon storing transmission from " + getClass().getSimpleName(), e);
 			}
 		}
 		
@@ -727,11 +730,6 @@ public abstract class Transmission<C extends Correspondent>
 			
 			// Store updated transmission:
 			store();
-		}
-		
-		public void finalise()
-		{
-			client.transmissionStoreHandle.doneUsing(this);
 		}
 		
 	}
