@@ -95,6 +95,7 @@ public class HTTPTransmission extends Transmission<HTTPServer>
 	@Override
 	protected void doSend(TransmissionController controller) throws TransmissionSendingException
 	{
+		@SuppressWarnings("unused")
 		HTTPClient client = controller.getHTTPClient();
 		// TODO send http transmission
 	}
