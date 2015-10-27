@@ -76,9 +76,6 @@
     <string name="missingFiles">These files could not be found</string>
     <string name="downloading">Downloading …</string>
     <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
-    <string name="datasendingschedulingservice_name">DataSendingSchedulingService</string>
-    <string name="datasendingservice_name">DataSendingService</string>
-    <string name="smsreceiverservice_name">SMSReceiverService</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
     <string name="notification">The Service is running.</string>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="uk/ac/ucl/excites/sapelli/transmission/sender/" kind="src" output="bin/classes" path="src">
+	<classpathentry kind="src" output="bin/classes" path="src">
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>

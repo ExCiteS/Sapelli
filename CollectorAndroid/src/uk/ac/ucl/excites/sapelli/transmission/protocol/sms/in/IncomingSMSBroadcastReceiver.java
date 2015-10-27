@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -50,7 +50,7 @@ public abstract class IncomingSMSBroadcastReceiver extends BroadcastReceiver
 
 		for(Object pdu : pdus)
 			// for each message, create a new intent to launch the SMSReceiverService (effectively queues the messages):
-			SMSReceiverService.ReceiveMessage(context, (byte[]) pdu, this.isBinary()); // subclass will decide whether or not message is binary since they are registered to different intents
+			IncomingSMSReceiverService.ReceiveMessage(context, (byte[]) pdu, this.isBinary()); // subclass will decide whether or not message is binary since they are registered to different intents
 		
 		/*
 		 * On pre-KitKat devices (API 19) calling abortBroadcast on an SMS message will prevent lower-priority receivers from "hearing" the broadcast.

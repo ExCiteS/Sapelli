@@ -99,10 +99,10 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
-		
-		<service android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService"
-		    android:icon="@drawable/ic_sapelli_logo"
-            android:label="@string/datasendingschedulingservice_name" >
+        
+        <service android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="DataSendingSchedulingService" >
         </service>
         
         <receiver
@@ -116,12 +116,7 @@
         <service
             android:name="uk.ac.ucl.excites.sapelli.collector.services.DataSendingService"
             android:icon="@drawable/ic_sapelli_logo"
-            android:label="@string/datasendingservice_name" >
-        </service>
-        
-        <service android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService"
-		    android:icon="@drawable/ic_sapelli_logo"
-            android:label="@string/smsreceiverservice_name" >
+            android:label="CollectorDataSendingService" >
         </service>
         
 		<receiver
@@ -132,18 +127,24 @@
             </intent-filter>
         </receiver>
 
-        <!-- <receiver
-            android:name="uk.ac.ucl.excites.sapelli.sender.gsm.SentSMSReceiver"
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.OutgoingSMSBroadcastReceiver"
             android:enabled="true"
             android:exported="false" >
             <intent-filter>
-                <action android:name="uk.ac.ucl.excites.sapelli.SENT_SMS" />
-                <action android:name="uk.ac.ucl.excites.sapelli.DELIVERED_SMS" />
+                <action android:name="@string/action_sms_sent" />
+                <action android:name="@string/action_sms_delivered" />
             </intent-filter>
-        </receiver> -->
-
+        </receiver>
+        
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.OutgoingSMSCallbackService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="OutgoingSMSCallbackService" >
+        </service>
+        
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.IncomingSMSBroadcastReceiver$Text"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Text"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>
@@ -157,10 +158,17 @@
             android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>
                 <action android:name="android.intent.action.DATA_SMS_RECEIVED" />
-                <!-- TODO port number -->
+                <data android:scheme="sms" /> 
+                <data android:port="@integer/binary_sms_port" /> 
             </intent-filter>
         </receiver>
 
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in.IncomingSMSReceiverService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="IncomingSMSReceiverService" >
+        </service>
+        
         <meta-data
             android:name="com.crashlytics.ApiKey"
             android:value="d4cd414cf1f34965f9373c71749e234360eaa421" />

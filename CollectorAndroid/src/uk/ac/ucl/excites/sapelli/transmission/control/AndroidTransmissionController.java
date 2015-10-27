@@ -30,9 +30,9 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.AndroidSMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSReceiverService;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in.IncomingSMSReceiverService;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 
 /**
@@ -85,7 +85,7 @@ public class AndroidTransmissionController extends TransmissionController
 	 */
 	public void scheduleSMSResendRequest(int localID, TimeStamp time)
 	{
-		SMSReceiverService.ScheduleResendRequest(app, localID, time.toDateTime());
+		IncomingSMSReceiverService.ScheduleResendRequest(app, localID, time.toDateTime());
 	}
 	
 	/**
@@ -93,7 +93,7 @@ public class AndroidTransmissionController extends TransmissionController
 	 */
 	protected void cancelSMSResendRequest(int localID)
 	{
-		SMSReceiverService.CancelResendRequest(app, localID);
+		IncomingSMSReceiverService.CancelResendRequest(app, localID);
 	}
 	
 	static public boolean isValidPhoneNumber(String number)

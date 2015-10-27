@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in;
 
 import org.joda.time.DateTime;
 
@@ -51,11 +51,11 @@ import android.widget.Toast;
  * 
  * @author benelliott, mstevens
  */
-public class SMSReceiverService extends IntentService
+public class IncomingSMSReceiverService extends IntentService
 {
 	
 	// STATIC -------------------------------------------------------
-	private static final String TAG = SMSReceiverService.class.getSimpleName();
+	private static final String TAG = IncomingSMSReceiverService.class.getSimpleName();
 
 	public static final int TASK_RECEIVE_MESSAGE = 0;
 	public static final int TASK_REQUEST_RESEND = 1;
@@ -93,7 +93,7 @@ public class SMSReceiverService extends IntentService
 	 */
 	public static void ReceiveMessage(Context context, byte[] pdu, boolean binaryMsg)
 	{
-		Intent serviceIntent = new Intent(context, SMSReceiverService.class);
+		Intent serviceIntent = new Intent(context, IncomingSMSReceiverService.class);
 		// set task for service:
 		serviceIntent.putExtra(EXTRA_TASK, TASK_RECEIVE_MESSAGE);
 		// attach the PDU to the intent:
@@ -127,7 +127,7 @@ public class SMSReceiverService extends IntentService
 	{
 		AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 		
-		Intent serviceIntent = new Intent(context, SMSReceiverService.class);
+		Intent serviceIntent = new Intent(context, IncomingSMSReceiverService.class);
 		serviceIntent.putExtra(EXTRA_TASK, TASK_REQUEST_RESEND);
 		serviceIntent.putExtra(EXTRA_TRANSMISSION_ID, localID);
 		PendingIntent pi = PendingIntent.getService(context, localID, serviceIntent, 0);
@@ -152,7 +152,7 @@ public class SMSReceiverService extends IntentService
 	 */
 	public static void ScheduleAllResendRequests(Context context)
 	{
-		Intent serviceIntent = new Intent(context, SMSReceiverService.class);
+		Intent serviceIntent = new Intent(context, IncomingSMSReceiverService.class);
 		// set task for service:
 		serviceIntent.putExtra(EXTRA_TASK, TASK_SCHEDULE_RESEND_REQUESTS);
 		// launch the service using the intent:
@@ -175,9 +175,9 @@ public class SMSReceiverService extends IntentService
 	private AndroidTransmissionController transmissionController;
 	private Handler mainHandler; // only used in order to display Toasts
 
-	public SMSReceiverService()
+	public IncomingSMSReceiverService()
 	{
-		super("SMSReceiverService");
+		super(TAG);
 	}
 
 	@Override
@@ -244,7 +244,7 @@ public class SMSReceiverService extends IntentService
 					@Override
 					public void run()
 					{
-						Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumberInternational(), Toast.LENGTH_SHORT).show();
+						Toast.makeText(IncomingSMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumberInternational(), Toast.LENGTH_SHORT).show();
 					}
 				});
 		}
@@ -343,7 +343,7 @@ public class SMSReceiverService extends IntentService
 		@Override
 		public void onReceive(Context context, Intent intent)
 		{
-			Log.d(getClass().getSimpleName(), "Boot event received, starting " + SMSReceiverService.class.getSimpleName() + " to schedule resend requests...");
+			Log.d(getClass().getSimpleName(), "Boot event received, starting " + IncomingSMSReceiverService.class.getSimpleName() + " to schedule resend requests...");
 			ScheduleAllResendRequests(context);
 		}
 
