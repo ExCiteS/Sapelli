@@ -59,6 +59,7 @@ public abstract class RecordStore extends Store
 	
 	// DYNAMIC ----------------------------------------------------------------
 	protected StorageClient client;
+	protected boolean loggingEnabled = false;
 	
 	/**
 	 * Few DBMSs support nested transactions, but this counter allows us to simulate them,
@@ -627,6 +628,22 @@ public abstract class RecordStore extends Store
 	 */
 	public abstract boolean hasFullIndexSupport();
 	
+	/**
+	 * @return the loggingEnabled
+	 */
+	public boolean isLoggingEnabled()
+	{
+		return loggingEnabled;
+	}
+
+	/**
+	 * @param loggingEnabled the loggingEnabled to set
+	 */
+	public void setLoggingEnabled(boolean loggingEnabled)
+	{
+		this.loggingEnabled = loggingEnabled;
+	}
+
 	/**
 	 * A task to execute upon roll-back of open transaction(s)
 	 * 

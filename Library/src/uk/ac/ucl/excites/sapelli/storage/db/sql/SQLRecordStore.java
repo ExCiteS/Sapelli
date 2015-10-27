@@ -63,6 +63,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
@@ -140,8 +141,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	private final Set<String> protectedTables = new HashSet<String>();
 	
-	protected boolean loggingEnabled = false;
-
 	/**
 	 * @param client
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on (all) SQL statements/queries (only literal values)
@@ -271,22 +270,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return super.isStorable(record, isInitialising()); // allow storing of meta records only during initialisation/upgrade
 	}
 	
-	/**
-	 * @return the loggingEnabled
-	 */
-	public boolean isLoggingEnabled()
-	{
-		return loggingEnabled;
-	}
-
-	/**
-	 * @param loggingEnabled the loggingEnabled to set
-	 */
-	public void setLoggingEnabled(boolean loggingEnabled)
-	{
-		this.loggingEnabled = loggingEnabled;
-	}
-
 	protected abstract void executeSQL(String sql) throws DBException;
 	
 	protected abstract int executeSQLReturnAffectedRows(String sql) throws DBException;
@@ -494,8 +477,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				@Override
 				public Collection<Schema> resolve(SourceByFlags sourceByFlags)
 				{
-					 // TODO more efficient SQL-based implementation: SELECT * FROM Schemata WHERE flags & sourceByFlags.getFlags() = sourceByFlags.getFlags();
-					return sourceByFlags.filterSchemata(getAllKnownSchemata());
+					return getKnownSchemata(new BitFlagConstraint(Model.SCHEMA_FLAGS_COLUMN, sourceByFlags.getFlags()));
+					/*// Less efficient alternative:
+					return sourceByFlags.filterSchemata(getAllKnownSchemata());*/
 				}
 			});
 	}
@@ -512,7 +496,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		for(Schema skippedSchema : skipSchemata)
 			filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(skippedSchema).getRecordQueryConstraint().negate());
 		
-		// Query for schemata, filtering out the undisidered ones:
+		// Query for schemata, filtering out the undesired ones:
 		return getKnownSchemata(filterSkipSchemata);
 	}
 	
@@ -2298,6 +2282,36 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				else
 					bldr.append(lhsSCol.sapelliObjectToLiteral(sapValue, true));
 			}
+		}
+
+		/**
+		 * Produces: "(flagsColumn & flagsPatter) = flagsPattern"
+		 * 
+		 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor#visit(uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint)
+		 */
+		@Override
+		public void visit(BitFlagConstraint bitFlagConstr)
+		{
+			SColumn sqlCol = table.getSQLColumn(bitFlagConstr.getFlagsColumnPointer());
+			bldr.append("(");
+			bldr.append(sqlCol.name, false);
+			bldr.append("&"); // bit-wise AND
+			if(isParameterised())
+			{
+				bldr.append(valuePlaceHolder);
+				addParameterColumnAndValue(sqlCol, bitFlagConstr.getFlagsPattern());
+			}
+			else
+				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
+			bldr.append(")", false);
+			bldr.append(getComparisonOperator(Comparison.EQUAL));
+			if(isParameterised())
+			{
+				bldr.append(valuePlaceHolder);
+				addParameterColumnAndValue(sqlCol, bitFlagConstr.getFlagsPattern());
+			}
+			else
+				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
 		}
 		
 	}
