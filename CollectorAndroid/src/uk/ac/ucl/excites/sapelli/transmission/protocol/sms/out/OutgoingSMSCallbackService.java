@@ -126,7 +126,7 @@ public class OutgoingSMSCallbackService extends IntentService
 	private interface Handler
 	{
 		
-		public <M extends Message<M, ?>> void handle(int smsID, M msg, int resultCode, byte[] pdu);
+		public void handle(int smsID, Message<?, ?> msg, int resultCode, byte[] pdu);
 	}
 	
 	/**
@@ -136,14 +136,14 @@ public class OutgoingSMSCallbackService extends IntentService
 	{
 
 		@Override
-		public <M extends Message<M, ?>> void handle(int smsID, M msg, int resultCode, byte[] pdu)
+		public void handle(int smsID, Message<?, ?> msg, int resultCode, byte[] pdu)
 		{
 			// Handle result:
 			switch(resultCode)
 			{
 				case Activity.RESULT_OK:
 					// Use call back to register send time of the message, and possibly that of the whole transmission, and save the msg/transmission to the TransmissionStore:
-					msg.getTransmission().getSentCallback().onSent(msg);
+					msg.getTransmission().getSentCallback().onSent(msg.getPartNumber());
 					Log.i(TAG, "Sending " + getMsgDescription(smsID, msg) + ": success.");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -172,7 +172,7 @@ public class OutgoingSMSCallbackService extends IntentService
 	{
 
 		@Override
-		public <M extends Message<M, ?>> void handle(int smsID, M msg, int resultCode, byte[] pdu)
+		public void handle(int smsID, Message<?, ?> msg, int resultCode, byte[] pdu)
 		{
 			// Handle result:
 			switch(resultCode)
@@ -199,7 +199,7 @@ public class OutgoingSMSCallbackService extends IntentService
 						}
 					}
 					// Use call back to register delivery time of the message, and possibly that of the whole transmission, and save the msg/transmission to the TransmissionStore:
-					msg.getTransmission().getSentCallback().onDelivered(msg, deliveredAt);
+					msg.getTransmission().getSentCallback().onDelivered(msg.getPartNumber(), deliveredAt);
 					Log.i(TAG, "Delivery " + getMsgDescription(smsID, msg) + ": success.");
 					break;
 				case Activity.RESULT_CANCELED:

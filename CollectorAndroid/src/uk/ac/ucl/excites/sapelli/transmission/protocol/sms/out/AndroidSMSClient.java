@@ -85,10 +85,10 @@ public class AndroidSMSClient implements SMSClient
 				ArrayList<String> parts = smsManager.divideMessage(textSMS.getContent());
 				ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
 				ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
-				for(int p = 0; p < parts.size(); p++)
+				for(int mpNumber = 1; mpNumber < parts.size(); mpNumber++) // we use 1-based multi-part indexes (analogous to the Message part numbers) 
 				{
-					sentIntents.add(setupSentCallback(textSMS, MESSAGE_ID, p, parts.size()));
-					deliveryIntents.add(setupDeliveredCallback(textSMS, MESSAGE_ID, p, parts.size()));
+					sentIntents.add(setupSentCallback(textSMS, MESSAGE_ID, mpNumber, parts.size()));
+					deliveryIntents.add(setupDeliveredCallback(textSMS, MESSAGE_ID, mpNumber, parts.size()));
 				}
 				smsManager.sendMultipartTextMessage(receiver.getPhoneNumberDialable(),
 													null,
@@ -141,26 +141,58 @@ public class AndroidSMSClient implements SMSClient
 		return true;
 	}
 	
+	/**
+	 * @param msg
+	 * @param messageID
+	 * @return
+	 */
 	private <M extends Message<M, C>, C> PendingIntent setupSentCallback(M msg, int messageID)
 	{
 		return setupSentCallback(msg, messageID, 1, 1);
 	}
 	
+	/**
+	 * @param msg
+	 * @param smsID
+	 * @param multiPartNumber a value from [1, multiPartTotal]
+	 * @param multiPartTotal
+	 * @return
+	 */
 	private <M extends Message<M, C>, C> PendingIntent setupSentCallback(M msg, int smsID, int multiPartNumber, int multiPartTotal)
 	{
 		return getPendingIntent(R.string.action_sms_sent, msg, smsID, multiPartNumber, multiPartTotal);
 	}
 	
+	/**
+	 * @param msg
+	 * @param messageID
+	 * @return
+	 */
 	private <M extends Message<M, C>, C> PendingIntent setupDeliveredCallback(M msg, int messageID)
 	{
 		return setupDeliveredCallback(msg, messageID, 1, 1);
 	}
 	
+	/**
+	 * @param msg
+	 * @param smsID
+	 * @param multiPartNumber a value from [1, multiPartTotal]
+	 * @param multiPartTotal
+	 * @return
+	 */
 	private <M extends Message<M, C>, C> PendingIntent setupDeliveredCallback(M msg, int smsID, int multiPartNumber, int multiPartTotal)
 	{
 		return getPendingIntent(R.string.action_sms_delivered, msg, smsID, multiPartNumber, multiPartTotal);
 	}
 	
+	/**
+	 * @param action
+	 * @param msg
+	 * @param smsID
+	 * @param multiPartNumber a value from [1, multiPartTotal]
+	 * @param multiPartTotal
+	 * @return
+	 */
 	private <M extends Message<M, C>, C> PendingIntent getPendingIntent(int action, M msg, int smsID, int multiPartNumber, int multiPartTotal)
 	{
 		// Create intent

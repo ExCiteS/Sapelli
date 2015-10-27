@@ -360,13 +360,16 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	public class SentCallback extends Transmission<SMSCorrespondent>.SentCallback
 	{
 		
-		public void onSent(M msg)
+		public void onSent(int partNumber)
 		{
-			onSent(msg, TimeStamp.now());
+			onSent(partNumber, TimeStamp.now());
 		}
 		
-		public void onSent(M msg, TimeStamp sentAt)
+		public void onSent(int partNumber, TimeStamp sentAt)
 		{
+			// Get msg:
+			M msg = getPart(partNumber);
+			
 			// Mark msg as sent:
 			msg.setSentAt(sentAt);
 
@@ -389,14 +392,17 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 				store();
 		}
 		
-		public void onDelivered(M msg)
+		public void onDelivered(int partNumber)
 		{
-			onDelivered(msg, TimeStamp.now());
+			onDelivered(partNumber, TimeStamp.now());
 		}
 		
-		public void onDelivered(M msg, TimeStamp deliveredAt)
+		public void onDelivered(int partNumber, TimeStamp deliveredAt)
 		{
-			// Mark msg as sent:
+			// Get msg:
+			M msg = getPart(partNumber);
+			
+			// Mark msg as delivered:
 			msg.setDeliveredAt(deliveredAt);
 			
 			// Check if whole transmission has been delivered and get deliveredAt time of last msg to be delivered:
@@ -409,11 +415,10 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 				}
 			});
 			
-			// Mark transmission as sent, or only store it (to store sentAt time of msg):
+			// Mark transmission as delivered, or only store it (to store deliveredAt time of msg):
 			if(tDeliveredAt != null)
 				setDeliveredAt(tDeliveredAt);
-			
-			store(); // !!!
+			store(); // !!! (no else here!)
 		}
 		
 		private TimeStamp getLatest(M msg, TimeStampDelegate delegate)

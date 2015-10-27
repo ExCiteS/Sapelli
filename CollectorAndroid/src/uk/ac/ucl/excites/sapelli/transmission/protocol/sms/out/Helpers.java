@@ -21,7 +21,10 @@ package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out;
 import android.content.Intent;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -51,7 +54,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryM
 	
 	/**
 	 * @author mstevens
-	 *
 	 */
 	static public class SMSInfo
 	{
@@ -67,20 +69,44 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryM
 								intent.getExtras().getBoolean(EXTRA_TRANSMISSION_BINARY));
 		}
 		
-		// Android-level info:
+		/**
+		 * Android-level identification of the SMS being sent.
+		 */
 		public final int smsID;
+		/**
+		 * Android-level message-splitting part number, a value from [1, multiPartTotal].
+		 */
 		public final int multiPartNumber;
+		/**
+		 * Android-level message-splitting total parts.
+		 */
 		public final int multiPartTotal;
 		
-		// Sapelli-level info:
-		public final int transmissionLocalID; 
+		/**
+		 * local ID of a {@link SMSTransmission} of which a part is being sent.
+		 */
+		public final int transmissionLocalID;
+		
+		/**
+		 * partNumber of the {@link Message} being sent.
+		 */
 		public final int transmissionPartNumber;
+		
+		/**
+		 * total number of parts the {@link SMSTransmission}.
+		 */
 		public final int transmissionNumberOfParts;
+		
+		/**
+		 * Whether the transmission is a {@link BinarySMSTransmission} or a {@link TextSMSTransmission}. 
+		 */
 		public final boolean transmissionBinary;
 		
 		/**
 		 * @param message
-		 * @param id
+		 * @param smsID
+		 * @param multiPartNumber a value from [1, multiPartTotal]
+		 * @param multiPartTotal
 		 */
 		public SMSInfo(Message<?, ?> message, int smsID, int multiPartNumber, int multiPartTotal)
 		{
