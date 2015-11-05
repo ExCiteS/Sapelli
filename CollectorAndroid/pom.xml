@@ -28,7 +28,7 @@
 		<version>2.0.0-SNAPSHOT</version>
 	</parent>
 	
-	<properties>		
+	<properties>
 		<!-- Build info generation: -->
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
 		
@@ -181,9 +181,8 @@
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>org.codehaus.gmaven</groupId>
-						<artifactId>gmaven-plugin</artifactId>
-						<version>1.5</version>
+						<groupId>org.codehaus.gmavenplus</groupId>
+						<artifactId>gmavenplus-plugin</artifactId>
 						<executions>
 							<execution>
 								<id>set-properties</id>
@@ -192,17 +191,19 @@
 									<goal>execute</goal>
 								</goals>
 								<configuration>
-									<source>
-										println 'Generating repository path...'
-										pom.properties['project.repodir'] = settings['localRepository'] + File.separator + project.groupId.replace('.', File.separator) + File.separator + project.artifactId + File.separator + project.version;
-										
-										println 'Generating time-based versionCode (= number of hours since 2012-01-01T00:00:00.000Z)...'
-										c = Calendar.instance;
-										c.clear();
-										c.timeZone = TimeZone.getTimeZone("UTC");
-										c.set(2012, 0, 1);
-										pom.properties['project.time-based-versionCode'] = "" + (int) ((System.currentTimeMillis() - c.timeInMillis) / 1000 / 60 / 60);
-									</source>
+									<scripts>
+										<script><![CDATA[
+											println 'Generating repository path...'
+											project.properties['project.repodir'] = session.settings.localRepository + File.separator + project.groupId.replace('.', File.separator) + File.separator + project.artifactId + File.separator + project.version;
+											
+											println 'Generating time-based versionCode (= number of hours since 2012-01-01T00:00:00.000Z)...'
+											c = Calendar.instance;
+											c.clear();
+											c.timeZone = TimeZone.getTimeZone("UTC");
+											c.set(2012, 0, 1);
+											project.properties['project.time-based-versionCode'] = "" + (int) ((System.currentTimeMillis() - c.timeInMillis) / 1000 / 60 / 60);
+										]]></script>
+									</scripts>
 								</configuration>
 							</execution>
 						</executions>
