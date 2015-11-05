@@ -52,14 +52,25 @@ public final class ClassHelpers
 	 */
 	public static String classPackageAsResourcePath(Class<?> clazz) throws NullPointerException
 	{
+		return classPackage(clazz).replace(PACKAGE_SEPARATOR, PATH_SEPARATOR);
+	}
+	
+	/**
+	 * Given an input class object, return a string which consists of the class's package name.
+	 * 
+	 * @param clazz the input class. A {@code null} value or the default (empty) package will result in an empty string ("") being returned.
+	 * @return the name of the package in which the input class resides.
+	 * @throws NullPointerException if the given class object is {@code null} (added by mstevens, method used to return "" in this case)
+	 */
+	public static String classPackage(Class<?> clazz) throws NullPointerException
+	{
 		if(clazz == null)
 			throw new NullPointerException("clazz cannot be null!"); // changed by mstevens (used to return "")
 		String className = clazz.getName();
 		int packageEndIndex = className.lastIndexOf(PACKAGE_SEPARATOR);
 		if(packageEndIndex == -1)
 			return "";
-		String packageName = className.substring(0, packageEndIndex);
-		return packageName.replace(PACKAGE_SEPARATOR, PATH_SEPARATOR);
+		return className.substring(0, packageEndIndex);
 	}
 
 }
