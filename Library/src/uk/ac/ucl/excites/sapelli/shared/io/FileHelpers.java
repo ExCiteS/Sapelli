@@ -330,6 +330,8 @@ public final class FileHelpers
 	 */
 	public static boolean createDirectory(File directory)
 	{
+		if(directory == null)
+			return false;
 		if(!directory.exists())
 			return directory.mkdirs();
 		return directory.isDirectory();
