@@ -21,16 +21,24 @@ package uk.ac.ucl.excites.sapelli.shared.io.text;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ClassHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.IterableEnumeration;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 
 /**
  * <p>
@@ -51,13 +59,19 @@ import uk.ac.ucl.excites.sapelli.shared.util.ClassHelpers;
  * to compute the maximum number of bytes Strings of a certain number of chars will require when encoded using
  * a given {@link Charset}. Hence I created this class to solve this problem.</p>
  * <p>
- * The {@link #GetMaxBytesPerChar(Charset)} method provides the maximum {@code maxBytesPerChar} value, across
- * several Java VM/runtime implementations/versions, for the a given {@code Charset}. The {@code maxBytesPerChar}
- * values for different {@code Charset}s as implemented on different VMs/runtimes are loaded from resource files
- * placed in the "charsetinfo" package (which must be a subpackage of the package this class resides in).</p>
+ * The {@link #GetMaxBytesPerChar(Charset)} and {@link #GetMaxBytesPerChar(String)} methods provide the maximum
+ * {@code maxBytesPerChar} value, across several Java VM/runtime implementations/versions, for the a given
+ * {@link Charset} (name). The {@code maxBytesPerChar} values for different {@code Charset}s as implemented on
+ * different VMs/runtimes are loaded from a properties file (named {@value #CMMBPC_PROPERTIES_FILE_NAME}) which
+ * must reside in the same package as this class.</p>
  * <p>
- * The {@link #WriteCharsetInfo(File, String)} method writes out a "charsetinfo" file with the {@code maxBytesPerChar}
- * values for all {@code Charset}s supported by the current platform/device.</p>
+ * The {@link #WriteCharsetInfoFile(File, String, String)} method writes out a ".charsetinfo" file with the
+ * {@code maxBytesPerChar} values for all {@link Charset}s supported by the current platform/device.</p>
+ * <p>
+ * The {@link #GeneratePropertiesFile(String, String, boolean) method loads multiple ".charsetinfo" files
+ * and summarises the information (i.e. finding the maximum {@code maxBytesPerChar} for each {@link Charset})
+ * and writes it to a new {@value #CMMBPC_PROPERTIES_FILE_NAME} properties file, to be packaged with the
+ * library for the usage by {@link #GetMaxBytesPerChar(Charset)} and {@link #GetMaxBytesPerChar(String)} methods.</p>
  * 
  * @author mstevens
  */
@@ -66,48 +80,49 @@ public final class CharsetHelpers
 	
 	private CharsetHelpers() {}
 	
-	private static final Charset DEFAULT_CHARSETINFO_CHARSET = Charsets.UTF_8;
+	private static final Charset CHARSETINFO_FILE_CHARSET = Charsets.UTF_8;
 	
-	private static final char CHARINFO_FILE_COMMENT_LINE_MARKER = '#';
+	private static final String CHARSETINFO_FILE_EXTENSION = "charsetinfo";
 	
-	private static final Map<String, Float> CharsetName2MaxBytesPerChar;
+	private static final Charset PROPERTIES_FILE_CHARSET = Charsets.ISO_8859_1;
 	
+	private static final String PROPERTIES_FILE_EXTENSION = "properties";
+	
+	private static final char COMMENT_LINE_MARKER = '#';
+	
+	private static final String EOL = System.getProperty("line.separator");
+	
+	private static final String CMMBPC_PROPERTIES_FILE_NAME = "CharsetMaxMaxBytesPerChar";
+	
+	private static final ResourceBundle CharsetMaxMaxBytesPerCharBundle;
 	static
-	{	// Initialise CharsetName2MaxBytesPerChar:
-		Map<String, Float> tempCN2MBPC = new HashMap<String, Float>();
-		Class<CharsetHelpers> clazz = CharsetHelpers.class;
+	{
+		ResourceBundle bundle = null;
 		try
 		{
-			String charsetInfoPath = ClassHelpers.classPackageAsResourcePath(clazz) + "/charsetinfo";
-			for(String charsetInfoFile : IOUtils.readLines(clazz.getClassLoader().getResourceAsStream(charsetInfoPath), Charsets.UTF_8))
-			{
-				// Read charsetinfo file:
-				try(UnicodeBOMInputStream input = new UnicodeBOMInputStream(clazz.getResourceAsStream("/" + charsetInfoPath + "/" + charsetInfoFile));
-					BufferedReader reader = new BufferedReader(input.getReader(DEFAULT_CHARSETINFO_CHARSET)))
-				{
-					String line;
-					while((line = reader.readLine()) != null)
-					{
-						if(line.isEmpty() || line.charAt(0) == CHARINFO_FILE_COMMENT_LINE_MARKER)
-							continue; // skip blank & comment lines
-						// Parse Charset info:
-						CharsetInfo csInfo = CharsetInfo.Parse(line);
-						// Store/replace max maxBytesPerChar value:
-						if(csInfo.maxBytesPerChar > 0.0f && (!tempCN2MBPC.containsKey(csInfo.name) || tempCN2MBPC.get(csInfo.name).floatValue() < csInfo.maxBytesPerChar))
-							tempCN2MBPC.put(csInfo.name, csInfo.maxBytesPerChar);
-					}
-				}
-			}
+			bundle = ResourceBundle.getBundle(ClassHelpers.classPackage(CharsetHelpers.class) + "." + CMMBPC_PROPERTIES_FILE_NAME);
+			/*if(bundle != null)
+				System.out.println("Got bundle, UTF-8 maxBytesPerChar:" + bundle.getString(Charsets.UTF_8.name()));*/
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err);
+			//e.printStackTrace(System.err);
+			System.err.println("Could not load resource bundle (" + CMMBPC_PROPERTIES_FILE_NAME + ".properties" + ")");
 		}
-		CharsetName2MaxBytesPerChar = tempCN2MBPC; // TODO if we ever start using Guava we should use an ImmutableMap here (which isn't the same as Java's unmodifyable map)
+		CharsetMaxMaxBytesPerCharBundle = bundle;
+	}
+	
+	private static int getNumberOfKnownCharsets()
+	{
+		int count = 0;
+		if(CharsetMaxMaxBytesPerCharBundle != null)
+			for(@SuppressWarnings("unused") String charsetName : IterableEnumeration.Make(CharsetMaxMaxBytesPerCharBundle.getKeys()))
+				count++;
+		return count;
 	}
 	
 	/**
-	 * Returns the maximum "maxBytesPerChar" value for the given {@link Charset}
+	 * Returns the maximum "maxBytesPerChar" value for the given {@link Charset},
 	 * across all Java VM/runtime implementations/versions we know about.
 	 * 
 	 * @param charset
@@ -116,13 +131,15 @@ public final class CharsetHelpers
 	 */
 	static public final float GetMaxBytesPerChar(Charset charset) throws IllegalArgumentException
 	{
-		float maxBytesPerChar;
-		if(CharsetName2MaxBytesPerChar.containsKey(charset.name()))
-			// Consult map:
-			maxBytesPerChar = CharsetName2MaxBytesPerChar.get(charset.name());
-		else
-			// Fall-back (determine now):
+		float maxBytesPerChar = 0.0f;
+		try
+		{
+			maxBytesPerChar = GetMaxBytesPerChar(charset.name());
+		}
+		catch(IllegalArgumentException iae)
+		{	// Fall-back (determine now):
 			maxBytesPerChar = new CharsetInfo(charset).maxBytesPerChar;
+		}
 		// Check:
 		if(maxBytesPerChar <= 0.0f)
 			throw new IllegalArgumentException("maxBytesPerChar for Charset \"" + charset.name() + "\" is indeterminable.");
@@ -131,28 +148,144 @@ public final class CharsetHelpers
 	}
 	
 	/**
-	 * Writes a "charsetinfo" file containing information about all supported {@link Charset}s on the current machine/platform.
+	 * Returns the maximum "maxBytesPerChar" value for the {@link Charset} with the given name,
+	 * across all Java VM/runtime implementations/versions we know about.
 	 * 
-	 * @param outputFile
+	 * @param charsetName
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
+	static public final float GetMaxBytesPerChar(String charsetName) throws IllegalArgumentException
+	{
+		float maxBytesPerChar = 0.0f;
+		if(CharsetMaxMaxBytesPerCharBundle != null && CharsetMaxMaxBytesPerCharBundle.containsKey(charsetName))
+			// Consult resource bundle:
+			maxBytesPerChar = Float.valueOf(CharsetMaxMaxBytesPerCharBundle.getString(charsetName));
+		// Check:
+		if(maxBytesPerChar <= 0.0f)
+			throw new IllegalArgumentException("maxBytesPerChar for Charset \"" + charsetName + "\" is indeterminable.");
+		//else:
+			return maxBytesPerChar;
+	}
+	
+	/**
+	 * Writes a .charsetinfo file containing information about all supported {@link Charset}s on the current machine/platform.
+	 * 
+	 * @param outputFolder
+	 * @param filename the name of the output file, without extension
+	 * @param header
 	 * @throws IOException
 	 */
-	static public final void WriteCharsetInfo(File outputFile, String header) throws IOException
+	static public final void WriteCharsetInfoFile(File outputFolder, String filename, String header) throws IOException
 	{
-		try(FileOutputStream fos = new FileOutputStream(outputFile);
-			BufferedWriter writer = new BufferedWriter(UnicodeBOM.GetWriter(fos, DEFAULT_CHARSETINFO_CHARSET)))
+		if(!FileHelpers.createDirectory(outputFolder))
+			throw new IOException("Could not create output directory.");
+		try(FileOutputStream fos = new FileOutputStream(new File(outputFolder, filename + "." + CHARSETINFO_FILE_EXTENSION));
+			BufferedWriter writer = new BufferedWriter(UnicodeBOM.GetWriter(fos, CHARSETINFO_FILE_CHARSET)))
 		{
+			// Header:
 			if(header != null)
 			{
 				if(!header.isEmpty())
-					writer.write(CHARINFO_FILE_COMMENT_LINE_MARKER + " " + header.trim());
-				writer.newLine();
+					writer.write(COMMENT_LINE_MARKER + " " + header.trim() + EOL);
 			}
+			// Body:
 			for(Charset cs : Charset.availableCharsets().values())
+				writer.write(new CharsetInfo(cs).toString() + EOL);
+		}
+	}
+	
+	/**
+	 * Parses all .charsetinfo files in the input folder and works out which is the 
+	 * maximum "maxBytesPerChar" value for each known Charset across all input files.
+	 * If this summarised information is in anyway different from the information in
+	 * {@link #CharsetMaxMaxBytesPerCharBundle} (or if {@code force} is {@code true})
+	 * then a new CharsetMaxMaxBytesPerChar.properties is created (or overwritten!)
+	 * in the output folder.
+	 * 
+	 * This method is called from a Groovy script in the pom.xml of the Sapelli Library.
+	 * 
+	 * @param inputFolderPath path of a directory containing CharsetInfo files (with *.charsetinfo extension!) to process
+	 * @param outputFolderPath path of a (resource) directory in which to create the new/updated CharsetMaxMaxBytesPerChar.properties file
+	 * @param force when {@code true} a new CharsetMaxMaxBytesPerChar.properties file will always be generated
+	 * @return whether or not a new or updated CharsetMaxMaxBytesPerChar.properties file was created
+	 * @throws IOException
+	 */
+	static public final boolean GeneratePropertiesFile(String inputFolderPath, String outputFolderPath, boolean force) throws IOException
+	{
+		File inputFolder = new File(inputFolderPath);
+		if(!inputFolder.isDirectory() || !inputFolder.exists())
+			throw new IllegalArgumentException("Please provide a valid and existing folder!");
+		
+		SortedMap<String, String> fileHeaders = new TreeMap<String, String>();
+		SortedMap<String, Float> tempCN2MBPC = new TreeMap<String, Float>();
+		
+		// Process all charsetinfo files in the folder:
+		for(File charsetFile : inputFolder.listFiles((FileFilter) new WildcardFileFilter("*." + CHARSETINFO_FILE_EXTENSION)))
+		{
+			try(UnicodeBOMInputStream input = new UnicodeBOMInputStream(new FileInputStream(charsetFile));
+				BufferedReader reader = new BufferedReader(input.getReader(CHARSETINFO_FILE_CHARSET)))
 			{
-				writer.write(new CharsetInfo(cs).toString());
-				writer.newLine();
+				String line;
+				while((line = reader.readLine()) != null)
+				{
+					if(line.isEmpty())
+						continue; // skip blank lines
+					if(line.charAt(0) == COMMENT_LINE_MARKER)
+					{
+						if(!fileHeaders.containsKey(charsetFile.getName()))
+							fileHeaders.put(charsetFile.getName(), line.substring(1).trim());
+						continue; // skip comment lines
+					}
+					// Parse Charset info:
+					CharsetInfo csInfo = CharsetInfo.Parse(line);
+					// Store/replace max maxBytesPerChar value:
+					if(csInfo.maxBytesPerChar > 0.0f && (!tempCN2MBPC.containsKey(csInfo.name) || tempCN2MBPC.get(csInfo.name).floatValue() < csInfo.maxBytesPerChar))
+						tempCN2MBPC.put(csInfo.name, csInfo.maxBytesPerChar);
+				}
+				if(!fileHeaders.containsKey(charsetFile.getName()))
+					fileHeaders.put(charsetFile.getName(), "");
 			}
 		}
+		
+		// Compare information loaded from charsetinfo files with that in the resource bundle:
+		boolean different = force || CharsetMaxMaxBytesPerCharBundle == null || tempCN2MBPC.size() != getNumberOfKnownCharsets();
+		if(!different)
+			for(Map.Entry<String, Float> mapping : tempCN2MBPC.entrySet())
+				try
+				{
+					if(!Float.valueOf(CharsetMaxMaxBytesPerCharBundle.getString(mapping.getKey())).equals(mapping.getValue())) // getString throws Exception if key is not found
+						throw new Exception("maxBytesPerChar mismatch!");
+				}
+				catch(Exception e)
+				{
+					different = true;
+					break;
+				}
+		
+		// If the information is different...
+		if(different)
+		{	// Write new properties file (in package-specific subfolder of the given output folder):
+			File outputFolder = new File(new File(outputFolderPath), ClassHelpers.classPackageAsResourcePath(CharsetHelpers.class));
+			FileHelpers.createDirectory(outputFolder);
+			try(FileOutputStream fos = new FileOutputStream(new File(outputFolder, CMMBPC_PROPERTIES_FILE_NAME + "." + PROPERTIES_FILE_EXTENSION));
+				BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fos, PROPERTIES_FILE_CHARSET)))
+			{
+				// Header:
+				writer.write(COMMENT_LINE_MARKER + " Generated on " + TimeUtils.getISOTimestamp(System.currentTimeMillis(), false) + " from input files:" + EOL);
+				for(Map.Entry<String, String> fileAndHeader : fileHeaders.entrySet())
+				{
+					writer.write(COMMENT_LINE_MARKER + "\t- " + fileAndHeader.getKey() + ":" + EOL);
+					writer.write(COMMENT_LINE_MARKER + "\t\t" + fileAndHeader.getValue() + EOL);
+				}
+				writer.write(EOL);
+				// Body:
+				for(Map.Entry<String, Float> mapping : tempCN2MBPC.entrySet())
+					writer.write(mapping.getKey() + "=" + mapping.getValue().toString() + EOL);
+			}
+		}
+		
+		return different;
 	}
 	
 	/**
