@@ -49,7 +49,7 @@ public abstract class TransmissionClient extends StorageClient
 		if(schema == null)
 			throw new NullPointerException("schema is null");
 		if(schema.isSealed())
-			throw new IllegalStateException("The schema is alreadt sealed!");
+			throw new IllegalStateException("The schema is already sealed!");
 		// Add column & index:
 		schema.addColumn(COLUMN_LAST_TRANSMITTED_AT);
 		schema.addIndex(new Index(COLUMN_LAST_TRANSMITTED_AT, false));
@@ -64,7 +64,6 @@ public abstract class TransmissionClient extends StorageClient
 		return schema.containsColumn(COLUMN_LAST_TRANSMITTED_AT);
 	}
 
-	// DYNAMICS------------------------------------------------------
 	/**
 	 * Flag indicating that a Schema has been defined at the Transmission layer of the Sapelli Library
 	 */
@@ -101,7 +100,7 @@ public abstract class TransmissionClient extends StorageClient
 	
 	/**
 	 * Returns columns from the given schema that should not be transmitted.
-	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
+	 * It is assumed these are optional columns, or non-optional columns with a default value.
 	 * 
 	 * Subclasses can override this but *must* return at least the same columns returned by the super implementation.
 	 * 

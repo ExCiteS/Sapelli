@@ -302,11 +302,6 @@ public class Schema extends ColumnSet implements Serializable
 		// Check if the indexed columns are columns of this Schema instance:
 		for(Column<?> idxCol : index.getColumns(false))
 		{
-			// Special columns:
-			if(idxCol == COLUMN_LAST_STORED_AT)
-				addLastStoredColumn(); // implicitly add the lastStoredAt column if allowed
-			if(idxCol == COLUMN_LAST_EXPORTED_AT)
-				addLastStoredColumn(); // implicitly add the lastExportedAt column if allowed
 			// Check if idxCol is known:
 			if(!containsColumn(idxCol)) 
 				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before indexes are added or the primary key is set.");
@@ -316,18 +311,6 @@ public class Schema extends ColumnSet implements Serializable
 			indexes = new ArrayList<Index>();
 		// Add to the indexes:
 		indexes.add(index);
-	}
-	
-	private void addLastStoredColumn()
-	{
-		if(!isSealed() && !containsColumn(COLUMN_LAST_STORED_AT))
-			addColumn(COLUMN_LAST_STORED_AT);
-	}
-	
-	private void addLastExportedColumn()
-	{
-		if(!isSealed() && !containsColumn(COLUMN_LAST_EXPORTED_AT))
-			addColumn(COLUMN_LAST_EXPORTED_AT);
 	}
 	
 	@Override
@@ -341,8 +324,10 @@ public class Schema extends ColumnSet implements Serializable
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
 		// Add lastStoredAt & lastExportedAt:
-		addLastStoredColumn();
-		addLastExportedColumn();
+		if(hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES))
+			this.addColumn(COLUMN_LAST_STORED_AT, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
+		if(hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+			this.addColumn(COLUMN_LAST_EXPORTED_AT, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
 	}
 		
 	/**
