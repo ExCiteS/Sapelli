@@ -35,6 +35,7 @@ import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.shared.util.android.IntentHelpers;
 
 /**
  * Taken from: https://code.google.com/p/zxing/source/browse/trunk/android-integration/src/com/google/zxing/integration/android
@@ -328,7 +329,7 @@ public class IntentIntegrator
 		}
 		intentScan.setPackage(targetAppPackage);
 		intentScan.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-		intentScan.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+		IntentHelpers.setFlagActivityCleanWhenTaskReset(intentScan);
 		attachMoreExtras(intentScan);
 		startActivityForResult(intentScan, REQUEST_CODE);
 		return null;
@@ -462,7 +463,7 @@ public class IntentIntegrator
 		}
 		intent.setPackage(targetAppPackage);
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+		IntentHelpers.setFlagActivityCleanWhenTaskReset(intent);
 		attachMoreExtras(intent);
 		activity.startActivity(intent);
 		return null;

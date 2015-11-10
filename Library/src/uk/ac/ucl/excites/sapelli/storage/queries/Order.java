@@ -41,45 +41,45 @@ public class Order
 	static public final boolean DEFAULT_DIRECTION = ASCENDING_DIRECTION; // as in SQL
 	static public final Order UNDEFINED = new Order(null, DEFAULT_DIRECTION);
 
-	static public Order By(ComparableColumn<?> by)
+	static public <CC extends ComparableColumn<?>> Order By(CC by)
 	{
-		return new Order(new ColumnPointer(by), DEFAULT_DIRECTION);
+		return new Order(new ColumnPointer<CC>(by), DEFAULT_DIRECTION);
 	}
 	
-	static public Order By(ColumnPointer by)
+	static public Order By(ColumnPointer<? extends ComparableColumn<?>> by)
 	{
 		return new Order(by, DEFAULT_DIRECTION);
 	}
 	
-	static public Order AscendingBy(ComparableColumn<?> by)
+	static public <CC extends ComparableColumn<?>> Order AscendingBy(CC by)
 	{
-		return new Order(new ColumnPointer(by), ASCENDING_DIRECTION);
+		return new Order(new ColumnPointer<CC>(by), ASCENDING_DIRECTION);
 	}
 	
-	static public Order AscendingBy(ColumnPointer by)
+	static public Order AscendingBy(ColumnPointer<? extends ComparableColumn<?>> by)
 	{
 		return new Order(by, ASCENDING_DIRECTION);
 	}
 	
-	static public Order DescendingBy(ComparableColumn<?> by)
+	static public <CC extends ComparableColumn<?>> Order DescendingBy(CC by)
 	{
-		return new Order(new ColumnPointer(by), DESCENDING_DIRECTION);
+		return new Order(new ColumnPointer<CC>(by), DESCENDING_DIRECTION);
 	}
 	
-	static public Order DescendingBy(ColumnPointer by)
+	static public Order DescendingBy(ColumnPointer<? extends ComparableColumn<?>> by)
 	{
 		return new Order(by, DESCENDING_DIRECTION);
 	}
 	
 	// DYNAMICS -----------------------------------------------------
-	public final ColumnPointer by;
+	public final ColumnPointer<? extends ComparableColumn<?>> by;
 	public final boolean direction; // true: ASC, false: DESC
 	
 	/**
 	 * @param by
 	 * @param direction
 	 */
-	private Order(ColumnPointer by, boolean direction)
+	private Order(ColumnPointer<? extends ComparableColumn<?>> by, boolean direction)
 	{
 		if(by != null && !(by.getColumn() instanceof ComparableColumn))
 			throw new IllegalArgumentException("ColumnPointer does not point to a ComparatorColumn");
@@ -111,7 +111,7 @@ public class Order
 	/**
 	 * @return the column to order by
 	 */
-	public ColumnPointer getBy()
+	public ColumnPointer<? extends ComparableColumn<?>> getBy()
 	{
 		return by;
 	}

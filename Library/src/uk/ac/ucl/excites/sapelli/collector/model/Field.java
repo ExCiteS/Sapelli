@@ -40,6 +40,7 @@ public abstract class Field extends JumpSource
 {
 	
 	//Statics----------------------------------------------
+	static public final int MAX_ID_LENGTH = Form.MAX_ID_LENGTH;
 	
 	//Defaults:
 	static public final boolean DEFAULT_SHOW_BACK = true;
@@ -58,14 +59,18 @@ public abstract class Field extends JumpSource
 	 * Returns the (trimmed) id to use or throws a NullPointerException if the id null, empty or white-space
 	 * 
 	 * @param parsedID
-	 * @return
-	 * @throws NullPointerException
+	 * @return the id to use (will never be null)
+	 * @throws NullPointerException when the given ID is null or empty (possibly after trimming)
+	 * @throws IllegalArgumentException when the given ID is too long (even after trimming), max length is {@value MAX_ID_LENGTH} characters.
 	 */
-	static private String GetID(String parsedID) throws NullPointerException
+	static private String GetID(String parsedID) throws NullPointerException, IllegalArgumentException
 	{
-		if(parsedID == null || parsedID.trim().isEmpty())
+		String trimmedID; // assigned below
+		if(parsedID == null || (trimmedID = parsedID.trim()).isEmpty()) // don't sanitise here!
 			throw new NullPointerException("Field ID cannot be null, empty or consist only of white-space.");
-		return parsedID.trim(); // don't sanitise here!
+		if(trimmedID.length() > MAX_ID_LENGTH)
+			throw new IllegalArgumentException("Field ID \"" + parsedID + "\" is too long (max length: " + MAX_ID_LENGTH + ").");
+		return trimmedID;
 	}
 	
 	/**
@@ -76,12 +81,19 @@ public abstract class Field extends JumpSource
 	 * @param captionPrefix
 	 * @param parsedCaption
 	 * @return the id to use (will never be null)
+	 * @throws IllegalArgumentException when the given ID is too long (even after trimming), max length is {@value MAX_ID_LENGTH} characters.
 	 */
-	static protected String GetID(String parsedId, Form form, String captionPrefix, String parsedCaption)
-	{		
-		if(parsedId != null && !parsedId.trim().isEmpty())
-			return parsedId; // don't sanitise here!
-		return Column.SanitiseName(captionPrefix + (parsedCaption == null || parsedCaption.trim().isEmpty() ? form.getNumberOfFields(true) : parsedCaption.trim())); // this generated id will not occur in the XML so we can already sanitise
+	static protected String GetID(String parsedId, Form form, String captionPrefix, String parsedCaption) throws IllegalArgumentException
+	{
+		// Try using the given ID:
+		try
+		{
+			return GetID(parsedId); // throws IAE when the ID is too long (not caught here!)
+		}
+		catch(NullPointerException npe) { /* ignore */ }
+		// Generate an ID instead (+ call GetID(String) for length check):
+		return GetID(Column.SanitiseName(captionPrefix + (parsedCaption == null || parsedCaption.trim().isEmpty() ? form.getNumberOfFields(true) : parsedCaption.trim())));
+		//	Note: this generated id will not occur in the XML so we can already sanitise it for use as a Column-name.
 	}
 	
 	/**
@@ -442,7 +454,8 @@ public abstract class Field extends JumpSource
 	 * 	- it is assumed this method is *only* called if noColumn=false;<br/>
 	 *	- it is assumed that the provided name String is used (unchanged!) as the column's name (instead of just using the field's id as before)
 	 * 
-	 * @return
+	 * @param name the column name to use
+	 * @return a column instance
 	 */
 	protected abstract Column<?> createColumn(String name);
 	

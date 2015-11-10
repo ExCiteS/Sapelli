@@ -26,8 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
@@ -37,10 +39,12 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 
@@ -54,6 +58,8 @@ public class Form implements WarningKeeper
 	// Statics--------------------------------------------------------
 	public static final boolean END_TIME_DEFAULT = false;
 
+	static public final int MAX_ID_LENGTH = 256;
+	
 	public static final int MAX_FIELDS = 512;
 	
 	// Where to go next:
@@ -80,12 +86,40 @@ public class Form implements WarningKeeper
 	public static final boolean DEFAULT_CLICK_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
+	static public final boolean DEFAULT_SHOW_IMAGE_SIZES = false;
+	
 	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
 	public static final TimeStampColumn COLUMN_TIMESTAMP_START = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false, true);
 	public static final String COLUMN_TIMESTAMP_END_NAME = "EndTime";
 	public static final TimeStampColumn COLUMN_TIMESTAMP_END = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
+	
+	public static TimeStamp GetStartTime(ValueSet<?> record)
+	{
+		return GetStartTime(record, false);
+	}
+	
+	public static TimeStamp GetStartTime(ValueSet<?> record, boolean asStoredBinary)
+	{
+		if(asStoredBinary)
+			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
+		else
+			return COLUMN_TIMESTAMP_START.retrieveValue(record);
+	}
+	
+	public static TimeStamp GetEndTime(ValueSet<?> record)
+	{
+		if(record.getColumnSet().containsColumn(COLUMN_TIMESTAMP_END))
+			return COLUMN_TIMESTAMP_END.retrieveValue(record);
+		else
+			return null;
+	}
+	
+	public static long GetDeviceID(ValueSet<?> record)
+	{
+		return COLUMN_DEVICE_ID.retrieveValue(record);
+	}
 	
 	// The Screen Transition type between different Screens
 	public static enum ScreenTransition
@@ -109,7 +143,7 @@ public class Form implements WarningKeeper
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
-	private transient ColumnOptionalityAdvisor columnOptionalityAdvisor;
+	private ColumnOptionalityAdvisor columnOptionalityAdvisor;
 
 	private transient List<String> warnings;
 	
@@ -118,25 +152,44 @@ public class Form implements WarningKeeper
 	private final List<Field> fields;
 	private List<Trigger> triggers;
 	
-	// Form language:
+	/**
+	 * Default form language 
+	 */
 	private String defaultLanguage; // null by default (because project language should be used if form language not specified)
 
-	// Android shortcut:
+	/**
+	 * Android shortcut 
+	 */
 	private String shortcutImageRelativePath;
 
-	// Click Animation:
+	/**
+	 * Click animation 
+	 */
 	private boolean clickAnimation = DEFAULT_CLICK_ANIMATION;
 	
-	// ScreenTransition:
+	/**
+	 * ScreenTransition mode 
+	 */
 	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
 
-	// Obfuscate Media Files:
+	/**
+	 * AudioFeedback mode 
+	 */
 	private AudioFeedback audioFeedback = DEFAULT_AUDIO_FEEDBACK;
 
-	// Obfuscate Media Files:
+	/**
+	 * Obfuscate Media Files 
+	 */
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
 
-	// Timestamps
+	/**
+	 * Show dimensions of images (form design testing feature) 
+	 */
+	private boolean showImageSizes = DEFAULT_SHOW_IMAGE_SIZES;
+
+	/**
+	 * Store end timestamp
+	 */
 	private boolean storeEndTime;
 
 	// End action:
@@ -151,11 +204,16 @@ public class Form implements WarningKeeper
 	
 	public Form(Project project, String id)
 	{
-		if(project == null || id == null || id.isEmpty())
-			throw new IllegalArgumentException("A project and non-empty id are required!");
+		String trimmedID; // assigned below
+		if(project == null || id == null || (trimmedID = id.trim()).isEmpty())
+			throw new IllegalArgumentException("A project and non-empty, non-whitespace id are required!");
+		if(trimmedID.length() > MAX_ID_LENGTH)
+			throw new IllegalArgumentException("Form id \"" + id + "\" is too long (max length: " + MAX_ID_LENGTH + ").");
+		if(trimmedID.equalsIgnoreCase(HeartbeatSchema.HEARTBEAT_NAME))
+			throw new IllegalArgumentException(HeartbeatSchema.HEARTBEAT_NAME + " is not a valid Form id");
 		
 		this.project = project;
-		this.id = id;
+		this.id = trimmedID;
 		
 		this.fields = new ArrayList<Field>();
 		this.position = (short) project.getForms().size();
@@ -450,6 +508,22 @@ public class Form implements WarningKeeper
 	}
 
 	/**
+	 * @return the showImageSizes
+	 */
+	public boolean isShowImageSizes()
+	{
+		return showImageSizes;
+	}
+
+	/**
+	 * @param showImageSizes the showImageSizes to set
+	 */
+	public void setShowImageSizes(boolean showImageSizes)
+	{
+		this.showImageSizes = showImageSizes;
+	}
+
+	/**
 	 * @param controlType
 	 * @return
 	 */
@@ -629,7 +703,7 @@ public class Form implements WarningKeeper
 	public ColumnOptionalityAdvisor getColumnOptionalityAdvisor()
 	{
 		if(columnOptionalityAdvisor == null)
-			columnOptionalityAdvisor = ColumnOptionalityAdvisor.For(this);
+			columnOptionalityAdvisor = ColumnOptionalityAdvisor.Analyse(this);
 		return columnOptionalityAdvisor;
 	}
 	
@@ -642,59 +716,82 @@ public class Form implements WarningKeeper
 	 * at generating a schema.
 	 * 
 	 * @throws ModelFullException
+	 * @throws DuplicateColumnException
 	 */
-	public void initialiseStorage() throws ModelFullException
+	public void initialiseStorage() throws ModelFullException, DuplicateColumnException
 	{
-		if(!producesRecords)
-			return;
-		if(schema == null)
-		{
-			// Generate columns for user-defined top-level fields:
-			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
-			for(Field f : fields)
-				/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
-				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
-				 *  The reason (in both cases) is that composite fields like Pages, do not
-				 *  have a column of their own but their children do. */
-				f.addColumnTo(userDefinedColumns);
+		initialiseStorage(null);
+	}
 	
-			// Check if there are user-defined columns at all, if not we don't need to generate a schema at all...
-			if(userDefinedColumns.isEmpty())
-			{
-				producesRecords = false; // this will avoid that we try to generate a schema again
-				// this.schema stays null
-			}
-			else
-			{
-				// Create new Schema:
-				schema = new Schema(project.getModel(),
-									project.getModel().getName() + ":" + id);
-				
-				/* Add implicit columns
-				 * 	StartTime & DeviceID together form the primary key of our records.
-				 * 	These columns are implicitly added, together with EndTime if the
-				 * 	appropriate attribute was set, *BUT* only if there is at least one
-				 * 	user-defined field _with_ a column.
-				 */
-				// StartTime column:
-				schema.addColumn(COLUMN_TIMESTAMP_START);
-				// EndTime column:
-				if(storeEndTime)
-					schema.addColumn(COLUMN_TIMESTAMP_END);
-				// Device ID column:
-				schema.addColumn(COLUMN_DEVICE_ID);
-				// Add primary key on StartTime & DeviceID:
-				schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
-				
-				// Add user-defined columns
-				schema.addColumns(userDefinedColumns);
-				
-				// Make transmittable(!):
-				TransmissionClient.MakeTransmittable(schema);
-				
-				// Seal the schema:
-				schema.seal();
-			}
+	/**
+	 * Generates the {@link Schema} for this form. It will contain all columns defined by fields in the form, and the
+	 * implicitly added columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime).
+	 * However, those implicit columns are only added if at least 1 user-defined field has a column. If there are no
+	 * user-defined fields with columns then no implicit columns are added and then the whole schema is pointless,
+	 * therefore in that case the {@link #producesRecords} variable will be set to {@code false} to avoid future attempts
+	 * at generating a schema.
+	 * 
+	 * @param byPassableFieldIDs list of IDs of fields which are known to be by-passable (will be used to initialise the ColumnOptionalityAdvisor), or {@code null}
+	 * @throws ModelFullException
+	 * @throws DuplicateColumnException
+	 */
+	public void initialiseStorage(List<String> byPassableFieldIDs) throws ModelFullException, DuplicateColumnException
+	{
+		// If we already know this form doesn't produce records, or there is already a schema, then there is nothing to be done here:
+		if(!producesRecords || schema != null)
+			return;
+		//else: Generate columns and populate schema...
+		
+		// If possible, initialise the ColumnOptionalityAdvisor using the given list of known by-passable fields (avoids having to analyse the form):
+		if(byPassableFieldIDs != null && columnOptionalityAdvisor == null)
+			columnOptionalityAdvisor = new ColumnOptionalityAdvisor(this, byPassableFieldIDs);
+		
+		// Generate columns for top-level fields:
+		List<Column<?>> fieldDefinedColumns = new ArrayList<Column<?>>();
+		for(Field f : fields)
+			/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
+			 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
+			 *  The reason (in both cases) is that composite fields like Pages, do not
+			 *  have a column of their own but their children do. */
+			f.addColumnTo(fieldDefinedColumns);
+
+		// Check if there is at least 1 field-defined column, if not we don't need to generate a schema at all...
+		if(fieldDefinedColumns.isEmpty())
+		{
+			producesRecords = false; // this will avoid that we try to generate a schema again
+			// this.schema stays null
+		}
+		else
+		{
+			// Create new Schema:
+			schema = CollectorClient.CreateSchema(	project.getModel(),
+													/*schema name:*/ project.getModel().getName() + ":" + id,
+													CollectorClient.SCHEMA_FLAGS_COLLECTOR_USER_DATA,
+													/*unprefixed table name:*/ Project.class.getSimpleName() + project.id + "_" + project.fingerPrint + "_" + Form.class.getSimpleName() + getPosition());
+			/* Add implicit columns
+			 * 	StartTime & DeviceID together form the primary key of our records.
+			 * 	These columns are implicitly added, together with EndTime if the
+			 * 	appropriate attribute was set, *BUT* only if there is at least one
+			 * 	user-defined field _with_ a column.
+			 */
+			// StartTime column:
+			schema.addColumn(COLUMN_TIMESTAMP_START);
+			// EndTime column:
+			if(storeEndTime)
+				schema.addColumn(COLUMN_TIMESTAMP_END);
+			// Device ID column:
+			schema.addColumn(COLUMN_DEVICE_ID);
+			// Add primary key on StartTime & DeviceID:
+			schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
+			
+			// Add field-defined columns:
+			schema.addColumns(fieldDefinedColumns);
+			
+			// Make transmittable(!):
+			TransmissionClient.MakeTransmittable(schema);
+			
+			// Seal the schema:
+			schema.seal();
 		}
 	}
 	
@@ -758,32 +855,6 @@ public class Form implements WarningKeeper
 		}
 		else
 			return null;
-	}
-	
-	public TimeStamp getStartTime(Record record)
-	{
-		return getStartTime(record, false);
-	}
-	
-	public TimeStamp getStartTime(Record record, boolean asStoredBinary)
-	{
-		if(asStoredBinary)
-			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
-		else
-			return COLUMN_TIMESTAMP_START.retrieveValue(record);
-	}
-	
-	public TimeStamp getEndTime(Record record)
-	{
-		if(isStoreEndTime())
-			return COLUMN_TIMESTAMP_END.retrieveValue(record);
-		else
-			return null;
-	}
-	
-	public long getDeviceID(Record record)
-	{
-		return COLUMN_DEVICE_ID.retrieveValue(record);
 	}
 	
 	public void finish(Record record)

@@ -35,5 +35,7 @@ public interface ConstraintVisitor
 	public void visit(EqualityConstraint equalityConstr);
 		
 	public void visit(RuleConstraint ruleConstr);
+	
+	public void visit(BitFlagConstraint bitFlagConstr);
 
 }

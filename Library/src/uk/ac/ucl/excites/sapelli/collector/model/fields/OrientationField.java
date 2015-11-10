@@ -25,8 +25,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
 
 /**
  * @author mstevens

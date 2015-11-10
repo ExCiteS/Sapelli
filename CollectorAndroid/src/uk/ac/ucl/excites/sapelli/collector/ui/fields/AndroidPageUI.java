@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.util.ViewHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -71,12 +71,10 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 		if(onPage)
 			throw new IllegalStateException("Pages cannot be nested!");
 		
-		Context context = collectorUI.getContext();
-		
 		// Create or recycle view:
 		if(view == null)
 		{
-			view = new PageView(context);
+			view = new PageView(collectorUI.getContext());
 			newRecord = true; // force update of new view
 		}
 		
@@ -133,7 +131,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 			for(FieldUI<?, View, CollectorView> fUI : fieldUIs)
 			{
 				LinearLayout currentWrappedView = (LinearLayout) container.getChildAt(fIndex); // may be null
-				View newView = fUI.showField(true, record); // the actual view object returned may be recycled but its state will be updated to reflect current record
+				View newView = fUI.showField(); // the actual view object returned may be recycled but its state will be updated to reflect current record
 				
 				// Replace current (wrapped) view:
 				if(newView != unwrapView(currentWrappedView)) // Note: unwrapView(null) will return null

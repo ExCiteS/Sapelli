@@ -20,11 +20,11 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 
 /**
@@ -39,25 +39,23 @@ public class SQLiteStringColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	
 	/**
 	 * @param store
-	 * @param sourceSchema
-	 * @param sourceColumn
+	 * @param sourceColumnPointer
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteStringColumn(SQLiteRecordStore store, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
+	public SQLiteStringColumn(SQLiteRecordStore store, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, TypeMapping<String, SapType> mapping)
 	{
-		store.super(SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
+		this(store, null, sourceColumnPointer, mapping);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param sourceSchema
-	 * @param sourceColumn
+	 * @param sourceColumnPointer
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteStringColumn(SQLiteRecordStore store, String name, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
+	public SQLiteStringColumn(SQLiteRecordStore store, String name, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, TypeMapping<String, SapType> mapping)
 	{
-		store.super(name, SQLITE_DATA_TYPE, sourceSchema, sourceColumn, mapping);
+		store.super(name, SQLITE_DATA_TYPE, sourceColumnPointer, mapping);
 	}
 	
 	/**
@@ -66,13 +64,13 @@ public class SQLiteStringColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	 * @param value non-null
 	 */
 	@Override
-	protected void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, String value) throws DBException
+	protected void bindNonNull(SQLiteStatement statement, int paramIdx, String value) throws DBException
 	{
 		statement.bindString(paramIdx, value);
 	}
 
 	@Override
-	protected String getValue(ISQLiteCursor cursor, int columnIdx) throws DBException
+	protected String getValue(SQLiteCursor cursor, int columnIdx) throws DBException
 	{
 		return cursor.getString(columnIdx);
 	}

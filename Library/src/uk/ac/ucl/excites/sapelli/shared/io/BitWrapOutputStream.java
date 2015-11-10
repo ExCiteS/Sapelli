@@ -1,9 +1,25 @@
-package uk.ac.ucl.excites.sapelli.shared.io;
+/**
+ * Sapelli data collection platform: http://sapelli.org
+ *
+ * Copyright 2012-2014 University College London - ExCiteS group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 
 /**
  * A stream where bits can be written to. Provides write methods for various (primitive) types.<br/>
@@ -37,6 +53,8 @@ public final class BitWrapOutputStream extends BitOutputStream
 	 * 
 	 * @param bit bit (true = 1; false = 0) to be written
 	 * @throws IOException if an I/O error occurs
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream#writeBit(boolean, int)
 	 */
 	protected void writeBit(boolean bit) throws IOException
 	{
@@ -51,6 +69,12 @@ public final class BitWrapOutputStream extends BitOutputStream
 			numBitsInCurrentByte = 0;
 		}
 	}
+
+	@Override
+	protected boolean isFull()
+	{
+		return false;
+	}
 	
 	/**
 	 * Closes this stream and the underlying OutputStream.
@@ -61,7 +85,7 @@ public final class BitWrapOutputStream extends BitOutputStream
 	 */
 	public void close() throws IOException
 	{
-		if(!closed)
+		if(!isClosed())
 		{
 			writePadding();
 			output.close();
@@ -80,22 +104,18 @@ public final class BitWrapOutputStream extends BitOutputStream
 			write(false);
 	}
 
-    /**
-     * Flushes this and the underlying output stream and forces any buffered bits to be written out.
-     * 
-     * @throws IOException if an I/O error occurs
-     * @see java.io.OutputStream#flush()
-     */
-    public void flush() throws IOException
-    {
-    	writePadding();
-    	output.flush();
-    	super.flush();
-    }
-    
-    public int getNumberOfBitsWritten()
-    {
-    	return numberOfBitsWritten;
-    }
+	/**
+	 * Flushes this and the underlying output stream and forces any buffered bits to be written out.
+	 * Write zeros (=false) as padding until a byte boundary is reached.
+	 * 
+	 * @throws IOException if an I/O error occurs
+	 * @see java.io.OutputStream#flush()
+	 */
+	public void flush() throws IOException
+	{
+		writePadding();
+		output.flush();
+		super.flush();
+	}
 
 }

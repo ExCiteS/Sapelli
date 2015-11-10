@@ -21,10 +21,8 @@ package uk.ac.ucl.excites.sapelli.collector.util;
 import java.math.BigInteger;
 import java.util.zip.CRC32;
 
-import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -38,6 +36,9 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 
 /**
  * Class that provides various ways to uniquely (or as unique as possible) identify an Android device<br/>
@@ -63,9 +64,9 @@ public class DeviceID
 
 	private static DeviceID INSTANCE = null;
 	
-	static public void Initialise(Context context, InitialisationCallback client)
+	static public void Initialise(Activity activity, InitialisationCallback client)
 	{
-		new Initialiser(context, client); // may start async task!
+		new Initialiser(activity, client); // may start async task!
 	}
 	
 	static public DeviceID GetInstanceOrNull()
@@ -94,6 +95,7 @@ public class DeviceID
 	 * @param separator
 	 * @return
 	 */
+	@SuppressWarnings("deprecation")
 	static public String getHardwareInfo(String separator)
 	{
 		StringBuilder bldr = new StringBuilder();
@@ -275,7 +277,7 @@ public class DeviceID
 		
 	}
 	
-	private static class Initialiser extends AsyncTaskWithWaitingDialog<Void, Integer>
+	private static class Initialiser extends AsyncTaskWithWaitingDialog<Activity, Void, Integer>
 	{
 
 		// Statics --------------------------------------------------
@@ -289,24 +291,22 @@ public class DeviceID
 		// Dynamics -------------------------------------------------
 		private DeviceID id;
 		private InitialisationCallback caller;
-		private Context context;
 		private WifiManager wifiManager;
 		private BluetoothAdapter bluetoothAdapter;
 		private BroadcastReceiver wiFiBroadcastReceiver;
 		private BroadcastReceiver bluetoothBroadcastReceiver;
 		private boolean inAirplaneMode = false;
 		
-		public Initialiser(Context context, InitialisationCallback caller)
+		public Initialiser(Activity activity, InitialisationCallback caller)
 		{
-			super(context, "Determining device ID..."); //TODO multilang
-			this.context = context;
+			super(activity, "Determining device ID..."); //TODO multilang
 			this.caller = caller;
-			this.id = new DeviceID(context);
+			this.id = new DeviceID(activity);
 
 			// Check if the we already have a raw device ID, if not run the AsyncTask:
 			if(!this.id.isInitialised())
 			{
-				wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+				wifiManager = (WifiManager) activity.getSystemService(Context.WIFI_SERVICE);
 				bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 				execute(); // async!
 			}
@@ -317,11 +317,14 @@ public class DeviceID
 		@Override
 		protected Integer doInBackground(Void... params)
 		{
+			Context context = getContext();
+			if(context == null)
+				return null;
 			// Check if in flight mode, otherwise IMEI and Bluetooth do not work on some devices i.e. Samsung Xcover
 			if(DeviceControl.inAirplaneMode(context))
 			{
 				inAirplaneMode = true;
-				if(DeviceControl.canToogleAirplaneMode())
+				if(DeviceControl.canSetAirplaneMode())
 				{
 					DeviceControl.disableAirplaneMode(context);
 					int counter = 0;
@@ -338,11 +341,11 @@ public class DeviceID
 			//Debug.d("The Device ID is being initialised.");
 
 			// Call the functions to initialise IMEI, Android ID, Hardware Serial Number, Wi-Fi MAC and Bluetooth MAC:
-			initIMEI();
-			initAndroidID();
+			initIMEI(context);
+			initAndroidID(context);
 			initHardwareSerialNumber();
-			initWiFiAddress(); // may set up a broadcast receiver
-			initBluetoothAddress(); // may set up a broadcast receiver
+			initWiFiAddress(context); // may set up a broadcast receiver
+			initBluetoothAddress(context); // may set up a broadcast receiver
 			
 			// Wait until the app finds the Wifi and Bluetooth addresses of the device
 			int counter = 0;
@@ -361,12 +364,13 @@ public class DeviceID
 		protected void onPostExecute(Integer result)
 		{
 			super.onPostExecute(result); // to dismiss waiting dialog
+			Context context = getContext();
 			switch(result)
 			{
 				case RESULT_OK:
 				{	
 					// Put the phone back in AirplaneMode (because it was in airplane mode before):
-					if(inAirplaneMode)
+					if(inAirplaneMode && context != null)
 						DeviceControl.enableAirplaneMode(context);
 					
 					// Compute and save the Device ID
@@ -386,7 +390,8 @@ public class DeviceID
 					break;
 				}
 				case RESULT_AIRPLANE_MODE:
-					showAirplaneDialog(context);
+					if(context != null)
+						showAirplaneDialog(context);
 					break;
 			}
 		}
@@ -412,7 +417,7 @@ public class DeviceID
 		 * 
 		 * @param imei
 		 */
-		private void initIMEI()
+		private void initIMEI(Context context)
 		{
 			TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 			if(tm != null)
@@ -424,13 +429,13 @@ public class DeviceID
 		 * 
 		 * Requires android.permission.ACCESS_WIFI_STATE
 		 */
-		private void initWiFiAddress()
+		private void initWiFiAddress(Context context)
 		{
 			if(wifiManager != null && wifiManager.isWifiEnabled())
 				id.saveStingPreference(PREF_WIFI_MAC, wifiManager.getConnectionInfo().getMacAddress()); // Save WiFi MAC address to preferences
 			else if(wifiManager != null)
 			{	// Try to enable the WiFi Adapter and wait for the broadcast receiver:
-				setWifiBroadcastReceiver();
+				setWifiBroadcastReceiver(context);
 				wifiManager.setWifiEnabled(true);
 			}
 		}
@@ -438,7 +443,7 @@ public class DeviceID
 		/**
 		 * Broadcast receiver to handle WiFi states
 		 */
-		private void setWifiBroadcastReceiver()
+		private void setWifiBroadcastReceiver(Context context)
 		{
 			wiFiBroadcastReceiver = new BroadcastReceiver()
 			{
@@ -484,13 +489,13 @@ public class DeviceID
 		 * Requires android.permission.BLUETOOTH
 		 * 
 		 */
-		private void initBluetoothAddress()
+		private void initBluetoothAddress(Context context)
 		{
 			if(bluetoothAdapter != null && bluetoothAdapter.isEnabled())
 				id.saveStingPreference(PREF_BLUETOOTH_MAC, bluetoothAdapter.getAddress()); // Save Bluetooth MAC address to preferences
 			else if(bluetoothAdapter != null)
 			{	// Try to enable the Bluetooth Adapter and wait for the broadcast receiver:
-				setBluetoothBroadcastReceiver();
+				setBluetoothBroadcastReceiver(context);
 				bluetoothAdapter.enable();
 			}
 		}
@@ -498,7 +503,7 @@ public class DeviceID
 		/**
 		 * Broadcast receiver to handle Bluetooth states
 		 */
-		private void setBluetoothBroadcastReceiver()
+		private void setBluetoothBroadcastReceiver(Context context)
 		{
 			bluetoothBroadcastReceiver = new BroadcastReceiver()
 			{
@@ -542,7 +547,7 @@ public class DeviceID
 		/**
 		 * Find and save the Android ID to the preferences
 		 */
-		private void initAndroidID()
+		private void initAndroidID(Context context)
 		{
 			id.saveStingPreference(PREF_ANDROID_ID, Secure.getString(context.getContentResolver(), Secure.ANDROID_ID));
 		}

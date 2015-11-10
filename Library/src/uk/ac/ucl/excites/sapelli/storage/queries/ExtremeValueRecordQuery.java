@@ -24,6 +24,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
@@ -40,25 +41,25 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	
 	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column, RecordsQuery recordsQuery)
 	{
-		return Max(new ColumnPointer(column), recordsQuery);
+		return Max(new ColumnPointer<ComparableColumn<?>>(column), recordsQuery);
 	}
 	
-	static public ExtremeValueRecordQuery Max(ColumnPointer columnPointer)
+	static public ExtremeValueRecordQuery Max(ColumnPointer<ComparableColumn<?>> columnPointer)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, true, null);
 	}
 	
-	static public ExtremeValueRecordQuery Max(ColumnPointer columnPointer, RecordsQuery recordsQuery)
+	static public ExtremeValueRecordQuery Max(ColumnPointer<ComparableColumn<?>> columnPointer, RecordsQuery recordsQuery)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, true, recordsQuery);
 	}
 	
 	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column, Schema sourceSchema)
 	{
-		return Max(new ColumnPointer(sourceSchema, column), sourceSchema);
+		return Max(new ColumnPointer<ComparableColumn<?>>(sourceSchema, column), sourceSchema);
 	}
 	
-	static public ExtremeValueRecordQuery Max(ColumnPointer columnPointer, Schema sourceSchema)
+	static public ExtremeValueRecordQuery Max(ColumnPointer<ComparableColumn<?>> columnPointer, Schema sourceSchema)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, true, new RecordsQuery(Source.From(sourceSchema)));
 	}
@@ -70,34 +71,34 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	
 	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column, RecordsQuery recordsQuery)
 	{
-		return Min(new ColumnPointer(column), recordsQuery);
+		return Min(new ColumnPointer<ComparableColumn<?>>(column), recordsQuery);
 	}
 	
-	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer)
+	static public ExtremeValueRecordQuery Min(ColumnPointer<ComparableColumn<?>> columnPointer)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, false, null);
 	}
 	
-	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer, RecordsQuery recordsQuery)
+	static public ExtremeValueRecordQuery Min(ColumnPointer<ComparableColumn<?>> columnPointer, RecordsQuery recordsQuery)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, false, recordsQuery);
 	}
 	
 	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column, Schema sourceSchema)
 	{
-		return Min(new ColumnPointer(sourceSchema, column), sourceSchema);
+		return Min(new ColumnPointer<ComparableColumn<?>>(sourceSchema, column), sourceSchema);
 	}
 	
-	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer, Schema sourceSchema)
+	static public ExtremeValueRecordQuery Min(ColumnPointer<ComparableColumn<?>> columnPointer, Schema sourceSchema)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, false, new RecordsQuery(Source.From(sourceSchema)));
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	private ColumnPointer columnPointer;
+	private ColumnPointer<ComparableColumn<?>> columnPointer;
 	private boolean max;
 	
-	private ExtremeValueRecordQuery(ColumnPointer columnPointer, boolean max, RecordsQuery recordQuery)
+	private ExtremeValueRecordQuery(ColumnPointer<ComparableColumn<?>> columnPointer, boolean max, RecordsQuery recordQuery)
 	{
 		super(recordQuery);
 		if(!(columnPointer.getColumn() instanceof ComparableColumn))
@@ -109,7 +110,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	/**
 	 * @return the columnPointer
 	 */
-	public ColumnPointer getColumnPointer()
+	public ColumnPointer<ComparableColumn<?>> getColumnPointer()
 	{
 		return columnPointer;
 	}
@@ -119,7 +120,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	 */
 	public ComparableColumn<?> getCompareColumn()
 	{
-		return (ComparableColumn<?>) columnPointer.getColumn();
+		return columnPointer.getColumn();
 	}
 	
 	/**

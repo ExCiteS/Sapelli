@@ -18,8 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.types;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 
 /**
@@ -28,24 +28,17 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
  * 
  * @author mstevens
  */
-public class Orientation extends Record
+public class Orientation extends ValueSet<ColumnSet>
 {
 	
 	//Statics----------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	// Schema & columns
-	static final public Schema SCHEMA = new Schema(Schema.InternalKind.Orientation);
-	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, true, false);	// optional signed 32 bit float
-	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true, true, false);		// optional signed 32 bit float
-	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true, true, false);			// optional signed 32 bit float
-	static
-	{	// Add columns to Schema & seal it:
-		SCHEMA.addColumn(COLUMN_AZIMUTH);
-		SCHEMA.addColumn(COLUMN_PITCH);
-		SCHEMA.addColumn(COLUMN_ROLL);
-		SCHEMA.seal();
-	}
+	// ColumnSet & Columns:
+	static final public ColumnSet COLUMN_SET = new ColumnSet(Orientation.class.getSimpleName(), false);
+	static final public FloatColumn COLUMN_AZIMUTH	= COLUMN_SET.addColumn(new FloatColumn("Azimuth", true, true, false));				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_PITCH	= COLUMN_SET.addColumn(new FloatColumn("Pitch", true, true, false));				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_ROLL		= COLUMN_SET.addColumn(new FloatColumn("Roll", true, true, false), true /*seal!*/);	// optional signed 32 bit float
 	
 	/**
 	 * @param azimuth
@@ -54,18 +47,18 @@ public class Orientation extends Record
 	 */
 	public Orientation(Float azimuth, Float pitch, Float roll)
 	{
-		super(SCHEMA);
+		super(COLUMN_SET);
 		COLUMN_AZIMUTH.storeValue(this, azimuth);
 		COLUMN_PITCH.storeValue(this, pitch);
 		COLUMN_ROLL.storeValue(this, roll);
 	}
 	
 	/**
-	 * Only to be used by {@link OrientationColumn#getNewRecord()}
+	 * Only to be used by {@link OrientationColumn#getNewValueSet()}
 	 */
-	public Orientation()
+	/*package*/ Orientation()
 	{
-		super(SCHEMA);
+		super(COLUMN_SET); // no default values!
 	}
 
 	/**

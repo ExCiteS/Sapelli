@@ -29,7 +29,7 @@ import android.view.View;
  * 
  * @author mstevens, benelliott
  */
-public class TextItem extends Item
+public class TextItem extends Item<TextItem>
 {
 
 	static public final int DEFAULT_TEXT_COLOR = Color.BLACK;
@@ -37,7 +37,7 @@ public class TextItem extends Item
 	private String text;
 	private int textColor;
 	private TextSizeCoordinator textSizeCoordinator;
-	private int coordinatorSlot = -1;
+	private int coordinatorSlot = TextFitView.UNASSIGNED_SLOT;
 	
 	/**
 	 * TextItem with given text, default text colour, and uncoordinated text size

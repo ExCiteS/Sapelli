@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -153,12 +154,7 @@ public class BinaryMessage extends Message
 		}
 		finally
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
 		}
 	}
 
@@ -226,12 +222,7 @@ public class BinaryMessage extends Message
 		}
 		finally
 		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(out);
 		}
 		if(data == null)
 			throw new NullPointerException("Error on assembling bytes of BinaryMessage, byte array is null"); //should not happen

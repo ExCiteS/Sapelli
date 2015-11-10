@@ -47,20 +47,15 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 	}
 	
 	@Override
-	public void hideField()
-	{
-		super.hideField(); // !!!
-		// hide all contained fields:
-		for(FieldUI<?, V, UI> fUI : fieldUIs)
-			if(controller.isFieldEnabled(fUI.field)) // field is enabled (and shown)
-				fUI.hideField(); // cancel() of each field will also be called
-	}
-	
-	@Override
 	protected void cancel()
 	{
 		// Disable triggers:
 		controller.disableTriggers(field.getTriggers());
+		
+		// Hide/cancel all contained fields:
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
+			if(controller.isFieldEnabled(fUI.field)) // field is enabled (and shown)
+				fUI.hideField(); // cancel() of each field will also be called
 	}
 	
 	/* (non-Javadoc)

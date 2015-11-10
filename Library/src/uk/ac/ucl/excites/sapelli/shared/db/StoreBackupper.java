@@ -33,6 +33,16 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
  */
 public class StoreBackupper implements StoreUser
 {
+	
+	public static void Backup(File destinationFolder, boolean labelFilesAsBackup, Store store) throws DBException
+	{
+		// Create backupper instance:
+		StoreBackupper backupper = new StoreBackupper(destinationFolder, labelFilesAsBackup);
+		// Add store for backup:
+		backupper.addStoreForBackup(store);
+		// Run backup:
+		backupper.backup();
+	}
 
 	public static void Backup(File destinationFolder, boolean labelFilesAsBackup, StoreHandle<?>... storesHandlesToBackup) throws DBException
 	{

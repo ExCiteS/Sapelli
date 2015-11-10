@@ -20,16 +20,18 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import org.apache.commons.io.FileUtils;
+
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -54,14 +56,20 @@ public class FormSession
 	// DYNAMIC ------------------------------------------------------
 	protected final Form form;
 	protected final Mode mode;
-	protected Record record; //TODO make final? do we really need to make the record null in Controller#discardRecordAndAttachments()?
-	protected final long startTime;
+	
+	/**
+	 * Note we should make this final for the reason explained here: {@link Controller#discardRecordAndAttachments()}. 
+	 */
+	protected Record record;
+	
+	public final long startTime;
 	
 	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
-	private List<File> mediaAttachments = null; // only instantiated when needed
+	private final List<File> addedAttachments; // list containing files to be added
+	private final List<File> discardedAttachments; // list containing files to be deleted
 	
 	/**
 	 * @param form
@@ -79,6 +87,8 @@ public class FormSession
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
 		this.startTime = startTime;
+		addedAttachments = new ArrayList<File>();
+		discardedAttachments = new ArrayList<File>();
 	}
 	
 	public FieldWithArguments getPrevious(boolean forBackMove)
@@ -118,6 +128,11 @@ public class FormSession
 		
 		// 	Next becomes the (new) current...
 		this.currFieldAndArguments = nextFieldAndArguments;
+	}
+	
+	public void addCurrentFieldToHistory()
+	{
+		fieldAndArgumentHistory.push(currFieldAndArguments);
 	}
 	
 	/**
@@ -180,19 +195,57 @@ public class FormSession
 		return currFieldAndArguments != null;
 	}
 	
-	public void addMediaAttachment(File mediaAttachment)
+	/**
+	 * Adds a file to the list of attachments added in this form session.
+	 * 
+	 * @param file
+	 */
+	public void addAttachment(File file)
 	{
-		if(mediaAttachments == null)
-			mediaAttachments = new ArrayList<File>();
-		mediaAttachments.add(mediaAttachment);
+		addedAttachments.add(file);
+	}
+	
+	/**
+	 * Adds a file to the list of attachments deleted in this form session.
+	 * 
+	 * @param file
+	 */
+	public void discardAttachment(File file)
+	{
+		if(addedAttachments.contains(file))
+		{	// the file being discard was created during the current session, i.e. it has never been "saved" along with a record so can be deleted right away (cannot be undone)...
+			FileUtils.deleteQuietly(file);
+			addedAttachments.remove(file);
+		}
+		else
+			// the file being discarded was created during an earlier session (meaning the current session is an EDIT session), i.e. the deletion must not happen now as the user can still undo it by hitting cancel...
+			discardedAttachments.add(file);
+	}
+	
+	/**
+	 * Deletes all attachments that were in the "discarded" list.
+	 */
+	public void deleteDiscardedAttachments()
+	{
+		FileHelpers.deleteQuietly(discardedAttachments);
+	}
+	
+	/**
+	 * Deletes all attachments that were in the "added" list.
+	 */
+	public void deleteAddedAttachments()
+	{
+		FileHelpers.deleteQuietly(addedAttachments);
+	}
+	
+	public void clearDiscardedAttachments()
+	{
+		discardedAttachments.clear();
 	}
 
-	/**
-	 * @return the mediaAttachments
-	 */
-	public List<File> getMediaAttachments()
+	public void clearAddedAttachments()
 	{
-		return mediaAttachments != null ? mediaAttachments : Collections.<File>emptyList();
+		addedAttachments.clear();
 	}
 	
 }

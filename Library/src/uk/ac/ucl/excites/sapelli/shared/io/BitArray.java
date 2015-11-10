@@ -31,22 +31,48 @@ import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 public class BitArray implements Iterable<Boolean>
 {
 
+	// STATIC -------------------------------------------------------
+	/**
+	 * Returns a new {@link BitArray} initialised using the given {@code bytes} and with length = {@code bytes.length} * 8.
+	 * 
+	 * @param bytes
+	 * @return
+	 */
 	static public BitArray FromBytes(byte[] bytes)
 	{
-		try
-		{
-			BitArrayOutputStream baos = new BitArrayOutputStream();
-			baos.write(bytes);
-			baos.flush();
-			baos.close();
-			return baos.toBitArray();
-		}
-		catch(IOException e)
-		{
-			return null; // should never happen
-		}
+		return FromBytes(bytes, BitArrayOutputStream.UNLIMITED);
 	}
 	
+	/**
+	 * Returns a new {@link BitArray} with length = {@code bitLength} and initialised using the given {@code bytes} (up to the ({@code bitLength} - 1)th bit)
+	 * 
+	 * @param bytes
+	 * @param bitLength
+	 * @return
+	 */
+	static public BitArray FromBytes(byte[] bytes, int bitLength)
+	{
+		BitArrayOutputStream baos = new BitArrayOutputStream(bitLength);
+		try
+		{
+			baos.write(bytes);
+		}
+		catch(CapacityReachedException full)
+		{
+			// do nothing
+		}
+		catch(IOException ioE)
+		{
+			return null; // this should never happen
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(baos);
+		}
+		return baos.toBitArray(true); // use given max bitLength
+	}
+	
+	// DYNAMIC ------------------------------------------------------
 	private final BitSet bits;
 	private final int length;
 	
@@ -127,7 +153,7 @@ public class BitArray implements Iterable<Boolean>
 		byte[] bytes = new byte[BinaryHelpers.bytesNeeded(length)];
 		for(int i = 0; i < length; i++)
 			if(bits.get(i))
-				bytes[i / Byte.SIZE] |= 1 << (7 - (i % 8)); //MSB is read first
+				bytes[i / Byte.SIZE] |= 1 << (7 - (i % 8)); // MSB is read first
 		return bytes;
 	}
 	

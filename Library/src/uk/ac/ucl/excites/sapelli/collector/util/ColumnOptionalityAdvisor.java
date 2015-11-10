@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -62,8 +63,9 @@ public final class ColumnOptionalityAdvisor
 {
 
 	// STATICS-------------------------------------------------------
-	static public ColumnOptionalityAdvisor For(final Form form)
+	static public ColumnOptionalityAdvisor Analyse(final Form form)
 	{
+		//System.out.println("Analysing form: " + form.id);
 		final Analyser analyser = new Analyser(form);
 		
 		// Start analysis for CREATE mode:
@@ -71,35 +73,35 @@ public final class ColumnOptionalityAdvisor
 		// (analysing for EDIT mode should not be necessary)
 		
 		// Return advisor:
-		return new ColumnOptionalityAdvisor(form, analyser.bypassableFields);
+		return new ColumnOptionalityAdvisor(form, analyser.bypassableFieldIDs);
 	}
 	
 	private static final Queue<FieldWithArguments> EMPTY_QUEUE = new EmptyQueue<FieldWithArguments>();
 	
 	// DYNAMICS------------------------------------------------------
-	private final Form form;
-	private final List<Field> byPassableNonOptionalFieldsWithColumn;
+	public final Form form;
+	private final Set<String> byPassableFieldIDs;
 	
 	/**
 	 * @param form
-	 * @param byPassableNonOptionalFieldsWithColumn
+	 * @param idsOfByPassableNonOptionalFieldsWithColumn
 	 */
-	private ColumnOptionalityAdvisor(Form form, List<Field> byPassableNonOptionalFieldsWithColumn)
+	public ColumnOptionalityAdvisor(Form form, Collection<? extends String> idsOfByPassableNonOptionalFieldsWithColumn)
 	{
 		this.form = form;
-		this.byPassableNonOptionalFieldsWithColumn = byPassableNonOptionalFieldsWithColumn;
+		this.byPassableFieldIDs = new HashSet<String>(idsOfByPassableNonOptionalFieldsWithColumn);
 	}
 
 	/**
 	 * Determines the optionality for the column that will back a given field.
-	 * The applied rule is as follows:
-	 * 	- optional fields get an optional column;
-	 * 	- non-optional fields get a non-optional column provided they *cannot* be by-passed, if they *can* be by-passed they get an optional column
+	 * The applied rule is as follows:<ul>
+	 * 	<li>optional fields get an optional column;</li>
+	 * 	<li>non-optional fields get a non-optional column provided they *cannot* be by-passed, if they *can* be by-passed they get an optional column.</li></ul>
 	 * 
-	 * For historic reference:
+	 * <p>For historic reference:
 	 * 	The old way to determine column optionality (before introduction of by-passable field detection) was:
 	 * 		columnOptionality = (field.optional != Optionalness.NEVER);
-	 * 	I.e. fields which optionality ALWAYS or NOT_IF_REACHED got an optional column, fields with optionality NEVER got a non-optional column. 
+	 * 	I.e. fields which optionality ALWAYS or NOT_IF_REACHED got an optional column, fields with optionality NEVER got a non-optional column.</p> 
 	 * 
 	 * @param fieldWithColumn the field for which to determine column optionality
 	 * @return the optionality value (true = optional, false = mandatory/non-optional) for the column that will back the given field
@@ -115,15 +117,15 @@ public final class ColumnOptionalityAdvisor
 		if(fieldWithColumn.isOptional())
 			return true;
 		else
-			return byPassableNonOptionalFieldsWithColumn.contains(fieldWithColumn);
+			return byPassableFieldIDs.contains(fieldWithColumn.id);
 	}
 	
 	/**
-	 * @return
+	 * @return Set with the IDs of all non-optional, column-backed Fields in the Form which are by-passable  
 	 */
-	public List<Field> getByPassableNonOptionalFieldsWithColumn()
+	public Set<String> getIDsOfByPassableNonOptionalFieldsWithColumn()
 	{
-		return byPassableNonOptionalFieldsWithColumn;
+		return byPassableFieldIDs;
 	}
 
 	/**
@@ -139,7 +141,7 @@ public final class ColumnOptionalityAdvisor
 		
 		private final Form form;
 		private final List<Field> fieldsToCheck;
-		private final List<Field> bypassableFields;
+		private final List<String> bypassableFieldIDs;
 		
 		private Mode mode;
 		
@@ -161,7 +163,7 @@ public final class ColumnOptionalityAdvisor
 		{
 			this.form = form;
 			this.fieldsToCheck = new LinkedList<Field>(assembleFieldsToCheck(form.getFields(), new HashSet<Field>()));
-			this.bypassableFields = new ArrayList<Field>(fieldsToCheck.size());
+			this.bypassableFieldIDs = new ArrayList<String>(fieldsToCheck.size());
 			this.passed = new Stack<Field>();
 			this.skipped = new Stack<Field>();
 			this.assembleNextFields = new HashSet<FieldWithArguments>(8); // initial capacity of 8 (rather than the default of 16)
@@ -197,7 +199,7 @@ public final class ColumnOptionalityAdvisor
 				Field fieldToCheck = iter.next();
 				if(!Controller.IsFieldToBeShown(mode, fieldToCheck))
 				{
-					bypassableFields.add(fieldToCheck);
+					bypassableFieldIDs.add(fieldToCheck.id);
 					iter.remove(); // !!! remove field from fieldsToCheck (we now know it is "by-passable" so we don't need to check it against paths)
 				}
 			}
@@ -448,7 +450,7 @@ public final class ColumnOptionalityAdvisor
 					final Field fieldToCheck = iter.next();
 					if(!passed.contains(fieldToCheck))
 					{	// ... field would have been shown in the current mode but was *not* visited while traversing from start to end/saving: so it is "by-passable"
-						bypassableFields.add(fieldToCheck);
+						bypassableFieldIDs.add(fieldToCheck.id);
 						iter.remove(); // !!! remove field from fieldsToCheck (we now know it is "by-passable" so we don't need to check it against other paths)
 					}
 				}

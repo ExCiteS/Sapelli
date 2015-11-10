@@ -24,24 +24,24 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 
 public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
@@ -51,9 +51,11 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 
 	public ChoiceUI<V, UI> createChoiceUI(ChoiceField cf);
 
-	public PhotoUI<V, UI> createPhotoUI(PhotoField pf);
+	public MediaUI<PhotoField,V, UI> createPhotoUI(PhotoField pf);
+	
+	public MediaUI<VideoField,V, UI> createVideoUI(VideoField pf);
 
-	public AudioUI<V, UI> createAudioUI(AudioField af);
+	public MediaUI<AudioField,V, UI> createAudioUI(AudioField af);
 
 	public LocationUI<V, UI> createLocationUI(LocationField lf);
 	
@@ -80,6 +82,8 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	public int getScreenWidthPx();
 	
 	public int getScreenHeightPx();
+	
+	public ControlsUI<V, UI> getControlsUI();
 	
 	public AudioFeedbackController<V> getAudioFeebackController();
 	

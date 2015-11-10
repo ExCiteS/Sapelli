@@ -23,30 +23,29 @@ import java.util.List;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 
 /**
- * A sqlite4java-specific {@link SapelliSQLiteStatement} subclass. It is a thin wrapper around sqlite4java's {@link SQLiteStatement} class.
+ * A sqlite4java-specific {@link SQLiteStatement} subclass. It is a thin wrapper around sqlite4java's {@link SQLiteStatement} class.
  * 
  * Supports SQL INSERT, UPDATE, and DELETE operations (i.e. "CUD" from "CRUD"), as well as SQL SELECT row queries (i.e. "R" from "CRUD") and
- * "simple" SELECT queries resulting in a 1x1 long value. In addition it also acts as a cursor and thus also implements the {@link ISQLiteCursor} interface.
+ * "simple" SELECT queries resulting in a 1x1 long value. In addition it also acts as a cursor and thus also implements the {@link SQLiteCursor} interface.
  * 
  * @author mstevens
  *
  * @see com.almworks.sqlite4java.SQLiteStatement
  */
-public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLiteCursor
+public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 {
 
 	private final SQLiteConnection db;
-	private final SQLiteStatement javaSQLiteSt;
+	private final com.almworks.sqlite4java.SQLiteStatement javaSQLiteSt;
 	private Boolean firstStep = null;
 
 	/**
@@ -63,19 +62,6 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		this.javaSQLiteSt = db.prepare(sql, true); // not necessarily a new SQLiteStatement (may have been cached), therefore...
 		// ... clear bindings (& reset) if necessary:
 		clearAllBindings(); // will also call reset() if the statement "has stepped"
-	}
-	
-	/**
-	 * @param arguments
-	 * @throws DBException
-	 */
-	public void bindAll(List<Object> arguments) throws DBException
-	{
-		if(paramCols != null)
-		{
-			for(int p = 0, count = paramCols.size(); p < count; p++)
-				paramCols.get(p).bindSapelliObject(this, p, arguments.get(p));
-		}
 	}
 
 	@Override
@@ -173,7 +159,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	 * these are typically "re-throws" of failures during earlier executions of the statement.
 	 * 
 	 * @see http://www.sqlite.org/c3ref/bind_blob.html
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#clearAllBindings()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#clearAllBindings()
 	 */
 	@Override
 	public void clearAllBindings()
@@ -194,47 +180,50 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	
 	/**
 	 * Insert a record
-	 *  
-	 * @throws DBException 
+	 * 
+	 * @throws DBPrimaryKeyException
+	 * @throws DBConstraintException
+	 * @throws DBException
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeInsert()
 	 */
 	@Override
-	public long executeInsert() throws DBException
+	public long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException
 	{
 		try
 		{
 			javaSQLiteSt.step();
 			long rowID = db.getLastInsertId();
 			if(rowID <= 0)
-				throw new DBException("Execution of INSERT statement failed (returned ROWID = " + rowID + ")");
+				throw new DBException(formatMessageWithSQL("Execution of INSERT statement (%s) failed (returned ROWID = " + rowID + ")"));
 			return rowID;
 		}
 		catch(SQLiteException e)
 		{
-			if(e.getErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
+			if(e.getBaseErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
 			{
 				String msg = e.getMessage();
 				if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
-					throw new DBPrimaryKeyException("Failed to execute INSERT statement due to existing record with same primary key", e);
+					throw new DBPrimaryKeyException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to existing record with same primary key"), e);
 				else
-					throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", e);
+					throw new DBConstraintException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to constraint violation"), e);
 			}
-			throw new DBException("Failed to execute INSERT statement", e);
+			throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement: %s"), e);
 		}
 	}
 
 	/**
 	 * Update a record
-	 *   
+	 * 
+	 * @throws DBConstraintException
 	 * @throws DBException 
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeUpdate()
 	 */
 	@Override
-	public int executeUpdate() throws DBException
+	public int executeUpdate() throws DBConstraintException, DBException
 	{
 		try
 		{
@@ -243,7 +232,9 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute UPDATE statement", e);
+			if(e.getBaseErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
+				throw new DBConstraintException(formatMessageWithSQL("Failed to execute UPDATE statement (%s) due to constraint violation"), e);
+			throw new DBException(formatMessageWithSQL("Failed to execute UPDATE statement: %s"), e);
 		}
 	}
 
@@ -253,7 +244,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	 * @throws DBException 
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeDelete()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeDelete()
 	 */
 	@Override
 	public int executeDelete() throws DBException
@@ -265,7 +256,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute DELETE statement", e);
+			throw new DBException(formatMessageWithSQL("Failed to execute DELETE statement: %s"), e);
 		}
 	}
 
@@ -283,22 +274,22 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute simple long query", e);
+			throw new DBException(formatMessageWithSQL("Failed to execute simple long query: %s"), e);
 		}
 	}
 	
 	/**
 	 * Executes a SQL SELECT row query, i.e. the reading (the "R" in "CRUD") of (partial) records from a database table.
-	 * The results (0, 1 or more rows) are made accessible through a returned {@link ISQLiteCursor} instance.
+	 * The results (0, 1 or more rows) are made accessible through a returned {@link SQLiteCursor} instance.
 	 * 
-	 * @return an {@link ISQLiteCursor} (effectively "this") to iterate over results
+	 * @return an {@link SQLiteCursor} (effectively "this") to iterate over results
 	 * @throws DBException
 	 * 
 	 * @see http://en.wikipedia.org/wiki/Create,_read,_update_and_delete
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeSelectRows()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeSelectRows()
 	 */
 	@Override
-	public ISQLiteCursor executeSelectRows() throws DBException
+	public SQLiteCursor executeSelectRows() throws DBException
 	{
 		if(javaSQLiteSt.hasStepped())
 		{
@@ -312,7 +303,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(DBException e) // from moveToNext(), we could throw this as-is but msg is confusing
 		{
-			throw new DBException("Failed to execute SELECT rows query", e.getCause());
+			throw new DBException(formatMessageWithSQL("Failed to execute SELECT rows query: %s"), e.getCause());
 		}
 	}
 	
@@ -417,6 +408,21 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	public boolean isClosed()
 	{
 		return javaSQLiteSt.isDisposed();
+	}
+	
+	@Override
+	public String toString()
+	{
+		return javaSQLiteSt.toString();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#getSQL()
+	 */
+	@Override
+	protected String getSQL()
+	{
+		return javaSQLiteSt.getSqlParts().toString();
 	}
 	
 }

@@ -25,7 +25,7 @@ import android.view.View;
  * @author mstevens
  *
  */
-public class EmptyItem extends Item
+public class EmptyItem extends Item<EmptyItem>
 {
 	
 	public EmptyItem()

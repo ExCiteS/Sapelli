@@ -33,44 +33,44 @@ public class EqualityConstraint extends Constraint
 	
 	static public EqualityConstraint IsNull(Column<?> column)
 	{
-		return IsNull(new ColumnPointer(column));
+		return IsNull(new ColumnPointer<Column<?>>(column));
 	}
 
-	static public EqualityConstraint IsNull(ColumnPointer columnPointer)
+	static public EqualityConstraint IsNull(ColumnPointer<?> columnPointer)
 	{
 		return new EqualityConstraint(columnPointer, null);
 	}
 	
 	static public EqualityConstraint IsNotNull(Column<?> column)
 	{
-		return IsNotNull(new ColumnPointer(column));
+		return IsNotNull(new ColumnPointer<Column<?>>(column));
 	}
 
-	static public EqualityConstraint IsNotNull(ColumnPointer columnPointer)
+	static public EqualityConstraint IsNotNull(ColumnPointer<?> columnPointer)
 	{
 		return new EqualityConstraint(columnPointer, null, false);
 	}
 	
-	private final ColumnPointer columnPointer;
+	private final ColumnPointer<?> columnPointer;
 	private final Object value;
 	private final boolean equal;
 	
 	public EqualityConstraint(Column<?> column, Object value)
 	{
-		this(new ColumnPointer(column), value);
+		this(new ColumnPointer<Column<?>>(column), value);
 	}
 	
-	public EqualityConstraint(ColumnPointer columnPointer, Object value)
+	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value)
 	{
 		this(columnPointer, value, true);
 	}
 	
 	public EqualityConstraint(Column<?> column, Object value, boolean equal)
 	{
-		this(new ColumnPointer(column), value, equal);
+		this(new ColumnPointer<Column<?>>(column), value, equal);
 	}
 	
-	public EqualityConstraint(ColumnPointer columnPointer, Object value, boolean equal)
+	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value, boolean equal)
 	{
 		this.columnPointer = columnPointer;
 		this.value = value;
@@ -106,7 +106,7 @@ public class EqualityConstraint extends Constraint
 		visitor.visit(this);
 	}
 	
-	public ColumnPointer getColumnPointer()
+	public ColumnPointer<?> getColumnPointer()
 	{
 		return columnPointer;
 	}
@@ -135,7 +135,7 @@ public class EqualityConstraint extends Constraint
 		{
 			EqualityConstraint that = (EqualityConstraint) obj;
 			return	this.columnPointer.equals(that.columnPointer) &&
-					(this.value != null ? this.value.equals(that.value) : that.value == null);
+					Objects.deepEquals(this.value, that.value);
 		}
 		return false;
 	}

@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
  * Class with methods to load (or just parse) Sapelli projects from .sapelli/.excites/.sap files (which are actually just renamed ZIP files).
@@ -66,33 +67,107 @@ public class ProjectLoader implements WarningKeeper
 	}
 	
 	/**
+ 	 * Parses the {@value #PROJECT_FILE} file in the folder at the given path to produce a {@link Project} instance.
+	 * No warnings are generated and no exceptions thrown.
+	 * Use this for projects that have been successfully parsed before. Otherwise it is advisable to use
+	 * the non-static {@link #load(File)} or {@link #loadParseOnly(File)} methods instead.
+	 * 
 	 * @param folderPath path to folder in which the PROJECT.xml file resides
-	 * @return a project instance or null in case something went wrong
+	 * @return a {@link Project} instance or {@code null} in case something went wrong
 	 */
-	static public Project ParseProject(String folderPath)
+	static public Project ParseProjectXMLInFolder(String folderPath)
+	{
+		return ParseProjectXMLInFolder(new File(folderPath));
+	}
+	
+	/**
+ 	 * Parses the {@value #PROJECT_FILE} file in the given folder to produce a {@link Project} instance.
+	 * No warnings are generated and no exceptions thrown.
+	 * Use this for projects that have been successfully parsed before. Otherwise it is advisable to use
+	 * the non-static {@link #load(File)} or {@link #loadParseOnly(File)} methods instead.
+	 * 
+	 * @param folder folder in which the PROJECT.xml file resides
+	 * @return a {@link Project} instance or {@code null} in case something went wrong
+	 */
+	static public Project ParseProjectXMLInFolder(File folder)
+	{
+		return ParseProjectXMLInFolder(folder, null);
+	}
+	
+	/**
+	 * Parses the {@value #PROJECT_FILE} file in the given folder to produce a {@link Project} instance.
+	 * If one is given the {@link FormSchemaInfoProvider} is used to speed up {@link Schema} generation.
+	 * No warnings are generated and no exceptions thrown.
+	 * Use this for projects that have been successfully parsed before. Otherwise it is advisable to use
+	 * the non-static {@link #load(File)} or {@link #loadParseOnly(File)} methods instead.
+	 * 
+	 * @param folder folder in which the {@value #PROJECT_FILE} file resides
+	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
+	 * @return a {@link Project} instance or {@code null} in case something went wrong
+	 */
+	static public Project ParseProjectXMLInFolder(File folder, FormSchemaInfoProvider fsiProvider)
+	{
+		return ParseProjectXML(GetProjectXMLFile(folder), fsiProvider);
+	}
+	
+	/**
+	 * @param folder folder in which the {@value #PROJECT_FILE} file resides
+	 * @return the {@value #PROJECT_FILE} {@link File}
+	 */
+	static public File GetProjectXMLFile(File folder)
+	{
+		return new File(folder, PROJECT_FILE);
+	}
+	
+	/**
+	 * Parses the given {@value #PROJECT_FILE} file to produce a {@link Project} instance.
+	 * If one is given the {@link FormSchemaInfoProvider} is used to speed up {@link Schema} generation.
+	 * No warnings are generated and no exceptions thrown.
+	 * Use this for projects that have been successfully parsed before. Otherwise it is advisable to use
+	 * the non-static {@link #loadParseOnly(InputStream) method instead.
+	 * 
+	 * @param file the {@value #PROJECT_FILE} file
+	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
+	 * @return a {@link Project} instance or {@code null} in case something went wrong
+	 */
+	static public Project ParseProjectXML(File projectXML, FormSchemaInfoProvider fsiProvider)
 	{
 		try
 		{
-			return new ProjectParser().parseProject(new File(folderPath + File.separator + PROJECT_FILE));
+			return new ProjectParser().parseProject(projectXML, fsiProvider);
 		}
 		catch(Exception e)
 		{
-			System.err.println("Failed to load project from path: " + folderPath);
+			System.err.println("Failed to load project from: " + projectXML.getAbsolutePath());
 			e.printStackTrace(System.err);
 			return null;
 		}
 	}
 	
 	/**
-	 * @param sapelliFile
-	 * @return
-	 * @throws Exception
+	 * Parses the given {@link InputStream}, expected to provide the contents of a {@value #PROJECT_FILE} file,
+	 * to produce a {@link Project} instance. If one is given the {@link FormSchemaInfoProvider} is used
+	 * to speed up {@link Schema} generation.
+	 * No warnings are generated and no exceptions thrown.
+	 * Use this for projects that have been successfully parsed before. Otherwise it is advisable to use
+	 * the non-static {@link #load(File)} or {@link #loadParseOnly(File)} methods instead.  
+	 * 
+	 * @param projectXMLInputStream an {@link InputStream} providing the contents of a {@value #PROJECT_FILE} file
+	 * @param fsiProvider a {@link FormSchemaInfoProvider}, or {@code null}
+	 * @return a {@link Project} instance or {@code null} in case something went wrong
 	 */
-	static public FileInputStream openStream(File sapelliFile) throws Exception
+	static public Project ParseProjectXML(InputStream projectXMLInputStream, FormSchemaInfoProvider fsiProvider)
 	{
-		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
-			throw new IllegalArgumentException("Invalid Sapelli file");
-		return new FileInputStream(sapelliFile);
+		try
+		{
+			return new ProjectParser().parseProject(projectXMLInputStream, fsiProvider);
+		}
+		catch(Exception e)
+		{
+			System.err.println("Failed to load project from InputStream");
+			e.printStackTrace(System.err);
+			return null;
+		}
 	}
 	
 	// DYNAMICS ----------------------------------------------------------
@@ -110,7 +185,7 @@ public class ProjectLoader implements WarningKeeper
 	 */
 	public ProjectLoader(FileStorageProvider fileStorageProvider) throws FileStorageException
 	{
-		this(fileStorageProvider, null, null); // no post-processing nor checking
+		this(fileStorageProvider, null, null); // no post-processing, nor checking
 	}
 	
 	/**
@@ -143,7 +218,7 @@ public class ProjectLoader implements WarningKeeper
 	 */
 	public Project load(File sapelliFile) throws Exception
 	{
-		return load(openStream(sapelliFile));
+		return load(FileHelpers.openInputStream(sapelliFile, true));
 	}
 	
 	/**

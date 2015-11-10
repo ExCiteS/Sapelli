@@ -19,10 +19,14 @@
 package uk.ac.ucl.excites.sapelli.collector.db.db4o;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
@@ -36,7 +40,7 @@ import com.db4o.query.Predicate;
 
 /**
  * @author mstevens, julia, Michalis Vitos
- * 
+ * @deprecated
  */
 public class DB4OProjectStore extends ProjectStore
 {
@@ -160,6 +164,12 @@ public class DB4OProjectStore extends ProjectStore
 		return null;
 	}
 	
+	@Override
+	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
+	{
+		return retrieveProject(projectID, projectFingerPrint);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#delete(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
@@ -240,6 +250,25 @@ public class DB4OProjectStore extends ProjectStore
 		
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Project> retrieveProjectsOrDescriptors()
+	{
+		return retrieveProjects();
+	}
+
+	@Override
+	public Project retrieveProject(ProjectDescriptor descriptor)
+	{
+		return retrieveProject(descriptor.getID(), descriptor.getFingerPrint());
+	}
+
+	@Override
+	public void delete(ProjectDescriptor projectDescriptor)
+	{
+		delete(retrieveProject(projectDescriptor));
+	}
+	
 	@Override
 	protected void doClose()
 	{
@@ -261,6 +290,18 @@ public class DB4OProjectStore extends ProjectStore
 		{
 			throw new DBException("Error upon backup up project store");
 		}
+	}
+
+	@Override
+	public void serialise(Project project, OutputStream out) throws IOException
+	{
+		throw new UnsupportedOperationException("serialise() not implemented");
+	}
+
+	@Override
+	public Project deserialise(InputStream in) throws IOException
+	{
+		throw new UnsupportedOperationException("deserialise() not implemented");
 	}
 	
 }

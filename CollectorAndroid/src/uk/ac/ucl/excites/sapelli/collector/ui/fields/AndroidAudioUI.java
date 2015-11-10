@@ -19,228 +19,417 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.io.IOException;
 
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.LinearLayout;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import android.content.Context;
-import android.graphics.Color;
-import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
 
 /**
- * @author Julia, Michalis, mstevens
+ * A subclass of AndroidMediaUI which allows for the capture and review of 
+ * audio recordings from the device's microphone.
  * 
+ * @author mstevens, Michalis Vitos, Julia, benelliott
+ *
  */
-public class AndroidAudioUI extends AudioUI<View, CollectorView>
+public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 {
+
+	// STATIC -----------------------------------------------------------------
+	private static final String TAG = "AndroidAudioUI";
 	
-	static private final String TAG = "AndroidAudioUI";
+	private static final int COLOR_BACKGROUND = Color.BLACK;
+	private static final int COLOR_INACTIVE_LEVEL = Color.DKGRAY;
+	private static final int COLOR_ACTIVE_LEVEL = Color.rgb(0, 204, 0);
+	
+	private static final int UPDATE_FREQUENCY_MS = 200;
+	private static final int NUM_LEVELS = 50;
+	private static final int LEVEL_PADDING = 5;
+	private static final float VOLUME_WIDTH_FRACTION = 0.5f; // fraction of the display width that the volume display should span
+	
+	// DYNAMIC ----------------------------------------------------------------
+	private final AudioRecorder audioRecorder;
+	
+	private VolumeView volumeView;
+	private AudioReviewView audioReviewView;
 
-	private AudioView view;
-	private File audioFile;
-	private AudioRecorder audioRecorder;
-
-	public AndroidAudioUI(AudioField audioField, CollectorController controller, CollectorView collectorView)
+	public AndroidAudioUI(AudioField field, CollectorController controller, CollectorView collectorUI)
 	{
-		super(audioField, controller, collectorView);
+		super(	field,
+				controller,
+				collectorUI,
+				true);	// unblock UI after capture button click to allow other click events (so recording can be stopped)
+		audioRecorder = new AudioRecorder();
+	}
+
+	@Override
+	protected View createCaptureContent(Context context)
+	{
+		return volumeView = new VolumeView(context);
 	}
 	
-	private boolean startRecording()
+	/**
+	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
+	 * "stop recording" button.
+	 */
+	@Override
+	protected ImageItem generateCaptureButton(Context context)
+	{
+		if(!audioRecorder.isRecording())
+			// recording hasn't started yet, so present "record" button
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_audio_capture);
+		else
+			// recording started, so present "stop" button instead
+			return collectorUI.getImageItemFromProjectFileOrResource(field.getStopRecImageRelativePath(), R.drawable.button_media_stop);
+	}
+	
+	/**
+	 * If not already recording, start recording. Else stop recording and attach the media file 
+	 * to the field.
+	 */
+	@Override
+	protected void onCapture()
+	{
+		if(!audioRecorder.isRecording())
+			startRecording();
+		else
+			stopRecording();
+	}
+
+	/**
+	 * Start writing audio data to the media file, and start displaying the volume level.
+	 */
+	private void startRecording()
 	{
 		try
 		{
-			audioFile = field.getNewTempFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-			audioRecorder = new AudioRecorder(audioFile);
-			audioRecorder.start();
-		}
-		catch(IOException ioe)
-		{
-			Log.e(TAG, "Could get audio file.", ioe);
-			mediaDone(null, false);
-			return false;
+			audioRecorder.start(getNewCaptureFile());
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Could not start audio recording.", e);
-			mediaDone(null, false);
-			return false; // !!!
+			handleCaptureError(e);
+			return; // !!!
 		}
-		return true;		
+		volumeView.start();
 	}
 
+	/**
+	 * Stop writing audio data to the media file, and stop displaying the volume level.
+	 */
 	private void stopRecording()
 	{
+		volumeView.stop();
 		try
 		{
 			audioRecorder.stop();
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error on stopping audio recording.", e);
+			handleCaptureError(e);
+			return; // !!!
 		}
-		finally
-		{
-			audioRecorder = null;
-		}
+		// Attach the media file:
+		handleCaptureSuccess();
+	}
+
+	@Override
+	protected Item<?> getGalleryItem(int index, File attachement)
+	{
+		// TODO allow for custom icon
+		return new ImageItem(index, collectorUI.getResources(), R.drawable.audio_item);
+	}
+
+	@Override
+	protected View getReviewContent(Context context, File mediaFile)
+	{
+		if(audioReviewView == null)
+			audioReviewView = new AudioReviewView(context);
+		audioReviewView.setAudioFile(mediaFile);
+		return audioReviewView;
 	}
 
 	@Override
 	protected void cancel()
 	{
-		if(audioRecorder != null)
-			stopRecording();
-		audioFile = null;
+		super.cancel();
+		try
+		{
+			audioRecorder.stop();
+		}
+		catch(Exception ignore) {}
+		
+		if(audioReviewView != null)
+			audioReviewView.finalise();
 	}
 
-	@Override
-	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
+	/**
+	 * A View that displays a simple visualisation of the current audio amplitude.
+	 * 
+	 * @author benelliott, mstevens
+	 */
+	private class VolumeView extends View implements Runnable
 	{
-		//TODO onPage view
-		//TODO take "enabled" into account
+				
+		private final Handler handler;
+	    private final Paint paint;
+	    
+		private float levelWidth;
+		private float levelHeight;
+		private float levelLeft;
+		private float levelRight;		
 		
-		if(view == null)
-			view = new AudioView(collectorUI.getContext());
-		
-		// Update view:
-		//	Make start button visible if more recordings can still be added:
-		view.setStartVisibility(showCreateButton());
-		view.setStopVisibility(isValid(record));
-		
-		return view;
-	}
-	
-	public class AudioView extends ItemPickerView implements AdapterView.OnItemClickListener
-	{
-		
-		static private final int BUTTON_INDEX_START = 0;
-		static private final int BUTTON_INDEX_STOP = 1;
-		
-		private int buttonBackColor;
+		private volatile int levelsToIlluminate;
 
-		public AudioView(Context context)
+		public VolumeView(Context context)
 		{
 			super(context);
+			handler = new Handler(Looper.getMainLooper());			
+			paint = new Paint();
+		}
 
-			// UI set-up:
-			setBackgroundColor(Color.BLACK);
-			int spacingPx = collectorUI.getSpacingPx();
-			setHorizontalSpacing(spacingPx);
-			setVerticalSpacing(spacingPx);
+		@Override
+		protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight)
+		{
+			// (re)calculate level dimensions:
+			levelHeight = ((float) height / NUM_LEVELS) - LEVEL_PADDING;
+			levelWidth = VOLUME_WIDTH_FRACTION * width;
+			levelLeft = (width - levelWidth) / 2;
+			levelRight = (width + levelWidth) / 2;
 
-			// Columns:
-			setNumColumns(1);
+			super.onSizeChanged(width, height, oldWidth, oldHeight);
+		}
 
-			// Button size, padding & background colour:
-			this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIPartHeightPx(2));
-			this.buttonBackColor = ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
+		/**
+		 * Illuminate the number of levels specified by levelsToIlluminate.
+		 */
+		@Override
+		protected void onDraw(Canvas canvas)
+		{
+			// wipe everything off:
+			canvas.drawColor(COLOR_BACKGROUND);
 			
-			// Adapter & button images:
-			// Start rec button:
-			Item startButton = null;
-			File startRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
-			if(FileHelpers.isReadableFile(startRecImageFile))
-				startButton = new FileImageItem(startRecImageFile);
-			else
-				startButton = new ResourceImageItem(getContext().getResources(), R.drawable.start_audio_rec);
-			startButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			addButton(startButton); // add start button
+			// draw the levels:
+			paint.setColor(COLOR_ACTIVE_LEVEL);
+			for(int i = 0; i < NUM_LEVELS; i++)
+			{
+				if(i == levelsToIlluminate)
+					paint.setColor(COLOR_INACTIVE_LEVEL);
+				float levelBottom = getHeight() - i * (levelHeight + LEVEL_PADDING); // remember top-left is (0,0)
+				canvas.drawRect(levelLeft, levelBottom + levelHeight, levelRight, levelBottom, paint);
+			}
+		}
 
-			// Stop rec button:
-			Item stopButton = null;
-			File stopRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
-			if(FileHelpers.isReadableFile(stopRecImageFile))
-				stopButton = new FileImageItem(stopRecImageFile);
-			else
-				stopButton = new ResourceImageItem(getContext().getResources(), R.drawable.stop_audio_rec);
-			stopButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			addButton(stopButton); // add stop button
-
-			// Set click listener
-			setOnItemClickListener(this);
+		/**
+		 * Start visualising the volume.
+		 */
+		public void start()
+		{
+			schedule();
 		}
 		
-		private void addButton(Item button)
+		private void schedule()
 		{
-			button.setPaddingDip(CollectorView.PADDING_DIP);
-			button.setBackgroundColor(buttonBackColor);
-			getAdapter().addItem(button);
+			handler.postDelayed(this, UPDATE_FREQUENCY_MS);
 		}
 		
 		@Override
-		public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
+		public void run()
 		{
-			// Task to perform after animation has finished:
-			Runnable action = new Runnable()
+			if(!audioRecorder.isRecording())
+				return;
+			float relativeAmplitude = ((float) audioRecorder.getMaxAmplitude()) / AudioRecorder.MAX_AMPLITUDE;
+			levelsToIlluminate = Math.min(Math.round(relativeAmplitude * NUM_LEVELS), NUM_LEVELS);
+			invalidate(); // ask view to be redrawn
+			schedule(); // reschedule for next volume update
+		}
+
+		/**
+		 * Stop visualising the volume.
+		 */
+		public void stop()
+		{
+			handler.removeCallbacks(this);
+			levelsToIlluminate = 0;
+		}
+
+	}
+	
+	/**
+	 * A subclass of ImageView that provides play/stop functionality when a recording is being reviewed.
+	 * 
+	 * @author benelliott, mstevens
+	 * @see http://developer.android.com/reference/android/media/MediaPlayer.html#StateDiagram
+	 */
+	private class AudioReviewView extends LinearLayout implements MediaPlayer.OnCompletionListener, OnClickListener
+	{
+
+		private final View playButton;
+		private final View stopButton;
+
+		private MediaPlayer mediaPlayer;
+		private boolean paused = false;
+		
+		public AudioReviewView(Context context)
+		{
+			super(context);
+						
+			// Buttons:
+			LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+			playButton = addButtonView(field.getPlayAudioImageRelativePath(), R.drawable.button_media_play);
+			this.addView(playButton, buttonParams);
+			stopButton = addButtonView(field.getStopAudioImageRelativePath(), R.drawable.button_media_stop);
+			this.addView(stopButton, buttonParams);
+			
+			// Listen for clicks:
+			this.setOnClickListener(this);
+			
+			// Hide stop button at first:
+			stopButton.setVisibility(GONE);
+		}
+		
+		private View addButtonView(String imgPath, int drawableID)
+		{
+			ImageItem item = collectorUI.getImageItemFromProjectFileOrResource(imgPath, drawableID).setBackgroundColor(fieldBackgroundColor);
+			if(item.isUsingResource())
+				item.setPaddingDip(PLAYBACK_BUTTON_PADDING_DIP); // the built-in play/stop SVGs don't look right with the default padding
+			return item.getView(getContext());
+		}
+		
+		public void setAudioFile(File audioFile)
+		{
+			try
+			{	// Set-up mediaPlayer:
+				mediaPlayer = new MediaPlayer();
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				mediaPlayer.setOnCompletionListener(this);
+				mediaPlayer.setDataSource(getContext(), Uri.fromFile(audioFile));
+				paused = false;
+			}
+			catch(Exception e)
 			{
-				public void run()
+				Log.e(TAG, "Could not set audio file for playback.", e);
+			}
+		}
+		
+		/**
+		 * Note: no animation because image will change immediately
+		 * 
+		 * @param v
+		 */
+		@Override
+		public void onClick(View v)
+		{
+			if(mediaPlayer == null)
+				return; // just in case
+			controller.blockUI();
+			if(!mediaPlayer.isPlaying())
+				// if not playing, then start playing audio
+				playAudio();
+			else
+				// if already playing, then stop audio
+				stopAudio();
+			controller.unblockUI();
+		}
+		
+		/*
+		 * Start playing audio and display the "stop" button.
+		 */
+		private void playAudio()
+		{
+			try
+			{
+				if(!paused)
 				{
-					switch(position)
-					{
-						case BUTTON_INDEX_START:
-						{
-							controller.addLogLine("CLICK_START_RECORDING");
-							
-							if(field.isUseNativeApp())
-								collectorUI.activity.startAudioRecorderApp(AndroidAudioUI.this);
-							else if(startRecording())
-							{
-								view.setStartVisibility(false);
-								view.setStopVisibility(true);
-							}
-							break;
-						}
-						case BUTTON_INDEX_STOP:
-						{
-							controller.addLogLine("CLICK_STOP_RECORDING");
-							
-							if(audioRecorder == null)
-								mediaDone(null, true); // "stop" means "skip" because we are not yet recording
-							else
-							{	// "stop" really means stop recording
-								stopRecording();
-							mediaDone(audioFile, true); // will also call goForward(0 on the controller, even if max is not reached
-							}
-							break;
-						}
-					}
+					mediaPlayer.prepare();
+					mediaPlayer.seekTo(0);
 				}
-			};
-
-			// Perform the click
-			collectorUI.clickView(v, action);
-		}
-		
-		public void setStartVisibility(boolean visible)
-		{
-			PickerAdapter adapter = getAdapter();
-			Item startItem = adapter.getItem(BUTTON_INDEX_START);
-			if(startItem != null)
-				startItem.setVisibility(visible);
-			setAdapter(adapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
-		}
-		
-		public void setStopVisibility(boolean visible)
-		{
-			PickerAdapter adapter = getAdapter();
-			Item stopItem = adapter.getItem(BUTTON_INDEX_STOP);
-			if(stopItem != null)
-				stopItem.setVisibility(visible);
-			setAdapter(adapter); // this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
+				mediaPlayer.start();
+				paused = false;
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "Could not play audio file.", e);
+				return;
+			}
+			
+			// present the stop button to the user:
+			playButton.setVisibility(GONE);
+			stopButton.setVisibility(VISIBLE);
 		}
 
+		/**
+		 * Stop playing audio and display the "play" button.
+		 */
+		public void stopAudio()
+		{
+			// stop the playback:
+			try
+			{
+				mediaPlayer.stop();
+				paused = false;
+			}
+			catch(Exception ignore) {}
+			
+			// present the play button to the user:
+			stopButton.setVisibility(GONE);
+			playButton.setVisibility(VISIBLE);
+		}
+		
+//		/**
+//		 * Pause playing audio and display the "play" button.
+//		 */
+//		public void pauseAudio()
+//		{
+//			// stop the playback:
+//			try
+//			{
+//				mediaPlayer.pause();
+//				paused = true;
+//			}
+//			catch(Exception ignore) {}
+//			
+//			// present the play button to the user:
+//			stopButton.setVisibility(GONE);
+//			playButton.setVisibility(VISIBLE);
+//		}
+
+		/**
+		 * When the media player finishes playing the recording, set it to the "stopped" state
+		 * so the user can play it again.
+		 */
+		@Override
+		public void onCompletion(MediaPlayer mp)
+		{
+			stopAudio();
+		}
+		
+		public void finalise()
+		{
+			try
+			{
+				mediaPlayer.stop();
+				mediaPlayer.release();
+				mediaPlayer = null;
+			}
+			catch(Exception ignore) {}
+		}
+		
 	}
 
 }

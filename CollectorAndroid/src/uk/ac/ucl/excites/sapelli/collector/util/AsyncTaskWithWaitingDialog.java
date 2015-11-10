@@ -18,6 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.util;
 
+import java.lang.ref.WeakReference;
+
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
@@ -25,18 +28,22 @@ import android.os.AsyncTask;
 /**
  * @author mstevens
  *
+ * @param <C> Context type 
  * @param <Params>
  * @param <Result>
+ * 
+ * @see http://stackoverflow.com/a/18665887/1084488
  */
-public abstract class AsyncTaskWithWaitingDialog<Params, Result> extends AsyncTask<Params, String, Result>
+public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Result> extends AsyncTask<Params, String, Result>
 {
 
+	private WeakReference<C> contextRef;
 	private final ProgressDialog dialog;
 	
 	/**
 	 * @param context
 	 */
-	public AsyncTaskWithWaitingDialog(Context context)
+	public AsyncTaskWithWaitingDialog(C context)
 	{
 		this(context, null);
 	}
@@ -45,12 +52,46 @@ public abstract class AsyncTaskWithWaitingDialog<Params, Result> extends AsyncTa
 	 * @param context
 	 * @param waitingMsg
 	 */
-	public AsyncTaskWithWaitingDialog(Context context, String waitingMsg)
+	public AsyncTaskWithWaitingDialog(C context, String waitingMsg)
 	{
-		dialog = new ProgressDialog(context);
-		if(waitingMsg != null)
-			dialog.setMessage(waitingMsg);
-		dialog.setCancelable(false);
+		this.contextRef = new WeakReference<C>(context);
+		
+		// Create dialog:
+		if(context != null && (!(context instanceof Activity) || !((Activity) context).isFinishing()))
+		{
+			dialog = new ProgressDialog(context);
+			if(waitingMsg != null)
+				dialog.setMessage(waitingMsg);
+			dialog.setCancelable(false);
+		}
+		else
+			dialog = null;
+	}
+	
+	protected C getContext()
+	{
+		C context = contextRef.get();
+		if(context == null || (context instanceof Activity && ((Activity) context).isFinishing()))
+			return null;
+		else
+			return context;
+	}
+	
+	protected boolean isRunning()
+	{
+		return getContext() != null;
+	}
+	
+	protected boolean hasDialogAndIsRunning()
+	{
+		return isRunning() && dialog != null;
+	}
+	
+	@Override
+	protected void onPreExecute()
+	{
+		if(hasDialogAndIsRunning())
+			dialog.show();
 	}
 
 	/* (non-Javadoc)
@@ -59,20 +100,15 @@ public abstract class AsyncTaskWithWaitingDialog<Params, Result> extends AsyncTa
 	@Override
 	protected void onProgressUpdate(String... msgs)
 	{
-		if(msgs != null && msgs.length > 0)
+		if(hasDialogAndIsRunning() && msgs != null && msgs.length > 0)
 			dialog.setMessage(msgs[0]);
-	}
-
-	@Override
-	protected void onPreExecute()
-	{
-		dialog.show();
 	}
 	
 	@Override
 	protected void onPostExecute(Result result)
 	{
-		dialog.dismiss();
+		if(hasDialogAndIsRunning())
+			dialog.dismiss();
 	}
 
 }

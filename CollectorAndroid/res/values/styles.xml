@@ -15,41 +15,88 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- -->
-<resources>
+-->
+<resources
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res/uk.ac.ucl.excites.sapelli.collector">
+
+    <style name="AppTheme" parent="BaseTheme" />
 
     <!--
         Base application theme, dependent on API level. This theme is replaced
-        by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
+        by AppTheme from res/values-vXX/styles.xml on newer devices.
     -->
-    <style name="AppBaseTheme" parent="android:Theme.Light">
+    <style name="BaseTheme" parent="Theme.AppCompat.Light">
         <!--
             Theme customizations available in newer API levels can go in
             res/values-vXX/styles.xml, while customizations related to
             backward-compatibility can go here.
+            I.e. all customizations that are NOT specific to a particular
+            API-level can go here.
         -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="drawerArrowStyle">@style/DrawerArrowStyle</item>
+        <item name="actionBarStyle">@style/Widget.Sap.ActionBar</item>
+        <item name="popupTheme">@style/ThemeOverlay.Sap.Popup</item>
     </style>
 
-    <!-- Application theme. -->
-    <style name="AppTheme" parent="AppBaseTheme">
-        <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+    <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
+        <item name="spinBars">true</item>
+        <item name="color">@color/white</item>
     </style>
 
-    <style name="ButtonBarButton" />
-
-    <style name="ButtonBar">
-        <item name="android:paddingLeft">2dp</item>
-        <item name="android:paddingTop">5dp</item>
-        <item name="android:paddingRight">2dp</item>
-        <item name="android:paddingBottom">0dp</item>
-        <item name="android:background">@android:drawable/bottom_bar</item>
-        <item name="android:textSize">12sp</item>
+    <!-- ActionBar styles -->
+    <style name="Widget.Sap.ActionBar" parent="Widget.AppCompat.Light.ActionBar">
+	    <item name="android:background">@color/colorPrimaryDark</item>
+	    <item name="theme">@style/ThemeOverlay.Sap.ActionBar</item>
+	    <item name="popupTheme">@style/ThemeOverlay.Sap.Popup</item>
+		<item name="titleTextStyle">@style/TextAppearance.Sap.ActionBarTitleText</item>
+		<!-- the lines below don't work, not sure why (plenty of stackexchange post recommend it), instead I'm setting the subttitle style in ProjectManagerActivity#onCreate() --> 
+		<!-- <item name="subtitleTextStyle">@styleTextAppearance.Sap.ActionBarSubTitleText</item> -->
+		<!-- <item name="android:subtitleTextStyle">@style/Theme.ActionBar.SubtitleTextStyle</item> -->
+	</style>
+	
+	<style name="ThemeOverlay.Sap.ActionBar" parent="ThemeOverlay.AppCompat.ActionBar">
+        <item name="android:textColorPrimary">@color/white</item>
     </style>
 
-    <style name="ExportDialog" parent="@android:style/Theme.Dialog">
-        <item name="@android:windowBackground">@color/white</item>
-        <item name="@android:background">@color/white</item>
-        <item name="@android:textColor">@color/black</item>
+	<!-- ActionBar title text -->
+	<style name="TextAppearance.Sap.ActionBarTitleText" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+	    <item name="android:textColor">@color/white</item>
+	</style>
+	
+	<!-- ActionBar subtitle text -->
+	<style name="TextAppearance.Sap.ActionBarSubTitleText" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Subtitle">
+	    <item name="android:textColor">@color/white</item>
+	</style>
+
+    <!-- Background color for Action Bar overflow menu -->
+    <style name="Widget.Sap.PopupMenu" parent="Widget.AppCompat.Light.ListPopupWindow">
+        <item name="android:popupBackground">@color/colorPrimary</item>
     </style>
+    
+    <style name="ThemeOverlay.Sap.Popup" parent="ThemeOverlay.AppCompat.ActionBar">
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:background">@color/colorPrimary</item>
+    </style>
+    
+   	<style name="TextAppearance.Sap.DrawerLoadToolbar" parent="@style/TextAppearance.AppCompat.Small">
+	    <item name="android:textColor">@color/white</item>
+	</style>
+	
+	<!--
+	<style name="switch_light">
+        <item name="@attr/textLeft">"on"</item>
+        <item name="@attr/textRight">"off"</item>
+        <item name="@attr/colorChecked">#FFFFFF</item>
+        <item name="@attr/colorUnChecked">#181818</item>
+        <item name="@attr/backgroundDrawable">@drawable/switch_bg_holo_light</item>
+        <item name="@attr/switchDrawable">@drawable/switch_thumb_activated_holo_light</item>
+    </style>
+    -->
 
 </resources>

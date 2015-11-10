@@ -24,8 +24,9 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -34,17 +35,20 @@ import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 public class AudioField extends MediaField
 {
 
+	// STATICS-------------------------------------------------------
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	static private final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
 	static private final String EXTENSION_3GPP = "3gp";
 
+	// DYNAMICS------------------------------------------------------
 	private String startRecImageRelativePath;
 	private String stopRecImageRelativePath;
+	private String playAudioImageRelativePath;
+	private String stopAudioImageRelativePath;
 	
 	public AudioField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
-		useNativeApp = DEFAULT_USE_NATIVE_APP;
+		super(form, id, caption, DEFAULT_USE_NATIVE_APP);
 	}
 	
 	/**
@@ -78,6 +82,38 @@ public class AudioField extends MediaField
 	{
 		this.stopRecImageRelativePath = stopRecImageRelativePath;
 	}
+	
+	/**
+	 * @return the playAudioImageRelativePath
+	 */
+	public String getPlayAudioImageRelativePath()
+	{
+		return playAudioImageRelativePath;
+	}
+
+	/**
+	 * @param playAudioImageRelativePath the playAudioImageRelativePath to set
+	 */
+	public void setPlayAudioImageRelativePath(String playAudioImageRelativePath)
+	{
+		this.playAudioImageRelativePath = playAudioImageRelativePath;
+	}
+	
+	/**
+	 * @return the stopAudioImageRelativePath
+	 */
+	public String getStopAudioImageRelativePath()
+	{
+		return stopAudioImageRelativePath;
+	}
+
+	/**
+	 * @param stopAudioImageRelativePath the stopAudioImageRelativePath to set
+	 */
+	public void setStopAudioImageRelativePath(String stopAudioImageRelativePath)
+	{
+		this.stopAudioImageRelativePath = stopAudioImageRelativePath;
+	}
 
 	@Override
 	public String getMediaType()
@@ -105,10 +141,12 @@ public class AudioField extends MediaField
 		
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, playAudioImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopAudioImageRelativePath));
 	}
 
 	@Override
-	public <V, UI extends CollectorUI<V, UI>> AudioUI<V, UI> createUI(UI collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> MediaUI<AudioField,V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createAudioUI(this);
 	}
@@ -122,8 +160,10 @@ public class AudioField extends MediaField
 		{
 			AudioField that = (AudioField) obj;
 			return	super.equals(that) && // MediaField#equals(Object)
-					(this.startRecImageRelativePath != null ? this.startRecImageRelativePath.equals(that.startRecImageRelativePath) : that.startRecImageRelativePath == null) &&
-					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath) : that.stopRecImageRelativePath == null);
+					Objects.equals(this.startRecImageRelativePath,	that.startRecImageRelativePath) &&
+					Objects.equals(this.stopRecImageRelativePath,	that.stopRecImageRelativePath) &&
+					Objects.equals(this.playAudioImageRelativePath,	that.playAudioImageRelativePath) &&
+					Objects.equals(this.stopAudioImageRelativePath,	that.stopAudioImageRelativePath);
 		}
 		else
 			return false;
@@ -135,6 +175,8 @@ public class AudioField extends MediaField
 		int hash = super.hashCode(); // MediaField#hashCode()
 		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
 		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
+		hash = 31 * hash + (playAudioImageRelativePath == null ? 0 : playAudioImageRelativePath.hashCode());
+		hash = 31 * hash + (stopAudioImageRelativePath == null ? 0 : stopAudioImageRelativePath.hashCode());
 		return hash;
 	}
 

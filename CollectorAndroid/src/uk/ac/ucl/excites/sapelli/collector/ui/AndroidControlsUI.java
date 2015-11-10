@@ -31,14 +31,15 @@ import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 import android.widget.AbsListView.LayoutParams;
 import android.widget.AdapterView;
@@ -53,7 +54,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 	// Statics-------------------------------------------------------
 	static public final float CONTROL_HEIGHT_DIP = 60.0f;
-	static public final float PADDING_DIP = 6.0f;
+	static public final float CONTROL_PADDING_DIP = 6.0f;
 	static public final int FOREGROUND_COLOR = Color.BLACK;
 	static private final int SEMI_TRANSPARENT_WHITE = Color.parseColor("#80FFFFFF");
 	
@@ -84,7 +85,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			view.setPadding(0, 0, 0, collectorUI.getSpacingPx()); // Bottom padding (to put spacing between buttons and view underneath)
 			
 			// ControlItem size:
-			view.setItemDimensionsPx(LayoutParams.MATCH_PARENT, getControlHeightPx());
+			view.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getControlHeightPx());
 			
 			// Listen for clicks:
 			view.setOnItemClickListener(this);
@@ -201,12 +202,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	@Override
 	public int getCurrentHeightPx()
 	{
-		return view == null ? 0 : (view.getAdapter().isEmpty() ? 0 : (getControlHeightPx() + collectorUI.getSpacingPx()));
-	}
-	
-	private int getControlHeightPx()
-	{
-		return ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), CONTROL_HEIGHT_DIP);
+		return view == null ? 0 : (view.getAdapter().isEmpty() ? 0 : (collectorUI.getControlHeightPx() + collectorUI.getSpacingPx()));
 	}
 	
 	/**
@@ -219,7 +215,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	{
 	
 		// Overlay to gray-out disabled (but shown) buttons
-		private Item grayOutOverlay;
+		private Item<?> grayOutOverlay;
 	
 		public ControlItem(Context context, Control control)
 		{
@@ -231,11 +227,11 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			this.setPaddingDip(0);
 			
 			// The actual button:
-			Item button;
+			Item<?> button;
 			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), control.getImageRelativePath());
 			if(FileHelpers.isReadableFile(imgFile))
 				// Use XML specified image:
-				button = new FileImageItem(imgFile);
+				button = new ImageItem(imgFile);
 			else
 				// Use default drawable for control type:
 				switch(control.type)
@@ -250,12 +246,18 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 						button = new DrawableItem(new HorizontalArrow(FOREGROUND_COLOR, false));
 						break;
 					default : 
+						Log.e(getClass().getCanonicalName(), "Unknown control type: " + control.type.name());
 						button = new DrawableItem(new EmptyDrawable());
 				}
 			/* Unused -- replaced by Drawable buttons (arrow & cross)
 			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
-			button.setPaddingDip(PADDING_DIP);
+			button.setPaddingDip(CONTROL_PADDING_DIP);
+			button.setBackgroundColor(Color.TRANSPARENT); // button itself should not have a background so we can see the one of the containing ControlItem/LayeredItem
+			
+			// Show button image size:
+			if(control.form.isShowImageSizes())
+				button = MeasureItem.Measure(button); // no need for a TextSizeCoordinator here because all controls have the same size
 			
 			// the overlay
 			grayOutOverlay = new EmptyItem();
@@ -263,8 +265,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			setGrayedOut(false);
 			
 			// add the layers:
-			this.addLayer(button, true);
-			this.addLayer(grayOutOverlay, false);
+			this.addLayer(button);
+			this.addLayer(grayOutOverlay);
 			
 			// Set description:
 			this.setDescription(control.description.getText());

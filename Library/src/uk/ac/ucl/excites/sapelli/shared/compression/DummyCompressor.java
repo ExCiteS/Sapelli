@@ -33,7 +33,7 @@ public class DummyCompressor extends Compressor
 {
 
 	@Override
-	public OutputStream getOutputStream(OutputStream sink)
+	protected OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes)
 	{
 		return sink;
 	}

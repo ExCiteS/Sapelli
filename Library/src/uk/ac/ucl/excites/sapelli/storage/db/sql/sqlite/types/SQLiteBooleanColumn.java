@@ -20,15 +20,14 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
-
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
  *
  */
-public class SQLiteBooleanColumn extends SQLiteIntegerColumn<Boolean>
+public class SQLiteBooleanColumn<SapType> extends SQLiteIntegerColumn<SapType>
 {
 
 	static public final String SQLITE_DATA_TYPE = "BOOLEAN";
@@ -51,23 +50,61 @@ public class SQLiteBooleanColumn extends SQLiteIntegerColumn<Boolean>
 	
 	/**
 	 * @param store
-	 * @param sourceSchema
-	 * @param sourceColumn
+	 * @param sourceColumnPointer
+	 * @param mapping
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, Schema sourceSchema, BooleanColumn sourceColumn)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, TypeMapping<Boolean, SapType> mapping)
 	{
-		super(store, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
+		this(store, null, sourceColumnPointer, mapping);
 	}
 
 	/**
 	 * @param store
 	 * @param name
-	 * @param sourceSchema
-	 * @param sourceColumn
+	 * @param sourceColumnPointer
+	 * @param mapping
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, Schema sourceSchema, BooleanColumn sourceColumn)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, final TypeMapping<Boolean, SapType> mapping)
 	{
-		super(store, name, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
+		super(store, name, sourceColumnPointer, new TypeMapping<Long, SapType>()
+		{
+
+			@Override
+			public SapType toSapelliType(Long value)
+			{
+				return mapping.toSapelliType(boolIntMapping.toSapelliType(value));
+			}
+
+			@Override
+			public Long toSQLType(SapType value)
+			{
+				return boolIntMapping.toSQLType(mapping.toSQLType(value));
+			}
+		}, SQLITE_DATA_TYPE);
+	}
+
+	static public class Simple extends SQLiteBooleanColumn<Boolean>
+	{
+
+		/**
+		 * @param store
+		 * @param sourceColumnPointer
+		 */
+		public Simple(SQLiteRecordStore store, ColumnPointer<? extends Column<Boolean>> sourceColumnPointer)
+		{
+			this(store, null, sourceColumnPointer);
+		}
+	
+		/**
+		 * @param store
+		 * @param name
+		 * @param sourceColumnPointer
+		 */
+		public Simple(SQLiteRecordStore store, String name, ColumnPointer<? extends Column<Boolean>> sourceColumnPointer)
+		{
+			super(store, name, sourceColumnPointer, TypeMapping.<Boolean> Transparent());
+		}
+	
 	}
 	
 }

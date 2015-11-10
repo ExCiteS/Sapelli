@@ -27,10 +27,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.HttpGet;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.util.DeviceControl;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -40,9 +39,14 @@ import android.util.Log;
 /**
  * Background Async Task to download files
  * 
+ * Note:
+ * 	This implementation cannot be safely used in combination with an activity that is restarted upon screen orientation changes!
+ * 	More info:	- http://stackoverflow.com/questions/18214293
+ * 				- http://stackoverflow.com/questions/20279216/asynctaskloader-basic-example-android
+ * 
  * @author Michalis Vitos, mstevens
  */
-public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
+public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 {
 
 	// STATICS -----------------------------------------------------------
@@ -59,26 +63,25 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 	 */
 	static public void Download(Context context, File downloadFolder, String downloadUrl, Callback callback)
 	{
-		new AsyncDownloader(context, downloadFolder, downloadUrl, callback).execute();
+		new AsyncDownloader(context, downloadFolder, callback).execute(downloadUrl);
 	}
-	
+
 	// DYNAMICS ----------------------------------------------------------
 	private final Context context;
-	private final String downloadUrl;
 	private final Callback callback;
 	private final File downloadedFile;
 	private final ProgressDialog progressDialog;
-	
+
+	private String downloadUrl;
 	private Exception failure;
 
-	private AsyncDownloader(Context context, File downloadFolder, String downloadUrl, Callback callback)
+	private AsyncDownloader(Context context, File downloadFolder, Callback callback)
 	{
 		if(callback == null)
 			throw new NullPointerException("Callback cannot be null!");
 		this.context = context;
-		this.downloadUrl = downloadUrl;
 		this.callback = callback;
-		
+
 		// Download file in folder /Downloads/timestamp-filename
 		downloadedFile = new File(downloadFolder.getAbsolutePath() + File.separator + (System.currentTimeMillis() / 1000) + '.' + TEMP_FILE_EXTENSION);
 
@@ -116,19 +119,37 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 	 * @return
 	 * */
 	@Override
-	protected Boolean doInBackground(Void... voids)
+	protected Boolean doInBackground(String... params)
+	{
+		downloadUrl = params[0];
+		Log.d(getClass().getSimpleName(), "Download URL: " + downloadUrl);
+		return download(downloadUrl);
+	}
+
+	private boolean download(String downloadUrl)
 	{
 		if(DeviceControl.isOnline(context))
 		{
-			int count;
 			try
 			{
 				URL url = new URL(downloadUrl);
-				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-				connection.setRequestMethod(HttpGet.METHOD_NAME);
-				connection.connect();
+				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+				conn.setRequestMethod("GET");
+				conn.setInstanceFollowRedirects(false); // we handle redirects manually below (otherwise HTTP->HTTPS redirects don't work):
+				conn.connect();
+
+				// Detect & follow redirects:
+				int status = conn.getResponseCode();
+				Log.d(getClass().getSimpleName(), "Response Code: " + status);
+				if(status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)
+				{	// follow redirect url from "location" header field
+					String newUrl = conn.getHeaderField("Location");
+					Log.d(getClass().getSimpleName(), "Redirect to URL : " + newUrl);
+					return download(newUrl);
+				}
+
 				// getting file length
-				int fileLength = connection.getContentLength();
+				int fileLength = conn.getContentLength();
 
 				// input stream to read file - with 8k buffer
 				InputStream input = new BufferedInputStream(url.openStream(), 8192);
@@ -137,6 +158,7 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 
 				byte data[] = new byte[1024];
 				long total = 0;
+				int count;
 				while((count = input.read(data)) != -1)
 				{
 					total += count;
@@ -173,8 +195,15 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 	@Override
 	protected void onPostExecute(Boolean downloadFinished)
 	{
-		// Dismiss the dialog after the file was downloaded
-		progressDialog.dismiss();
+		// Dismiss the dialog after the file was downloaded:
+		try
+		{
+			progressDialog.dismiss(); // Note: this fails if activity has been restarted in the meantime!
+		}
+		catch(Exception e)
+		{
+			Log.e(this.getClass().getSimpleName(), "Error upon dismissing progress dialog, likely due to Activity restart", e);
+		}
 		// Report success or failure:
 		if(downloadFinished)
 			callback.downloadSuccess(downloadUrl, downloadedFile);
@@ -187,7 +216,7 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 			callback.downloadFailure(downloadUrl, failure);
 		}
 	}
-	
+
 	/**
 	 * Callback methods to report on download success/failure
 	 * 
@@ -195,11 +224,11 @@ public class AsyncDownloader extends AsyncTask<Void, Integer, Boolean>
 	 */
 	public interface Callback
 	{
-		
+
 		public void downloadSuccess(String downloadUrl, File downloadedFile);
-		
+
 		public void downloadFailure(String downloadUrl, Exception cause);
-		
+
 	}
-	
+
 }

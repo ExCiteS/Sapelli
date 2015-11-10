@@ -205,8 +205,12 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			{
 				logger = createLogger();
 
+				// Log software version:
+				logger.addLine("Application", getApplicationInfo());
+				logger.addBlankLine();
+				
 				// Log the DeviceID
-				logger.addLine("DeviceID (CRC32)", String.valueOf(getDeviceID()));
+				logger.addLine("Device ID (CRC32)", String.valueOf(getDeviceID()));
 				logger.addBlankLine();
 	
 				// Log the start of the project
@@ -311,14 +315,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected void advance(boolean requestedByUser, boolean allowJump)
 	{
 		if(handlingUserGoBackRequest && !requestedByUser)
-		{
-			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
-			return;
+		{	// We are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
+			goBack(false);
 		}
-		if(currFormSession.atField())
-			goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
 		else
-			openFormSession(currFormSession); // this shouldn't happen really...
+		{	// Normal going forward:
+			if(currFormSession.atField())
+				goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField(), allowJump));
+			else
+				openFormSession(currFormSession); // this shouldn't happen really...
+		}
 	}
 
 	/**
@@ -345,11 +351,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	}
 	
 	/**
-	 * Return whether the controller is moving backwards or forwards
+	 * Return whether the controller is moving backwards (or forwards), by user request.
 	 * 
 	 * @return true if going back and false otherwise
 	 */
-	public boolean isGoBack()
+	public boolean isGoingBack()
 	{
 		return handlingUserGoBackRequest;
 	}
@@ -465,6 +471,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(!currFormSession.form.isProducesRecords()) //!!!
 			return;
 		
+		// Delete any files that were "queued" for deletion but not actually deleted yet:
+		currFormSession.deleteDiscardedAttachments();
+		
+		// NOTE: no need to touch the added files since they were added on creation
+		
+		// Clear the list of added files so they cannot be deleted accidentally:
+		currFormSession.clearAddedAttachments(); // !!! (this "persists" the new attachments)
+		
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
@@ -483,20 +497,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			return;
 		}
 	
-		// Move attachments from temp to data folder:
-		try
-		{
-			File dataFolder = fileStorageProvider.getProjectAttachmentFolder(project, true);
-			for(File attachment : currFormSession.getMediaAttachments())
-				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(e));
-			return;
-		}
-	
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currFormSession.form.isVibrateOnSave())
@@ -510,27 +510,32 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	/**
 	 * Makes the record null & deletes any media attachments.
 	 * 
-	 * Note:
-	 * 	Making the record null is necessary to avoid that unsaved foreign records are used
-	 * 	(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
-	 * 	a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
-	 *  Doing so is risky however because an NPE will be thrown (likely crashing the app)
-	 *  when some FieldUI or controller method attempts to (illegally!) use the record
-	 *  after this discard operation. Obviously that shouldn't happen but we've had several
-	 *  cases in which it did. However, all (known) cases have been resolved and any new
-	 *  similar cases would be revealed soon by an NPE and/or crash. 
+	 * Notes:
+	 * 	 -	Making the record {@code null} is necessary to avoid that unsaved foreign records
+	 * 		are used (i.e. referred to with a foreign key value) when returning to a BelongsTo
+	 * 		field in a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
+	 * 		Doing so is risky however because an NPE will be thrown (likely crashing the app)
+	 * 		when some FieldUI or controller method attempts to (illegally!) use the record
+	 * 		after this discard operation. Obviously that shouldn't happen but we've had several
+	 * 		cases in which it did. However, all (known) cases have been resolved and any new
+	 * 		similar cases would be revealed soon by an NPE and/or crash.
+	 * 	 -	Files that were create during this session must be deleted
+	 * 	 -	Files that were created AND discarded during this session will already have been deleted.
+	 * 	 -	Files that were discard during this session but created earlier should not be deleted! Their deletion is cancelled because the whole session is cancelled.
 	 * 
+	 * @see FormSession#discardAttachment(File)
 	 */
 	protected void discardRecordAndAttachments()
 	{
-		// Discard record:
-		currFormSession.record = null; // !!!
+		// delete any files that were added but are now being discarded:
+		currFormSession.deleteAddedAttachments();
+		// See notes above about discarded files.
 		
-		// Delete any attachments:
-		for(File attachment : currFormSession.getMediaAttachments())
-			if(attachment.exists())
-				attachment.delete();
-		currFormSession.getMediaAttachments().clear();
+		// Clear the files that were discarded during this session (whose deletion is cancelled):
+		currFormSession.clearDiscardedAttachments(); // (so they cannot be deleted accidently!)
+		
+		// Discard record itself:
+		currFormSession.record = null; // !!!
 	}
 	
 	@Override
@@ -539,16 +544,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(withPage)
 			return true;
 		// else (not with page):
-		// 	Deal with leaves:
+		//	Deal with leaves:
 		if(cf.isLeaf())
 			return false; // this should never happen
 		// Add the choice options to the log files
 		addLogLine("CHOICE_OPTIONS", cf.getChildren().toString());
-		// 	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
+		//	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(IsFieldEnabled(currFormSession, child))
 				return true;
-		// 	This ChoiceField currently has no enabled children, so we should skip it:
+		//	This ChoiceField currently has no enabled children, so we should skip it:
 		goForward(false);
 		return false;
 	}
@@ -556,19 +561,15 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	@Override
 	public boolean enterMediaField(MediaField mf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage)
-			return true;
-		else
-		{
-			if(mf.isMaxReached(currFormSession.record))
-			{ // Maximum number of attachments for this field is reached:
-				goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
-				return false;
-			}
-			return true;
-		}
+		// we no longer skip media fields when max reached, so always return true
+		return true;
 	}
 	
+	/**
+	 * @param lf  the LocationField
+	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
+	 * @return whether or not a UI update is required after entering the field
+	 */
 	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
@@ -962,6 +963,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		return currFormSession.getCurrentField();
 	}
 	
+	/**
+	 * @return the current FieldArguments
+	 */
+	public FieldParameters getCurrentFieldArguments()
+	{
+		return currFormSession.getCurrentFieldArguments();
+	}
+	
 	public void addLogLine(String... fields)
 	{
 		if(logger != null)
@@ -977,6 +986,21 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	public FileStorageProvider getFileStorageProvider()
 	{
 		return fileStorageProvider;
+	}
+	
+	public long getFormStartTime()
+	{
+		return currFormSession.startTime;
+	}
+	
+	public void addAttachment(File file)
+	{
+		currFormSession.addAttachment(file);
+	}
+	
+	public void discardAttachment(File file)
+	{
+		currFormSession.discardAttachment(file);
 	}
 
 	protected void startLocationListener(LocationField locField)
@@ -994,11 +1018,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	
 	public abstract Location getCurrentBestLocation();
 	
-	public void addMediaAttachment(File mediaAttachment)
-	{
-		currFormSession.addMediaAttachment(mediaAttachment);
-	}
-	
 	protected abstract void vibrate(int durationMS);
 	
 	protected abstract void playSound(File soundFile);
@@ -1008,6 +1027,8 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected abstract void exitApp();
 	
 	protected abstract long getDeviceID();
+	
+	protected abstract String getApplicationInfo();
 	
 	/**
 	 * Returns the number of milliseconds since system boot.<br/>

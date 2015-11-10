@@ -19,12 +19,15 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -32,7 +35,6 @@ import android.content.ContextWrapper;
 import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
@@ -50,111 +52,30 @@ import android.util.Log;
 public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
 
-	// Statics----------------------------------------------	
+	// STATIC----------------------------------------------
+	static private final String TAG = "SQLite";
+	static private final boolean LOG_QUALIFIED_QUERIES = false;
 	
-	// Note there never was a database version 1 (because SQLite storage was introduced in Sapelli v2.0) 
+	// DYNAMIC---------------------------------------------
+	private final SQLiteDatabase db;
 	
-	/**
-	 * Used from "Sapelli Collector for Android" v2.0-beta-3 up to v2.0-beta-11
-	 */
-	static private final int DATABASE_VERSION_2 = 2;
-	
-	/**
-	 * Used from "Sapelli Collector for Android" v2.0-beta-12 and newer
-	 * 
-	 * Reason for version increase:
-	 * 	the introduction of the lastStoredAt, lastExportedAt & lastTransmittedAt columns
-	 * 
-	 * Because we are still in the beta phase _no_ "real" v2->v3 upgrade (i.e. adding those columns to
-	 * existing tables and schemata objects) is carried out, instead the database file is backed-up and
-	 * all existing tables and indexes are simply dropped (see {@link CustomSQLiteOpenHelper#onUpgrade(SQLiteDatabase, int, int)}).
-	 */
-	static private final int DATABASE_VERSION_3 = 3;
-	
-	/**
-	 * The current database version number
-	 */
-	static public final int CURRENT_DATABASE_VERSION = DATABASE_VERSION_3;
-	
-	/**
-	 * Helper method which returns a list with the names of all tables in the given database.
-	 * 
-	 * @param db
-	 * @param includeAndroidMetadataTable
-	 * @param includeSequenceTable
-	 * @return
-	 * @throws SQLiteException
-	 */
-	static private List<String> GetAllTables(SQLiteDatabase db, boolean includeAndroidMetadataTable, boolean includeSequenceTable) throws SQLiteException
-	{
-		List<String> tables = new ArrayList<String>();
-		Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table';", null);
-		cursor.moveToFirst();
-		while(!cursor.isAfterLast())
-		{
-			String tableName = cursor.getString(0);
-			if(	(includeAndroidMetadataTable || !tableName.equals("android_metadata")) &&
-				(includeSequenceTable || !tableName.equals("sqlite_sequence")))
-				tables.add(tableName);
-			cursor.moveToNext();
-		}
-		cursor.close();
-		return tables;
-	}
-	
-	/**
-	 * Helper method which returns a list with the names of all indexes in the given database.
-	 * 
-	 * @param db
-	 * @return
-	 * @throws SQLiteException
-	 */
-	static private List<String> GetAllIndexes(SQLiteDatabase db) throws SQLiteException
-	{
-		List<String> indexes = new ArrayList<String>();
-		Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index';", null);
-		cursor.moveToFirst();
-		while(!cursor.isAfterLast())
-		{			
-			indexes.add(cursor.getString(0));
-			cursor.moveToNext();
-		}
-		cursor.close();
-		return indexes;
-	}
-	
-	/**
-	 * Helper method which drops all tables (except android_metadata) and indexes in the given database.
-	 * 
-	 * @param db
-	 * @throws SQLiteException
-	 */
-	static private void DropAllTablesAndIndexes(SQLiteDatabase db) throws SQLiteException
-	{
-		// Tables:
-		for(String tableName: GetAllTables(db, false, true))
-			db.execSQL("DROP TABLE IF EXISTS " + tableName);
-		// Indexes:
-		for(String indexName: GetAllIndexes(db))
-			db.execSQL("DROP INDEX IF EXISTS " + indexName);
-	}
-
-	// Dynamics---------------------------------------------
-	private SQLiteDatabase db;
+	private AndroidSQLiteStatement selectChangesStatement;
 	
 	/**
 	 * @param client
 	 * @param context
 	 * @param databaseFolder
 	 * @param baseName
+	 * @param targetVersion
+	 * @param upgrader
 	 * @throws DBException
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName) throws DBException
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName, int targetVersion, SQLRecordStoreUpgrader upgrader) throws DBException
 	{
 		super(client);
 		
 		// Helper:
-		CustomSQLiteOpenHelper helper = new CustomSQLiteOpenHelper(context, databaseFolder, baseName);		
+		CustomSQLiteOpenHelper helper = new CustomSQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), targetVersion);
 		
 		// Open writable database:
 		try
@@ -165,23 +86,36 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		{
 			throw new DBException("Failed to open writable SQLite database", sqliteE);
 		}
-		Log.d("SQLite", "Opened SQLite database: " + db.getPath()); // TODO remove debug logging
+		if(loggingEnabled)
+			Log.d(TAG, "Opened SQLite database: " + db.getPath());
 		
-		// Initialise:
-		initialise(helper.newDB);
+		// Set initialisation args:
+		setInitialisationArguments(helper.newDB, targetVersion, upgrader);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#doInitialise()
+	 */
+	@Override
+	protected void doInitialise() throws DBException
+	{
+		addProtectedTable("android_metadata");
+		
+		super.doInitialise(); // !!!
 	}
 	
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		Log.d("SQLite", "Raw execute: " + sql); // TODO remove debug logging
+		if(loggingEnabled)
+			Log.d(TAG, "Raw execute: " + sql);
 		try
 		{
 			db.execSQL(sql);
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException(sqlE);
+			throw new DBException("Exception upon executing SQL: " + sql, sqlE);
 		}
 	}
 
@@ -248,23 +182,93 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#executeQuery(java.lang.String, java.util.List, java.util.List)
 	 */
+	@SuppressWarnings("unused")
 	@Override
-	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException
+	protected SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
 		try
 		{
-			// Build selectionArgs array:
+			// Build selection arguments array:
 			String[] argStrings = new String[paramCols.size()];
+			String[] quotedArgStrings = BuildConfig.DEBUG ? new String[paramCols.size()] : null; // quoted version is only for debugging
 			for(int p = 0; p < argStrings.length; p++)
+			{
 				argStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), false);
-			// Execute
+				if(BuildConfig.DEBUG)
+					quotedArgStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), true);
+			}
+			
+			// Log query & arguments:
+			if(BuildConfig.DEBUG && isLoggingEnabled())
+			{
+				if(LOG_QUALIFIED_QUERIES && sql.indexOf(PARAM_PLACEHOLDER) != -1)
+				{
+					TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n - ");
+					bldr.append("Executing query...");
+					bldr.append("Generic:   " + sql);
+					try
+					{
+						bldr.append("Qualified: " + StringUtils.replaceWithValues(sql, PARAM_PLACEHOLDER, quotedArgStrings));
+					}
+					catch(Exception e)
+					{
+						bldr.append("Failed to generate qualified query with arguments: " + StringUtils.join(quotedArgStrings, ", "));
+					}
+					Log.d(TAG, bldr.toString());
+				}
+				else
+					Log.d(TAG, "Executing query: " + sql + (sapArguments.isEmpty() ? "" : " [Arguments: " + StringUtils.join(quotedArgStrings, ", ") + "]"));
+			}
+			
+			// Execute:
 			return (AndroidSQLiteCursor) db.rawQuery(sql, argStrings);
 		}
 		catch(SQLException e)
 		{
-			Log.e("SQLite_Error", "Failed to execute raw query (" + sql + ").", e);
-			throw new DBException("Failed to execute selection query: " + sql, e);
+			Log.d(TAG, "Error: Failed to execute raw SQLite query (" + sql + ").", e);
+			throw new DBException("Failed to execute SQLite selection query: " + sql, e);
 		}
+	}
+	
+	@Override
+	public int getVersion() throws DBException
+	{
+		try
+		{
+			return db.getVersion();
+		}
+		catch(Exception ex)
+		{
+			throw new DBException("Could not get database version.", ex);
+		}
+	}
+
+	@Override
+	protected void setVersion(int version) throws DBException
+	{
+		try
+		{
+			db.setVersion(version);
+		}
+		catch(Exception ex)
+		{
+			throw new DBException("Could not set database version.", ex);
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#release()
+	 */
+	@Override
+	protected void release()
+	{
+		if(selectChangesStatement != null)
+		{
+			selectChangesStatement.close();
+			selectChangesStatement = null;
+		}
+		
+		super.release(); // !!!
 	}
 	
 	@Override
@@ -282,9 +286,10 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected AndroidSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
+		if(loggingEnabled)
+			Log.d(TAG, "Compile statement: " + sql);
 		try
 		{
-			Log.d("SQLite", "Compile statement: " + sql); // TODO remove debug logging
 			return new AndroidSQLiteStatement(this, db.compileStatement(sql), paramCols);
 		}
 		catch(SQLException sqlE)
@@ -303,61 +308,25 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 * @see http://stackoverflow.com/a/6659693/1084488
 	 * @see http://stackoverflow.com/a/18441056/1084488
 	 */
-	public int getNumberOfAffectedRows() throws SQLException
+	public int getNumberOfAffectedRows() throws DBException//SQLException
 	{
-		Cursor cursor = null;
+		if(selectChangesStatement == null)
+			selectChangesStatement = getStatement("SELECT changes();", null);
+		return selectChangesStatement.executeLongQuery().intValue();
+		// Alternative implementation (kept for future reference only):
+		/*Cursor cursor = null;
 		try
 		{
-		    cursor = db.rawQuery("SELECT changes();", null);
-		    if(cursor != null && cursor.moveToFirst())
-		        return (int) cursor.getLong(0);
-		    else
-		    	throw new SQLException("Failure on execution of changes() query");
+			cursor = db.rawQuery("SELECT changes();", null);
+			if(cursor != null && cursor.moveToFirst())
+				return (int) cursor.getLong(0);
+			else
+				throw new SQLException("Failure on execution of changes() query");
 		}
 		finally
 		{
-		    if(cursor != null)
-		        cursor.close();
-		}
-	}
-	
-	/**
-	 * @author mstevens
-	 *
-	 */
-	private class CustomSQLiteOpenHelper extends SQLiteOpenHelper
-	{
-		
-		private boolean newDB = false;
-		
-		public CustomSQLiteOpenHelper(Context context, File databaseFolder, String baseName)
-		{			
-			super(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), CURRENT_DATABASE_VERSION);
-		}
-		
-		@Override
-		public void onCreate(SQLiteDatabase db)
-		{
-			newDB = true;
-		}
-		
-		@Override
-		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
-		{
-			Log.w("SQLite", "Upgrading from database version " + oldVersion + " to version " + newVersion);
-			
-			// TODO backup !
-			
-			switch(oldVersion)
-			{
-				case DATABASE_VERSION_2 :
-					Log.w("SQLite", "Dropping all tables and indexes");
-					DropAllTablesAndIndexes(db); // see javadoc for DATABASE_VERSION_3
-					break;
-				// add cases for future versions here
-			}
-		}
-		
+			StreamHelpers.SilentClose(cursor);
+		}*/
 	}
 
 	/**
@@ -412,32 +381,89 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	/**
+	 * Custom {@link SQLiteOpenHelper} implementation.
+	 * 
+	 * Important:
+	 * 	After calling onUpgrade() (provided no Exception is thrown) the SQLiteOpenHelper will already
+	 * 	set the new version (see {@link android.database.sqlite.SQLiteOpenHelper#getDatabaseLocked(boolean)})!
+	 * 	Because we don't do the actual upgrade work in our onUpgrade() implementation we must undo this in
+	 * 	{@link #onOpen(SQLiteDatabase)} which is called soon after.
+	 * 
+	 * @author mstevens
+	 */
+	static private class CustomSQLiteOpenHelper extends SQLiteOpenHelper
+	{
+		
+		private boolean newDB = false;
+		private int dbVersion;
+		
+		public CustomSQLiteOpenHelper(Context context, String name, CursorFactory factory, int targetVersion)
+		{
+			super(context, name, factory, targetVersion);
+			dbVersion = targetVersion;
+		}
+		
+		@Override
+		public void onCreate(SQLiteDatabase db)
+		{
+			newDB = true;
+		}
+		
+		/* (non-Javadoc)
+		 * @see android.database.sqlite.SQLiteOpenHelper#onUpgrade(android.database.sqlite.SQLiteDatabase, int, int)
+		 */
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+		{
+			this.dbVersion = oldVersion; // !!!
+		}
+
+		/* (non-Javadoc)
+		 * @see android.database.sqlite.SQLiteOpenHelper#onOpen(android.database.sqlite.SQLiteDatabase)
+		 */
+		@Override
+		public void onOpen(SQLiteDatabase db)
+		{
+			db.setVersion(dbVersion); // !!!
+		}
+		
+	}
+	
+	/**
 	 * Custom cursor factory, this enables us to our custom cursor class ({@link AndroidSQLiteCursor}) when processing query results.
 	 * Another helpful aspect is the ability to log queries for debugging.
 	 * 
 	 * @author mstevens
 	 */
-	static private class AndroidSQLiteCursorFactory implements CursorFactory
+	private final class AndroidSQLiteCursorFactory implements CursorFactory
 	{
-	
+		
+		/**
+		 * Uncomment the Log line in this method if there is a suspicion Android's classes may be modifying the SQL string,
+		 * meaning the executed query is different from what is being logged in {@link #executeQuery(String, List, List)}.
+		 * 
+		 * @see android.database.sqlite.SQLiteDatabase.CursorFactory#newCursor(android.database.sqlite.SQLiteDatabase, android.database.sqlite.SQLiteCursorDriver, java.lang.String, android.database.sqlite.SQLiteQuery)
+		 * @see SQLiteQuery#toString()
+		 */
 		@Override
 		public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 		{
-			Log.d("SQLite", query.toString()); // TODO remove debug logging
+			if(loggingEnabled)
+				Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));			
 			return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 		}
 	}
 	
 	/**
 	 * Our custom cursor class, which behaves identical to the {@link SQLiteCursor} super class. The only difference
-	 * is it implements the {@link ISQLiteCursor} interface. Apart from {@link #hasRow()} all methods declared in
+	 * is it implements the {@link SQLiteCursor} interface. Apart from {@link #hasRow()} all methods declared in
 	 * the interface already exist in the {@link SQLiteCursor}. The purpose of this strategy is to allow non-Android
 	 * specific classes (i.e. at the level of the Sapelli Library), notably the typed SQLiteColumn subclasses, to
 	 * call methods on cursor instances.
 	 * 
 	 * @author mstevens
 	 */
-	static private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
+	static private final class AndroidSQLiteCursor extends android.database.sqlite.SQLiteCursor implements SQLiteCursor
 	{
 
 		public static AndroidSQLiteCursor newCursor(SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query)

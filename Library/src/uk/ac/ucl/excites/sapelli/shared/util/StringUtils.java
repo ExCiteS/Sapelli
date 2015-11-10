@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.io.Charsets;
+
 /**
  * @author mstevens
  *
@@ -62,7 +64,7 @@ public final class StringUtils
 	 */
 	static public int sizeBytes(String string)
 	{
-		return string.getBytes(UnicodeHelpers.UTF8).length;
+		return sizeBytes(string, Charsets.UTF_8);
 	}
 	
 	static public String addVariableFrontPadding(String str, int desiredLength, char padding)
@@ -95,18 +97,18 @@ public final class StringUtils
 		return join(Arrays.asList(parts), separator);
 	}
 	
-	static public String join(List<String> parts, String separator)
+	static public String join(List<? extends Object> parts, String separator)
 	{
 		if(parts == null)
 			return null;
 		if(parts.isEmpty())
 			return "";
-		Iterator<String> i = parts.iterator();
-		StringBuffer bff = new StringBuffer(i.next());
+		Iterator<?> i = parts.iterator();
+		StringBuffer bff = new StringBuffer(i.next().toString());
 		while(i.hasNext())
 		{
 			bff.append(separator);
-			bff.append(i.next());
+			bff.append(i.next().toString());
 		}
 		return bff.toString();
 	}
@@ -117,9 +119,33 @@ public final class StringUtils
 	}
 	
 	/**
+	 * @param subject
+	 * @param needle
+	 * @param values
+	 * @return
+	 */
+	static public String replaceWithValues(String subject, String needle, String[] values)
+	{
+		return replaceWithValues(subject, needle, Arrays.copyOf(values, values.length, Object[].class));
+	}
+	
+	/**
+	 * @param subject
+	 * @param needle
+	 * @param values
+	 * @return
+	 * 
+	 * @see http://stackoverflow.com/a/16975971/1084488
+	 */
+	static public String replaceWithValues(String subject, String needle, Object[] values)
+	{
+		return String.format(subject.replace("%", "%%").replace(needle, "%s"), values);
+	}
+	
+	/**
 	 * Simple escaping method to clear Strings of a single to-be-avoided char
 	 * 
-	 * @param str
+	 * @param str may be null, in which case null will be returned
 	 * @param avoid
 	 * @param replacement
 	 * @param prefix
@@ -127,6 +153,8 @@ public final class StringUtils
 	 */
 	static public String escape(String str, char avoid, char replacement, char prefix)
 	{
+		if(str == null)
+			return null;
 		StringBuilder bldr = new StringBuilder();
 		for(char c : str.toCharArray())
 			if(c == avoid)
@@ -146,7 +174,7 @@ public final class StringUtils
 	/**
 	 * Simple de-escaping method which reverses the work of {@link #escape(String, char, char, char)}
 	 * 
-	 * @param str
+	 * @param str may be null, in which case null will be returned
 	 * @param avoid
 	 * @param replacement
 	 * @param prefix
@@ -154,6 +182,8 @@ public final class StringUtils
 	 */
 	static public String deescape(String str, char avoid, char replacement, char prefix)
 	{
+		if(str == null)
+			return null;
 		StringBuilder bldr = new StringBuilder();
 		boolean prevPrefix = false;
 		for(char c : str.toCharArray())
@@ -188,9 +218,9 @@ public final class StringUtils
 	
 	static public String capitalizeFirstLetter(String original)
 	{
-	    if(original.length() == 0)
-	        return original;
-	    return original.substring(0, 1).toUpperCase(Locale.getDefault()) + original.substring(1);
+		if(original.length() == 0)
+			return original;
+		return original.substring(0, 1).toUpperCase(Locale.getDefault()) + original.substring(1);
 	}
 	
 }

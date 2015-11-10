@@ -31,19 +31,20 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ItemHelpers;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.MeasureItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.SplitItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
-import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
@@ -208,7 +209,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				this.removeView(chosenView);
 			
 			// New chosenView
-			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled(), null, null).getView(getContext());
+			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled(), null, null, null).getView(getContext());
 			
 			// Set margins on layoutparams:
 			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
@@ -321,11 +322,12 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Text size coordinators:
 			TextSizeCoordinator textOnlyCoordinator = field.isMatchTextSize() ? new TextSizeCoordinator() : null;
 			TextSizeCoordinator captionCoordinator = field.isMatchTextSize() ? new TextSizeCoordinator() : null;
+			TextSizeCoordinator measureCoordinator = field.form.isShowImageSizes() ? new TextSizeCoordinator() : null;
 			
 			// Add items for children:
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.addItem(createItem(child, CollectorView.PADDING_DIP, !controller.isFieldEnabled(child), textOnlyCoordinator, captionCoordinator));
+				adapter.addItem(createItem(child, CollectorView.PADDING_DIP, !controller.isFieldEnabled(child), textOnlyCoordinator, captionCoordinator, measureCoordinator));
 			
 			// Click listeners:
 			setOnItemClickListener(this);
@@ -344,7 +346,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
 			{
-				Item childItem = adapter.getItem(c++);
+				Item<?> childItem = adapter.getItem(c++);
 				if(childItem != null)
 					childItem.setVisibility(controller.isFieldEnabled(child));
 			}
@@ -376,9 +378,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param grayedOut
 	 * @param textOnlyCoordinator
 	 * @param captionCoordinator
+	 * @param measureCoordinator coordinator for text size of displayed image measurements, or null if no image measurements should be shown (so measureCoordinator != null is equivalent to choice.isShowImgSize())
 	 * @return
 	 */
-	public Item createItem(ChoiceField choice, float itemPaddingDip, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator)
+	public Item<?> createItem(ChoiceField choice, float itemPaddingDip, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator, TextSizeCoordinator measureCoordinator)
 	{
 		/* Note
 		 * 	If the choice is the root it means we are on a page (meaning the item will be
@@ -386,63 +389,57 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		 * 	In this case we never show both an image and a caption (due to limited space),
 		 * 	we also avoid repeating the caption which is already displayed above the item. */
 		
-		int bgColor = ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
+		// Determine background colour:
+		int bgColor = grayedOut ? CollectorView.COLOR_GRAY : ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
 		
-		Item item = null;
+		Item<?> item = null;
 		// Decide on appearance and get appropriate item(s):
 		if(choice.getImageRelativePath() != null && choice.getCaptionHeight() < 1)
-		{	// the is an image path (but not necessarily an accessible file) and the caption does not take up the full height
+		{	// the is an image path (but not necessarily an accessible file!) and the caption does not take up the full height
 			if(choice.hasCaption() && choice.getCaptionHeight() > 0 && !choice.isRoot())
 			{	// there is a caption, a non-zero caption height & the choice not the root --> IMAGE + CAPTION:
 				item = new SplitItem(SplitItem.VERTICAL).setSpacingDip(itemPaddingDip) // use same amount of spacing between split children as the outer item padding
 					// add item for image (take up all space not taken up by caption):
-					.addItem(	createImageItem(choice, false, textOnlyCoordinator)
+					.addItem(	createImageItem(choice, false, textOnlyCoordinator, measureCoordinator)
 									.setPaddingDip(SPLIT_ITEM_CHILD_PADDING_DIP) // 0 dip
 									.setBackgroundColor(bgColor),
 								1.0f - choice.getCaptionHeight())
 					// add item for caption:
-					.addItem(	createCaptionItem(choice, true, captionCoordinator)
+					.addItem(	createCaptionItem(choice, true, captionCoordinator, null)
 									.setPaddingDip(SPLIT_ITEM_CHILD_PADDING_DIP) // 0 dip
 									.setBackgroundColor(bgColor),
 								choice.getCaptionHeight());
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
-				item = createImageItem(choice, !choice.isRoot(), textOnlyCoordinator);
+				item = createImageItem(choice, !choice.isRoot(), textOnlyCoordinator, measureCoordinator);
 			}
 		}
 		else
 		{	// there is no image path, or the caption takes up the full height --> CAPTION ONLY
-			item = createCaptionItem(choice, !choice.isRoot(), textOnlyCoordinator); // regardless of the actual captionHeight the caption will take up the fill available height
+			item = createCaptionItem(choice, !choice.isRoot(), textOnlyCoordinator, measureCoordinator); // regardless of the actual captionHeight the caption will take up the fill available height
 		}
-		
-		// Set background colour:
-		item.setBackgroundColor(bgColor);
 
-		// Crossing & graying out
-		if(choice.isCrossed() || grayedOut)
+		// Crossing:
+		if(choice.isCrossed())
 		{
-			LayeredItem layeredItem = new LayeredItem();
-			layeredItem.addLayer(item, false);
-			// Crossing:
-			if(choice.isCrossed())
-				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
-			// Graying-out:
-			if(grayedOut)
-			{
-				// Make background of layered stack gray:
-				layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
-				// Add grayed-out layer:
-				Item grayOutOverlay = new EmptyItem();
-				grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
-				layeredItem.addLayer(grayOutOverlay, false);
-			}
+			// Make LayedItem and add item as bottom layer:
+			LayeredItem layeredItem = new LayeredItem().addLayer(item, Color.TRANSPARENT, 0.0f); // make inner item background transparent and remove its padding
+			// Add cross on top:
+			layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS)), Color.TRANSPARENT, 0.0f); // later we may expose thickness in the XML as well
 			// Item becomes layered:
 			item = layeredItem;
 		}
 		
-		// Set size & padding:
+		// Set background colour (possibly gray):
+		item.setBackgroundColor(bgColor);
+		
+		// Set padding:
 		item.setPaddingDip(itemPaddingDip);
+		
+		// Graying-out (best to do this after item bgColour & padding have been set):
+		if(grayedOut)
+			item = ItemHelpers.GrayOut(item);
 		
 		// Set the answer description used for accessibility support
 		item.setDescription(getAnswerDescriptionText(choice)); // has fall-backs & returns null for roots
@@ -452,34 +449,55 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 	
 	/**
+	 * Returns an Item showing the image of the choice, or its alt text if the image file could not be found
+	 * 
 	 * @param choice
 	 * @param standAlone whether the item will be displayed on its own, or not (i.e. under an image or under a page caption-label)
-	 * @param coordinator
+	 * @param coordinator for alt text size
+	 * @param measureCoordinator coordinator for text size of displayed image measurements, or null if no image measurements should be shown
 	 * @return
 	 */
-	private Item createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator coordinator)
+	private Item<?> createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator coordinator, TextSizeCoordinator measureCoordinator)
 	{
+		// Make image (or text) item:
+		Item<?> item;
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(field.form.project, choice.getImageRelativePath());
 		if(FileHelpers.isReadableFile(imageFile))
 			// render image:
-			return new FileImageItem(imageFile);
+			item = new ImageItem(imageFile);
 		else
 		{	// render "alt" text instead of image:
 			String alt = getAltText(choice, standAlone);
 			// We make text color red if the alt text is the image path (meaning we couldn't display a caption or value String):
-			return new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR, coordinator);
+			item = new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR, coordinator);
 		}
+		
+		// Return item, possibly with measurement showing:
+		if(measureCoordinator != null)
+			return MeasureItem.Measure(item, measureCoordinator);
+		else
+			return item;
 	}
 
 	/**
+	 * Returns an Item which renders the render caption text.
+	 * 
 	 * @param child
 	 * @param allowCaption whether the ChoiceField.caption can be used (because it is isn't already displayed above the caption item)
-	 * @param coordinator
+	 * @param coordinator for caption text size
+	 * @param measureCoordinator coordinator for text size of displayed image measurements, or null if no image measurements should be shown
 	 * @return
 	 */
-	private Item createCaptionItem(ChoiceField child, boolean allowCaption, TextSizeCoordinator coordinator)
-	{	// render caption text:
-		return new TextItem(getCaptionText(child, allowCaption), coordinator);
+	private Item<?> createCaptionItem(ChoiceField child, boolean allowCaption, TextSizeCoordinator coordinator, TextSizeCoordinator measureCoordinator)
+	{
+		// Make text item:
+		Item<?> item = new TextItem(getCaptionText(child, allowCaption), coordinator);
+		
+		// Return item, possibly with measurement showing:
+		if(measureCoordinator != null)
+			return MeasureItem.Measure(item, measureCoordinator);
+		else
+			return item;
 	}
 
 	@Override

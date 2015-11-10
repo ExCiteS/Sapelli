@@ -19,27 +19,36 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.xml;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
+import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportColumnValueStringProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
-import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
+import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
 
 
 /**
@@ -47,7 +56,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
  * 
  * @author mstevens
  */
-public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporter
+public class XMLRecordsExporter extends SimpleExporter
 {
 
 	// STATICS-------------------------------------------------------
@@ -55,17 +64,17 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	static public final boolean USES_XML_VERSION_11 = false; // whether to use XML v1.0 (false) or XML v1.1 (true)
 
 	/**
-	 * Different ways of representing composite columns (i.e. {@link RecordColumn}s)
+	 * Different ways of representing composite columns (i.e. {@link ValueSetColumn}s)
 	 */
 	static public enum CompositeMode
 	{
 		/**
-		 * Create one tag with name {@link RecordColumn#getName()} containing a single String value generated using {@link RecordColumn#toString(Record)}.
+		 * Create one tag with name {@link RecordColumn#getName()} containing a single String value generated using {@link ValueSetColumn#toString(Record)}.
 		 */
 		String,
 		
 		/**
-		 * Create separate tags for each "leaf" column, names are constructed from parents' names and the leaf column's name, separated by {@link RecordColumn#QUALIFIED_NAME_SEPARATOR}.
+		 * Create separate tags for each "leaf" column, names are constructed from parents' names and the leaf column's name, separated by {@link ValueSetColumn#QUALIFIED_NAME_SEPARATOR}.
 		 */
 		Flat,
 		
@@ -100,10 +109,9 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	static public CompositeMode DEFAULT_COMPOSITE_MODE = CompositeMode.Flat;
 	
 	// DYNAMICS------------------------------------------------------
-	private File exportFolder;
 	private CompositeMode compositeMode;
+	private ColumnValueStringProvider valueStringProvider;
 	
-	private FileWriter writer = null;
 	private int tabs = 0;
 	
 	private Record currentRecord;
@@ -122,17 +130,18 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		this.currentRecord = null;
 	}
 	
-	private void openWriter(String description) throws Exception
+	@Override
+	protected void openWriter(String description, DateTime timestamp) throws IOException
 	{
-		DateTime timestamp = DateTime.now();
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), UnicodeHelpers.UTF8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), Charsets.UTF_8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-		writer.writeLine(XMLUtils.header(UnicodeHelpers.UTF8.displayName(), USES_XML_VERSION_11));
+		writer.writeLine(XMLUtils.header(Charsets.UTF_8.name(), USES_XML_VERSION_11));
 		writer.writeLine("<" + TAG_RECORDS_EXPORT + " exportedAt=\"" + TimeUtils.getISOTimestamp(timestamp, false) + "\">");
 		//TODO add attributes: comment, device(?)
 	}
 	
-	private void closeWriter()
+	@Override
+	protected void closeWriter()
 	{
 		if(writer != null)
 		{
@@ -147,15 +156,32 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	{
 		if(records == null || records.isEmpty())
 			return ExportResult.NothingToExport();
+		
+		// Sort records by Schema (& Model):
+		Collections.sort(records, new Comparator<Record>()
+		{
+			Schema.Comparator schemaComparator = new Schema.Comparator();
+			
+			@Override
+			public int compare(Record r1, Record r2)
+			{
+				return schemaComparator.compare(r1.getSchema(), r2.getSchema());
+			}
+		});
+		
+		// Export:
 		List<Record> exported = new ArrayList<Record>();
+		valueStringProvider = new ColumnValueStringProvider();
 		try
 		{
-			openWriter(description);
+			openWriter(description, DateTime.now());
 			tabs = 1;
 			for(Record r : records)
 			{
-				if(r.getSchema().isInternal())
-					continue; // we do not export records of internal schemata
+				// Skip unexportable records unless force not to:
+				if(!forceExportUnexportable && !r.getSchema().hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+					continue;
+				
 				writer.openTransaction(); // output will be buffered
 				try
 				{				
@@ -165,7 +191,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 							Schema.ATTRIBUTE_MODEL_ID + "=\"" + r.getSchema().getModelID() + "\" " +
 							Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=\"" + r.getSchema().getModelSchemaNumber() + "\"" +
 							">", tabs));
-							//TODO transmission/sent
 				
 					// Indent: 
 					tabs++;
@@ -179,7 +204,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				
 					//Close tag:
 					writer.writeLine(StringUtils.addTabsFront("</" + Record.TAG_RECORD + ">", tabs));
-				
 				}
 				catch(Exception e)
 				{
@@ -192,8 +216,14 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				exported.add(r);
 				// TODO mark record as exported?
 			}
-			// Result...			
-			return ExportResult.Success(exported, exportFolder, Collections.singletonList(writer.getFile()));
+			// Result...
+			if(exported.size() == records.size())
+				return ExportResult.Success(exported, exportFolder, Collections.singletonList(writer.getFile()));
+			else
+			{
+				int unexportedCount = records.size() - exported.size();
+				return ExportResult.PartialFailure(exported, exportFolder, Collections.singletonList(writer.getFile()), new UnexportableRecordsException(unexportedCount), unexportedCount);
+			}
 		}
 		catch(Exception e)
 		{
@@ -209,64 +239,62 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
 	@Override
-	public void enter(RecordColumn<?> recordCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		if(compositeMode == CompositeMode.String)
-			return; //this should never happen
+			return; // this should never happen
 		
 		// Push on columnStack:
-		super.enter(recordCol);
+		super.enter(valueSetCol);
 		
 		// Write null value comment if subrecord is null:
 		if(getColumnPointer().retrieveValue(currentRecord) == null)
-			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(recordCol.getName()), tabs));
-		else if(compositeMode == CompositeMode.Nested) 
+			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(valueSetCol.getName()), tabs));
+		else if(compositeMode == CompositeMode.Nested)
 		{	// If in nested tags mode and subrecord is not null, open parent tag:
-			writer.writeLine(StringUtils.addTabsFront("<" + recordCol.getName() + ">", tabs));
+			writer.writeLine(StringUtils.addTabsFront("<" + valueSetCol.getName() + ">", tabs));
 			tabs++;
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
 	@Override
-	public void leave(RecordColumn<?> recordCol)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 	{
 		if(compositeMode == CompositeMode.String)
-			return; //this should never happen
+			return; // this should never happen
 
 		// If in nested tags mode and subrecord is not null, close parent tag:
 		if(compositeMode == CompositeMode.Nested && getColumnPointer().retrieveValue(currentRecord) != null)
 		{
 			tabs--;
-			writer.writeLine(StringUtils.addTabsFront("</" + recordCol.getName() + ">", tabs));
+			writer.writeLine(StringUtils.addTabsFront("</" + valueSetCol.getName() + ">", tabs));
 		}
 		
 		// Pop columnStack:
-		super.leave(recordCol);
+		super.leave(valueSetCol);
 	}
 	
 	@Override
-	public void visit(ColumnPointer leafColumnPointer)
+	public void visit(ColumnPointer<?> leafColumnPointer)
 	{
-		Record record = leafColumnPointer.getRecord(currentRecord, false);
+		ValueSet<?> valueSet = leafColumnPointer.getValueSet(currentRecord, false);
 		
 		// If in nested or flat tags mode and subrecord is null: return
-		if(record == null && compositeMode != CompositeMode.String)
+		if(valueSet == null && compositeMode != CompositeMode.String)
 			return;
 		
 		// Write column value or null value comment:
 		Column<?> leafColumn = leafColumnPointer.getColumn();
 		String columnName = (compositeMode == CompositeMode.Flat ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName());
-		if(record != null && leafColumn.isValueSet(record))
-		{
-			/* 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target), then
-				we use the raw (i.e. unquoted) String value. We can do this because the difference between null and the empty string
-				is preserved due to the fact that we do not put a tag (only an XML comment) in case the value is null.
-				See XMLRecordsImporter#characters(char[], int, int) for the corresponding import logic.
-				*/
-			String valueString = (leafColumn.getType() == String.class ? (String) leafColumn.retrieveValue(record) : leafColumn.retrieveValueAsString(record));
-			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + (USES_XML_VERSION_11 ? StringEscapeUtils.escapeXml11(valueString) : StringEscapeUtils.escapeXml10(valueString)) + "</" + columnName + ">", tabs));
-		}
+		if(valueSet != null && leafColumn.isValuePresent(valueSet))
+			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + valueStringProvider.toString(leafColumn, valueSet) + "</" + columnName + ">", tabs));
 		else
 			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(columnName), tabs));
 	}
@@ -310,6 +338,30 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	public boolean includeVirtualColumns()
 	{
 		return true;
+	}
+	
+	/**
+	 * Helper class which creates String representations, escaped as necessary, of column values.
+	 * 
+	 * For {@link ListLikeColumn}s (i.e. {@link StringColumn} and {@link ListColumn}s) we don't use the
+	 * Column's own serialisation delimiters because the XML format allows us to preserve the difference
+	 * between {@code null} and an empty list/String value:
+	 * 	- <!-- columnName is null -->	: null value
+	 *  - <ColumnName></ColumnName>		: empty list/String value
+	 * 
+	 * @see ExportColumnValueStringProvider
+	 * 
+	 * @author mstevens
+	 */
+	private class ColumnValueStringProvider extends ExportColumnValueStringProvider
+	{
+
+		@Override
+		protected String escapeAndQuote(String valueString, boolean force)
+		{
+			return USES_XML_VERSION_11 ? StringEscapeUtils.escapeXml11(valueString) : StringEscapeUtils.escapeXml10(valueString); // always escape (forcing doesn't make a difference)
+		}
+		
 	}
 	
 }

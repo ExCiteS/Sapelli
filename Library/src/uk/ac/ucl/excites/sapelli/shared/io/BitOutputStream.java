@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 
-
 /**
  * A stream where bits can be written to. Provides write methods for various (primitive) types.<br/>
  * <br/>
@@ -39,12 +38,12 @@ public abstract class BitOutputStream extends OutputStream
 {
 
 	//STATIC
-	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-	private static final Charset UTF16BE = Charset.forName("UTF-16BE");
+	private static final Charset DEFAULT_STRING_CHARSET = Charset.forName("UTF-8");
+	private static final Charset DEFAULT_CHAR_CHARSET = Charset.forName("UTF-16BE");
 	
 	//DYNAMIC
-	protected boolean closed;
-	protected int numberOfBitsWritten;
+	private boolean closed;
+	private int numberOfBitsWritten;
 	
 	public BitOutputStream()
 	{
@@ -56,17 +55,31 @@ public abstract class BitOutputStream extends OutputStream
 	 * Writes an individual bit (a boolean) to the output
 	 * 
 	 * @param bit bit (true = 1; false = 0) to be written
+	 * @return the written bit
 	 * @throws IOException if an I/O error occurs
+	 * @throws CapacityReachedException when the output is "full"
 	 */
-	public void write(boolean bit) throws IOException
+	public boolean write(boolean bit) throws IOException, CapacityReachedException
 	{
 		if(closed)
 			throw new IOException("This stream is closed");
+		if(isFull())
+			throw new CapacityReachedException();
 		writeBit(bit);
 		numberOfBitsWritten++;
+		return bit;
 	}
 	
+	/**
+	 * @param bit bit (true = 1; false = 0) to be written
+	 * @throws IOException
+	 */
 	protected abstract void writeBit(boolean bit) throws IOException;
+	
+	/**
+	 * @return whether or not the output is "full"
+	 */
+	protected abstract boolean isFull();
 	
 	/**
 	 * Writes an array series of bits (booleans) to the output
@@ -293,7 +306,7 @@ public abstract class BitOutputStream extends OutputStream
 	 */
 	public int write(String value) throws IOException
 	{
-		return write(value, DEFAULT_CHARSET);
+		return write(value, DEFAULT_STRING_CHARSET);
 	}
 	
 	/**
@@ -313,7 +326,7 @@ public abstract class BitOutputStream extends OutputStream
 	
 	/**
 	 * Writes a single (16 bit) char to the output.
-	 * Always uses UTF-16BE encoding (for now).
+	 * Always uses UTF-16BE encoding.
 	 * 
 	 * @param value char to write
 	 * @throws IOException if an I/O error occurs
@@ -321,13 +334,23 @@ public abstract class BitOutputStream extends OutputStream
 	 */
 	public void write(char value) throws IOException
 	{
-		//TODO support other character encodings?
-		write(new String(new char[] { value }).getBytes(UTF16BE));
+		write(value, DEFAULT_CHAR_CHARSET);
+	}
+	
+	/**
+	 * Writes a single char to the output, encoded using the given Charset.
+	 * 
+	 * @param value char to write
+	 * @param charset the Charset to use to encode the char
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void write(char value, Charset charset) throws IOException
+	{
+		write(new String(new char[] { value }).getBytes(charset));
 	}
 	
 	/**
 	 * Closes this stream and the underlying OutputStream.
-	 * If called when this bit stream is not at a byte boundary, then the minimum number of zeros (between 0 and 7) are written as padding to reach a byte boundary.
 	 * 
 	 * @throws IOException if an I/O error occurs
 	 * @see java.io.OutputStream#close()
@@ -335,11 +358,20 @@ public abstract class BitOutputStream extends OutputStream
 	public void close() throws IOException
 	{
 		this.closed = true;
+		super.close();
 	}
-    
-    public int getNumberOfBitsWritten()
-    {
-    	return numberOfBitsWritten;
-    }
+	
+	/**
+	 * @return whether or not the stream is closed
+	 */
+	protected boolean isClosed()
+	{
+		return closed;
+	}
+	
+	public int getNumberOfBitsWritten()
+	{
+		return numberOfBitsWritten;
+	}
 
 }

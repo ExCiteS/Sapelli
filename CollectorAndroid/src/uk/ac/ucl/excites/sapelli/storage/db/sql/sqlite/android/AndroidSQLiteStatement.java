@@ -23,17 +23,16 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDoneException;
-import android.database.sqlite.SQLiteStatement;
 import android.os.Build;
 
 /**
- * An Android-specific {@link SapelliSQLiteStatement} subclass. It is a thin wrapper around Android's {@link SQLiteStatement} class.
+ * An Android-specific {@link SQLiteStatement} subclass. It is a thin wrapper around Android's {@link SQLiteStatement} class.
  * 
  * Supports SQL INSERT, UPDATE, and DELETE operations (i.e. "CUD" from "CRUD"). SQL SELECT row queries are not supported,
  * but "simple" SELECT queries resulting in a 1x1 long value are.
@@ -43,11 +42,11 @@ import android.os.Build;
  * @see android.database.sqlite.SQLiteDatabase
  * @see android.database.sqlite.SQLiteStatement
  */
-public class AndroidSQLiteStatement extends SapelliSQLiteStatement
+public class AndroidSQLiteStatement extends SQLiteStatement
 {
 	
 	private final AndroidSQLiteRecordStore recordStore;
-	private final SQLiteStatement androidSQLiteSt;
+	private final android.database.sqlite.SQLiteStatement androidSQLiteSt;
 	
 	/**
 	 * @param androidSQLiteRecordStore
@@ -55,7 +54,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	 * @param paramCols
 	 * @throws SQLException
 	 */
-	public AndroidSQLiteStatement(AndroidSQLiteRecordStore recordStore, SQLiteStatement androidSQLiteSt, List<SQLiteColumn<?, ?>> paramCols)
+	public AndroidSQLiteStatement(AndroidSQLiteRecordStore recordStore, android.database.sqlite.SQLiteStatement androidSQLiteSt, List<SQLiteColumn<?, ?>> paramCols)
 	{
 		super(paramCols);
 		this.recordStore = recordStore;
@@ -103,47 +102,51 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	 */
 	@SuppressLint("DefaultLocale")
 	@Override
-	public long executeInsert() throws DBException
+	public long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException
 	{
 		try
 		{
 			long rowID = androidSQLiteSt.executeInsert();
 			if(rowID == -1)
-				throw new DBException("Execution of INSERT statement failed (returned ROWID = -1)");
+				throw new DBException(formatMessageWithSQL("Execution of INSERT statement (%s) failed (returned ROWID = -1)"));
 			return rowID;
 		}
 		catch(SQLiteConstraintException sqliteConstrE)
 		{
 			String msg = sqliteConstrE.getMessage();
 			if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
-				throw new DBPrimaryKeyException("Failed to execute INSERT statement due to existing record with same primary key", sqliteConstrE);
+				throw new DBPrimaryKeyException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to existing record with same primary key"), sqliteConstrE);
 			else
-				throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", sqliteConstrE);
+				throw new DBConstraintException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to constraint violation"), sqliteConstrE);
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute INSERT statement", sqlE);
+			throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement: %s"), sqlE);
 		}
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeUpdate()
 	 */
 	@Override
-	public int executeUpdate() throws DBException
+	public int executeUpdate() throws DBConstraintException, DBException
 	{
 		try
 		{
 			return executeUpdateDelete();
 		}
+		catch(SQLiteConstraintException sqliteConstrE)
+		{
+			throw new DBConstraintException(formatMessageWithSQL("Failed to execute UPDATE statement (%s) due to constraint violation"), sqliteConstrE);
+		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute UPDATE statement", sqlE);
+			throw new DBException(formatMessageWithSQL("Failed to execute UPDATE statement: %s"), sqlE);
 		}
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeDelete()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeDelete()
 	 */
 	@Override
 	public int executeDelete() throws DBException
@@ -154,11 +157,11 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 		catch(SQLException sqlE)
 		{
-			throw new DBException("Failed to execute DELETE statement", sqlE);
+			throw new DBException(formatMessageWithSQL("Failed to execute DELETE statement: %s"), sqlE);
 		}
 	}
 	
-	private int executeUpdateDelete() throws SQLException
+	private final int executeUpdateDelete() throws SQLException, DBException
 	{
 		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 			// API levels 11 and higher
@@ -171,7 +174,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	}
 	
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	private int executeUpdateDeleteNew() throws SQLException
+	private final int executeUpdateDeleteNew() throws SQLException
 	{
 		return androidSQLiteSt.executeUpdateDelete();
 	}
@@ -193,6 +196,17 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	public void close()
 	{
 		androidSQLiteSt.close();
+	}
+	
+	/**
+	 * @return SQL expression
+	 * @see android.database.sqlite.SQLiteStatement#toString()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#getSQL()
+	 */
+	@Override
+	protected String getSQL()
+	{
+		return androidSQLiteSt.toString().substring("SQLiteProgram: ".length());
 	}
 	
 }

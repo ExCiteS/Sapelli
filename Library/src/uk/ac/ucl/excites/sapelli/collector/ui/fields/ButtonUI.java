@@ -25,8 +25,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumn
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 
 public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<ButtonField, V, UI>
 {
@@ -68,7 +68,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
 		{
 			BooleanColumn column = (BooleanColumn) field.getColumn();
-			if(!column.isValueSet(record)) // if current value is null (and only then!)...
+			if(!column.isValuePresent(record)) // if current value is null (and only then!)...
 				column.storeValue(record, false); // save 'false' to indicate that the button was *not* (yet) pressed
 		}
 		

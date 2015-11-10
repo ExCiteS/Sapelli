@@ -24,7 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
@@ -81,7 +81,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
-				View compassIcon = new ResourceImageItem(context.getResources(), R.drawable.compass_svg).setBackgroundColor(Color.BLACK).getView(context);
+				View compassIcon = new ImageItem(context.getResources(), R.drawable.compass).setBackgroundColor(Color.BLACK).getView(context);
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				compassIcon.setPadding(padding, padding, padding, padding);
 				waitView.addView(compassIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));

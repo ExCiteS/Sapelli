@@ -63,9 +63,8 @@ public class BZIP2Compressor extends Compressor
 		this.headerless = headerless;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
-	public OutputStream getOutputStream(OutputStream sink) throws IOException
+	protected OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes) throws IOException
 	{
 		return new BZip2CompressorOutputStream(headerless ? new HeaderEatingOutputStream(sink, BZIP2_HEADER.length) : sink);
 	}

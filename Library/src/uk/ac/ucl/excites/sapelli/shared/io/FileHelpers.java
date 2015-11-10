@@ -20,16 +20,19 @@ package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+
+import org.apache.commons.io.FileUtils;
 
 /**
  * File I/O helpers
  * 
  * @author mstevens, Michalis Vitos
- * 
  */
 public final class FileHelpers
 {
@@ -124,6 +127,20 @@ public final class FileHelpers
 	{
 		return (new File(filePath)).delete();
 	}
+	
+	/**
+	 * Quietly deletes a bunch of {@link File}s. 
+	 * 
+	 * @param files list of files to quietly delete (may be {@code null})
+	 * 
+	 * @see FileUtils#deleteQuietly(File)
+	 */
+	public static void deleteQuietly(Collection<File> files)
+	{
+		if(files != null)
+			for(File file : files)
+				FileUtils.deleteQuietly(file);
+	}
 
 	/**
 	 * Copies a file. If the destination exists it is overwritten.
@@ -171,14 +188,8 @@ public final class FileHelpers
 		}
 		catch(Exception e)
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			StreamHelpers.SilentClose(in);
+			StreamHelpers.SilentClose(out);
 			throw new IOException("Error on copying file", e);
 		}
 	}
@@ -319,6 +330,8 @@ public final class FileHelpers
 	 */
 	public static boolean createDirectory(File directory)
 	{
+		if(directory == null)
+			return false;
 		if(!directory.exists())
 			return directory.mkdirs();
 		return directory.isDirectory();
@@ -437,6 +450,22 @@ public final class FileHelpers
 	static public boolean isReadableWritableDirectory(File directory)
 	{
 		return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
+	}
+	
+	/**
+	 * @param file
+	 * @param refuseEmpty whether or not to refuse empty files (i.e. size = 0 bytes)
+	 * @return a FileInputStream
+	 * @throws IllegalArgumentException when the file is empty and refuseEmpty is true
+	 * @throws FileNotFoundException when the file does not exist
+	 * @throws SecurityException when we are not allowed to read the file 
+	 * @throws NullPointerException when file is null
+	 */
+	static public FileInputStream openInputStream(File file, boolean refuseEmpty) throws IllegalArgumentException, FileNotFoundException, SecurityException, NullPointerException
+	{
+		if(file != null && file.exists() && refuseEmpty && file.length() == 0)
+			throw new IllegalArgumentException("File \"" + file.getAbsolutePath() + "\" is empty!");
+		return new FileInputStream(file);
 	}
 
 }

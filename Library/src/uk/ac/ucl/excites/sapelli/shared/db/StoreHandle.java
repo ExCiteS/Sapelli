@@ -33,8 +33,15 @@ public class StoreHandle<S extends Store>
 {
 
 	private final StoreCreator<S> storeCreator;
-	private WeakReference<S> storeRef;
-	private Set<Integer> users;
+	
+	/**
+	 * Only used during getStore()
+	 */
+	private S storeStrongRef;
+	
+	private WeakReference<S> storeWeakRef;
+	
+	private final Set<Integer> users = new HashSet<Integer>();
 	
 	public StoreHandle(StoreCreator<S> storeCreator)
 	{
@@ -45,31 +52,161 @@ public class StoreHandle<S extends Store>
 	
 	private S getStoreFromWeakRef()
 	{
-		return storeRef != null ? storeRef.get() : null; 
+		return (storeWeakRef != null ? storeWeakRef.get() : null);
 	}
 	
 	/**
+	 * Returns the held or a newly created Store instance.
+	 * 
+	 * When a new instance must be created {@link StoreCreator#createAndSetStore(StoreSetter)} is used,
+	 * which in turns calls {@link StoreSetter#setAndInitialise(Store)} on the given StoreSetter. The
+	 * Store instance is initialised from {@link StoreSetter#setAndInitialise(Store)}, but only after
+	 * a temporary strong reference to the Store has been created. This store reference is used to answer
+	 * calls to getStore() that happen *during* the initialisation(/upgrade) process. 
+	 * 
 	 * @param user
 	 * @return
 	 * @throws DBException
 	 */
 	public S getStore(StoreUser user) throws DBException
 	{
-		// Get or create Store object:
-		S store = getStoreFromWeakRef();
-		if(store == null || store.isClosed())
-		{
-			store = storeCreator.createStore();
-			storeRef = new WeakReference<S>(store);
-		}
+		boolean hadStrongRef = false;
 		
+		if(storeStrongRef != null)
+			// Remember that we had a strong ref already (this means we are handling 2nd call to getStore() before an earlier one has completed):
+			hadStrongRef = true;
+		else
+			// Get store from weak ref:		
+			storeStrongRef = getStoreFromWeakRef();
+		
+		// If there is no Store instance or it is closed:
+		if(storeStrongRef == null || storeStrongRef.isClosed())
+		{
+			// Forget about all users:
+			users.clear();
+			
+			// Try creating & initialising the store:
+			try
+			{
+				storeCreator.createAndSetStore(new StoreSetter<S>() // throws DBException if creation fails
+				{
+					@Override
+					public void setAndInitialise(S store) throws DBException
+					{
+						// First set a strong reference to the store (to be able to respond to secondary calls to getStore() *during* initialisation):
+						storeStrongRef = store;
+						// Initialise (& possibly upgrade) the store:
+						store.initialise(); // may throw DBException
+					}
+				});
+			}
+			catch(DBException dbE)
+			{
+				// Clear store reference:
+				storeStrongRef = null;
+				// Forget about all users (a user may have registered during initialisation)
+				users.clear();
+				// Re-throw:
+				throw dbE;
+			}
+		}
+				
 		// Register user:
-		if(users == null)
-			users = new HashSet<Integer>();
 		users.add(System.identityHashCode(user)); // add to set of users currently using the store
 
+		// Hold on to Store:
+		S holdStore = storeStrongRef;
+		
+		// Wipe strong ref, unless we already had it when this method was called:
+		if(!hadStrongRef)
+			storeStrongRef = null;
+		
+		// Set the weak reference:
+		storeWeakRef = new WeakReference<S>(holdStore);
+		
 		// Return store:
-		return store;
+		return holdStore;
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @throws T Throwable type of the operation
+	 */
+	public <T extends Throwable> void executeNoDBEx(StoreOperation<S, T> operation) throws T
+	{
+		try
+		{
+			execute(operation);
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err); // not re-thrown
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @throws DBException
+	 * @throws T Throwable type of the operation
+	 */
+	public <T extends Throwable> void execute(StoreOperation<S, T> operation) throws DBException, T
+	{
+		try
+		{
+			operation.execute(getStore(operation));
+		}
+		finally
+		{
+			doneUsing(operation);
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or {@code null} in case an exception occurs
+	 * @throws T Throwable type of the operation
+	 */
+	public <R, T extends Throwable> R executeWithReturnNoDBEx(StoreOperationWithReturn<S, R, T> operation) throws T
+	{
+		try
+		{
+			return executeWithReturn(operation);
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err); // not re-thrown
+			return null;
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}
+	 * @throws DBException
+	 * @throws T Throwable type of the operation
+	 */
+	public <R, T extends Throwable> R executeWithReturn(StoreOperationWithReturn<S, R, T> operation) throws DBException, T
+	{
+		try
+		{
+			return operation.execute(getStore(operation));
+		}
+		finally
+		{
+			doneUsing(operation);
+		}
 	}
 	
 	/**
@@ -79,24 +216,27 @@ public class StoreHandle<S extends Store>
 	 */
 	public void doneUsing(StoreUser user)
 	{
-		// Just in case...
-		if(users == null)
-			return;
-		
 		// Remove client for this store:
 		users.remove(System.identityHashCode(user));
 		
-		// Finalise if no longer used by other clients:
-		if(users.isEmpty())
+		// Finalise if no longer used by other clients...
+		if(users.isEmpty() && storeStrongRef == null) // ...and there is no strong reference
 		{
-			try
-			{
-				S store = getStoreFromWeakRef();
-				if(store != null)
-					store.close();
-			}
-			catch(DBException ignore) { }
+			S store = getStoreFromWeakRef();
+			if(store != null)
+				store.close();
 		}
+	}
+	
+	/**
+	 * To be implemented by classes that will request access to a Store managed by a StoreHandle.
+	 * The implicit contract is that the StoreUser class will call {@link StoreHandle#doneUsing(StoreUser)} when it is done using the Store object.
+	 * 
+	 * @author mstevens
+	 */
+	public interface StoreUser
+	{
+		
 	}
 	
 	/**
@@ -104,22 +244,74 @@ public class StoreHandle<S extends Store>
 	 *
 	 * @param <S>
 	 */
-	public interface StoreCreator<S>
+	public interface StoreSetter<S extends Store>
 	{
 		
-		public S createStore() throws DBException;
+		public void setAndInitialise(S store) throws DBException;
 		
 	}
 	
 	/**
-	 * To be implemented by classes that will request access to a Store managed by a StoreHandle.
-	 * The implicit contract is that the StoreUser class will call {@link StoreHandle#doneUsing(StoreUser)} when it is done using the Store object.
-	 * 
-	 * 
 	 * @author mstevens
+	 *
+	 * @param <S>
 	 */
-	public interface StoreUser
+	public interface StoreCreator<S extends Store>
 	{
+		
+		public void createAndSetStore(StoreSetter<S> setter) throws DBException;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <T> Throwable type
+	 */
+	static public abstract class StoreOperation<S, T extends Throwable> implements StoreUser
+	{
+		
+		public abstract void execute(final S store) throws T;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 */
+	static public abstract class StoreOperationNoException<S> extends StoreOperation<S, RuntimeException>
+	{
+		
+		public abstract void execute(final S store);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <R> return type
+	 * @param <T> Throwable type
+	 */
+	static public abstract class StoreOperationWithReturn<S, R, T extends Throwable> implements StoreUser
+	{
+		
+		public abstract R execute(final S store) throws T;
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <S>
+	 * @param <R> return type
+	 */
+	static public abstract class StoreOperationWithReturnNoException<S, R> extends StoreOperationWithReturn<S, R, RuntimeException>
+	{
+		
+		public abstract R execute(final S store);
 		
 	}
 

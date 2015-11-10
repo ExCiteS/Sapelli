@@ -32,13 +32,15 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -145,7 +147,7 @@ public class DB4ORecordStore extends RecordStore
 				// We call this UPDATE-case-1
 			}
 			// No it isn't, but perhaps there is a previously stored record with the same primary key value(s):
-			else if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
+			else if(autoIncrIDColumn == null || autoIncrIDColumn.isValuePresent(record))
 			{
 				previouslyStored = retrieveRecord(record.getRecordQuery()); // will throw IllegalStateException if (part of) the non-autoIncrementing PK has not been set
 				if(previouslyStored != null)
@@ -224,9 +226,7 @@ public class DB4ORecordStore extends RecordStore
 		for(Record r : resultSet)
 		{
 			db4o.activate(r, ACTIVATION_DEPTH);
-			// Filter out records of internal schemas:
-			if(!r.getSchema().isInternal())
-				result.add(r);
+			result.add(r);
 		}
 		return result;
 	}
@@ -246,10 +246,10 @@ public class DB4ORecordStore extends RecordStore
 
 			public boolean match(Record record)
 			{
-				return	// filter out records of internal schemas:
-						!record.getSchema().isInternal() &&
-						// Schema check, but without full comparison, because that is expensive AND requires the record(/schema) object to be activated to a deeper level than it is at this stage:
-						source.isValid(record, false);
+				return	// Schema check, but without full comparison, because that is expensive AND requires the record(/schema) object to be activated to a deeper level than it is at this stage:
+						source instanceof SourceBySet ?
+							((SourceBySet) source).isValid(record, false) :
+							source.isValid(record);
 			}
 		});
 		
@@ -279,6 +279,18 @@ public class DB4ORecordStore extends RecordStore
 		else
 			return result;
 	}
+	
+	@Override
+	public List<RecordReference> retrieveRecordReferences(RecordsQuery query)
+	{
+		List<Record> records = retrieveRecords(query);
+		if(records == null)
+			return null;
+		List<RecordReference> result = new ArrayList<RecordReference>(records.size());
+		for(Record record : records)
+			result.add(record.getReference());
+		return result;
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
@@ -305,11 +317,17 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doDelete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public void doDelete(Record record) throws DBException
+	public boolean doDelete(Record record) throws DBException
 	{
 		try
 		{
-			db4o.delete(record);
+			if(db4o.ext().isStored(record))
+			{
+				db4o.delete(record);
+				return true;
+			}
+			else
+				return false;
 		}
 		catch(Exception e)
 		{

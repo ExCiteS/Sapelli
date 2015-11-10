@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.sender;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.sender.util.Constants;
 import uk.ac.ucl.excites.sapelli.sender.util.ServiceChecker;
-import uk.ac.ucl.excites.sapelli.util.Debug;
+import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;

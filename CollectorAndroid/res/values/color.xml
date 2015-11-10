@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="red">#bf360c</color>
+    <color name="ripple_red">#ffbf5232</color>
+
+    <color name="material_teal">@color/material_deep_teal_500</color>
+    <color name="ripple_material_teal">#ff149691</color>
+
+    <color name="blue">#304f9f</color>
+    <color name="grey">@color/material_blue_grey_800</color>
+    <color name="light">@color/primary_material_light</color>
+
+    <!-- @color/material_deep_teal_200 -->
+    <color name="material_deep_teal_300">#4DB6AC</color>
+    
+    <color name="colorPrimary">@color/material_deep_teal_300</color>
+    <color name="colorPrimaryDark">@color/material_deep_teal_500</color>
+
+    <color name="windowBackgroundColor">#333333</color>
+    <color name="black_translucent">#80000000</color>
+    
+    <color name="white_50pc">#80ffffff</color>
+    
+    <color name="black_overlay">#66000000</color>
+    <color name="transparent">#00000000</color>
+    <color name="white">#FFffffff</color>
+    <color name="black">#FF000000</color>
+    <color name="divider">#33B8B8B8</color>
+    <color name="divider2">#ffF0F0F0</color>
+    <color name="grey_sap">#ffc0c0c0</color>
+    <color name="grey_transparent">#33c0c0c0</color>
+    <color name="focused">#99c0c0c0</color>
+    <color name="selected">#99c0c0c0</color>
+    <color name="background_tab_pressed">#6633B5E5</color>
+    <color name="blue_sap">#09c</color>
+    
+</resources>

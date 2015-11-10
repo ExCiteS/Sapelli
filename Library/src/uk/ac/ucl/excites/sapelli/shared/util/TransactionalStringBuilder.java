@@ -264,10 +264,21 @@ public class TransactionalStringBuilder
 	}
 	
 	/**
+	 * Append a char to the current transaction (possibly the root), connective will be used
+	 * 
+	 * @param chr
+	 * @return
+	 */
+	public TransactionalStringBuilder append(char chr)
+	{
+		return append("" + chr, true);
+	}
+	
+	/**
 	 * Append a String to the current transaction (possibly the root)
 	 * 
 	 * @param str
-	 * @param useConnective whether or not to insert the connective (if needed)
+	 * @param useConnective whether or not to insert the connective before the String (if needed)
 	 * @return
 	 */
 	public TransactionalStringBuilder append(String str, boolean useConnective)

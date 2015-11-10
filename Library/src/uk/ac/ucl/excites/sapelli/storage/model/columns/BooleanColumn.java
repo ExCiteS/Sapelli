@@ -37,10 +37,20 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	
 	/**
 	 * @param name
+	 * @param optional
 	 */
 	public BooleanColumn(String name, boolean optional)
 	{
-		super(name, optional);
+		this(name, optional, null);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 */
+	public BooleanColumn(String name, boolean optional, Boolean defaultValue)
+	{
+		super(name, optional, defaultValue);
 	}
 	
 	@Override

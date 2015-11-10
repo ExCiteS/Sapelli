@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.io;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
@@ -44,6 +44,11 @@ public class FileStorageProvider
 		 * Folder for (live, i.e. non-dumped/backed-up) databases and auxiliary files (e.g. journal file)
 		 */
 		DB,
+		
+		/**
+		 * Folder for back-ups of old database versions (put here before being upgrade by {@link Upgrader})
+		 */
+		OldDBVersions,
 		
 		/**
 		 * Folder for (media) attachments, files produced during data collection (e.g. photos, audio, video), grouped per project
@@ -138,6 +143,8 @@ public class FileStorageProvider
 		{
 			case DB: 
 				return getDBFolder(create);
+			case OldDBVersions: 
+				return getOldDBVersionsFolder(create);
 			case Attachments:
 				return getAttachmentsFolder(create);
 			case Downloads:
@@ -168,20 +175,20 @@ public class FileStorageProvider
 
 	/**
 	 * @param parent
-	 * @param project
+	 * @param projDescr
 	 * @param create
 	 * @return
 	 * @throws FileStorageException
 	 */
-	protected File getProjectSpecificSubFolder(File parent, Project project, boolean create) throws FileStorageException
+	protected File getProjectSpecificSubFolder(File parent, ProjectDescriptor projDescr, boolean create) throws FileStorageException
 	{
-		return getProjectSpecificSubFolder(parent, project.getName(), project.getVariant(), project.getVersion(), create);
+		return getProjectSpecificSubFolder(parent, projDescr.getName(), projDescr.getVariant(), projDescr.getVersion(), create);
 	}
 	
 	/**
 	 * @param parent
 	 * @param projectName
-	 * @param projectVariant
+	 * @param projectVariant - null and empty String are both treated as 'no variant specified'
 	 * @param projectVersion
 	 * @param create
 	 * @return
@@ -191,7 +198,7 @@ public class FileStorageProvider
 	{
 		// Hierarchy: (PARENT]/(projectName)[ (projectVariant)]/v(projectVersion)
 		return	getSubFolder(	getSubFolder(	parent,
-												FileHelpers.makeValidFileName(projectName + (projectVariant != null ? " " + projectVariant : "")),
+												FileHelpers.makeValidFileName(projectName + (projectVariant != null && !projectName.isEmpty() ? " " + projectVariant : "")),
 												create),
 								FileHelpers.makeValidFileName("v" + projectVersion),
 								create);
@@ -202,9 +209,9 @@ public class FileStorageProvider
 		return getSubFolder(getSapelliFolder(), Folder.Projects.name(), create);
 	}
 
-	public File getProjectInstallationFolder(Project project, boolean create) throws FileStorageException
+	public File getProjectInstallationFolder(ProjectDescriptor projDescr, boolean create) throws FileStorageException
 	{	
-		return getProjectSpecificSubFolder(getProjectsFolder(create), project, create);
+		return getProjectSpecificSubFolder(getProjectsFolder(create), projDescr, create);
 	}
 	
 	public File getProjectInstallationFolder(String projectName, String projectVariant, String projectVersion, boolean create) throws FileStorageException
@@ -229,6 +236,11 @@ public class FileStorageProvider
 	public File getDBFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.DB.name(), create);
+	}
+	
+	public File getOldDBVersionsFolder(boolean create) throws FileStorageException
+	{
+		return getSubFolder(getSapelliFolder(), Folder.OldDBVersions.name(), create);
 	}
 	
 	public File getCrashFolder(boolean create) throws FileStorageException
@@ -263,9 +275,9 @@ public class FileStorageProvider
 		return getSubFolder(getSapelliFolder(), Folder.Attachments.name(), create);
 	}
 	
-	public File getProjectAttachmentFolder(Project project, boolean create) throws FileStorageException
+	public File getProjectAttachmentFolder(ProjectDescriptor projDescr, boolean create) throws FileStorageException
 	{
-		return getProjectSpecificSubFolder(getAttachmentsFolder(create), project, create);
+		return getProjectSpecificSubFolder(getAttachmentsFolder(create), projDescr, create);
 	}
 	
 	public File getLogsFolder(boolean create) throws FileStorageException
@@ -273,23 +285,23 @@ public class FileStorageProvider
 		return getSubFolder(getSapelliFolder(), Folder.Logs.name(), create);
 	}
 	
-	public File getProjectLogsFolder(Project project, boolean create) throws FileStorageException
+	public File getProjectLogsFolder(ProjectDescriptor projDescr, boolean create) throws FileStorageException
 	{
-		return getProjectSpecificSubFolder(getLogsFolder(create), project, create);
+		return getProjectSpecificSubFolder(getLogsFolder(create), projDescr, create);
 	}
 	
 	/**
-	 * @param project
+	 * @param projDescr
 	 * @param imageFileRelativePath
 	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
 	 */
-	public File getProjectImageFile(Project project, String imageFileRelativePath)
+	public File getProjectImageFile(ProjectDescriptor projDescr, String imageFileRelativePath)
 	{
 		try
 		{
 			if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
 				return null;
-			return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
+			return new File(getProjectInstallationFolder(projDescr, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
 		}
 		catch(FileStorageException fse)
 		{
@@ -299,17 +311,17 @@ public class FileStorageProvider
 	}
 	
 	/**
-	 * @param project
+	 * @param projDescr
 	 * @param soundFileRelativePath
 	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
 	 */
-	public File getProjectSoundFile(Project project, String soundFileRelativePath)
+	public File getProjectSoundFile(ProjectDescriptor projDescr, String soundFileRelativePath)
 	{
 		try
 		{
 			if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
 				return null;
-			return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
+			return new File(getProjectInstallationFolder(projDescr, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
 		}
 		catch(FileStorageException fse)
 		{
