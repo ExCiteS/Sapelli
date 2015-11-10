@@ -1475,7 +1475,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void store(RecordValueSet<?> recordOrReference, SQLType value)
 		{
 			if(value != null)
-				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getValueSet(recordOrReference, true), mapping.toSapelliType(value));
+				sourceColumnPointer.getColumn().storeValue(sourceColumnPointer.getValueSet(recordOrReference, true), mapping.toSapelliType(value));
+			else
+				sourceColumnPointer.getColumn().clearValue(sourceColumnPointer.getValueSet(recordOrReference, false));
 		}
 		
 		/**
