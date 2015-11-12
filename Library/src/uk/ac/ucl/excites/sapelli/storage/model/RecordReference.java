@@ -138,8 +138,13 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 		return referencedSchema;
 	}
 	
+	/**
+	 * Returns the RecordReference itself.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getReference()
+	 */
 	@Override
-	public RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException
+	public RecordReference getReference()
 	{
 		return this;
 	}

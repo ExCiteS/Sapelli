@@ -82,7 +82,14 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 		super(another);
 	}
 	
-	public abstract RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException;
+	/**
+	 * If this is a {@link Record} the method returns a {@link RecordReference} pointing to this {@link Record},
+	 * if this is a {@link RecordReference} the method returns the object itself.
+	 * 
+	 * @return a {@link RecordReference} instance
+	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
+	 */
+	public abstract RecordReference getReference() throws IncompletePrimaryKeyException;
 
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
