@@ -165,14 +165,14 @@ public class Record extends RecordValueSet<Schema>
 	}
 	
 	/**
-	 * Returns a reference to the record. Only works if the schema has a primary key.
+	 * Returns a reference to the record. Only works if all primary key (sub)columns have a non-null value.
 	 * 
 	 * @return a {@link RecordReference} instance pointing to this record
-	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
 	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getReference()
 	 */
 	@Override
-	public RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException
+	public RecordReference getReference() throws IncompletePrimaryKeyException
 	{
 		return new RecordReference(this);
 	}
