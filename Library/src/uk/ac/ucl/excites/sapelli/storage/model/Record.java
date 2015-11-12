@@ -171,6 +171,7 @@ public class Record extends RecordValueSet<Schema>
 	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
 	 * @throws IncompletePrimaryKeyException if (part of) the primary key column(s) lacks a value
 	 */
+	@Override
 	public RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException
 	{
 		return new RecordReference(this);

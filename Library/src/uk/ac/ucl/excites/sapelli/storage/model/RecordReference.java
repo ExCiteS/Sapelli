@@ -138,6 +138,12 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 		return referencedSchema;
 	}
 	
+	@Override
+	public RecordReference getReference() throws NullPointerException, IncompletePrimaryKeyException
+	{
+		return this;
+	}
+	
 	/**
 	 * Returns a {@link SingleRecordQuery} which can be used to find the referenced record in a RecordStore or Collection.
 	 * 
