@@ -158,7 +158,8 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * To be called from {@link Column#storeValue(Record, Object)}
+	 * To be called from {@link Column#storeValue(Record, Object)}.
+	 * This method is not {@code final} for the sake of the {@link UnmodifiableValueSet} subclass.
 	 * 
 	 * @param column
 	 * @param value the value to set (may be null, e.g. to clear earlier values)
