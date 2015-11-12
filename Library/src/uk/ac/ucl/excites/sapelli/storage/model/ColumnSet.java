@@ -314,6 +314,29 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
+	 * Returns a list of columns (including virtual ones if {@code includeVirtual} is {@code true}, and excluding any of the given skipped columns) in the order of addition.
+	 * If {@code includeVirtual} is {@code true} virtual columns are inserted between their "real" owner and the next "real" column.
+	 * 
+	 * @param includeVirtual
+	 * @return an unmodifiable list of columns
+	 * @param skipColumns columns to keep out of the return list
+	 */
+	public List<Column<?>> getColumns(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
+	{
+		List<Column<?>> cols = getColumns(includeVirtual);
+		if(skipColumns == null || skipColumns.isEmpty())
+			return cols;
+		else
+		{
+			List<Column<?>> colSubset = new ArrayList<Column<?>>(cols.size() - skipColumns.size());
+			for(Column<?> col : cols)
+				if(!skipColumns.contains(col))
+					colSubset.add(col);
+			return colSubset;
+		}
+	}
+	
+	/**
 	 * @return an unordered collection of the virtual columns in the schema
 	 */
 	public Collection<VirtualColumn<?, ?>> getVirtualColumns()
@@ -440,9 +463,8 @@ public class ColumnSet implements Serializable
 	public int getMinimumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		int total = 0;
-		for(Column<?> c : getColumns(includeVirtual))
-			if(!skipColumns.contains(c))
-				total += c.getMinimumSize();
+		for(Column<?> c : getColumns(includeVirtual, skipColumns))
+			total += c.getMinimumSize();
 		return total;
 	}
 	
@@ -454,7 +476,7 @@ public class ColumnSet implements Serializable
 	 */
 	public int getMaximumSize()
 	{
-		return getMaximumSize(false, Collections.<Column<?>>emptySet());
+		return getMaximumSize(false, Collections.<Column<?>> emptySet());
 	}
 
 	/**
@@ -467,9 +489,8 @@ public class ColumnSet implements Serializable
 	public int getMaximumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		int total = 0;
-		for(Column<?> c : getColumns(includeVirtual))
-			if(!skipColumns.contains(c))
-				total += c.getMaximumSize();
+		for(Column<?> c : getColumns(includeVirtual, skipColumns))
+			total += c.getMaximumSize();
 		return total;
 	}
 	
@@ -537,9 +558,8 @@ public class ColumnSet implements Serializable
 	
 	public void accept(ColumnVisitor visitor, Set<? extends Column<?>> skipColumns)
 	{
-		for(Column<?> c : getColumns(visitor.includeVirtualColumns()))
-			if(!skipColumns.contains(c))
-				c.accept(visitor);
+		for(Column<?> c : getColumns(visitor.includeVirtualColumns(), skipColumns))
+			c.accept(visitor);
 	}
 
 }
