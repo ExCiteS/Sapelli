@@ -380,9 +380,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(!isInDB())
 				return false;
 			
-			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
-			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
-			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValuePresent(recordOrReference))
+			// Check if all PK (sub)columns have a value:
+			//	if there is (complete) PK we can assume this record doesn't exist in the db (and we wouldn't be able to find it if it did):
+			if(!recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
 				return false;
 			
 			// Perform actual check by querying...
@@ -415,11 +415,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				insertStatement.clearAllBindings(); // clear bindings for reuse
 			
 			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source), otherwise use current time
-			Long recLsa = GetLastStoredAt(record);
+			Long recLsa = record.getLastStoredAt(); // will return null if the Schema doesn't have the TRACK_CHANGES flag
 			Long lsa = recLsa != null ? recLsa : Now();
 			
 			// Bind parameters:
-			insertStatement.retrieveAndBindAll(record, lsa);
+			insertStatement.retrieveAndBindAll(record, lsa); // lsa value won't be used if the Schema doesn't have the TRACK_CHANGES flag
 			
 			// Execute:
 			long rowID = insertStatement.executeInsert();
@@ -429,25 +429,20 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				autoIncrementKeySapColumn.storeValue(record, rowID);
 			
 			// Set lastStoredAt time on the Record object too:
-			SetLastStoredAt(record, lsa);
+			record.setLastStoredAt(RecordFriendship, lsa); // will do nothing if the Schema doesn't have the TRACK_CHANGES flag
 		}
-
-		/**
-		 * @param record
-		 * @param updateLastStoredAt whether or not to update the lastStoredAt column to the current time, in both the DB and the Record object, but only if an actual UPDATE happened
-		 * @return whether the record was really updated or stayed unchanged (because the record that was passed is identical to the stored one)
-		 * @throws DBException
-		 * 
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record, boolean)
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeUpdate(uk.ac.ucl.excites.sapelli.storage.model.Record, java.lang.Long, boolean)
 		 */
 		@Override
-		public synchronized boolean update(Record record, boolean updateLastStoredAt) throws DBConstraintException, DBException
+		protected synchronized boolean executeUpdate(Record record, Long lastStoredAt, final boolean updateLastStoredAt) throws DBConstraintException, DBException
 		{
 			@SuppressWarnings("resource")
 			SQLiteStatement updateStatement = updateLastStoredAt ? updateStatementWithLSA : updateStatementWithoutLSA; 
 			if(updateStatement == null)
 			{
-				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, updateLastStoredAt, true);
+				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, updateLastStoredAt, isTrackingChanges());
 				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
 				// Remember for next time:
 				if(updateLastStoredAt)
@@ -457,19 +452,14 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			}
 			else
 				updateStatement.clearAllBindings(); // clear bindings for reuse
-
+			
 			// Bind parameters:
-			Long lastStoredAt = null;
-			updateStatement.retrieveAndBindAll(record, updateLastStoredAt ? lastStoredAt = Now() : null);
+			updateStatement.retrieveAndBindAll(record, lastStoredAt); // lsa value won't be used if the Schema doesn't have the TRACK_CHANGES flag
 
 			// Execute UPDATE:
-			boolean updated = updateStatement.executeUpdate() == 1;
-			if(updated && updateLastStoredAt)
-				SetLastStoredAt(record, lastStoredAt); // update lastStoredAt time on the Record object too
-				
-			return updated;
+			return updateStatement.executeUpdate() == 1;
 		}
-		
+
 		public synchronized void upsert(Record record) throws DBException
 		{
 			// TODO first read http://stackoverflow.com/questions/3634984/insert-if-not-exists-else-update 

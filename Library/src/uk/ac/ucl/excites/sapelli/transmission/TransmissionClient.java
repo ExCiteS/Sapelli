@@ -18,16 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
@@ -39,31 +35,6 @@ public abstract class TransmissionClient extends StorageClient
 {
 
 	// STATICS-------------------------------------------------------
-	static public final IntegerColumn COLUMN_LAST_TRANSMITTED_AT = Schema.GetRawMSTimeColumn("lastTransmittedAt", true);
-	
-	/**
-	 * @param schema a non-null, non-internal, unsealed schema
-	 */
-	static public void MakeTransmittable(Schema schema)
-	{
-		if(schema == null)
-			throw new NullPointerException("schema is null");
-		if(schema.isSealed())
-			throw new IllegalStateException("The schema is already sealed!");
-		// Add column & index:
-		schema.addColumn(COLUMN_LAST_TRANSMITTED_AT);
-		schema.addIndex(new Index(COLUMN_LAST_TRANSMITTED_AT, false));
-	}
-	
-	/**
-	 * @param schema
-	 * @return whether or not {@link Record}s of the given {@link Schema} can be transmitted
-	 */
-	static public boolean isTransmittable(Schema schema)
-	{
-		return schema.containsColumn(COLUMN_LAST_TRANSMITTED_AT);
-	}
-
 	/**
 	 * Flag indicating that a Schema has been defined at the Transmission layer of the Sapelli Library
 	 */
@@ -99,20 +70,12 @@ public abstract class TransmissionClient extends StorageClient
 	public abstract Payload createPayload(int nonBuiltinType);
 	
 	/**
-	 * Returns columns from the given schema that should not be transmitted.
-	 * It is assumed these are optional columns, or non-optional columns with a default value.
-	 * 
-	 * Subclasses can override this but *must* return at least the same columns returned by the super implementation.
+	 * Returns columns from ther given schema that should not be transmitted.
+	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
 	 * 
 	 * @param schema
 	 * @return
 	 */
-	public Set<Column<?>> getNonTransmittableColumns(Schema schema)
-	{
-		Set<Column<?>> skipCols = new HashSet<Column<?>>();
-		skipCols.add(Schema.COLUMN_LAST_EXPORTED_AT);
-		skipCols.add(COLUMN_LAST_TRANSMITTED_AT);
-		return skipCols;
-	}
+	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
 	
 }

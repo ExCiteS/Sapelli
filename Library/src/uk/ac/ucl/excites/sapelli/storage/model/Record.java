@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
@@ -126,6 +128,67 @@ public class Record extends RecordValueSet<Schema>
 		return columnSet;
 	}
 	
+	/**
+	 * @return the lastStoredAt
+	 */
+	public Long getLastStoredAt()
+	{
+		if(columnSet.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES))
+			return Schema.COLUMN_LAST_STORED_AT.retrieveValue(this);
+		else
+			return null;
+	}
+	
+	/**
+	 * Can only be called from RecordStore classes (restricted by "{@link RecordStore.RecordFriendship}").
+	 * 
+	 * @param friendship
+	 * @param lastStoredAt
+	 */
+	public void setLastStoredAt(RecordStore.RecordFriendship friendship, long lastStoredAt)
+	{
+		if(columnSet.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES))
+			setValue(Schema.COLUMN_LAST_STORED_AT, Long.valueOf(lastStoredAt));
+		//else: do nothing
+	}
+
+	/**
+	 * @return the lastExportedAt
+	 */
+	public Long getLastExportedAt()
+	{
+		if(columnSet.hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+			return Schema.COLUMN_LAST_EXPORTED_AT.retrieveValue(this);
+		else
+			return null;
+	}
+	
+	public void setLastExportedAt(long lastExportedAt)
+	{
+		if(columnSet.hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+			setValue(Schema.COLUMN_LAST_EXPORTED_AT, Long.valueOf(lastExportedAt));
+		//else: do nothing
+	}
+
+	/**
+	 * @return whether or not the record has already been exported (in its current state)
+	 */
+	public boolean hasBeenExported()
+	{
+		if(!columnSet.hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
+			throw new IllegalStateException("Schema is not exportable");
+		Long lea = getLastExportedAt();
+		if(lea != null)
+		{
+			Long lsa = getLastStoredAt();
+			if(lsa != null)
+				return lea.longValue() >= lsa.longValue();
+			else
+				return true;	
+		}
+		return false;
+	}
+
 	/**
 	 * Override the schema object with another one, if compatible
 	 * 

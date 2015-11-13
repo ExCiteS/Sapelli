@@ -869,7 +869,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			{
 				// Update schemata entry:
 				Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(schemaMetaRecord, newTableName);
-				schemataTable.update(schemaMetaRecord, false);
+				schemataTable.update(schemaMetaRecord);
 			
 				// Delete table from tables map:
 				tables.remove(schemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed
@@ -958,6 +958,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			composite2SqlColumns = new HashMap<ValueSetColumn<?, ?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
+		}
+		
+		public boolean isTrackingChanges()
+		{
+			return schema.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES);
 		}
 		
 		/**
@@ -1099,10 +1104,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public int store(Record record, int action) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalStateException
 		{
-			// Get the lsa time for the stored version of the record:
-			Long dbLsa = getLastStoredAtInDB(record); // (will be null if the table or the record does not exist yet in the db)
+			Record storedVersion = getStoredVersion(record);
 			
-			if(dbLsa == null) // equivalent to : !isRecordInDB(record)
+			if(storedVersion == null)
 			{	// the record does not yet exist, we must INSERT it if that is allowed...
 				if(action == ACTION_INSERT_OR_UPDATE || action == ACTION_INSERT_ONLY)
 					insert(record); // INSERT
@@ -1110,19 +1114,35 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			// the record exists, we must UPDATE it if that is allowed...
 			else if(action == ACTION_INSERT_ONLY)
-				// UPDATE is not allowed, but perhaps it was not needed either: compare currently stored values with those in the Record object (except LSA)
-				return record.hasEqualValues(select(record.getRecordQuery()), Collections.singleton(Schema.COLUMN_LAST_STORED_AT)) ?
+				// UPDATE is not allowed, but perhaps it was not needed either: compare currently stored values with those in the Record object
+				return record.hasEqualValues(storedVersion, Collections.singleton(Schema.COLUMN_LAST_STORED_AT)) ?
 						RESULT_NEEDED_NO_ACTION :
 						RESULT_NEEDED_UPDATE;
 			else
 				// UPDATE the record:
-				return	update(record, action != ACTION_UPDATE_ONLY_EXCEPT_LSA) ?
+				return	update(record, storedVersion, action != ACTION_UPDATE_ONLY_EXCEPT_LSA) ?
 							RESULT_NEEDED_UPDATE :
 							RESULT_NEEDED_NO_ACTION;
 		}
 		
 		/**
-		 * Checks if the given {@link Record} instance already exists in the database table.
+		 * Returns the currently stored version of the given Record or indicated by the given RecordReference.
+		 * 
+		 * @param recordOrReference
+		 * @return
+		 * @throws NullPointerException
+		 * @throws DBException
+		 */
+		public Record getStoredVersion(RecordValueSet<?> recordOrReference) throws DBException
+		{
+			if(isInDB() && recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
+				return select(recordOrReference.getRecordQuery());
+			else
+				return null;
+		}
+		
+		/**
+		 * Checks if the given {@link Record}, or the one indicated by the given {@link RecordReference}, already exists in the database table.
 		 * 
 		 * May be overridden.
 		 * 
@@ -1130,33 +1150,26 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @return
 		 * @throws NullPointerException
 		 * @throws DBException
-		 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 		 */
-		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
+		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			return	isInDB() &&
-					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValuePresent(recordOrReference)) ? 
-						select(recordOrReference.getRecordQuery()) != null :
-						false;
+			return getStoredVersion(recordOrReference) != null;
 		}
 		
 		/**
-		 * Gets the lastStoredTime for the stored version of the given {@link Record} instance.
-		 * Also works for recordReferences to records of this table's schema!
+		 * Gets the lastStoredTime for the stored version of the given {@link Record}, or the one indicated by the given {@link RecordReference}.
 		 * 
-		 * May be overridden.
-		 * 
-		 * @param record
-		 * @return lastStoredAt value for the currently stored version of the given record, or {@code null} if the record, or the table itself, does not (yet) exist in the database
+		 * @param recordOrReference
+		 * @return lastStoredAt value for the currently stored version of the given record, or {@code null} the record (or the table itself) does not (yet) exist in the database
 		 * @throws DBException
 		 * @throws IllegalStateException
 		 */
-		public Long getLastStoredAtInDB(Record record) throws DBException, IllegalStateException
+		public Long getLastStoredAtInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
 		{
-			return 	isInDB() &&
-					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValuePresent(record)) ?
-						GetLastStoredAt(select(record.getRecordQuery())) :
-						null;
+			if(!isTrackingChanges())
+				throw new IllegalStateException("Table schema does not use change tracking.");
+			else
+				return getStoredVersion(recordOrReference).getLastStoredAt();
 		}
 		
 		/**
@@ -1177,15 +1190,28 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
 			//else...
 			
-			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source), otherwise use current time
-			Long recLsa = GetLastStoredAt(record);
+			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source!), otherwise use current time
+			Long recLsa = record.getLastStoredAt(); // will return null if the Schema doesn't have the TRACK_CHANGES flag
 			Long lsa = recLsa != null ? recLsa : Now();
 			
 			// Perform INSERT:
-			executeSQL(new RecordInsertHelper((STable) this, record, lsa).getQuery());
+			executeSQL(new RecordInsertHelper((STable) this, record, lsa).getQuery()); // lsa value won't be used if the Schema doesn't have the TRACK_CHANGES flag
 			
 			// Set lastStoredAt time on the Record object too (only if no exception is thrown above):
-			SetLastStoredAt(record, lsa);
+			record.setLastStoredAt(RecordFriendship, lsa); // will do nothing if the Schema doesn't have the TRACK_CHANGES flag
+		}
+		
+		/**
+		 * Only for internal use.
+		 * 
+		 * @param record
+		 * @return
+		 * @throws DBConstraintException
+		 * @throws DBException
+		 */
+		/*package*/ void update(Record record) throws DBConstraintException, DBException
+		{
+			update(record, null, isTrackingChanges());
 		}
 		
 		/**
@@ -1193,26 +1219,54 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Assumes the table exists in the database!
 		 * 
 		 * @param record
+		 * @param storedVersion version of the record currently in the db
 		 * @param updateLastStoredAt whether or not to update the lastStoredAt column to the current time, in both the DB and the Record object, but only if an actual UPDATE happened
 		 * @return whether the record was really updated or stayed unchanged (because the record that was passed is identical to the stored one, except wrt LSA)
 		 * @throws DBConstraintException
 		 * @throws DBException
 		 */
-		@SuppressWarnings("unchecked")
-		public boolean update(Record record, boolean updateLastStoredAt) throws DBConstraintException, DBException
+		
+		public boolean update(Record record, Record storedVersion, final boolean updateLastStoredAt) throws DBConstraintException, DBException
 		{
-			// lastStoredAt time:
-			Long lastStoredAt = null; // is set to current time below unless updateLastStoredAt = false
+			// Determine new lastStoredAt time:
+			Long lastStoredAt = null;
+			if(isTrackingChanges() && updateLastStoredAt)
+			{
+				if(record.getLastStoredAt() == null || storedVersion.getLastStoredAt().longValue() == record.getLastStoredAt().longValue())
+					// "Local" update
+					lastStoredAt = Now();
+				else if(storedVersion.getLastStoredAt().longValue() < record.getLastStoredAt().longValue())
+					// This typically means the record being stored is an updated version received from a remote source
+					lastStoredAt = record.getLastStoredAt();
+				else// if(storedVersion.getLastStoredAt().longValue() > record.getLastStoredAt().longValue())
+					throw new DBException("Cannot replace record with out-dated version"); // (this assumes all clocks are correct of course...)
+			}
 			
 			// Perform UPDATE:
-			boolean updated = executeSQLReturnAffectedRows(new RecordUpdateHelper((STable) this, record, updateLastStoredAt ? lastStoredAt = Now() : null, true).getQuery()) == 1;
+			boolean updated = executeUpdate(record, lastStoredAt, updateLastStoredAt);
 			
 			// Update Record object LSA when needed & allowed: 
 			if(updated && updateLastStoredAt) // (only if no exception is thrown above)
-				SetLastStoredAt(record, lastStoredAt);
+				record.setLastStoredAt(RecordFriendship, lastStoredAt); // will do nothing if the Schema doesn't have the TRACK_CHANGES flag
 			
 			// Report back:
 			return updated;
+		}
+		
+		/**
+		 * May be overridden
+		 * 
+		 * @param record
+		 * @param lastStoredAt
+		 * @param updateLastStoredAt
+		 * @return
+		 * @throws DBConstraintException
+		 * @throws DBException
+		 */
+		@SuppressWarnings("unchecked")
+		protected boolean executeUpdate(Record record, Long lastStoredAt, final boolean updateLastStoredAt) throws DBConstraintException, DBException
+		{
+			return executeSQLReturnAffectedRows(new RecordUpdateHelper((STable) this, record, lastStoredAt, isTrackingChanges()).getQuery()) == 1;
 		}
 		
 		/**
@@ -1414,6 +1468,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isLastStoredAtColumn()
 		{
 			return sourceColumnPointer != null && sourceColumnPointer.getColumn() == Schema.COLUMN_LAST_STORED_AT;
+		}
+		
+		public boolean isLastExportedAtColumn()
+		{
+			return sourceColumnPointer != null && sourceColumnPointer.getColumn() == Schema.COLUMN_LAST_EXPORTED_AT;
 		}
 		
 		/**
@@ -1968,7 +2027,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/** 
 		 * @param table
 		 * @param record a record instance (when the statement is not parameterised) or null (when it is parameterised)
-		 * @param lastStoredAt if non null this value will be used as the new lastStoredAt time
+		 * @param lastStoredAt if non-null this value will be used as the lastStoredAt time, provided the record's Schema is change tracking
 		 */
 		public RecordInsertHelper(STable table, Record record, Long lastStoredAt)
 		{
@@ -2088,8 +2147,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * @param table
 		 * @param record a record instance (when the statement is not parameterised) or null (when it is parameterised)
-		 * @param lastStoredAt when null this indicates the lastStoredAt column should not be updated, when not-null the column will be updated but the actual given value is only used when the query is not parameterised 
-		 * @param onlyWhenDifferent if {@code true} the DB-stored record will only be affected (i.e. UPDATEd) if it has least 1 value (in a non-PK and non-lastStoredColumn column) which is actually different w.r.t. the Record object
+		 * @param lastStoredAt only relevant if Record schema has the TRACK_CHANGES flag: when {@code null} this indicates the lastStoredAt column should not be updated, when non-{@code null} the column will be updated but the actual given value is only used when the query is not parameterised 
+		 * @param onlyWhenDifferent if {@code true} the DB-stored record will only be affected (i.e. UPDATEd) if it has least 1 value (in a non-PK and non-lastStoredAt column) which is actually different w.r.t. the Record object
 		 */
 		public RecordUpdateHelper(STable table, Record record, Long lastStoredAt, boolean onlyWhenDifferent)
 		{
@@ -2128,7 +2187,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// WHERE clause:
 			//	Primary key (parts):
 			appendWhereClause(record);
-			//	Extend WHERE clause with value comparisons to avoid affecting row(s) with values that do not actually need to be UPDATEd
+			//	Extend WHERE clause with value comparisons to avoid affecting row(s) with values that do not actually need to be UPDATEd:
 			if(onlyWhenDifferent)
 			{
 				List<SColumn> diffCheckCols = new ArrayList<SColumn>();

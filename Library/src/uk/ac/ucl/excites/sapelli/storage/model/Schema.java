@@ -86,14 +86,19 @@ public class Schema extends ColumnSet implements Serializable
 		return new RecordReference(Model.SCHEMA_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
-	static public IntegerColumn GetRawMSTimeColumn(String name, boolean optional)
-	{
-		return new IntegerColumn(name, optional, true, Long.SIZE);
-	}
+	/**
+	 * Column to keep track of when a record was last stored/updates in the/a RecordStore,
+	 * only used on Schemata which have the {@link StorageClient#SCHEMA_FLAG_TRACK_CHANGES} flag set.
+	 * Careful: only RecordStores, record import classes, and the RecordsPayload class should write to this column.
+	 */
+	static public final IntegerColumn COLUMN_LAST_STORED_AT = new IntegerColumn("lastStoredAt", false, true, Long.SIZE);
 	
-	static public final IntegerColumn COLUMN_LAST_STORED_AT = GetRawMSTimeColumn("lastStoredAt", true);
-	
-	static public final IntegerColumn COLUMN_LAST_EXPORTED_AT = GetRawMSTimeColumn("lastExportedAt", true);
+	/**
+	 * Column to keep track of when a record was last exported,
+	 * only used on Schemata which have the {@link StorageClient#SCHEMA_FLAG_EXPORTABLE} flag set.
+	 * Careful: only RecordStores should write to this column.
+	 */
+	static public final IntegerColumn COLUMN_LAST_EXPORTED_AT = new IntegerColumn("lastExportedAt", true, true, Long.SIZE);
 	
 	// DYNAMICS ---------------------------------------------------------------
 	public final String tableName;
@@ -320,14 +325,14 @@ public class Schema extends ColumnSet implements Serializable
 		if(!hasPrimaryKey())
 		{
 			IntegerColumn autoKeyCol = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
-			this.addColumn(autoKeyCol, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
+			this.addColumn(autoKeyCol, false /*no virtual versions to consider*/, false /*avoid endless sealing loop!*/);
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
 		// Add lastStoredAt & lastExportedAt:
 		if(hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES))
-			this.addColumn(COLUMN_LAST_STORED_AT, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
+			this.addColumn(COLUMN_LAST_STORED_AT, false /*no virtual versions to consider*/, false /*avoid endless sealing loop!*/);
 		if(hasFlags(StorageClient.SCHEMA_FLAG_EXPORTABLE))
-			this.addColumn(COLUMN_LAST_EXPORTED_AT, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
+			this.addColumn(COLUMN_LAST_EXPORTED_AT, false /*no virtual versions to consider*/, false /*avoid endless sealing loop!*/);
 	}
 		
 	/**

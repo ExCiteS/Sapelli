@@ -64,7 +64,7 @@ public abstract class SQLiteStatement implements Closeable
 	
 	/**
 	 * @param recordOrReference
-	 * @param lastStoredAt if non-null this value will be used as the new lastStoredAt time
+	 * @param lastStoredAt if non-null this value will be used as the new lastStoredAt time, provided the record's Schema is change tracking
 	 * @throws DBException
 	 */
 	public void retrieveAndBindAll(RecordValueSet<?> recordOrReference, Long lastStoredAt) throws DBException

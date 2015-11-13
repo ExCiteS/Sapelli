@@ -51,6 +51,12 @@
                 android:layout_height="wrap_content"
                 android:text="@string/exportDateRangeTo" />
         </LinearLayout>
+        
+        <CheckBox
+            android:id="@+id/checkExcludePreviouslyExported"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/exportExcludePreviouslyExported" />
 
 		<LinearLayout
 		    android:id="@+id/groupExportDestination"

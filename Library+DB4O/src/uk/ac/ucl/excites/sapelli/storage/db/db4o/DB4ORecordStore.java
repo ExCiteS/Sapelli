@@ -181,9 +181,21 @@ public class DB4ORecordStore extends RecordStore
 						action != ACTION_INSERT_ONLY)
 			{	// Yes, we are allowed to either INSERT or UPDATE... 
 				
-				// Set/update LSA on the given Record instance (if record != toBeStored it will be copied below)
-				if(action != ACTION_UPDATE_ONLY_EXCEPT_LSA)
-					SetLastStoredAt(record, Now());
+				// Determine LSA:
+				if(action != ACTION_UPDATE_ONLY_EXCEPT_LSA && record.getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES))
+				{
+					Long lastStoredAt = record.getLastStoredAt();
+					if(lastStoredAt == null || (!insert && previouslyStored.getLastStoredAt().longValue() == record.getLastStoredAt().longValue()))
+						// First insert or "local" update:
+						lastStoredAt = Now();
+					else if(!insert && previouslyStored.getLastStoredAt().longValue() < record.getLastStoredAt().longValue())
+						// This typically means the record being stored is an updated version received from a remote source
+						lastStoredAt = record.getLastStoredAt();
+					else// if(!insert && previouslyStored.getLastStoredAt().longValue() > record.getLastStoredAt().longValue())
+						throw new DBException("Cannot replace record with out-dated version"); // (this assumes all clocks are correct of course...)
+					// Set/update LSA on the given Record instance (if record != toBeStored it will be copied below):
+					record.setLastStoredAt(RecordFriendship, lastStoredAt);
+				}
 				
 				// Update values of toBeStored when necessary...
 				if(toBeStored != record) // i.e. in UPDATE-case-2

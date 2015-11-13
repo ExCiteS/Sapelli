@@ -37,6 +37,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -51,6 +52,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
+import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
@@ -124,6 +126,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	// UI Elements
 	private Button btnFrom;
 	private Button btnTo;
+	private CheckBox checkExcludePreviouslyExported;
 	private Button btnDestination;
 	private Spinner spinOutputFormat;
 	private Spinner spinXMLMode;
@@ -200,6 +203,9 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			updateDateRange(DT_RANGE_IDX_FROM, null);
 			updateDateRange(DT_RANGE_IDX_TO, null);
 		}
+		
+		// Exclude previously exported:
+		checkExcludePreviouslyExported = (CheckBox) rootLayout.findViewById(R.id.checkExcludePreviouslyExported);
 		
 		// Output destination:
 		exportFolder = getOwner().getFileStorageProvider().getExportFolder(true);
@@ -449,7 +455,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			//	TODO Exclude previously exported
 			
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
+			new RecordsTasks.QueryTask(activity, this).execute(SimpleExporter.GetRecordsQuery(source, Order.UNDEFINED, RecordsQuery.NO_LIMIT, constraints, checkExcludePreviouslyExported.isChecked()));
 			// TODO order by form, deviceid, timestamp
 			// TODO let ExportFragment & Backup share this code somehow
 		}

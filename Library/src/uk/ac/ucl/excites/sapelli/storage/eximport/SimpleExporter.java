@@ -20,10 +20,24 @@ package uk.ac.ucl.excites.sapelli.storage.eximport;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 
 /**
@@ -35,7 +49,45 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
  */
 public abstract class SimpleExporter extends SimpleSchemaTraverser implements Exporter
 {
+	
+	// STATIC ------------------------------------------------------------
+	/**
+	 * @param recStore
+	 * @param selectionQuery
+	 * @param excludePreviouslyExported
+	 * @return
+	 */
+	static public RecordsQuery GetRecordsQuery(Source source, Order order, int limit, Constraint constraints, boolean excludePreviouslyExported)
+	{
+		return new RecordsQuery(source,
+								order,
+								limit,
+								constraints,
+								(excludePreviouslyExported ?
+									// Add constraints to exclude previously exported records:
+									new OrConstraint(	EqualityConstraint.IsNull(Schema.COLUMN_LAST_EXPORTED_AT), // never exported
+														new RuleConstraint(Schema.COLUMN_LAST_EXPORTED_AT, Schema.COLUMN_LAST_STORED_AT, Comparison.SMALLER)) : // previously exported but changed since
+									null));
+	}
+	
+	/**
+	 * @param recStore
+	 * @param records
+	 * @param exportTime
+	 * @throws DBException
+	 */
+	static public void MarkAsExported(RecordStore recStore, List<Record> records, final TimeStamp exportTime) throws DBException
+	{
+		for(Record record : records)
+		{
+			// Set LEA:
+			record.setLastExportedAt(exportTime.getMsSinceEpoch());
+			// Update record in RecordStore without affecting LSA:
+			recStore.update(record, false);
+		}
+	}
 
+	// DYNAMIC -----------------------------------------------------------
 	protected File exportFolder;
 	protected boolean forceExportUnexportable = false;
 	

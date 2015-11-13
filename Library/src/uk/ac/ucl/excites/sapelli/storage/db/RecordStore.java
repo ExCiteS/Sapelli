@@ -104,20 +104,13 @@ public abstract class RecordStore extends Store
 		return Long.valueOf(System.currentTimeMillis());
 	}
 	
-	static protected Long GetLastStoredAt(Record record)
-	{
-		if(record != null) // TODO only for Schemata with tracked changes
-			return Schema.COLUMN_LAST_STORED_AT.retrieveValue(record);
-		else
-			return null;
-	}
+	/**
+	 * @author mstevens
+	 * @see http://stackoverflow.com/a/18634125/1084488
+	 */
+	static public final class RecordFriendship { private RecordFriendship(){} }
 	
-	static protected void SetLastStoredAt(Record record, Long lastStoredAt)
-	{
-		if(record != null) // TODO only for Schemata with tracked changes
-			Schema.COLUMN_LAST_STORED_AT.storeValue(record, lastStoredAt);
-		// else: do nothing
-	}
+	static protected final RecordFriendship RecordFriendship = new RecordFriendship();
 	
 	// DYNAMIC ----------------------------------------------------------------
 	protected StorageClient client;
