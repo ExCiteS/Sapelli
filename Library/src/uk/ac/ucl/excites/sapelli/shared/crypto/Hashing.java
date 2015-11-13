@@ -54,7 +54,7 @@ public final class Hashing
 	private Hashing() { } // should not be instantiated
 
 	/**
-	 * Computes a 256 bit SHA hash code from the provided data
+	 * Computes a 256 bit SHA-2 hash code from the provided data
 	 * 
 	 * @param data
 	 * @return
@@ -65,7 +65,7 @@ public final class Hashing
 	}
 
 	/**
-	 * Computes a 256 bit SHA hash code from the provided data
+	 * Computes a 256 bit SHA-2 hash code from the provided data
 	 * 
 	 * @param data
 	 * @return
