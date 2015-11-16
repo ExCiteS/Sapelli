@@ -83,7 +83,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		JavaSQLiteStatement statement = null;
 		try
 		{
-			statement = getStatement("PRAGMA user_version;", null);
+			statement = generateStatement("PRAGMA user_version;", null);
 			return statement.executeLongQuery().intValue();
 		}
 		catch(Exception ex)
@@ -147,7 +147,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	protected SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
 		// Get statement:
-		JavaSQLiteStatement selectStatement = getStatement(sql, paramCols);
+		JavaSQLiteStatement selectStatement = generateStatement(sql, paramCols);
 		
 		// Bind parameters:
 		selectStatement.bindAll(sapArguments);
@@ -157,7 +157,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected JavaSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
+	protected JavaSQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
 		try
 		{

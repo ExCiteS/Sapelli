@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.ClassHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -344,7 +346,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return
 	 * @throws DBException
 	 */
-	protected abstract SQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract SQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/**
 	 * 
@@ -353,11 +355,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SQLiteStatement ROWIDStatement;
-		private SQLiteStatement insertStatement;
-		private SQLiteStatement updateStatement;
-		private SQLiteStatement deleteStatement;
-		private SQLiteStatement countStatement;
+		private final StatementHandle ROWIDStatementHandle = new StatementHandle(SelectROWIDHelper.class);
+		private final StatementHandle insertStatementHandle = new StatementHandle(RecordInsertHelper.class);
+		private final StatementHandle updateStatementHandle = new StatementHandle(RecordUpdateHelper.class);
+		private final StatementHandle deleteStatementHandle = new StatementHandle(RecordDeleteHelper.class);
+		private final StatementHandle countStatementHandle = new StatementHandle(RecordCountHelper.class);
 
 		public SQLiteTable(Schema schema)
 		{
@@ -378,7 +380,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @return the long value or null if there was no matching record
 		 * @throws DBException
 		 */
-		protected synchronized Long executeLongQuery(RecordValueSet<?> recordOrReference, SQLiteStatement statement) throws DBException
+		protected synchronized Long executeLongQuery(RecordValueSet<?> recordOrReference, StatementHandle handle) throws DBException
 		{
 			// Check if table itself exists in db:
 			if(!isInDB())
@@ -390,6 +392,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				return null;
 			
 			//	Bind parameters:
+			SQLiteStatement statement = handle.getStatement();
 			statement.retrieveAndBindAll(recordOrReference);
 			//	Execute:
 			return statement.executeLongQuery();
@@ -406,17 +409,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		
 		public Long getROWID(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			// Get/recycle statement...
-			if(ROWIDStatement == null)
-			{
-				SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
-				ROWIDStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
-			}
-			else
-				ROWIDStatement.clearAllBindings();
-
 			//	Execute:
-			return executeLongQuery(recordOrReference, ROWIDStatement);
+			return executeLongQuery(recordOrReference, ROWIDStatementHandle);
 		}
 		
 		/* (non-Javadoc)
@@ -425,13 +419,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
-			if(insertStatement == null)
-			{
-				RecordInsertHelper insertHelper = new RecordInsertHelper(this);
-				insertStatement = getStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
-			}
-			else
-				insertStatement.clearAllBindings(); // clear bindings for reuse
+			// Get/recycle statement...
+			SQLiteStatement insertStatement = insertStatementHandle.getStatement();
 
 			// Bind parameters:
 			insertStatement.retrieveAndBindAll(record);
@@ -460,14 +449,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized boolean update(Record record) throws DBConstraintException, DBException
 		{
-			if(updateStatement == null)
-			{
-				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this);
-				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
-			}
-			else
-				updateStatement.clearAllBindings(); // clear bindings for reuse
-
+			// Get/recycle statement... 
+			SQLiteStatement updateStatement = updateStatementHandle.getStatement();
+			
 			// Bind parameters:
 			updateStatement.retrieveAndBindAll(record);
 			
@@ -487,13 +471,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			if(deleteStatement == null)
-			{
-				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this);
-				deleteStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
-			}
-			else
-				deleteStatement.clearAllBindings(); // clear bindings for reuse
+			// Get/recycle statement... 
+			SQLiteStatement deleteStatement = deleteStatementHandle.getStatement();
 
 			// Bind parameters:
 			deleteStatement.retrieveAndBindAll(recordOrReference);
@@ -508,7 +487,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
-			SQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			SQLiteStatement deleteByQStatement = generateStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			
 			// Bind parameters:
 			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
@@ -565,39 +544,63 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized long getRecordCount() throws DBException
 		{
-			if(countStatement == null)
-				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
-			return countStatement.executeLongQuery();
+			return countStatementHandle.getStatement().executeLongQuery();
 		}
 		
 		@Override
 		public synchronized void release()
 		{
-			if(ROWIDStatement != null)
+			ROWIDStatementHandle.close();
+			insertStatementHandle.close();
+			updateStatementHandle.close();
+			deleteStatementHandle.close();
+			countStatementHandle.close();
+		}
+		
+		/**
+		 * Helper class to instantiate and hold on to SQLiteStatements
+		 * 
+		 * @author mstevens
+		 */
+		@SuppressWarnings("rawtypes")
+		protected class StatementHandle implements Closeable
+		{
+			
+			private final Class<? extends SQLRecordStore.StatementHelper> helperClass;
+			private SQLiteStatement statement;
+			
+			/**
+			 * @param helperClass Class of a StatementHelper subtype which (a) is contained in SQLiteRecordStore or SQLRecordStore, and (b) which has a constructor that takes only a SQL(ite)Table and creates a parameterised StatementHelper instance
+			 */
+			public StatementHandle(Class<? extends SQLRecordStore.StatementHelper> helperClass)
 			{
-				ROWIDStatement.close();
-				ROWIDStatement = null;
+				this.helperClass = helperClass;
 			}
-			if(insertStatement != null)
+			
+			public SQLiteStatement getStatement() throws DBException
 			{
-				insertStatement.close();
-				insertStatement = null;
+				if(statement == null)
+				{
+					@SuppressWarnings("unchecked")
+					StatementHelper helper = ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
+					statement = generateStatement(helper.getQuery(), helper.getParameterColumns());
+				}
+				else
+					statement.clearAllBindings(); // clear bindings for reuse
+				// Return:
+				return statement;
 			}
-			if(updateStatement != null)
+
+			@Override
+			public void close()
 			{
-				updateStatement.close();
-				updateStatement = null;
+				if(statement != null)
+				{
+					statement.close();
+					statement = null;
+				}
 			}
-			if(deleteStatement != null)
-			{
-				deleteStatement.close();
-				deleteStatement = null;
-			}
-			if(countStatement != null)
-			{
-				countStatement.close();
-				countStatement = null;
-			}
+			
 		}
 		
 	}
@@ -699,7 +702,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		protected abstract SQLType getValue(SQLiteCursor cursor, int columnIdx) throws DBException;
 		
 	}
-
 	
 	/**
 	 * 

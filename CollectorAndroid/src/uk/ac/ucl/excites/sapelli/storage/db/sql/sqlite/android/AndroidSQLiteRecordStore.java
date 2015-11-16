@@ -284,7 +284,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected AndroidSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
+	protected AndroidSQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
 		if(loggingEnabled)
 			Log.d(TAG, "Compile statement: " + sql);
@@ -311,7 +311,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	public int getNumberOfAffectedRows() throws DBException//SQLException
 	{
 		if(selectChangesStatement == null)
-			selectChangesStatement = getStatement("SELECT changes();", null);
+			selectChangesStatement = generateStatement("SELECT changes();", null);
 		return selectChangesStatement.executeLongQuery().intValue();
 		// Alternative implementation (kept for future reference only):
 		/*Cursor cursor = null;
