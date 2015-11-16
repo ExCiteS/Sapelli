@@ -59,6 +59,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
+import uk.ac.ucl.excites.sapelli.storage.queries.Query;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
@@ -1975,61 +1976,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * Abstract super class for operations that operate on a single record found by its primary key
-	 * 
-	 * @author mstevens
-	 */
-	protected abstract class RecordByPrimaryKeyHelper extends StatementHelper
-	{
-		
-		/**
-		 * @param table
-		 */
-		public RecordByPrimaryKeyHelper(STable table)
-		{
-			super(table);
-		}
-		
-		/**
-		 * @param a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
-		 */
-		protected void appendWhereClause(RecordValueSet<?> recordOrReference)
-		{
-			bldr.append("WHERE");
-			if(table.getKeyPartSQLColumns().size() > 1)
-			{
-				bldr.append("(");
-				bldr.openTransaction(" AND ");
-			}
-			for(SColumn keyPartSqlCol : table.getKeyPartSQLColumns())
-			{
-				bldr.openTransaction(SPACE);
-				bldr.append(keyPartSqlCol.name);
-				bldr.append("=");
-				if(isParameterised())
-				{
-					bldr.append(valuePlaceHolder);
-					addParameterColumn(keyPartSqlCol);
-				}
-				else
-					bldr.append(keyPartSqlCol.retrieveAsLiteral(recordOrReference, true));
-				bldr.commitTransaction();
-			}
-			if(table.getKeyPartSQLColumns().size() > 1)
-			{
-				bldr.commitTransaction(false); // no space after "("
-				bldr.append(")", false); // no space before ")"
-			}
-		}
-		
-	}
-	
-	/**
 	 * Helper class to build UPDATE statements (parameterised or literal)
 	 * 
 	 * @author mstevens
 	 */
-	protected class RecordUpdateHelper extends RecordByPrimaryKeyHelper
+	protected class RecordUpdateHelper extends RecordsByConstraintsHelper
 	{
 		
 		/**
@@ -2084,7 +2035,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @author mstevens
 	 */
-	protected class RecordDeleteHelper extends RecordByPrimaryKeyHelper
+	protected class RecordDeleteHelper extends RecordsByConstraintsHelper
 	{
 	
 		/**
@@ -2143,14 +2094,35 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.sapArguments = isParameterised() ? new ArrayList<Object>() : null;
 		}
 		
-		protected void appendWhereClause(RecordsQuery recordsQuery)
+		/**
+		 * Appends a WHERE clause which matches the PK (parts) of the given Record[Reference] (if non-null)
+		 * or the PK columns of the Schema of the table (if the given Record[Reference] is null and the statement is parameterised).
+		 * 
+		 * @param a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
+		 */
+		protected void appendWhereClause(RecordValueSet<?> recordOrReference)
 		{
-			if(recordsQuery.getConstraints() != null)
+			if(!isParameterised() && recordOrReference == null)
+				throw new NullPointerException("recordOrReference cannot be null if statement is not parameterised");
+			if(recordOrReference != null)
+				appendWhereClause(recordOrReference.getRecordQueryConstraint());
+			else
+				appendWhereClause(table.schema.getBlankPKConstraints()); // only when parameterised!
+		}
+		
+		/**
+		 * Appends a WHERE clause matching the given constraint(s).
+		 * 
+		 * @param constraints
+		 */
+		protected void appendWhereClause(Constraint constraints)
+		{
+			if(constraints != null)
 			{
 				bldr.openTransaction();
 				bldr.append("WHERE");
 				bldr.openTransaction();
-				recordsQuery.getConstraints().accept(this); // start visiting of constraint(s)
+				constraints.accept(this); // start visiting of constraint(s)
 				if(!bldr.isCurrentTransactionEmpty())
 					bldr.commitTransactions(2);
 				else
@@ -2224,8 +2196,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			{	// Equality constraint on non-composite (leaf) column...
 				Object sapValue = equalityConstr.getValue();
 				bldr.append(sqlCol.name);
-				if(sapValue != null)
-				{
+				if(sapValue != null || (table.getKeyPartSQLColumns().contains(sqlCol) && isParameterised()))
+				{	// Value is not null, or null but part of the PK and this is a parameterised statement
 					bldr.append(getComparisonOperator(equalityConstr.isEqual() ? Comparison.EQUAL : Comparison.NOT_EQUAL));
 					if(isParameterised())
 					{
@@ -2353,7 +2325,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param table
 		 * @param projection
 		 */
-		public SelectHelper(STable table, SP projection, boolean buildQueryNow)
+		public SelectHelper(STable table, SP projection)
+		{
+			this(table, projection, true);
+		}
+		
+		/**
+		 * @param table
+		 * @param projection
+		 * @param buildQueryNow whether or not to call {@link #buildQuery(RecordsQuery)} from this constructor
+		 */
+		protected SelectHelper(STable table, SP projection, boolean buildQueryNow)
 		{
 			this(table, projection, null, buildQueryNow);
 		}
@@ -2362,19 +2344,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param table
 		 * @param projection
 		 * @param recordsQuery
+		 */
+		public SelectHelper(STable table, SP projection, Query<?> query)
+		{
+			this(table, projection, query, true);
+		}
+		
+		/**
+		 * @param table
+		 * @param projection
+		 * @param recordsQuery
 		 * @param buildQueryNow whether or not to call {@link #buildQuery(RecordsQuery)} from this constructor
 		 */
-		public SelectHelper(STable table, SP projection, RecordsQuery recordsQuery, boolean buildQueryNow)
+		protected SelectHelper(STable table, SP projection, Query<?> query, boolean buildQueryNow)
 		{
 			super(table);
 			this.projection = projection;
 			
 			if(buildQueryNow)
 				// Build SELECT query:
-				buildQuery(recordsQuery);
+				buildQuery(query);
 		}
 		
-		protected void buildQuery(RecordsQuery recordsQuery)
+		protected void buildQuery(Query<?> query)
 		{
 			// Build query:
 			bldr.append("SELECT");
@@ -2382,19 +2374,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("FROM");
 			bldr.append(table.tableName);
 			// if there is no recordsQuery we are done here, unless forceWhereClause() returns true:
-			if(recordsQuery == null && !forceWhereClause())
+			if(query == null && !forceWhereClause())
 				return;
 			//else:
 			// 	WHERE
-			appendWhereClause(recordsQuery);
+			appendWhereClause(query != null ? query.getConstraints() : null);
 			// if there is no recordsQuery we are *really* done here:
-			if(recordsQuery == null)
+			if(query == null)
 				return;
 			//else:
 			// 	GROUP BY
 			//		not supported (for now)
 			//	ORDER BY
-			Order order = recordsQuery.getOrder();
+			Order order = query.getOrder();
 			if(order.isDefined())
 			{
 				bldr.append("ORDER BY");
@@ -2402,15 +2394,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append(order.isAsc() ? "ASC" : "DESC");
 			}
 			//	LIMIT
-			if(recordsQuery.isLimited())
+			if(query.isLimited())
 			{
 				bldr.append("LIMIT");
-				bldr.append(Integer.toString(recordsQuery.getLimit()));
+				bldr.append(Integer.toString(query.getLimit()));
 			}
 		}
 		
 		/**
-		 * Can be overridden with a method returning {@code true}, in which case {@link #appendWhereClause(RecordsQuery)} will be called even when the {@link RecordsQuery} is {@code null}.
+		 * Can be overridden with a method returning {@code true}, in which case {@link #appendWhereClause(Constraint)} will be called even when the {@link Query} is {@code null}.
 		 * 
 		 * @return
 		 */
@@ -2478,16 +2470,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected class RecordValueSetSelectHelper<R extends RecordValueSet<?>> extends SelectHelper<RecordValueSetSelectionProjection<R>>
 	{
 
-		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection)
-		{
-			this(table, projection, null);
-		}
-		
-		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection, boolean buildQueryNow)
-		{
-			this(table, projection, null, buildQueryNow);
-		}
-		
 		protected RecordValueSetSelectHelper(STable table, RecordValueSetSelectionProjection<R> projection, RecordsQuery recordsQuery)
 		{
 			this(table, projection, recordsQuery, true);
@@ -2561,29 +2543,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * A {@link SelectProjection} class for the execution of SELECT COUNT(*) queries.
-	 * 
-	 * @author mstevens
-	 */
-	static private class CountProjection implements SelectProjection
-	{
-		
-		static private final CountProjection COUNT_PROJECTION = new CountProjection();
-
-		@Override
-		public String getProjectionString()
-		{
-			return "COUNT(*)";
-		}
-		
-	}
-	
-	/**
 	 * A {@link SelectHelper} class for the execution of SELECT COUNT(*) queries.
 	 * 
 	 * @author mstevens
 	 */
-	protected class RecordCountHelper extends SelectHelper<CountProjection>
+	protected class RecordCountHelper extends SelectHelper<SelectProjection>
 	{
 		
 		/**
@@ -2600,7 +2564,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public RecordCountHelper(STable table, RecordsQuery recordsQuery)
 		{
-			super(table, CountProjection.COUNT_PROJECTION, recordsQuery, true);
+			super(	table,
+					new SelectProjection()
+					{
+						@Override
+						public String getProjectionString()
+						{
+							return "COUNT(*)";
+						}
+					},
+					recordsQuery);
 		}
 		
 	}
@@ -2673,7 +2646,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 
 		@Override
-		protected void appendWhereClause(RecordsQuery recordsQuery)
+		protected void appendWhereClause(Constraint constraints)
 		{
 			if(exception != null && innerQueryHelper != null)
 				return;
@@ -2753,7 +2726,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("DELETE FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
-			appendWhereClause(recordsQuery);
+			appendWhereClause(recordsQuery.getConstraints());
 		}
 		
 	}
