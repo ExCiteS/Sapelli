@@ -395,7 +395,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Get statement:
 			SQLiteStatement statement = handle.getStatement();
 			
-			//	Bind parameters:
+			// Bind parameters:
 			statement.retrieveAndBindAll(recordOrReference);
 			
 			//	Execute:
@@ -472,7 +472,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Execute UPDATE:
 			return updateStatement.executeUpdate() == 1;
 		}
-
+		
 		public synchronized void upsert(Record record) throws DBException
 		{
 			// TODO first read http://stackoverflow.com/questions/3634984/insert-if-not-exists-else-update 
