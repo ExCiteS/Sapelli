@@ -1169,7 +1169,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(!isTrackingChanges())
 				throw new IllegalStateException("Table schema does not use change tracking.");
 			else
-				return getStoredVersion(recordOrReference).getLastStoredAt();
+			{
+				Record asStored = getStoredVersion(recordOrReference);
+				return asStored != null ? asStored.getLastStoredAt() : null;
+			}
 		}
 		
 		/**
