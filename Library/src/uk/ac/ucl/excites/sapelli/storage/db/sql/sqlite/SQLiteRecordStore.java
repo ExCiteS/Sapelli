@@ -353,7 +353,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SQLiteStatement existsStatement;
+		private SQLiteStatement ROWIDStatement;
 		private SQLiteStatement insertStatement;
 		private SQLiteStatement updateStatementWithLSA;
 		private SQLiteStatement updateStatementWithoutLSA;
@@ -371,34 +371,53 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return new SQLiteTableCreationHelper(this);
 		}
 		
-		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
+		/**
+		 * Run a statement pertaining to a single record which results in a single long value.
+		 * 
+		 * @param recordOrReference
+		 * @param statement
+		 * @return the long value or null if there was no matching record
+		 * @throws DBException
 		 */
-		@Override
-		public synchronized boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
+		protected synchronized Long executeLongQuery(RecordValueSet<?> recordOrReference, SQLiteStatement statement) throws DBException
 		{
 			// Check if table itself exists in db:
 			if(!isInDB())
-				return false;
+				return null;
 			
 			// Check if all PK (sub)columns have a value:
 			//	if there is (complete) PK we can assume this record doesn't exist in the db (and we wouldn't be able to find it if it did):
 			if(!recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
-				return false;
+				return null;
 			
-			// Perform actual check by querying...
-			//	Get/recycle statement...
-			if(existsStatement == null)
+			//	Bind parameters:
+			statement.retrieveAndBindAll(recordOrReference);
+			//	Execute:
+			return statement.executeLongQuery();
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
+		 */
+		@Override
+		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
+		{
+			return getROWID(recordOrReference) != null;
+		}
+		
+		public Long getROWID(RecordValueSet<?> recordOrReference) throws DBException
+		{
+			// Get/recycle statement...
+			if(ROWIDStatement == null)
 			{
 				SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
-				existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
+				ROWIDStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
 			}
 			else
-				existsStatement.clearAllBindings();
-			//	Bind parameters:
-			existsStatement.retrieveAndBindAll(recordOrReference);
+				ROWIDStatement.clearAllBindings();
+
 			//	Execute:
-			return existsStatement.executeLongQuery() != null;
+			return executeLongQuery(recordOrReference, ROWIDStatement);
 		}
 		
 		/* (non-Javadoc)
@@ -559,10 +578,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized void release()
 		{
-			if(existsStatement != null)
+			if(ROWIDStatement != null)
 			{
-				existsStatement.close();
-				existsStatement = null;
+				ROWIDStatement.close();
+				ROWIDStatement = null;
 			}
 			if(insertStatement != null)
 			{
