@@ -58,6 +58,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -951,22 +952,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	}
 	
 	/**
+	 * A {@link SelectHelper} class for the execution of SELECT ROWID queries.
 	 * 
 	 * @author mstevens
 	 */
-	protected class SelectROWIDHelper extends RecordByPrimaryKeyHelper
+	private class SelectROWIDHelper extends SelectHelper<SelectProjection>
 	{
-
+		
+		/**
+		 * @param table
+		 */
 		public SelectROWIDHelper(SQLiteTable table)
 		{
-			// Initialise
-			super(table);
-			
-			// Build statement:	
-			bldr.append("SELECT ROWID FROM");
-			bldr.append(table.tableName);
-			// WHERE clause:
-			appendWhereClause(null);
+			super(	table,
+					new SelectProjection()
+					{
+						@Override
+						public String getProjectionString()
+						{
+							return "ROWID";
+						}
+					},
+					new RecordsQuery(Source.From(table.schema), table.schema.getBlankPKConstraints()));
 		}
 		
 	}
