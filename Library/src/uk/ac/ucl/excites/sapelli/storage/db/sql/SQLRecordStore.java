@@ -1126,7 +1126,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Checks if the given {@link Record} instance already exists in the database table.
+		 * Returns the currently stored version of the given Record or indicated by the given RecordReference.
+		 * 
+		 * @param recordOrReference
+		 * @return
+		 * @throws NullPointerException
+		 * @throws DBException
+		 */
+		public Record getStoredVersion(RecordValueSet<?> recordOrReference) throws DBException
+		{
+			if(isInDB() && recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
+				return select(recordOrReference.getRecordQuery());
+			else
+				return null;
+		}
+		
+		/**
+		 * Checks if the given {@link Record}, or the one indicated by the given {@link RecordReference}, already exists in the database table.
 		 * 
 		 * May be overridden.
 		 * 
@@ -1134,14 +1150,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @return
 		 * @throws NullPointerException
 		 * @throws DBException
-		 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 		 */
-		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
+		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			return	isInDB() &&
-					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValuePresent(recordOrReference)) ? 
-						select(recordOrReference.getRecordQuery()) != null :
-						false;
+			return getStoredVersion(recordOrReference) != null;
 		}
 		
 		/**
