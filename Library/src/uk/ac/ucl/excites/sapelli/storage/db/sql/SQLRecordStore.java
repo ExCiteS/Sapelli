@@ -2119,7 +2119,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * Helper class to build UPDATE statements (parameterised or literal)
 	 * 
-	 * Generates statements sush as:
+	 * Generates statements such as:
 	 * 	UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE pk1 = X AND pk2 = Y;
 	 * Or hen the {@code onlyWhenDifferent} constructor parameter is {@code true}: 
 	 * 	UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE pk1 = X AND pk2 = Y AND (col1 IS NOT "newVal1" OR col2 IS NOT "newVal2");
@@ -2139,7 +2139,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public RecordUpdateHelper(STable table, boolean updateLastStoredAt, boolean onlyWhenDifferent)
 		{
 			this(	table,
-					null, // --> indicated the query is parameterised
+					null, // --> indicates the query is parameterised
 					updateLastStoredAt ? Now() : null, // the Now() value is not(!) actually used, but we must pass a non-null Long to make sure the lastStoredAt will be updated (with the value being determined when the corresponding parameter is bound) 
 					onlyWhenDifferent);
 		}
@@ -2822,7 +2822,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 
 		@Override
-		protected void appendWhereClause(RecordsQuery recordsQuery)
+		protected void appendWhereClause(Constraint constraints)
 		{
 			if(exception != null && innerQueryHelper != null)
 				return;
