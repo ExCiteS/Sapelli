@@ -2039,7 +2039,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public RecordUpdateHelper(STable table)
 		{
-			this(table, null);
+			this(table, null /*indicates the query is parameterised*/);
 		}
 		
 		/**
