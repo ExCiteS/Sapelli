@@ -1135,7 +1135,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public Record getStoredVersion(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			if(isInDB() && recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
+			if(isInDB() && recordOrReference.isReferenceable() /*also checks autoIncrPK*/)
 				return select(recordOrReference.getRecordQuery());
 			else
 				return null;
@@ -1457,11 +1457,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public void store(RecordValueSet<?> recordOrReference, SQLType value)
 		{
+			// Get column:
 			Column<SapType> col = sourceColumnPointer.getColumn();
+			// Get valueSet (i.e. the (sub)record):
+			ValueSet<?> valueSet = sourceColumnPointer.getValueSet(recordOrReference, value != null); // only create if we have a non-null value to set
+			// Set or clear value:
 			if(value != null)
-				col.storeValue(sourceColumnPointer.getValueSet(recordOrReference, true), mapping.toSapelliType(value));
-			else
-				col.clearValue(sourceColumnPointer.getValueSet(recordOrReference, false));
+				col.storeValue(valueSet, mapping.toSapelliType(value));
+			else if(valueSet != null) // only clear if we have a non-null valueSet:
+				col.clearValue(valueSet);
 		}
 		
 		/**
@@ -1578,7 +1582,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		protected STable table;
 		
-		private boolean useBoolColsForValueSetCols = true;
+		private boolean useBoolColsForValueSetCols = true; // !!!
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
@@ -2204,9 +2208,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			ColumnPointer<?> cp = equalityConstr.getColumnPointer();
 			SColumn sqlCol = table.getSQLColumn(cp);
+			Object sapValue = equalityConstr.getValue();
 			if(sqlCol != null)
 			{	// Equality constraint on non-composite (leaf) column...
-				Object sapValue = equalityConstr.getValue();
 				bldr.append(sqlCol.name);
 				if(sapValue != null || (table.getKeyPartSQLColumns().contains(sqlCol) && isParameterised()))
 				{	// Value is not null, or null but part of the PK and this is a parameterised statement
@@ -2227,15 +2231,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					bldr.append(getNullString()); // "NULL"
 				}
 			}
-			else if(cp.getColumn() instanceof ValueSetColumn<?, ?> && /* just to be sure: */ equalityConstr.getValue() instanceof ValueSet<?>)
+			else if(cp.getColumn() instanceof ValueSetColumn<?, ?>)
 			{	// Equality constraint on composite column...
 				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?, ?>) cp.getColumn());
 				if(subSqlCols != null)
 				{	// ...  which is split up in the SQLTable...
-					ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();
+					ValueSet<?> valueSet = (ValueSet<?>) sapValue;
 					AndConstraint andConstr = new AndConstraint();
 					for(SColumn subSqlCol : subSqlCols)
-						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueSet)));
+						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, valueSet != null ? subSqlCol.sourceColumnPointer.retrieveValue(valueSet) : null));
 					andConstr.reduce().accept(this);
 				}
 			}

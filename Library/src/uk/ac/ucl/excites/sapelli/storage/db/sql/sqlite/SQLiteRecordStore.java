@@ -386,7 +386,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			
 			// Check if all PK (sub)columns have a value:
 			//	if there is (complete) PK we can assume this record doesn't exist in the db (and we wouldn't be able to find it if it did):
-			if(!recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
+			if(!recordOrReference.isReferenceable() /*also checks autoIncrPK*/)
 				return null;
 			
 			//	Bind parameters:
@@ -697,8 +697,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @throws DBException
 		 */
 		protected abstract SQLType getValue(SQLiteCursor cursor, int columnIdx) throws DBException;
-
+		
 	}
+
 	
 	/**
 	 * 

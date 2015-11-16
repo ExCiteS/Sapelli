@@ -94,6 +94,21 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	protected abstract Schema getSchema();
 	
 	/**
+	 * @return whether or not (all parts of) the primary key have a non-null value
+	 */
+	public final boolean isReferenceable()
+	{
+		try
+		{
+			return getReference().isFilled(true);
+		}
+		catch(IncompletePrimaryKeyException ipke)
+		{
+			return false;
+		}
+	}
+	
+	/**
 	 * If this is a {@link Record} the method returns a {@link RecordReference} pointing to this {@link Record},
 	 * if this is a {@link RecordReference} the method returns the object itself.
 	 * 
