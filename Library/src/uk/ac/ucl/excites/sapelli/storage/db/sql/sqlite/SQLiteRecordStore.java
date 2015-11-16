@@ -354,6 +354,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 
 		private SQLiteStatement ROWIDStatement;
+		private SQLiteStatement LSAStatement;
 		private SQLiteStatement insertStatement;
 		private SQLiteStatement updateStatementWithLSA;
 		private SQLiteStatement updateStatementWithoutLSA;
@@ -418,6 +419,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 
 			//	Execute:
 			return executeLongQuery(recordOrReference, ROWIDStatement);
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#getLastStoredAtInDB(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
+		 */
+		@Override
+		public Long getLastStoredAtInDB(RecordValueSet<?> recordOrReference) throws DBException, IllegalStateException
+		{
+			if(!isTrackingChanges())
+				throw new IllegalStateException("Table schema does not use change tracking.");
+			
+			// Get/recycle statement...
+			if(LSAStatement == null)
+			{
+				SelectLSAHelper selectLSAHelper = new SelectLSAHelper(this);
+				LSAStatement = getStatement(selectLSAHelper.getQuery(), selectLSAHelper.getParameterColumns());
+			}
+			else
+				LSAStatement.clearAllBindings();
+			
+			//	Execute:
+			return executeLongQuery(recordOrReference, LSAStatement);
 		}
 		
 		/* (non-Javadoc)
@@ -582,6 +605,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			{
 				ROWIDStatement.close();
 				ROWIDStatement = null;
+			}
+			if(LSAStatement != null)
+			{
+				LSAStatement.close();
+				LSAStatement = null;
 			}
 			if(insertStatement != null)
 			{
@@ -990,6 +1018,33 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 						public String getProjectionString()
 						{
 							return "ROWID";
+						}
+					},
+					new RecordsQuery(Source.From(table.schema), table.schema.getBlankPKConstraints()));
+		}
+		
+	}
+	
+	/**
+	 * A {@link SelectHelper} class for the execution of SELECT LSA queries.
+	 * 
+	 * @author mstevens
+	 */
+	private class SelectLSAHelper extends SelectHelper<SelectProjection>
+	{
+		
+		/**
+		 * @param table
+		 */
+		public SelectLSAHelper(final SQLiteTable table)
+		{
+			super(	table,
+					new SelectProjection()
+					{
+						@Override
+						public String getProjectionString()
+						{
+							return table.getSQLColumn(Schema.COLUMN_LAST_STORED_AT).name;
 						}
 					},
 					new RecordsQuery(Source.From(table.schema), table.schema.getBlankPKConstraints()));
