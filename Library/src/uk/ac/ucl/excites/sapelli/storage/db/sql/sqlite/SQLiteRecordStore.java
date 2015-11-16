@@ -51,7 +51,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -717,33 +716,20 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#addBoolColForAllOptionalValueSetCol(uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer, uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping)
 		 */
 		@Override
-		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+		protected <VS extends ValueSet<CS>, CS extends ColumnSet> void addBoolColForAllOptionalValueSetCol(ColumnPointer<? extends Column<VS>> sourceColumnPointer, TypeMapping<Boolean, VS> mapping)
 		{
-			if(isUseBoolColsForValueSetCols() && valueSetCol.hasAllOptionalSubColumns())
-			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
-				table.addColumn(new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, getColumnPointer(valueSetCol), new TypeMapping<Boolean, VS>()
+			table.addColumn(
+				new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, sourceColumnPointer, mapping)
 				{
 					@Override
-					public Boolean toSQLType(VS value)
+					public boolean isBoolColForAllOptionalValueSetCol()
 					{
-						return value != null ? Boolean.TRUE : null;
+						return true;
 					}
-	
-					@Override
-					public VS toSapelliType(Boolean value)
-					{
-						if(value != null && value.booleanValue())
-							return valueSetCol.getNewValueSet();
-						else
-							return null;
-					}
-				}));
-			}
-			// !!!
-			super.enter(valueSetCol);
+				});
 		}
 		
 		/* (non-Javadoc)
@@ -842,7 +828,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				
 			}));
 		}
-		
+
 	}
 	
 	/**

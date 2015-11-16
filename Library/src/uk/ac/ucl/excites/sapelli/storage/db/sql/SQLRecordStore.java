@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -1377,7 +1378,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	public abstract class SQLColumn<SQLType, SapType>
 	{
 		
-		static public final char QUALIFIED_COLUMN_NAME_SEPARATOR = '_'; 
+		static public final char QUALIFIED_COLUMN_NAME_SEPARATOR = '_';
 		
 		public final String name;
 		public final String type;
@@ -1493,6 +1494,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return false;
 		}
 		
+		public boolean isSapelliColumn()
+		{
+			return sourceColumnPointer != null;
+		}
+		
+		public boolean isBoolColForAllOptionalValueSetCol()
+		{
+			return false;
+		}
+		
 	}
 	
 	/**
@@ -1553,15 +1564,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public STable generateTable(Schema schema) throws DBException;
 		
 		/**
-		 * @return whether or not the TableFactory will insert a top-level Boolean column to represent a ValueSetColumn with all-optional subcolumns
-		 */
-		public boolean isUseBoolColsForValueSetCols();
-
-		/**
 		 * @param enable if {@code true} the TableFactory will insert a top-level Boolean column to represent a ValueSetColumn with all-optional subcolumns
 		 * @throws DBException 
 		 */
-		public void setUseBoolColsForValueSetCols(boolean enable) throws DBException;
+		public void setInsertBoolColsForAllOptionalValueSetCols(boolean enable) throws DBException;
 		
 	}
 	
@@ -1582,7 +1588,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		protected STable table;
 		
-		private boolean useBoolColsForValueSetCols = true; // !!!
+		private boolean insertBoolColsForAllOptionalValueSetCols = true; // !!!
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
@@ -1604,19 +1610,53 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected abstract STable createTable(Schema schema) throws DBException;
 		
 		@Override
-		public boolean isUseBoolColsForValueSetCols()
-		{
-			return useBoolColsForValueSetCols;
-		}
-
-		@Override
-		public void setUseBoolColsForValueSetCols(boolean enable) throws DBException
+		public void setInsertBoolColsForAllOptionalValueSetCols(boolean enable) throws DBException
 		{
 			if(!isInitialising())
-				throw new DBException("Changing useBoolColsForValueSetCols is only allowed during initialisation/upgrade!");
-			this.useBoolColsForValueSetCols = enable;
+				throw new DBException("Changing 'insertBoolColsForAllOptionalValueSetCols' is only allowed during initialisation/upgrade!");
+			insertBoolColsForAllOptionalValueSetCols = enable;
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+		 */
+		@Override
+		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+		{
+			if(insertBoolColsForAllOptionalValueSetCols && valueSetCol.hasAllOptionalSubColumns())
+			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
+				addBoolColForAllOptionalValueSetCol(
+					getColumnPointer(valueSetCol),
+					new TypeMapping<Boolean, VS>()
+					{
+						@Override
+						public Boolean toSQLType(VS value)
+						{
+							return value != null ? Boolean.TRUE : null;
+						}
+		
+						@Override
+						public VS toSapelliType(Boolean value)
+						{
+							if(value != null && value.booleanValue())
+								return valueSetCol.getNewValueSet();
+							else
+								return null;
+						}
+					});
+			}
+			// !!!
+			super.enter(valueSetCol);
 		}
 
+		/**
+		 * Must add a SQLColumn<Boolean, VS> to the table and this column instance must return {@code true} for method {@link SQLColumn#isBoolColForAllOptionalValueSetCol()}.
+		 * 
+		 * @param sourceColumnPointer
+		 * @param mapping
+		 */
+		protected abstract <VS extends ValueSet<CS>, CS extends ColumnSet> void addBoolColForAllOptionalValueSetCol(ColumnPointer<? extends Column<VS>> sourceColumnPointer, TypeMapping<Boolean, VS> mapping);
+		
 		/**
 		 * TODO implement ListColumns using normalisation:
 		 * 		generate Schema for a "subtable" with FK to this one --> generate table for it ... etc.
@@ -2210,41 +2250,54 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			SColumn sqlCol = table.getSQLColumn(cp);
 			Object sapValue = equalityConstr.getValue();
 			if(sqlCol != null)
-			{	// Equality constraint on non-composite (leaf) column...
-				bldr.append(sqlCol.name);
-				if(sapValue != null || (table.getKeyPartSQLColumns().contains(sqlCol) && isParameterised()))
-				{	// Value is not null, or null but part of the PK and this is a parameterised statement
-					bldr.append(getComparisonOperator(equalityConstr.isEqual() ? Comparison.EQUAL : Comparison.NOT_EQUAL));
-					if(isParameterised())
-					{
-						bldr.append(valuePlaceHolder);
-						addParameterColumnAndValue(sqlCol, sapValue);
-					}
-					else
-						bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+			{
+				/* Note:
+				 * 	sqlCol.isBoolColForAllOptionalValueSetCol() and table.getKeyPartSQLColumns().contains(sqlCol) are
+				 * 	mutually exclusive because PrimaryKey does not allow any (sub)columns to be optional.
+				 */
+				if(sqlCol.isBoolColForAllOptionalValueSetCol() && sapValue != null)
+				{	// Equality constraint (but not a null comparison) on composite column represented by a boolean SColumn:
+					Constraint.Accept(new AndConstraint(EqualityConstraint.IsNotNull(cp), splitCompositeEquality(equalityConstr)).reduce(), this);
 				}
 				else
-				{	// Null comparisons: see class javadoc
-					bldr.append("IS");
-					if(!equalityConstr.isEqual())
-						bldr.append("NOT");
-					bldr.append(getNullString()); // "NULL"
+				{	// Equality constraint on non-composite (leaf) column (general case), or null comparison on a composite column represented by a boolean SColumn:
+					bldr.append(sqlCol.name);
+					if(sapValue != null || (table.getKeyPartSQLColumns().contains(sqlCol) && isParameterised()))
+					{	// Value is not null, or null but part of the PK and this is a parameterised statement
+						bldr.append(getComparisonOperator(equalityConstr.isEqual() ? Comparison.EQUAL : Comparison.NOT_EQUAL));
+						if(isParameterised())
+						{
+							bldr.append(valuePlaceHolder);
+							addParameterColumnAndValue(sqlCol, sapValue);
+						}
+						else
+							bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+					}
+					else
+					{	// Null comparisons (see class javadoc):
+						bldr.append("IS");
+						if(!equalityConstr.isEqual())
+							bldr.append("NOT");
+						bldr.append(getNullString()); // "NULL"
+					}
 				}
 			}
 			else if(cp.getColumn() instanceof ValueSetColumn<?, ?>)
-			{	// Equality constraint on composite column...
-				List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?, ?>) cp.getColumn());
-				if(subSqlCols != null)
-				{	// ...  which is split up in the SQLTable...
-					ValueSet<?> valueSet = (ValueSet<?>) sapValue;
-					AndConstraint andConstr = new AndConstraint();
-					for(SColumn subSqlCol : subSqlCols)
-						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, valueSet != null ? subSqlCol.sourceColumnPointer.retrieveValue(valueSet) : null));
-					andConstr.reduce().accept(this);
-				}
+			{	// Equality constraint on composite column (which is split up in the SQLTable):
+				Constraint.Accept(splitCompositeEquality(equalityConstr), this);
 			}
 			else
 				exception = new DBException("Failed to generate SQL for equalityConstraint on column " + equalityConstr.getColumnPointer().getQualifiedColumnName(table.schema));
+		}
+		
+		private Constraint splitCompositeEquality(EqualityConstraint equalityConstr)
+		{
+			AndConstraint andConstr = new AndConstraint();
+			List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?, ?>) equalityConstr.getColumnPointer().getColumn());
+			ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();
+			for(SColumn subSqlCol : subSqlCols)
+					andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, valueSet != null ? subSqlCol.sourceColumnPointer.retrieveValue(valueSet) : null));
+			return andConstr.reduce(); 
 		}
 
 		@Override
