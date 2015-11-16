@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
@@ -492,6 +493,18 @@ public class Schema extends ColumnSet implements Serializable
 	public RecordReference createRecordReference(byte[] serialisedKeyPartValues) throws NullPointerException, IOException
 	{
 		return new RecordReference(this, serialisedKeyPartValues);
+	}
+	
+	/**
+	 * Returns (Equality)Constraint(s), to match the primary key column(s), but
+	 * with the corresponding key (part) value(s) left blank (i.e. {@code null})!<br/>
+	 * This is meant to be used for certain (parameterised) queries.
+	 * 
+	 * @return
+	 */
+	public Constraint getBlankPKConstraints()
+	{
+		return new RecordReference(this).getRecordQueryConstraint(true);
 	}
 	
 	/**
