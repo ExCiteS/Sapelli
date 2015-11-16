@@ -572,19 +572,24 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			private SQLiteStatement statement;
 			
 			/**
-			 * @param helperClass Class of a StatementHelper subtype which (a) is contained in SQLiteRecordStore or SQLRecordStore, and (b) which has a constructor that takes only a SQL(ite)Table and creates a parameterised StatementHelper instance
+			 * @param helperClass Class of a StatementHelper subtype which (a) is contained in SQLiteRecordStore or SQLRecordStore, and (b) which has a constructor that takes only a SQL(ite)Table and creates a parameterised StatementHelper instance, if {@code null} is passed the getHelper() method must be overridden instead
 			 */
 			public StatementHandle(Class<? extends SQLRecordStore.StatementHelper> helperClass)
 			{
 				this.helperClass = helperClass;
 			}
 			
+			@SuppressWarnings("unchecked")
+			protected StatementHelper getHelper()
+			{
+				return ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
+			}
+			
 			public SQLiteStatement getStatement() throws DBException
 			{
 				if(statement == null)
 				{
-					@SuppressWarnings("unchecked")
-					StatementHelper helper = ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
+					StatementHelper helper = getHelper();
 					statement = generateStatement(helper.getQuery(), helper.getParameterColumns());
 				}
 				else
