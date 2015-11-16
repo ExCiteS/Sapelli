@@ -22,14 +22,15 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
- * Query resulting in a single record instance
+ * Class which expresses a {@link Query} returning a single {@link Record} instance.
  * 
  * @author mstevens
  */
-public abstract class SingleRecordQuery
+public abstract class SingleRecordQuery extends Query<Record>
 {
 
 	private final RecordsQuery recordsQuery;
@@ -115,6 +116,42 @@ public abstract class SingleRecordQuery
 		return recordsQuery;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.Query#getSource()
+	 */
+	@Override
+	public Source getSource()
+	{
+		return recordsQuery.source;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.Query#getConstraints()
+	 */
+	@Override
+	public Constraint getConstraints()
+	{
+		return recordsQuery.constraints;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.Query#getOrder()
+	 */
+	@Override
+	public Order getOrder()
+	{
+		return recordsQuery.order;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.Query#getLimit()
+	 */
+	@Override
+	public int getLimit()
+	{
+		return recordsQuery.limit;
+	}
+
 	/**
 	 * @param executor
 	 * @return
