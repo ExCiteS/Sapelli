@@ -390,9 +390,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(!recordOrReference.isReferenceable() /*also checks autoIncrPK*/)
 				return null;
 			
-			//	Bind parameters:
+			// Get statement:
 			SQLiteStatement statement = handle.getStatement();
+			
+			// Bind parameters:
 			statement.retrieveAndBindAll(recordOrReference);
+			
 			//	Execute:
 			return statement.executeLongQuery();
 		}
