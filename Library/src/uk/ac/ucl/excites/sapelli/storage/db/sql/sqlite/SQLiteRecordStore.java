@@ -623,6 +623,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			
 		}
 		
+		/**
+		 * @author mstevens
+		 */
 		protected class RecordUpdateStatementHandle extends StatementHandle
 		{
 
