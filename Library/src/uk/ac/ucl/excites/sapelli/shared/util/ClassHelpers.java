@@ -18,10 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.shared.util;
 
+import java.lang.reflect.Constructor;
+
 /**
  * Class with helper methods to deal with Class objects.
  * 
- * Uses "Apache License 2.0"-licensed code from Spring's ClassUtils class.
+ * Uses some "Apache License 2.0"-licensed code from Spring's ClassUtils class.
  * 
  * @see <a href="http://grepcode.com/file_/repo1.maven.org/maven2/org.springframework/spring-core/4.1.6.RELEASE/org/springframework/util/ClassUtils.java">Spring's ClassUtils class</a>
  * 
@@ -71,6 +73,49 @@ public final class ClassHelpers
 		if(packageEndIndex == -1)
 			return "";
 		return className.substring(0, packageEndIndex);
+	}
+	
+	/**
+	 * @param clazz
+	 * @param args
+	 * @return
+	 */
+	public static <C> C callFittingConstructor(Class<C> clazz, Object... args)
+	{
+		if(args == null)
+			args = new Object[0];
+		cLoop : for(Constructor<?> constructor : clazz.getConstructors())
+		{
+			if(args.length != constructor.getParameterCount())
+				continue;
+			int p = 0;
+			for(Class<?> paramType : constructor.getParameterTypes())
+				if(!paramType.isInstance(args[p++]))
+					continue cLoop;
+			// Found fitting constructor...
+			//	Make it accessible:
+			boolean wasAccessible = constructor.isAccessible();
+			if(!wasAccessible)
+				constructor.setAccessible(true);
+			//	Try calling it:
+			try
+			{
+				@SuppressWarnings("unchecked")
+				C instance = (C) constructor.newInstance(args);
+				return instance;
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+				continue cLoop;
+			}
+			finally
+			{
+				// Reset accessibility:
+				constructor.setAccessible(wasAccessible);
+			}
+		}
+		throw new IllegalArgumentException("No fitting constructor found!");
 	}
 
 }

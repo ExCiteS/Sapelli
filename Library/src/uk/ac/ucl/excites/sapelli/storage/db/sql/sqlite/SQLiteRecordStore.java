@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.ClassHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -49,7 +51,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -344,7 +345,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return
 	 * @throws DBException
 	 */
-	protected abstract SQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract SQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/**
 	 * 
@@ -353,13 +354,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SQLiteStatement ROWIDStatement;
-		private SQLiteStatement LSAStatement;
-		private SQLiteStatement insertStatement;
-		private SQLiteStatement updateStatementWithLSA;
-		private SQLiteStatement updateStatementWithoutLSA;
-		private SQLiteStatement deleteStatement;
-		private SQLiteStatement countStatement;
+		private final StatementHandle ROWIDStatementHandle = new StatementHandle(SelectROWIDHelper.class);
+		private final StatementHandle LSAStatementHandle = new StatementHandle(SelectLSAHelper.class);
+		private final StatementHandle insertStatementHandle = new StatementHandle(RecordInsertHelper.class);
+		private final RecordUpdateStatementHandle updateStatementWithLSAHandle = new RecordUpdateStatementHandle(true);
+		private final RecordUpdateStatementHandle updateStatementWithoutLSAHandle = new RecordUpdateStatementHandle(false);
+		private final StatementHandle deleteStatementHandle = new StatementHandle(RecordDeleteHelper.class);
+		private final StatementHandle countStatementHandle = new StatementHandle(RecordCountHelper.class);
 
 		public SQLiteTable(Schema schema)
 		{
@@ -380,7 +381,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @return the long value or null if there was no matching record
 		 * @throws DBException
 		 */
-		protected synchronized Long executeLongQuery(RecordValueSet<?> recordOrReference, SQLiteStatement statement) throws DBException
+		protected synchronized Long executeLongQuery(RecordValueSet<?> recordOrReference, StatementHandle handle) throws DBException
 		{
 			// Check if table itself exists in db:
 			if(!isInDB())
@@ -388,11 +389,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			
 			// Check if all PK (sub)columns have a value:
 			//	if there is (complete) PK we can assume this record doesn't exist in the db (and we wouldn't be able to find it if it did):
-			if(!recordOrReference.getReference().isFilled(true) /*also checks autoIncrPK*/)
+			if(!recordOrReference.isReferenceable() /*also checks autoIncrPK*/)
 				return null;
+			
+			// Get statement:
+			SQLiteStatement statement = handle.getStatement();
 			
 			//	Bind parameters:
 			statement.retrieveAndBindAll(recordOrReference);
+			
 			//	Execute:
 			return statement.executeLongQuery();
 		}
@@ -408,17 +413,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		
 		public Long getROWID(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			// Get/recycle statement...
-			if(ROWIDStatement == null)
-			{
-				SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
-				ROWIDStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
-			}
-			else
-				ROWIDStatement.clearAllBindings();
-
-			//	Execute:
-			return executeLongQuery(recordOrReference, ROWIDStatement);
+			return executeLongQuery(recordOrReference, ROWIDStatementHandle);
 		}
 		
 		/* (non-Javadoc)
@@ -429,18 +424,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			if(!isTrackingChanges())
 				throw new IllegalStateException("Table schema does not use change tracking.");
-			
-			// Get/recycle statement...
-			if(LSAStatement == null)
-			{
-				SelectLSAHelper selectLSAHelper = new SelectLSAHelper(this);
-				LSAStatement = getStatement(selectLSAHelper.getQuery(), selectLSAHelper.getParameterColumns());
-			}
-			else
-				LSAStatement.clearAllBindings();
-			
-			//	Execute:
-			return executeLongQuery(recordOrReference, LSAStatement);
+			return executeLongQuery(recordOrReference, LSAStatementHandle);
 		}
 		
 		/* (non-Javadoc)
@@ -449,18 +433,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
-			if(insertStatement == null)
-			{
-				RecordInsertHelper insertHelper = new RecordInsertHelper(this);
-				insertStatement = getStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
-			}
-			else
-				insertStatement.clearAllBindings(); // clear bindings for reuse
-			
+			// Get/recycle statement...
+			SQLiteStatement insertStatement = insertStatementHandle.getStatement();
+
 			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source), otherwise use current time
 			Long recLsa = record.getLastStoredAt(); // will return null if the Schema doesn't have the TRACK_CHANGES flag
 			Long lsa = recLsa != null ? recLsa : Now();
-			
+
 			// Bind parameters:
 			insertStatement.retrieveAndBindAll(record, lsa); // lsa value won't be used if the Schema doesn't have the TRACK_CHANGES flag
 			
@@ -481,20 +460,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		protected synchronized boolean executeUpdate(Record record, Long lastStoredAt, final boolean updateLastStoredAt) throws DBConstraintException, DBException
 		{
-			@SuppressWarnings("resource")
-			SQLiteStatement updateStatement = updateLastStoredAt ? updateStatementWithLSA : updateStatementWithoutLSA; 
-			if(updateStatement == null)
-			{
-				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, updateLastStoredAt, isTrackingChanges());
-				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
-				// Remember for next time:
-				if(updateLastStoredAt)
-					updateStatementWithLSA = updateStatement;
-				else
-					updateStatementWithoutLSA = updateStatement;
-			}
-			else
-				updateStatement.clearAllBindings(); // clear bindings for reuse
+			// Get/recycle statement...
+			SQLiteStatement updateStatement = (updateLastStoredAt ? updateStatementWithLSAHandle : updateStatementWithoutLSAHandle).getStatement();
+			
+			// Bind parameters:
+			updateStatement.retrieveAndBindAll(record);
 			
 			// Bind parameters:
 			updateStatement.retrieveAndBindAll(record, lastStoredAt); // lsa value won't be used if the Schema doesn't have the TRACK_CHANGES flag
@@ -515,13 +485,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			if(deleteStatement == null)
-			{
-				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this);
-				deleteStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
-			}
-			else
-				deleteStatement.clearAllBindings(); // clear bindings for reuse
+			// Get/recycle statement... 
+			SQLiteStatement deleteStatement = deleteStatementHandle.getStatement();
 
 			// Bind parameters:
 			deleteStatement.retrieveAndBindAll(recordOrReference);
@@ -536,7 +501,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
-			SQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			SQLiteStatement deleteByQStatement = generateStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			
 			// Bind parameters:
 			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
@@ -593,49 +558,94 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized long getRecordCount() throws DBException
 		{
-			if(countStatement == null)
-				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
-			return countStatement.executeLongQuery();
+			return countStatementHandle.getStatement().executeLongQuery();
 		}
 		
 		@Override
 		public synchronized void release()
 		{
-			if(ROWIDStatement != null)
+			ROWIDStatementHandle.close();
+			insertStatementHandle.close();
+			updateStatementWithLSAHandle.close();
+			updateStatementWithoutLSAHandle.close();
+			deleteStatementHandle.close();
+			countStatementHandle.close();
+		}
+		
+		/**
+		 * Helper class to instantiate and hold on to SQLiteStatements
+		 * 
+		 * @author mstevens
+		 */
+		@SuppressWarnings("rawtypes")
+		protected class StatementHandle implements Closeable
+		{
+			
+			private final Class<? extends SQLRecordStore.StatementHelper> helperClass;
+			private SQLiteStatement statement;
+			
+			/**
+			 * @param helperClass Class of a StatementHelper subtype which (a) is contained in SQLiteRecordStore or SQLRecordStore, and (b) which has a constructor that takes only a SQL(ite)Table and creates a parameterised StatementHelper instance, if {@code null} is passed the getHelper() method must be overridden instead
+			 */
+			public StatementHandle(Class<? extends SQLRecordStore.StatementHelper> helperClass)
 			{
-				ROWIDStatement.close();
-				ROWIDStatement = null;
+				this.helperClass = helperClass;
 			}
-			if(LSAStatement != null)
+			
+			@SuppressWarnings("unchecked")
+			protected StatementHelper getHelper()
 			{
-				LSAStatement.close();
-				LSAStatement = null;
+				return ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
 			}
-			if(insertStatement != null)
+			
+			public SQLiteStatement getStatement() throws DBException
 			{
-				insertStatement.close();
-				insertStatement = null;
+				if(statement == null)
+				{
+					StatementHelper helper = getHelper();
+					statement = generateStatement(helper.getQuery(), helper.getParameterColumns());
+				}
+				else
+					statement.clearAllBindings(); // clear bindings for reuse
+				// Return:
+				return statement;
 			}
-			if(updateStatementWithLSA != null)
+
+			@Override
+			public void close()
 			{
-				updateStatementWithLSA.close();
-				updateStatementWithLSA = null;
+				if(statement != null)
+				{
+					statement.close();
+					statement = null;
+				}
 			}
-			if(updateStatementWithoutLSA != null)
+			
+		}
+		
+		protected class RecordUpdateStatementHandle extends StatementHandle
+		{
+
+			private final boolean withLSA;
+			
+			/**
+			 * @param helperClass
+			 */
+			public RecordUpdateStatementHandle(boolean withLSA)
 			{
-				updateStatementWithoutLSA.close();
-				updateStatementWithoutLSA = null;
+				super(null);
+				this.withLSA = withLSA;
 			}
-			if(deleteStatement != null)
+
+			/* (non-Javadoc)
+			 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteTable.StatementHandle#getHelper()
+			 */
+			@Override
+			protected SQLRecordStore<SQLiteRecordStore, SQLiteTable, SQLiteColumn<?, ?>>.StatementHelper getHelper()
 			{
-				deleteStatement.close();
-				deleteStatement = null;
+				return new RecordUpdateHelper(SQLiteTable.this, withLSA, isTrackingChanges());
 			}
-			if(countStatement != null)
-			{
-				countStatement.close();
-				countStatement = null;
-			}
+			
 		}
 		
 	}
@@ -735,7 +745,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @throws DBException
 		 */
 		protected abstract SQLType getValue(SQLiteCursor cursor, int columnIdx) throws DBException;
-
+		
 	}
 	
 	/**
@@ -752,33 +762,20 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#addBoolColForAllOptionalValueSetCol(uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer, uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping)
 		 */
 		@Override
-		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+		protected <VS extends ValueSet<CS>, CS extends ColumnSet> void addBoolColForAllOptionalValueSetCol(ColumnPointer<? extends Column<VS>> sourceColumnPointer, TypeMapping<Boolean, VS> mapping)
 		{
-			if(isUseBoolColsForValueSetCols() && valueSetCol.hasAllOptionalSubColumns())
-			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
-				table.addColumn(new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, getColumnPointer(valueSetCol), new TypeMapping<Boolean, VS>()
+			table.addColumn(
+				new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, sourceColumnPointer, mapping)
 				{
 					@Override
-					public Boolean toSQLType(VS value)
+					public boolean isBoolColForAllOptionalValueSetCol()
 					{
-						return value != null ? Boolean.TRUE : null;
+						return true;
 					}
-	
-					@Override
-					public VS toSapelliType(Boolean value)
-					{
-						if(value != null && value.booleanValue())
-							return valueSetCol.getNewValueSet();
-						else
-							return null;
-					}
-				}));
-			}
-			// !!!
-			super.enter(valueSetCol);
+				});
 		}
 		
 		/* (non-Javadoc)
@@ -877,7 +874,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				
 			}));
 		}
-		
+
 	}
 	
 	/**
