@@ -20,8 +20,11 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 
+import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
@@ -83,6 +86,14 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	}
 	
 	/**
+	 * If this is a {@link Record} the method returns the record's {@link Schema},
+	 * if this is a {@link RecordReference} the method returns the "referenced" {@link Schema}.
+	 * 
+	 * @return a {@link Schema} instance
+	 */
+	protected abstract Schema getSchema();
+	
+	/**
 	 * If this is a {@link Record} the method returns a {@link RecordReference} pointing to this {@link Record},
 	 * if this is a {@link RecordReference} the method returns the object itself.
 	 * 
@@ -94,10 +105,16 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
 	 * 
+	 * Returns a {@link SingleRecordQuery} which can be used to find this (if this is a {@link Record}),
+	 * or the referenced (if this is a {@link RecordReference}), record in a RecordStore or Collection.
+	 * 
 	 * @return a query that looks for this Record(Reference)
-	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key (and thus covered by a recordReference) have not all been assigned a value
 	 */
-	public abstract SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException;
+	public final SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException
+	{
+		return new FirstRecordQuery(Source.From(getSchema()), Order.UNDEFINED, getRecordQueryConstraint());
+	}
 
 	/**
 	 * Shared method of {@link Record} and {@link RecordReference}.
@@ -105,6 +122,16 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	 * @return a Constraint that matches this Record(Reference)
 	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public abstract Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException;
+	public final Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException
+	{
+		return getRecordQueryConstraint(false); // don't allow blanks!
+	}
+	
+	/**
+	 * @param allowBlanks if {@code true} no IncompletePrimaryKeyException is thrown
+	 * @return
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key (and thus covered by a recordReference) have not all been assigned a value, and {@code allowBlanks} is {@code false}
+	 */
+	/*package*/ abstract Constraint getRecordQueryConstraint(boolean allowBlanks) throws IncompletePrimaryKeyException;
 
 }
