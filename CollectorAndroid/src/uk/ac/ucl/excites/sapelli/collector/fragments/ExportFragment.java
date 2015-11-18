@@ -31,6 +31,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -44,6 +45,7 @@ import android.widget.TimePicker;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
@@ -188,6 +190,10 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	@Override
 	protected void setupUI(View rootLayout)
 	{
+		ProjectManagerActivity owner = getOwner();
+		if(owner == null) // just in case...
+			return;
+		
 		// Time range:
 		if(isFormatChosingMode())
 			rootLayout.findViewById(R.id.groupExportDateRange).setVisibility(View.GONE);
@@ -202,13 +208,14 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		}
 		
 		// Output destination:
-		exportFolder = getOwner().getFileStorageProvider().getExportFolder(true);
+		FileStorageProvider fsp = owner.getFileStorageProvider();
+		exportFolder = fsp != null ? fsp.getExportFolder(true) : null;
 		if(isFormatChosingMode() || true) // for now we always hide the output destination
 			rootLayout.findViewById(R.id.groupExportDestination).setVisibility(View.GONE);
 		else
 		{
 			btnDestination = (Button) rootLayout.findViewById(R.id.btnDestination);
-			btnDestination.setText(exportFolder.getAbsolutePath());
+			btnDestination.setText(exportFolder != null ? exportFolder.getAbsolutePath() : "");
 			btnDestination.setEnabled(false); // TODO make export path configurable? (for now it is not)
 		}
 		
@@ -272,7 +279,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 
 		// Set view:
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		setDialogView(dialog, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
 
 		return dialog;
 	}
@@ -280,6 +287,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	@Override
 	public void onClick(View v)
 	{
+		if(getOwner() == null) // just in case
+			return;
 		switch(v.getId())
 		{
 			case R.id.btnExportFromDate :
@@ -397,6 +406,10 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		
 	}
 	
+	/**
+	 * Starts export procedure using settings configured in the ExportFragment UI.<br/>
+	 * Note: Does nothing if {@code getOwner()} returns {@code null}.
+	 */
 	public void runExport()
 	{
 		new ExportRunner(getOwner()).run();
@@ -423,12 +436,15 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		public ExportRunner(ProjectManagerActivity activity)
 		{
 			if(activity == null)
-				throw new NullPointerException(ProjectManagerActivity.class.getSimpleName() + " cannot be null!");
+				Log.e(ExportFragment.class.getSimpleName(), ProjectManagerActivity.class.getSimpleName() + " cannot be null!");
 			this.activity = activity;
 		}
 		
 		public void run()
 		{
+			if(activity == null) // just in case
+				return;
+			
 			// Thrown away old state:
 			exportResult = null;
 			
@@ -474,8 +490,15 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 				// TODO Generate selection description String:
 				String selectionDesc = "TODO";
 				
-				// Run the right export task:
-				RecordsTasks.runExportTask(activity, result, ExportFragment.this, exportFolder, selectionDesc, this);
+				// Check if we have a destination folder:
+				if(exportFolder == null)
+				{	// No...
+					Log.e(ExportFragment.class.getSimpleName(), getString(R.string.exportNoOutputFolder));
+					activity.showErrorDialog(R.string.exportNoOutputFolder, false);
+				}
+				else
+					// Yes, run the right export task:
+					RecordsTasks.runExportTask(activity, result, ExportFragment.this, exportFolder, selectionDesc, this);
 			}
 		}
 		
