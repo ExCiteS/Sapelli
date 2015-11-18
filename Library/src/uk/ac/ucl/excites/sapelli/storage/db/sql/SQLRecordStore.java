@@ -644,23 +644,28 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public void delete(RecordsQuery query) throws DBException
 	{
-		int totalDeleted = 0;
-		for(Schema s : getSchemata(query.getSource()))
+		for(Schema schema : getSchemata(query.getSource()))
 		{
 			try
 			{
-				STable table = getTable(s, false);
+				STable table = getTable(schema, false);
 				if(!table.isInDB())
 					continue; // table does no exist in DB, so there are no records to retrieve
-				totalDeleted += table.delete(query);
+				if(!schema.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_CHANGES))
+					// Efficient but does not allow to report which records were deleted:
+					table.delete(query);
+				else
+				{	// Less efficient, but allows to inform client:
+					for(RecordReference recordRef : retrieveRecordReferences(new RecordsQuery(schema, query.getConstraints())))
+						if(table.delete(recordRef))
+							client.storageEvent(RecordOperation.Deleted, recordRef); // inform client
+				}
 			}
 			catch(DBException dbE)
 			{
 				dbE.printStackTrace(System.err);
 			}
 		}
-		if(totalDeleted > 0)
-			client.recordsDeleted(query, totalDeleted); // inform client
 	}
 	
 	/* (non-Javadoc)

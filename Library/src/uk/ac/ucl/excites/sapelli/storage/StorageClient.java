@@ -49,7 +49,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
@@ -509,12 +508,6 @@ public abstract class StorageClient implements StorageObserver
 			if(recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRACK_CHANGES))
 				observer.storageEvent(operation, recordRef);
 	}
-	
-	/**
-	 * TODO this can be problematic, Transmission client needs to know which records...
-	 * TODO remove
-	 */
-	public void recordsDeleted(RecordsQuery query, int numberOfDeletedRecords) {};
 	
 	public final void logError(String msg)
 	{
