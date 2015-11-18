@@ -21,13 +21,9 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
-import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Order;
-import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
-import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
 /**
@@ -107,13 +103,24 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	 */
 	public RecordReference(Record record) throws NullPointerException, IncompletePrimaryKeyException
 	{
-		this(record.columnSet); // !!!
+		this(record, false); // don't allow blanks!
+	}
+	
+	/*package*/ /**
+	 * @param record
+	 * @param allowBlank if {@code true}, {@code null} key part values are allowed (note this will produce a RecordReference instance that cannot be used for querying RecordStores directly) 
+	 * @throws NullPointerException
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key have not all been assigned a value, and {@code allowBlanks} is {@code false}
+	 */
+	RecordReference(Record record, boolean allowBlank) throws NullPointerException, IncompletePrimaryKeyException
+	{
+		this(record.getSchema()); // !!!
 		
 		// Copy the key part values:
-		for(Column<?> keyPartCol : columnSet.getColumns(false))
+		for(Column<?> keyPartCol : this.columnSet.getColumns(false))
 		{
 			Object keyPartValue = keyPartCol.retrieveValueCopy(record);
-			if(keyPartValue == null)
+			if(!allowBlank && keyPartValue == null)
 				throw new IncompletePrimaryKeyException("Cannot construct RecordReference from record because key part \"" + keyPartCol.getName() + "\" has not been set");
 			setValue(keyPartCol, keyPartValue);
 		}
@@ -137,35 +144,38 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	{
 		return referencedSchema;
 	}
+
+	@Override
+	protected Schema getSchema()
+	{
+		return getReferencedSchema();
+	}
 	
 	/**
-	 * Returns a {@link SingleRecordQuery} which can be used to find the referenced record in a RecordStore or Collection.
+	 * Returns the RecordReference itself.
 	 * 
-	 * @return a query that looks for the record this reference points to
-	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQuery()
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQuery()
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getReference()
 	 */
 	@Override
-	public SingleRecordQuery getRecordQuery() throws IncompletePrimaryKeyException
+	public RecordReference getReference()
 	{
-		return new FirstRecordQuery(Source.From(referencedSchema), Order.UNDEFINED, getRecordQueryConstraint());
+		return this;
 	}
 	
 	/**
 	 * Returns a {@link Constraint} that matches on the referenced record's primary key values.
 	 * 
+	 * @param allowBlanks
 	 * @return a Constraint
-	 * @throws IncompletePrimaryKeyException when not all columns of this recordReference have been assigned a value
+	 * @throws IncompletePrimaryKeyException when the columns that are part of the primary key (and thus covered by a recordReference) have not all been assigned a value, and {@code allowBlanks} is {@code false}
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQueryConstraint()
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQueryConstraint()
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet#getRecordQueryConstraint(boolean)
 	 */
 	@Override
-	public Constraint getRecordQueryConstraint() throws IncompletePrimaryKeyException
+	/*package*/ Constraint getRecordQueryConstraint(boolean allowBlanks) throws IncompletePrimaryKeyException
 	{
-		if(!isFilled())
+		if(!allowBlanks && !isFilled())
 			throw new IncompletePrimaryKeyException("All values of the key must be set before a record selecting constraint/query can be created!");
 		
 		// Match for key parts:

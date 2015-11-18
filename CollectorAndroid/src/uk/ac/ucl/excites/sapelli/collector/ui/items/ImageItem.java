@@ -21,11 +21,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
-import com.larvalabs.svgandroid.SVGBuilder;
-import com.larvalabs.svgandroid.SVGDrawable;
+import com.caverock.androidsvg.SVG;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.drawable.PictureDrawable;
 import android.support.v4.view.ViewCompat;
 import android.util.Log;
 import android.util.TypedValue;
@@ -166,13 +166,13 @@ public class ImageItem extends Item<ImageItem>
 			else
 			{	// Vector image (SVG or SVGZ):
 				// 	Using svg-android lib:
-				view.setImageDrawable(new SVGDrawable((file != null ?
+				/*view.setImageDrawable(new SVGDrawable((file != null ?
 					new SVGBuilder().readFromInputStream(new FileInputStream(file)) :
-					new SVGBuilder().readFromResource(context.getResources(), drawableResourceID)).build()));
+					new SVGBuilder().readFromResource(context.getResources(), drawableResourceID)).build()));*/
 				// 	Using AndroidSVG lib:
-				/*view.setImageDrawable(new PictureDrawable((file != null ?
+				view.setImageDrawable(new PictureDrawable((file != null ?
 					SVG.getFromInputStream(new FileInputStream(file)) :
-					SVG.getFromResource(resources, resourceID)).renderToPicture()));*/
+					SVG.getFromResource(context.getResources(), drawableResourceID)).renderToPicture()));
 			}
 		}
 		catch(Exception e)

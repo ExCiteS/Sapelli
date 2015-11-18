@@ -356,6 +356,20 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 
 	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#isRequired(boolean)
+	 */
+	@Override
+	public boolean isRequired(boolean recurse)
+	{
+		if(optional || !recurse)
+			return !optional; 
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(!subCol.isRequired(recurse))
+				return false;
+		return true;
+	}
+
+	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
 	 */
 	@Override

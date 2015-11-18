@@ -54,8 +54,8 @@ public class PrimaryKey extends Index
 			throw new IllegalArgumentException("Primary key needs to span at least 1 column");
 		// Check if none of the columns are optional:
 		for(Column<?> idxCol : getColumns(false))
-			if(idxCol.isOptional())
-				throw new IllegalArgumentException("An primary key cannot contain optional (i.e. nullable) columns!");
+			if(!idxCol.isRequired(true))
+				throw new IllegalArgumentException("An primary key cannot contain optional (i.e. nullable) (sub)columns!");
 	}
 	
 	@Override

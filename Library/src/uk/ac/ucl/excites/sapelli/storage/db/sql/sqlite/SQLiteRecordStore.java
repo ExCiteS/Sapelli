@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.ClassHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -49,7 +51,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -58,6 +59,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -343,7 +345,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @return
 	 * @throws DBException
 	 */
-	protected abstract SQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract SQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/**
 	 * 
@@ -352,11 +354,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SQLiteStatement existsStatement;
-		private SQLiteStatement insertStatement;
-		private SQLiteStatement updateStatement;
-		private SQLiteStatement deleteStatement;
-		private SQLiteStatement countStatement;
+		private final StatementHandle ROWIDStatementHandle = new StatementHandle(SelectROWIDHelper.class);
+		private final StatementHandle insertStatementHandle = new StatementHandle(RecordInsertHelper.class);
+		private final StatementHandle updateStatementHandle = new StatementHandle(RecordUpdateHelper.class);
+		private final StatementHandle deleteStatementHandle = new StatementHandle(RecordDeleteHelper.class);
+		private final StatementHandle countStatementHandle = new StatementHandle(RecordCountHelper.class);
 
 		public SQLiteTable(Schema schema)
 		{
@@ -369,34 +371,48 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return new SQLiteTableCreationHelper(this);
 		}
 		
+		/**
+		 * Run a statement pertaining to a single record which results in a single long value.
+		 * 
+		 * @param recordOrReference
+		 * @param statement
+		 * @return the long value or null if there was no matching record
+		 * @throws DBException
+		 */
+		protected synchronized Long executeLongQuery(RecordValueSet<?> recordOrReference, StatementHandle handle) throws DBException
+		{
+			// Check if table itself exists in db:
+			if(!isInDB())
+				return null;
+			
+			// Check if all PK (sub)columns have a value:
+			//	if there is (complete) PK we can assume this record doesn't exist in the db (and we wouldn't be able to find it if it did):
+			if(!recordOrReference.isReferenceable() /*also checks autoIncrPK*/)
+				return null;
+			
+			// Get statement:
+			SQLiteStatement statement = handle.getStatement();
+			
+			// Bind parameters:
+			statement.retrieveAndBindAll(recordOrReference);
+			
+			//	Execute:
+			return statement.executeLongQuery();
+		}
+		
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet)
 		 */
 		@Override
-		public synchronized boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
+		public boolean isRecordInDB(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			// Check if table itself exists in db:
-			if(!isInDB())
-				return false;
-			
-			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
-			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
-			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValuePresent(recordOrReference))
-				return false;
-			
-			// Perform actual check by querying...
-			//	Get/recycle statement...
-			if(existsStatement == null)
-			{
-				SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
-				existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
-			}
-			else
-				existsStatement.clearAllBindings();
-			//	Bind parameters:
-			existsStatement.retrieveAndBindAll(recordOrReference);
+			return getROWID(recordOrReference) != null;
+		}
+		
+		public Long getROWID(RecordValueSet<?> recordOrReference) throws DBException
+		{
 			//	Execute:
-			return existsStatement.executeLongQuery() != null;
+			return executeLongQuery(recordOrReference, ROWIDStatementHandle);
 		}
 		
 		/* (non-Javadoc)
@@ -405,13 +421,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
-			if(insertStatement == null)
-			{
-				RecordInsertHelper insertHelper = new RecordInsertHelper(this);
-				insertStatement = getStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
-			}
-			else
-				insertStatement.clearAllBindings(); // clear bindings for reuse
+			// Get/recycle statement...
+			SQLiteStatement insertStatement = insertStatementHandle.getStatement();
 
 			// Bind parameters:
 			insertStatement.retrieveAndBindAll(record);
@@ -440,14 +451,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized boolean update(Record record) throws DBConstraintException, DBException
 		{
-			if(updateStatement == null)
-			{
-				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this);
-				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
-			}
-			else
-				updateStatement.clearAllBindings(); // clear bindings for reuse
-
+			// Get/recycle statement... 
+			SQLiteStatement updateStatement = updateStatementHandle.getStatement();
+			
 			// Bind parameters:
 			updateStatement.retrieveAndBindAll(record);
 			
@@ -467,13 +473,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized boolean delete(RecordValueSet<?> recordOrReference) throws DBException
 		{
-			if(deleteStatement == null)
-			{
-				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this);
-				deleteStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
-			}
-			else
-				deleteStatement.clearAllBindings(); // clear bindings for reuse
+			// Get/recycle statement... 
+			SQLiteStatement deleteStatement = deleteStatementHandle.getStatement();
 
 			// Bind parameters:
 			deleteStatement.retrieveAndBindAll(recordOrReference);
@@ -488,7 +489,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public synchronized int delete(RecordsQuery query) throws DBException
 		{
 			RecordsDeleteHelper deleteHelper = new RecordsDeleteHelper(this, query);
-			SQLiteStatement deleteByQStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			SQLiteStatement deleteByQStatement = generateStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			
 			// Bind parameters:
 			deleteByQStatement.bindAll(deleteHelper.getSapArguments());
@@ -545,39 +546,68 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public synchronized long getRecordCount() throws DBException
 		{
-			if(countStatement == null)
-				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
-			return countStatement.executeLongQuery();
+			return countStatementHandle.getStatement().executeLongQuery();
 		}
 		
 		@Override
 		public synchronized void release()
 		{
-			if(existsStatement != null)
+			ROWIDStatementHandle.close();
+			insertStatementHandle.close();
+			updateStatementHandle.close();
+			deleteStatementHandle.close();
+			countStatementHandle.close();
+		}
+		
+		/**
+		 * Helper class to instantiate and hold on to SQLiteStatements
+		 * 
+		 * @author mstevens
+		 */
+		@SuppressWarnings("rawtypes")
+		protected class StatementHandle implements Closeable
+		{
+			
+			private final Class<? extends SQLRecordStore.StatementHelper> helperClass;
+			private SQLiteStatement statement;
+			
+			/**
+			 * @param helperClass Class of a StatementHelper subtype which (a) is contained in SQLiteRecordStore or SQLRecordStore, and (b) which has a constructor that takes only a SQL(ite)Table and creates a parameterised StatementHelper instance, if {@code null} is passed the getHelper() method must be overridden instead
+			 */
+			public StatementHandle(Class<? extends SQLRecordStore.StatementHelper> helperClass)
 			{
-				existsStatement.close();
-				existsStatement = null;
+				this.helperClass = helperClass;
 			}
-			if(insertStatement != null)
+			
+			@SuppressWarnings("unchecked")
+			protected StatementHelper getHelper()
 			{
-				insertStatement.close();
-				insertStatement = null;
+				return ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
 			}
-			if(updateStatement != null)
+			
+			public SQLiteStatement getStatement() throws DBException
 			{
-				updateStatement.close();
-				updateStatement = null;
+				if(statement == null)
+				{
+					StatementHelper helper = getHelper();
+					statement = generateStatement(helper.getQuery(), helper.getParameterColumns());
+				}
+				else
+					statement.clearAllBindings(); // clear bindings for reuse
+				// Return:
+				return statement;
 			}
-			if(deleteStatement != null)
+
+			@Override
+			public void close()
 			{
-				deleteStatement.close();
-				deleteStatement = null;
+				if(statement != null)
+				{
+					statement.close();
+					statement = null;
+				}
 			}
-			if(countStatement != null)
-			{
-				countStatement.close();
-				countStatement = null;
-			}
+			
 		}
 		
 	}
@@ -677,7 +707,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @throws DBException
 		 */
 		protected abstract SQLType getValue(SQLiteCursor cursor, int columnIdx) throws DBException;
-
+		
 	}
 	
 	/**
@@ -694,33 +724,20 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#addBoolColForAllOptionalValueSetCol(uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer, uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping)
 		 */
 		@Override
-		public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+		protected <VS extends ValueSet<CS>, CS extends ColumnSet> void addBoolColForAllOptionalValueSetCol(ColumnPointer<? extends Column<VS>> sourceColumnPointer, TypeMapping<Boolean, VS> mapping)
 		{
-			if(isUseBoolColsForValueSetCols() && valueSetCol.hasAllOptionalSubColumns())
-			{	// Insert Boolean column to enable us to differentiate between a ValueSet that is null or one that has null values in all its subcolumns:
-				table.addColumn(new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, getColumnPointer(valueSetCol), new TypeMapping<Boolean, VS>()
+			table.addColumn(
+				new SQLiteBooleanColumn<VS>(SQLiteRecordStore.this, sourceColumnPointer, mapping)
 				{
 					@Override
-					public Boolean toSQLType(VS value)
+					public boolean isBoolColForAllOptionalValueSetCol()
 					{
-						return value != null ? Boolean.TRUE : null;
+						return true;
 					}
-	
-					@Override
-					public VS toSapelliType(Boolean value)
-					{
-						if(value != null && value.booleanValue())
-							return valueSetCol.getNewValueSet();
-						else
-							return null;
-					}
-				}));
-			}
-			// !!!
-			super.enter(valueSetCol);
+				});
 		}
 		
 		/* (non-Javadoc)
@@ -819,7 +836,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				
 			}));
 		}
-		
+
 	}
 	
 	/**
@@ -941,22 +958,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	}
 	
 	/**
+	 * A {@link SelectHelper} class for the execution of SELECT ROWID queries.
 	 * 
 	 * @author mstevens
 	 */
-	protected class SelectROWIDHelper extends RecordByPrimaryKeyHelper
+	private class SelectROWIDHelper extends SelectHelper<SelectProjection>
 	{
-
+		
+		/**
+		 * @param table
+		 */
 		public SelectROWIDHelper(SQLiteTable table)
 		{
-			// Initialise
-			super(table);
-			
-			// Build statement:	
-			bldr.append("SELECT ROWID FROM");
-			bldr.append(table.tableName);
-			// WHERE clause:
-			appendWhereClause(null);
+			super(	table,
+					new SelectProjection()
+					{
+						@Override
+						public String getProjectionString()
+						{
+							return "ROWID";
+						}
+					},
+					new RecordsQuery(Source.From(table.schema), table.schema.getBlankPKConstraints()));
 		}
 		
 	}

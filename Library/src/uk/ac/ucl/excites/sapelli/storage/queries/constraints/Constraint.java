@@ -32,12 +32,20 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  */
 public abstract class Constraint
 {
-	
+
+	// STATICS-------------------------------------------------------
 	static public Constraint Reduce(Constraint constraint)
 	{
 		return constraint != null ? constraint.reduce() : null;
 	}
 	
+	static public void Accept(Constraint constraint, ConstraintVisitor visitor)
+	{
+		if(constraint != null)
+			constraint.accept(visitor);
+	}
+	
+	// DYNAMICS------------------------------------------------------
 	/**
 	 * Filters a collection of records based on the criteria defined by the constraint
 	 * 

@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
  */
 public class EqualityConstraint extends Constraint
 {
-	
+	// STATICS-------------------------------------------------------
 	static public EqualityConstraint IsNull(Column<?> column)
 	{
 		return IsNull(new ColumnPointer<Column<?>>(column));
@@ -51,6 +51,7 @@ public class EqualityConstraint extends Constraint
 		return new EqualityConstraint(columnPointer, null, false);
 	}
 	
+	// DYNAMICS------------------------------------------------------
 	private final ColumnPointer<?> columnPointer;
 	private final Object value;
 	private final boolean equal;

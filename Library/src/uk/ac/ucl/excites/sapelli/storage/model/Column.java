@@ -709,9 +709,25 @@ public abstract class Column<T> implements Serializable
 	/**
 	 * @return the optional
 	 */
-	public boolean isOptional()
+	public final boolean isOptional()
 	{
 		return optional;
+	}
+	
+	public final boolean isRequired()
+	{
+		return isRequired(false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
+	 * 
+	 * @param recurse whether or not to check recursively if all subColumns are also a non-optional
+	 * @return whether the column is (recursively) non-optional 
+	 */
+	public boolean isRequired(boolean recurse)
+	{
+		return !optional;
 	}
 
 	public String toString()

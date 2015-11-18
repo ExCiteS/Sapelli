@@ -31,6 +31,8 @@
 	</parent>
 
 	<properties>
+		<charsetinfo-folder>${project.basedir}/charsetinfo</charsetinfo-folder>
+		<resources-folder>${project.basedir}/res</resources-folder>
 		<xerces-src-folder>${project.build.directory}/xerces-src</xerces-src-folder>
 	</properties>
 
@@ -85,22 +87,90 @@
 		<!-- <dependency> <groupId>com.madgag</groupId> <artifactId>sc-light-jdk15on</artifactId> 
 			<version>1.47.0.3</version> </dependency> -->
 	</dependencies>
+	
+	<profiles>
+		<profile>
+			<id>maven</id>
+			<activation>
+				<property>
+					<name>!m2e.version</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<!-- TODO if m2e / Groovy-eclipse ever get support for running gmavenplus-plugin
+						 from within Eclipse then we can move this into the main <build> and get rid of
+						 this profile. It would then also be possible (probably) to remove the properties
+						 file from the git repo and always regenerate upon building. -->
+					<plugin>
+						<groupId>org.codehaus.gmavenplus</groupId>
+						<artifactId>gmavenplus-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>update-CharsetMaxMaxBytesPerChar.properties</id>
+								<phase>process-classes</phase>
+								<goals>
+									<goal>execute</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<scripts>
+								<script><![CDATA[
+									import uk.ac.ucl.excites.sapelli.shared.io.text.CharsetHelpers;
+									
+									updated = CharsetHelpers.GeneratePropertiesFile(project.properties['charsetinfo-folder'], project.properties['resources-folder'], false);
+									println CharsetHelpers.CMMBPC_PROPERTIES_FILE_NAME + "." + CharsetHelpers.PROPERTIES_FILE_EXTENSION + " " + (updated ? "updated" : "unchanged") + ".";
+								]]></script>
+							</scripts>
+						</configuration>
+					</plugin>
+					<plugin>
+						<!-- Run resources plugin again to include possibly updated harsetMaxMaxBytesPerChar.properties -->
+						<!-- TODO find a way to make this only happen if the file was really updated -->
+						<artifactId>maven-resources-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>include-updated-resources</id>
+								<phase>process-classes</phase>
+								<goals>
+									<goal>resources</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	
 	<build>
 		<sourceDirectory>src</sourceDirectory>
-		<finalName>${project.artifactId}</finalName>
-		<!--<resources>
+		<resources>
 			<resource>
-				<targetPath>META-INF</targetPath>
-				<directory>${parent.basedir}</directory>
+				<directory>${resources-folder}</directory>
 				<includes>
-					<include>../LICENSE.txt</include>
-					<include>../README.md</include>
+					<include>**/*.properties</include>
 				</includes>
 			</resource>
-		</resources>-->
+			<!--<resource>
+					<targetPath>META-INF</targetPath>
+					<directory>${parent.basedir}</directory>
+					<includes>
+						<include>../LICENSE.txt</include>
+						<include>../README.md</include>
+					</includes>
+				</resource>-->
+		</resources>
+		<finalName>${project.artifactId}</finalName>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<configuration>
+					<encoding>ISO-8859-1</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<source>1.7</source>

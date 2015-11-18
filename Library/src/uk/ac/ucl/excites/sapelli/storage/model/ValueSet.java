@@ -158,7 +158,8 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * To be called from {@link Column#storeValue(Record, Object)}
+	 * To be called from {@link Column#storeValue(Record, Object)}.
+	 * This method is not {@code final} for the sake of the {@link UnmodifiableValueSet} subclass.
 	 * 
 	 * @param column
 	 * @param value the value to set (may be null, e.g. to clear earlier values)
@@ -291,8 +292,8 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	protected boolean isFilled(ColumnSet columnSet, Set<? extends Column<?>> skipColumns, final boolean recurse) throws IllegalStateException
 	{
-		for(Column<?> col : columnSet.getColumns(false))
-			if(!skipColumns.contains(col) && !col.isValuePresentOrOptional(this, recurse))
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			if(!col.isValuePresentOrOptional(this, recurse))
 				return false; // null value in non-optional column	
 		return true;
 	}
@@ -350,8 +351,8 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean isValid(Set<? extends Column<?>> skipColumns, final boolean recurse)
 	{
-		for(Column<?> col : columnSet.getColumns(false))
-			if(!skipColumns.contains(col) && !col.isValueValid(this, recurse))
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			if(!col.isValueValid(this, recurse))
 				return false;	
 		return true;
 	}
@@ -501,7 +502,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void writeToBitStream(BitOutputStream bitStream) throws IOException
 	{
-		writeToBitStream(bitStream, columnSet.getColumns(false), Collections.<Column<?>> emptySet());
+		writeToBitStream(bitStream, false, Collections.<Column<?>> emptySet());
 	}
 	
 	/**
@@ -514,7 +515,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
 	{
-		writeToBitStream(bitStream, columnSet.getColumns(includeVirtual), skipColumns);
+		writeColumnsToBitStream(bitStream, columnSet.getColumns(includeVirtual, skipColumns));
 	}
 	
 	/**
@@ -524,26 +525,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param columns columns to include the values of
 	 * @throws IOException
 	 */
-	public void writeToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns) throws IOException
-	{
-		writeToBitStream(bitStream, columns, Collections.<Column<?>> emptySet());
-	}
-	
-	/**
-	 * Write ValueSet values of the given columns (in given order), except the given skipped ones, to the given bitStream.
-	 * 
-	 * @param bitStream
-	 * @param columns columns to include the values of
-	 * @param skipColumns columns *not* to include the values of
-	 * @throws IOException
-	 */
-	public void writeToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns/*, boolean includeVirtual*/, Set<? extends Column<?>> skipColumns) throws IOException
+	public void writeColumnsToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns) throws IOException
 	{
 		try
 		{	// Write fields:
 			for(Column<?> c : columns)
-				if(/*(includeVirtual || !(c instanceof VirtualColumn)) && */!skipColumns.contains(c))
-					c.retrieveAndWriteValue(this, bitStream);
+				c.retrieveAndWriteValue(this, bitStream);
 		}
 		catch(Exception e)
 		{
@@ -589,7 +576,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void readFromBitStream(BitInputStream bitStream) throws IOException
 	{
-		readFromBitStream(bitStream, columnSet.getColumns(false), Collections.<Column<?>> emptySet());
+		readFromBitStream(bitStream, false, Collections.<Column<?>> emptySet());
 	}
 	
 	/**
@@ -602,7 +589,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
 	{
-		readFromBitStream(bitStream, columnSet.getColumns(includeVirtual), skipColumns);
+		readColumnsFromBitStream(bitStream, columnSet.getColumns(includeVirtual, skipColumns));
 	}
 	
 	/**
@@ -612,31 +599,17 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param columns columns to expect the values of
 	 * @throws IOException
 	 */
-	public void readFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns) throws IOException
-	{
-		readFromBitStream(bitStream, columns, Collections.<Column<?>> emptySet());
-	}
-	
-	/**
-	 * Read ValueSet values of the given columns (in given order), except the given skipped ones, from the given bitStream.
-	 * 
-	 * @param bitStream
-	 * @param columns columns to except the values of
-	 * @param skipColumns columns *not* to except the values of
-	 * @throws IOException
-	 */
-	public void readFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns/*, boolean includeVirtual*/, Set<? extends Column<?>> skipColumns) throws IOException
+	public void readColumnsFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns) throws IOException
 	{
 		try
 		{	// Read fields:
 			for(Column<?> c : columns)
-				if(/*(includeVirtual || !(c instanceof VirtualColumn)) && */!skipColumns.contains(c))
-				{
-					if(c instanceof VirtualColumn)
-						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
-					else
-						c.readAndStoreValue(this, bitStream);
-				}
+			{
+				if(c instanceof VirtualColumn)
+					c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
+				else
+					c.readAndStoreValue(this, bitStream);
+			}
 		}
 		catch(Exception e)
 		{
@@ -723,19 +696,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean hasEqualValues(ValueSet<CS> other)
 	{
-		return hasEqualValues(other, Collections.<Column<?>> emptySet(), false);
-	}
-	
-	/**
-	 * Compare the values of this ValueSet with those of another.
-	 * 
-	 * @param other
-	 * @param skipColumns ignore these columns
-	 * @return
-	 */
-	public boolean hasEqualValues(ValueSet<?> other, Set<? extends Column<?>> skipColumns)
-	{
-		return hasEqualValues(other, skipColumns, false);
+		return hasEqualValues(other, Collections.<Column<?>> emptySet());
 	}
 	
 	/**
@@ -753,6 +714,18 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 
 	/**
 	 * Compare the values of this ValueSet with those of another.
+	 * 
+	 * @param other
+	 * @param skipColumns ignore these columns
+	 * @return
+	 */
+	public boolean hasEqualValues(ValueSet<?> other, Set<? extends Column<?>> skipColumns)
+	{
+		return hasEqualValues(other, skipColumns, false);
+	}
+	
+	/**
+	 * Compare the values of this ValueSet with those of another.
 	 * If {@code asStoredBinary} is {@code true} the records must be of the same schema, otherwise an exception will be thrown.
 	 * 
 	 * @param other another ValueSet
@@ -764,8 +737,21 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	{
 		return other == null ?	false :
 								(!skipColumns.isEmpty() || asStoredBinary ?
-									hasEqualValues(other, this.columnSet.getColumns(false), skipColumns, asStoredBinary) :
+									hasEqualValuesForColumns(other, this.columnSet.getColumns(false, skipColumns), asStoredBinary) :
 									this == other || Arrays.deepEquals(this.values, other.values));
+	}
+	
+	/**
+	 * Compare the values of this ValueSet with those of another, across the given list of columns.
+	 * This and the other record as assumed to have schemata that are the same or at least each share the given columns (or equivalents).
+	 * 
+	 * @param other another ValueSet
+	 * @param columns the columns that will be checked, unless they appear in skipColumns
+	 * @return
+	 */
+	public boolean hasEqualValuesForColumns(ValueSet<?> other, List<? extends Column<?>> columns)
+	{
+		return hasEqualValuesForColumns(other, columns, false);
 	}
 	
 	/**
@@ -774,18 +760,16 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param other another ValueSet
 	 * @param columns the columns that will be checked, unless they appear in skipColumns
-	 * @param skipColumns
 	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	public boolean hasEqualValues(ValueSet<?> other, Collection<? extends Column<?>> columns, Set<? extends Column<?>> skipColumns, boolean asStoredBinary)
+	public boolean hasEqualValuesForColumns(ValueSet<?> other, Collection<? extends Column<?>> columns, boolean asStoredBinary)
 	{
 		if(other == null)
 			return false;
 		if(this != other)
 			for(Column<?> c : columns)
-				if(	!skipColumns.contains(c) &&
-					!Objects.deepEquals(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),
+				if(	!Objects.deepEquals(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),
 										asStoredBinary ? c.retrieveValueAsStoredBinary(other) : c.retrieveValue(other)))
 					return false;
 		return true;

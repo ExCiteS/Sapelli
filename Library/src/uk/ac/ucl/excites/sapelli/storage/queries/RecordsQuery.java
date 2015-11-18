@@ -26,7 +26,12 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
-public class RecordsQuery
+/**
+ * Class which expresses a {@link Query} returning one or more {@link Record}s.
+ * 
+ * @author mstevens
+ */
+public class RecordsQuery extends Query<List<Record>>
 {
 
 	// STATICS-------------------------------------------------------
@@ -257,6 +262,7 @@ public class RecordsQuery
 	 * 
 	 * @param sourceRecords
 	 */
+	@Override
 	public List<Record> execute(List<Record> sourceRecords)
 	{
 		List<Record> records = sourceRecords;
@@ -275,15 +281,11 @@ public class RecordsQuery
 		
 		return records;
 	}
-	
-	private Constraint getInMemoryConstraits()
-	{
-		return new AndConstraint(source, constraints).reduce(); // Source is a Constraint which filters records by schema!
-	}
 
 	/**
 	 * @return the source
 	 */
+	@Override
 	public Source getSource()
 	{
 		return source;
@@ -292,22 +294,16 @@ public class RecordsQuery
 	/**
 	 * @return the constraints (may be null)
 	 */
+	@Override
 	public Constraint getConstraints()
 	{
 		return constraints;
-	}
-	
-	/**
-	 * @return
-	 */
-	public boolean hasConstraints()
-	{
-		return constraints != null;
 	}
 
 	/**
 	 * @return the order
 	 */
+	@Override
 	public Order getOrder()
 	{
 		return order;
@@ -316,17 +312,10 @@ public class RecordsQuery
 	/**
 	 * @return the limit
 	 */
+	@Override
 	public int getLimit()
 	{
 		return limit;
-	}
-	
-	/**
-	 * @return where or not the query is limited to a certain number of resulting records
-	 */
-	public boolean isLimited()
-	{
-		return limit > NO_LIMIT;
 	}
 
 }

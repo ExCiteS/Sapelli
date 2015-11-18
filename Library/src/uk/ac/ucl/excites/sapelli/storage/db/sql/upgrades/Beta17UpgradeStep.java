@@ -140,7 +140,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			
 			if(hasValueSetColWithAllOptionalSubCols)
 				// Temporarily disable the use of boolean columns to represent optional ValueSetColumns:
-				upgradeOps.getTableFactory(recordStore).setUseBoolColsForValueSetCols(false);
+				upgradeOps.getTableFactory(recordStore).setInsertBoolColsForAllOptionalValueSetCols(false);
 				/* This is required because the tables currently existing in the db are incompatible with
 				 * the SQLRecordStore#SQLTable instance we would get for the schema if we wouldn't disable
 				 * this behaviour. Disabling the behaviour ensures we get a SQLTable that is compatible with
@@ -154,7 +154,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			
 			if(hasValueSetColWithAllOptionalSubCols)
 				// Re-enable the use of boolean columns to represent optional ValueSetColumns:
-				upgradeOps.getTableFactory(recordStore).setUseBoolColsForValueSetCols(true);
+				upgradeOps.getTableFactory(recordStore).setInsertBoolColsForAllOptionalValueSetCols(true);
 				
 			// Re-insert all converted records in new table (which will have the boolean column representing the ValueSetColumn):
 			recordStore.store(tableConverter.convertRecords(oldRecords));
