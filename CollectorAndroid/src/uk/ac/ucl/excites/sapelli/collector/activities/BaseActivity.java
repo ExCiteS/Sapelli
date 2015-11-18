@@ -22,6 +22,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -93,7 +94,7 @@ public abstract class BaseActivity extends AppCompatActivity
 			}
 			catch(FileStorageRemovedException e)
 			{
-				e.printStackTrace(System.err);
+				Log.e(getClass().getSimpleName(), "Error getting fileStorageProvider", e);
 				// Inform the user and close the application
 				final Runnable useAlternativeStorage = new Runnable()
 				{
@@ -108,7 +109,7 @@ public abstract class BaseActivity extends AppCompatActivity
 			}
 			catch(FileStorageUnavailableException e)
 			{
-				e.printStackTrace(System.err);
+				Log.e(getClass().getSimpleName(), "Error getting fileStorageProvider", e);
 				// Inform the user and close the application
 				showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 			}
