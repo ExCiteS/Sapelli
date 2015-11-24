@@ -148,7 +148,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				spinner.setSelection(parentItem.getDefaultChildIndex());
 			//		Simulate user click:
 			else if(autoOpenToSelect)
-					spinner.performClick();
+				spinner.performClick();
 			//else: first (dummy) item will be selected
 			
 			//	Enable/disable spinner (also sets focus event listener):
