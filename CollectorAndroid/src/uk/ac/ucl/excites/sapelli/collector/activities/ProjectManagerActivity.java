@@ -337,7 +337,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			Collections.sort(result);
 			
 			// Update drawer list:
-			projectListAdaptor = new ArrayAdapter<ProjectDescriptor>(ProjectManagerActivity.this, R.layout.projectlist_item, result);
+			projectListAdaptor = new ArrayAdapter<ProjectDescriptor>(ProjectManagerActivity.this, R.layout.project_item, result);
 			projectList.setAdapter(projectListAdaptor);
 			
 			// Set label above list:
@@ -581,9 +581,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	public void onDataChanged()
 	{
 		// Refresh all tabs:
-		pagerAdapter.refresh();
+		refreshAllTabs();
 		// Alternative (refresh only main tab):
 		//pagerAdapter.getItem(pagerAdapter.getTabIndex(MainTabFragment.class)).refresh();
+	}
+	
+	public void refreshAllTabs()
+	{
+		pagerAdapter.refresh();
 	}
 
 	public boolean importRecords(MenuItem item)

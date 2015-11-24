@@ -9,10 +9,21 @@
     <color name="blue">#304f9f</color>
     <color name="grey">@color/material_blue_grey_800</color>
     <color name="light">@color/primary_material_light</color>
-
-    <!-- @color/material_deep_teal_200 -->
-    <color name="material_deep_teal_300">#4DB6AC</color>
     
+    <color name="red25percent">#40ff0000</color>
+    <color name="grey50percent">#80808080</color>
+    
+    <color name="dropShadowStack0">#10CCCCCC</color>
+    <color name="dropShadowStack1">#20CCCCCC</color>
+    <color name="dropShadowStack2">#30CCCCCC</color>
+    <color name="dropShadowStack3">#40CCCCCC</color>
+    <color name="dropShadowStack4">#50CCCCCC</color>
+    <color name="dropShadowInnerOpaque">#ffDDDDDD</color>
+    
+    <color name="material_deep_teal_200">#ff80cbc4</color>
+    <color name="material_deep_teal_300">#ff4DB6AC</color>
+    
+    <color name="colorPrimaryLight">@color/material_deep_teal_200</color>
     <color name="colorPrimary">@color/material_deep_teal_300</color>
     <color name="colorPrimaryDark">@color/material_deep_teal_500</color>
 

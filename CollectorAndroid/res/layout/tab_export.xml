@@ -25,12 +25,12 @@
         android:id="@+id/frgExportOnTabContainer"
         android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow"
+        android:background="@drawable/drop_shadow"
 		android:padding="10dp" />
     
     <FrameLayout
         android:id="@+id/btnExportForProject"
-		android:background="@layout/button_style"
+		android:background="@drawable/tab_footer_button_style"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
