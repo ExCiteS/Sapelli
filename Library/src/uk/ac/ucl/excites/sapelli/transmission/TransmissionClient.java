@@ -107,7 +107,7 @@ public abstract class TransmissionClient extends StorageClient
 	}
 	
 	/**
-	 * TODO
+	 * Returns a list of Correspondent interested in (updates to) records of the given Schema.
 	 * 
 	 * @param schema
 	 * @return
@@ -115,7 +115,7 @@ public abstract class TransmissionClient extends StorageClient
 	public abstract List<Correspondent> getReceiversFor(Schema schema);
 	
 	/**
-	 * Returns columns from ther given schema that should not be transmitted.
+	 * Returns columns from the given schema that should not be transmitted.
 	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
 	 * 
 	 * @param schema
