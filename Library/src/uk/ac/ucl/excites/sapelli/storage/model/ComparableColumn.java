@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.util.Comparator;
 
 /**
- * Column with support for comparing values of generic type {@code T}.
+ * Column with support for comparing (for grouping AND ranking) values of generic type {@code T}.
  * 
  * @param <T>
  * @author mstevens
@@ -36,85 +36,15 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 		super(name, optional, defaultValue);
 	}
 	
-	/* (non-Javadoc)
-	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
-	 */
-	@Override
-	public int compare(ValueSet<?> lhs, ValueSet<?> rhs)
-	{
-		return lhs == null ?
-				(rhs == null ? 0 : Integer.MIN_VALUE) :
-				(rhs == null ? Integer.MAX_VALUE : compareValues(retrieveValue(lhs), retrieveValue(rhs)));
-	}
-	
-	/**
-	 * Alias for {@link #compare(ValueSet<?>, ValueSet<?>)}
-	 * 
-	 * @param vs1
-	 * @param vs2
-	 * @return comparison result
-	 */
-	public int retrieveAndCompareValues(ValueSet<?> vs1, ValueSet<?> vs2)
-	{
-		return compare(vs1, vs2);
-	}
-	
-	/**
-	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
-	 * @param value (may be null if column is optional)
-	 * @return comparison result
-	 */
-	public int retrieveAndCompareToValue(ValueSet<?> vs, T value)
-	{
-		return compareValues(vs != null ? retrieveValue(vs) : null, value);
-	}
-	
-	/**
-	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
-	 * @param value (as object, may be null if column is optional)
-	 * @return comparison result
-	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
-	 * @throws NullPointerException if value is null on an non-optional column
-	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
-	 */
-	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
-	{
-		return compareValues(vs != null ? retrieveValue(vs) : null, convert(value));
-	}
-	
-	/**
-	 * @param lhs left-hand side value, possibly null
-	 * @param rhs right-hand side value, possibly null 
-	 * @return comparison result
-	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
-	 * @see <a href="http://stackoverflow.com/a/128220/1084488">http://stackoverflow.com/a/128220/1084488</a>
-	 */
-	public int compareValues(T lhs, T rhs)
-	{
-		return lhs == null ?
-				(rhs == null ? 0 : Integer.MIN_VALUE) :
-				(rhs == null ? Integer.MAX_VALUE : compareNonNullValues(lhs, rhs));
-	}
-	
 	/**
 	 * To be implemented by subclasses, arguments are guaranteed to both be non-null.
 	 * 
 	 * @param lhs left-hand side value, guaranteed non-null
 	 * @param rhs right-hand side value, guaranteed non-null
 	 * @return comparison result
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#compareNonNullValues(java.lang.Object, java.lang.Object)
 	 */
 	protected abstract int compareNonNullValues(T lhs, T rhs);
-	
-	public Comparator<T> getValueComparator()
-	{
-		return new Comparator<T>()
-		{
-			@Override
-			public int compare(T lhs, T rhs)
-			{
-				return compareValues(lhs, rhs);
-			}
-		};
-	}
 
 }
