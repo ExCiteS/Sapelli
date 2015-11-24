@@ -25,7 +25,7 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 {
 	
 	// STATIC -------------------------------------------------------
-	static private final int TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT = 0;
+	static protected final int TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT = 0;
 	
 	static private final Object DUMMY_TAG = new Object();
 	
@@ -76,6 +76,12 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 		this(context, itemLayoutResourceId, dropdownItemLayoutResourceId, textViewResourceId, unselectedString, deselectString, Arrays.asList(items));
 	}
 	
+	/**
+	 * @param context
+	 * @param unselectedString
+	 * @param deselectString
+	 * @param items
+	 */
 	public AdvancedSpinnerAdapter(Context context, String unselectedString, String deselectString, List<I> items)
 	{
 		this(context, android.R.layout.simple_spinner_item, android.R.layout.simple_spinner_dropdown_item, TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT, unselectedString, deselectString, items);
@@ -95,7 +101,8 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 		super(context, itemLayoutResourceId, textViewResourceId);
 		this.itemLayoutResourceId = itemLayoutResourceId;
 		this.textViewResourceId = textViewResourceId;
-		this.setDropDownViewResource(this.dropdownItemLayoutResourceId = dropdownItemLayoutResourceId);
+		this.setDropDownViewResource(dropdownItemLayoutResourceId);
+		
 		this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		
 		this.unselectedString = unselectedString;
@@ -147,6 +154,8 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 	@Override
 	public I getItem(int position)
 	{
+		if(position < 0)
+			return null;
 		if(isUnselected(position) || isDeselect(position))
 			return null;
 		else
@@ -165,19 +174,30 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 
 	/**
 	 * @param position
-	 * @param item
+	 * @param item the item, may be null
 	 * @return
 	 */
-	protected CharSequence getItemText(int position, I item)
+	protected final CharSequence getItemText(int position, I item)
 	{
 		if(isUnselected(position))
 			return unselectedString;
 		else if(isDeselect(position))
 			return deselectString;
-		else if(getItem(position) instanceof CharSequence)
+		else if(item instanceof CharSequence)
 			return (CharSequence) item;
+		else if(item == null)
+			return unselectedString;
 		else
-			return item.toString();
+			return getItemString(item);
+	}
+	
+	/**
+	 * @param item (never null)
+	 * @return
+	 */
+	protected String getItemString(I item)
+	{
+		return item.toString();
 	}
 	
 	/**
@@ -196,7 +216,7 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 	public View getView(int position, View convertView, ViewGroup parent)
 	{
 		I item = getItem(position);
-		return createView(getItemText(position, item), getItemDrawableResourceId(position, item), isUnselected(position) || isDeselect(position), convertView, parent, itemLayoutResourceId);
+		return createView(position, item, getItemText(position, item), getItemDrawableResourceId(position, item), isUnselected(position) || isDeselect(position), convertView, parent, itemLayoutResourceId);
 	}
 
 	@Override
@@ -206,29 +226,29 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 		{	// Hide the unselected item:
 			TextView dummyView = new TextView(getContext());
 			dummyView.setTag(DUMMY_TAG);
-            dummyView.setHeight(0);
-            //dummyView.setVisibility(View.GONE); //does not seem to make a difference
-            return dummyView;
+			dummyView.setHeight(0);
+			//dummyView.setVisibility(View.GONE); //does not seem to make a difference
+			return dummyView;
 		}
 		else
 		{
 			I item = getItem(position);
-			return createView(getItemText(position, item), getItemDrawableResourceId(position, item), isDeselect(position), convertView, parent, dropdownItemLayoutResourceId);
+			return createView(position, item, getItemText(position, item), getItemDrawableResourceId(position, item), isDeselect(position), convertView, parent, dropdownItemLayoutResourceId);
 		}
 	}
-	
-    /**
-     * @param itemText
-     * @param itemDrawableResourceId
-     * @param center
-     * @param convertView
-     * @param parent
-     * @param resource
-     * @return
-     * 
-     * @see Based on ArrayAdapter#createViewFromResource(int,View,ViewGroup,int)
-     */
-	private View createView(CharSequence itemText, Integer itemDrawableResourceId, boolean center, View convertView, ViewGroup parent, int resource)
+
+	/**
+	 * @param itemText
+	 * @param itemDrawableResourceId
+	 * @param center
+	 * @param convertView
+	 * @param parent
+	 * @param resource
+	 * @return
+	 * 
+	 * @see Based on ArrayAdapter#createViewFromResource(int,View,ViewGroup,int)
+	 */
+	protected View createView(int position, I item, CharSequence itemText, Integer itemDrawableResourceId, boolean center, View convertView, ViewGroup parent, int resource)
 	{
 		View view;
 		TextView textView;
@@ -238,7 +258,7 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 			view = convertView;
 		try
 		{
-			if(textViewResourceId == TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT)
+			if(view instanceof TextView || textViewResourceId == TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT)
 				// If no custom field is assigned, assume the whole resource is a TextView
 				textView = (TextView) view;
 			else
