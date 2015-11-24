@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
@@ -39,13 +40,19 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * Abstract class representing database schema/table column of generic type {@code T}.
+ * <p>
+ * Abstract class representing database schema/table column of generic type {@code T}.</p>
+ * <p>
+ * Note that although this class implements {@link Comparator<ValueSet<?>>} the different
+ * {@code compare} methods are only guaranteed to group identical values (or the ValueSets
+ * that contain them) together, not to also rank them in a meaningful, "logical" or domain-
+ * specific order (see {@link #compareNonNullValues(Object, Object)}).</p>
  *
  * @param <T> the content type
  * 
  * @author mstevens
  */
-public abstract class Column<T> implements Serializable
+public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 {
 
 	// STATICS-------------------------------------------------------
@@ -955,6 +962,104 @@ public abstract class Column<T> implements Serializable
 			if(vCol.getTargetColumn().getName().equals(targetColumnName))
 				return vCol;
 		return null;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+	 */
+	@Override
+	public int compare(ValueSet<?> lhs, ValueSet<?> rhs)
+	{
+		return lhs == null ?
+				(rhs == null ? 0 : Integer.MIN_VALUE) :
+				(rhs == null ? Integer.MAX_VALUE : compareValues(retrieveValue(lhs), retrieveValue(rhs)));
+	}
+	
+	/**
+	 * Alias for {@link #compare(ValueSet<?>, ValueSet<?>)}
+	 * 
+	 * @param vs1
+	 * @param vs2
+	 * @return comparison result
+	 */
+	public int retrieveAndCompareValues(ValueSet<?> vs1, ValueSet<?> vs2)
+	{
+		return compare(vs1, vs2);
+	}
+	
+	/**
+	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param value (may be null if column is optional)
+	 * @return comparison result
+	 */
+	public int retrieveAndCompareToValue(ValueSet<?> vs, T value)
+	{
+		return compareValues(vs != null ? retrieveValue(vs) : null, value);
+	}
+	
+	/**
+	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param value (as object, may be null if column is optional)
+	 * @return comparison result
+	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
+	 */
+	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
+	{
+		return compareValues(vs != null ? retrieveValue(vs) : null, convert(value));
+	}
+	
+	/**
+	 * @param lhs left-hand side value, possibly null
+	 * @param rhs right-hand side value, possibly null 
+	 * @return comparison result
+	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+	 * @see <a href="http://stackoverflow.com/a/128220/1084488">http://stackoverflow.com/a/128220/1084488</a>
+	 */
+	public int compareValues(T lhs, T rhs)
+	{
+		return lhs == null ?
+				(rhs == null ? 0 : Integer.MIN_VALUE) :
+				(rhs == null ? Integer.MAX_VALUE : compareNonNullValues(lhs, rhs));
+	}
+	
+	/**
+	 * Defines an order relationship over {@code <T>} objects based solely on their
+	 * {@link Object#hashCode()} or {@link System#identityHashCode(Object)}.
+	 * This order therefore has _no_ real semantics and only serves as a means to
+	 * group together identical values or the {@link ValueSet}s that contain them,
+	 * without also ranking them in a meaningful, "logical", or domain-specific order.
+	 * When such ordering is needed a {@link ComparableColumn} must be used instead.
+	 * 
+	 * @param lhs left-hand side value, guaranteed non-null
+	 * @param rhs right-hand side value, guaranteed non-null
+	 * @return comparison result
+	 */
+	protected int compareNonNullValues(T lhs, T rhs)
+	{
+		if(lhs == rhs || lhs.equals(rhs))
+			return 0;
+		int lhsHash = lhs.hashCode();
+		int rhsHash = rhs.hashCode();		
+		return	(lhsHash != rhsHash) ?
+					Integer.compare(lhsHash, rhsHash) :
+					Integer.compare(System.identityHashCode(lhs), System.identityHashCode(rhs));
+	}
+	
+	/**
+	 * @return
+	 */
+	public Comparator<T> getValueComparator()
+	{
+		return new Comparator<T>()
+		{
+			@Override
+			public int compare(T lhs, T rhs)
+			{
+				return compareValues(lhs, rhs);
+			}
+		};
 	}
 
 }

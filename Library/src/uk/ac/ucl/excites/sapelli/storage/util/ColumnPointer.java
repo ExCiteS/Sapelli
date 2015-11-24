@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
@@ -541,26 +540,20 @@ public class ColumnPointer<C extends Column<?>>
 	 * @return a Comparator to compare Records in terms of values in the pointed-at {@link ComparableColumn} 
 	 * @throws ClassCastException if the pointed-at column is not a {@link ComparableColumn}
 	 */
-	public Comparator<Record> getComparator() throws ClassCastException
+	public Comparator<ValueSet<?>> getComparator() throws ClassCastException
 	{
-		Column<?> col = getColumn();
+		final Column<?> col = getColumn();
 		if(col == null)
 			return null;
-		if(col instanceof ComparableColumn)
-		{
-			final ComparableColumn<?> compCol = (ComparableColumn<?>) col;
-			return new Comparator<Record>()
+		else
+			return new Comparator<ValueSet<?>>()
 			{
-				
 				@Override
-				public int compare(Record lhs, Record rhs)
+				public int compare(ValueSet<?> lhs, ValueSet<?> rhs)
 				{	// Compare (sub)records:
-					return compCol.compare(getValueSet(lhs, false), getValueSet(rhs, false));
+					return col.compare(getValueSet(lhs, false), getValueSet(rhs, false));
 				}
 			};
-		}
-		else
-			throw new IllegalArgumentException("ColumnPointer does not point to a ComparatorColumn");
 	}
 	
 	@Override
