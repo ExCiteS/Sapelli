@@ -106,7 +106,7 @@ public class ResendRequestPayload extends ResponsePayload
 	}
 
 	@Override
-	public boolean acknowledgeReception()
+	public final boolean acknowledgeReception()
 	{
 		return false; // !!!
 	}
