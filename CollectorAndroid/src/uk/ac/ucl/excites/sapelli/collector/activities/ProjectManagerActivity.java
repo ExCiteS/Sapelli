@@ -81,6 +81,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * @author Julia, Michalis Vitos, mstevens, benelliott
@@ -105,6 +106,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	// DYNAMICS-------------------------------------------------------
 	private DeviceID deviceID;
 	private ProjectStore projectStore;
+	private TransmissionStore transmissionStore;
 	private Project currentProject;
 	
 	private ArrayAdapter<ProjectDescriptor> projectListAdaptor;
@@ -231,12 +233,13 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Get ProjectStore instance:
 		try
 		{
-			projectStore = getCollectorApp().collectorClient.projectStoreHandle.getStore(this);
+			projectStore = getCollectorClient().projectStoreHandle.getStore(this);
+			transmissionStore = getCollectorClient().transmissionStoreHandle.getStore(this);
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, getString(R.string.projectStorageAccessFail), e);
-			showErrorDialog(getString(R.string.projectStorageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
+			Log.e(TAG, getString(R.string.storageAccessFail), e);
+			showErrorDialog(getString(R.string.storageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
 			return;
 		}
 		
@@ -516,8 +519,9 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	protected void onDestroy()
 	{
-		// clean up:
-		getCollectorApp().collectorClient.projectStoreHandle.doneUsing(this); // signal that the activity no longer needs the DAO
+		// signal that the activity no longer needs the stores:
+		getCollectorApp().collectorClient.projectStoreHandle.doneUsing(this);
+		getCollectorApp().collectorClient.transmissionStoreHandle.doneUsing(this);
 		// super:
 		super.onDestroy();
 	}
@@ -824,6 +828,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		return projectStore;
 	}
 	
+	/**
+	 * @return the transmissionStore
+	 */
+	public TransmissionStore getTransmissionStore()
+	{
+		return transmissionStore;
+	}
+
 	private String listWarnings(int titleStringId, List<String> warnings)
 	{
 		if(warnings.isEmpty())
