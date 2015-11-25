@@ -69,6 +69,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.JoinConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.NotConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
@@ -2141,7 +2142,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @author mstevens
 	 */
-	protected abstract class RecordsByConstraintsHelper extends StatementHelper implements ConstraintVisitor
+	protected class RecordsByConstraintsHelper extends StatementHelper implements ConstraintVisitor
 	{
 		
 		private final List<Object> sapArguments;
@@ -2361,6 +2362,27 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			else
 				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor#visit(uk.ac.ucl.excites.sapelli.storage.queries.constraints.JoinConstraint)
+		 */
+		@Override
+		public void visit(JoinConstraint joinConstraint)
+		{
+			try
+			{
+				STable forgeinTable = getTable(joinConstraint.getForeignSchema(), false);
+				// TODO what if column does exist? --> whole query should fail
+				// TODO create another RecordsByConstraintsHelper instance for other table? and visit foreign constraints with it?
+				// TODO al foreign column names must be prefixed
+				
+			}
+			catch(DBException e)
+			{
+				exception = e;
+			}
+			
 		}
 		
 	}

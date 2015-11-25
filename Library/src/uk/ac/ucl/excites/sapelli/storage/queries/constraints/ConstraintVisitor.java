@@ -38,4 +38,6 @@ public interface ConstraintVisitor
 	
 	public void visit(BitFlagConstraint bitFlagConstr);
 
+	public void visit(JoinConstraint joinConstraint);
+
 }
