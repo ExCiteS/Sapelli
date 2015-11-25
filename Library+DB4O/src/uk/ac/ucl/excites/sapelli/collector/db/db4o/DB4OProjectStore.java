@@ -19,26 +19,26 @@
 package uk.ac.ucl.excites.sapelli.collector.db.db4o;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+
+import com.db4o.ObjectContainer;
+import com.db4o.ObjectSet;
+import com.db4o.query.Predicate;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-
-import com.db4o.ObjectContainer;
-import com.db4o.ObjectSet;
-import com.db4o.query.Predicate;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -293,33 +293,45 @@ public class DB4OProjectStore extends ProjectStore
 			throw new DBException("Error upon backup up project store");
 		}
 	}
-
+	
 	@Override
-	public void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore)
+	public SendSchedule retrieveSendScheduleByID(int id, TransmissionStore transmissionStore) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
 	}
 
 	@Override
-	public SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendSchedule schedule, TransmissionStore transmissionStore)
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
 	}
 
 	@Override
-	public void deleteSendSchedule(SendingSchedule schedule)
+	public List<SendSchedule> retrieveSendSchedulesForProject(Project project, TransmissionStore transmissionStore) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
 	}
 	
 	@Override
-	public void serialise(Project project, OutputStream out) throws IOException
+	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+	}
+
+	@Override
+	public void deleteSendSchedule(SendSchedule schedule) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+	}
+	
+	@Override
+	public void serialise(Project project, OutputStream out) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("serialise() not implemented");
 	}
 
 	@Override
-	public Project deserialise(InputStream in) throws IOException
+	public Project deserialise(InputStream in) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("deserialise() not implemented");
 	}

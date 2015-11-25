@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -28,18 +27,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.util.Log;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
  * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
@@ -338,29 +338,39 @@ public class PrefProjectStore extends ProjectStore
 	}
 	
 	@Override
-	public void backup(StoreBackupper backuper, File destinationFolder)
+	public void backup(StoreBackupper backuper, File destinationFolder) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("preferences backup not implemented");
 	}
 
 	@Override
-	public void storeSendSchedule(SendingSchedule schedule, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendSchedule schedule, TransmissionStore transmissionStore) throws UnsupportedOperationException
 	{
-		// TODO Auto-generated method stub
-		
+		throw new UnsupportedOperationException("Method not implemented");
 	}
 
 	@Override
-	public SendingSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	public SendSchedule retrieveSendScheduleByID(int id, TransmissionStore transmissionStore) throws UnsupportedOperationException
 	{
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("Method not implemented");
 	}
 
 	@Override
-	public void deleteSendSchedule(SendingSchedule schedule)
+	public List<SendSchedule> retrieveSendSchedulesForProject(Project project, TransmissionStore transmissionStore) throws UnsupportedOperationException
 	{
-		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Method not implemented");
+	}
+	
+	@Override
+	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented");
+	}
+
+	@Override
+	public void deleteSendSchedule(SendSchedule schedule) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented");
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -389,13 +399,13 @@ public class PrefProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void serialise(Project project, OutputStream out) throws IOException
+	public void serialise(Project project, OutputStream out) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("serialise() not implemented");
 	}
 
 	@Override
-	public Project deserialise(InputStream in) throws IOException
+	public Project deserialise(InputStream in) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("deserialise() not implemented");
 	}

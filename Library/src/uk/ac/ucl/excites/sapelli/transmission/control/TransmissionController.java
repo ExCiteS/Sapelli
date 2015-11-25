@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -79,6 +80,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	// Handlers:
 	private final SMSReceiver smsReceiver = new SMSReceiver();
 	private final PayloadReceiver payloadReceiver;
+	private final PayloadAckHandler payloadAckHandler;
 	
 	// Logger:
 	protected Logger logger;
@@ -98,6 +100,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 									customPayloadReceiver :
 									new DefaultPayloadReceiver();
 		
+		// Payload ACK handler:
+		this.payloadAckHandler = new PayloadAckHandler();
+		
 		// Logger:
 		try
 		{
@@ -110,7 +115,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	}
 	
 	/**
-	 * To be called by subclass when all contructors are done
+	 * To be called by subclass when all constructors are done
 	 */
 	protected void initialise()
 	{
@@ -140,27 +145,36 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	public void sendRecords(Model model, Correspondent receiver) throws Exception
 	{
+		List<Record> recsToSend = new ArrayList<Record>();
+		
 		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
-		List<Record> recsToSend = transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model);
+		recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
+		
+		//Also include transmittable records which have a transmission which was never sent or not received since the timeout:
+		// recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithTimedOutTransmission(receiver, model, ));
+		// TODO what is a good timeout??
+		
 		addLogLine("Records to send: " + recsToSend.size());
 		// while we still have records to send...
 		while(!recsToSend.isEmpty())
 		{
-			// create a new Payload:
+			// Create a new Payload:
 			RecordsPayload payload = (RecordsPayload) Payload.New(Payload.BuiltinType.Records);
 
-			// create a new Transmission:
+			// Create a new Transmission:
 			Transmission<?> transmission = createOutgoingTransmission(payload, receiver);
 
-			// add as many records to the Payload as possible (this call will remove from the list the records that were successfully added to the payload):
-			addLogLine("Trying to add "+recsToSend.size()+" records to payload...");
+			// Add as many records to the Payload as possible (this call will remove from the list the records that were successfully added to the payload):
+			addLogLine("Trying to add " + recsToSend.size() + " records to payload...");
 			payload.addRecords(recsToSend);
-			addLogLine("Records that weren't added: "+recsToSend.size()+"; payload says it has "+payload.getNumberOfRecords());
+			addLogLine("Records that weren't added: " + recsToSend.size() + "; payload has " + payload.getNumberOfRecords());
 			
-			//send transmission:
+			// Send transmission:
 			storeAndSend(transmission);
 			
-			// TODO mark records as "sent" (do here rather than ACK? depends on resend timeout vs. send new records timeout; semantics of resending transmission vs. records)
+			// Associate the transmittables with the transmission:
+			for(Record recBeingSent : payload.getRecords())
+				transmissionStore.storeTransmittableRecord(receiver, recBeingSent.getReference(), transmission);
 		}
 	}
 	
@@ -340,7 +354,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	public void sendSMSResendRequest(int localID) throws Exception
 	{
 		// Query for the subject transmission:
-		Transmission<?> trans = transmissionStore.retrieveTransmission(true, localID);
+		Transmission<?> trans = transmissionStore.retrieveTransmissionOrNull(true, localID);
 		
 		// Check if it makes sense to send the request...
 		if(trans == null || !( trans instanceof SMSTransmission) || trans.isComplete())
@@ -370,7 +384,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	public boolean scheduleSMSResendRequests() throws Exception
 	{
 		// Query for incomplete SMSTransmissions:
-		List<SMSTransmission<?>> incompleteSMSTs = transmissionStore.getIncompleteSMSTransmissions();		
+		List<SMSTransmission<?>> incompleteSMSTs = transmissionStore.retrieveIncompleteSMSTransmissions();		
 		addLogLine("Incomplete SMS transmissions found: " + incompleteSMSTs.size());
 		
 		boolean atLeast1 = false;
@@ -494,6 +508,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				if(ack.getSubjectReceiverSideID() != null)
 					subject.setRemoteID(ack.getSubjectReceiverSideID()); // remember remote ID (mainly for debugging)
 				transmissionStore.store(subject);
+				
+				// Payload-specific ACK handling:
+				subject.getPayload().handle(payloadAckHandler);
 			}
 			else
 				System.err.println("No matching transmission (ID " + ack.getSubjectSenderSideID() + "; payload hash: " + ack.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + ack.getTransmission().getCorrespondent());
@@ -587,6 +604,52 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		{
 			addLogLine("INCOMING CUSTOM", "TRANS ID: "+customPayload.getTransmission().getLocalID());
 			System.err.println("Receiving custom payload (type: " + type + ") not supported!");
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	private class PayloadAckHandler implements Payload.Handler
+	{
+		
+		@Override
+		public void handle(RecordsPayload recordsPayload) throws Exception
+		{
+			// does nothing for now
+			// TODO we could delete the transmittables here, but then we lose information about the records having been sent
+		}
+
+		@Override
+		public void handle(AckPayload ackPayload) throws Exception
+		{
+			// never happens because AckPayload#acknowledgeReception() returns false.
+		}
+
+		@Override
+		public void handle(ResendRequestPayload resendRequestPayload) throws Exception
+		{
+			// never happens because ResendRequestPayload#acknowledgeReception() returns false.
+		}
+
+		@Override
+		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
+		{
+			// TODO
+		}
+
+		@Override
+		public void handle(ModelPayload projectModelPayload) throws Exception
+		{
+			// TODO
+		}
+
+		@Override
+		public void handle(Payload customPayload, int type) throws Exception
+		{
+			// TODO
 		}
 		
 	}

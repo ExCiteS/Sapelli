@@ -57,6 +57,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.AboutFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.EnterURLFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ManageReceiversFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
@@ -553,6 +554,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	private void openAboutDialog()
 	{
 		new AboutFragment().show(getSupportFragmentManager(), getString(R.string.about));
+	}
+	
+	/**
+	 * @param item
+	 * @return
+	 */
+	public boolean manageReceivers(MenuItem item)
+	{
+		ManageReceiversFragment.ShowDialog(this, null);
+		return true;
 	}
 
 	/**

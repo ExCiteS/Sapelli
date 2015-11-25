@@ -27,12 +27,15 @@
     <string name="warning">Warning</string>
     <string name="info">Info</string>
     <string name="not_available">n/a</string>
+    <string name="neww">New</string>
     <string name="add">Add</string>
     <string name="addEtc">Add&#8230;</string>
     <string name="edit">Edit</string>
     <string name="editEtc">Edit&#8230;</string>
     <string name="remove">Remove</string>
     <string name="delete">Delete</string>
+    <string name="manage">Manage</string>
+    <string name="manageEtc">Manage&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string>
 	<string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
 	<string name="project_manager">Project Manager</string>
@@ -109,7 +112,7 @@
     <string name="txtValidationOptionalHint">To leave blank, hit backspace until cross appears.</string>
     <string name="lstPleaseSelect">— Please select —</string>
     <string name="lstUndoSelection">— No selection —</string>
-    <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
+    <string name="storageAccessFail">Could not access project or transmission storage, due to: %s.</string>
     <string name="enableLocationProvider">Please enable location provider (%s) in device settings.</string>
     <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>
     <string name="selectProject">Please select a project.</string>
@@ -189,11 +192,17 @@
     <string name="share">Share …</string>
     <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
     <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
+    <string name="scheduledReceivers">Schedules receivers:</string>
     <string name="receiver">Receiver:</string>
+    <string name="receivers">Receivers:</string>
     <string name="interval">Interval:</string>
     <string name="minutes">minutes</string>
     <string name="selectReceiver">Select receiver:</string>
-    <string name="manageReceivers">Manage&#8230;</string>
+    <string name="pleaseSelectReceiver">Please select or add a receiver.</string>
+    <string name="manageReceivers">Manage receivers</string>
+    <string name="schedule">Send schedule</string>
+    <string name="addSchedule">Add send schedule</string>
+    <string name="editSchedule">Edit send schedule</string>
     <string name="addReceiver">Add receiver</string>
     <string name="editReceiver">Edit receiver</string>
     <string name="receiverName">Name:</string>

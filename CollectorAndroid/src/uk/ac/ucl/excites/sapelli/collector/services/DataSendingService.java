@@ -18,16 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.collector.services;
 
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
-import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
+import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * IntentService which is awoken by a SendAlarm intent to send any pending Records for a particular Project according to the SendRecordsSchedule that it retrieves from the ProjectStore.
@@ -48,8 +47,12 @@ public class DataSendingService extends IntentService implements StoreUser
 	
 	private static final String TAG = DataSendingService.class.getSimpleName();
 	
-	public static final String INTENT_KEY_PROJECT_ID = "projectId";
-	public static final String INTENT_KEY_PROJECT_FINGERPRINT = "fingerPrint";
+	/*package*/ static String getIntentAction(int projectID, int projectFingerPrint)
+	{
+		return "SendDataForProject:" + projectID + "_" + projectFingerPrint;
+	}
+	
+	public static final String INTENT_KEY_SEND_SCHEDULE_ID = "sendScheduleId";
 	
 	private CollectorApp app;
 	private AndroidTransmissionController transmissionController;
@@ -66,16 +69,15 @@ public class DataSendingService extends IntentService implements StoreUser
 		// alarm has just woken up the service with a project ID and fingerprint
 		
 		// Read intent data:
-		if(!intent.hasExtra(INTENT_KEY_PROJECT_ID) || !intent.hasExtra(INTENT_KEY_PROJECT_FINGERPRINT))
+		if(!intent.hasExtra(INTENT_KEY_SEND_SCHEDULE_ID))
 		{	// data missing from intent!
-			Log.e(TAG,"Sender service woken by alarm but project data was missing from the Intent.");
+			Log.e(TAG,"Sender service woken by alarm but " + INTENT_KEY_SEND_SCHEDULE_ID + " was missing from the Intent.");
 			return;
 		}
-		int projectID = intent.getIntExtra(INTENT_KEY_PROJECT_ID, -1);
-		int projectFingerPrint = intent.getIntExtra(INTENT_KEY_PROJECT_FINGERPRINT, -1);
 		
+		SendSchedule sendSchedule= null;
 		ProjectStore projectStore;
-		TransmissionStore sentTStore;
+		TransmissionStore transmissionStore;
 		try
 		{
 			// do not get the app in the constructor(!):
@@ -88,36 +90,26 @@ public class DataSendingService extends IntentService implements StoreUser
 			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			
 			// Get SentTransmissionStore instance:
-			sentTStore = app.collectorClient.transmissionStoreHandle.getStore(this);
+			transmissionStore = app.collectorClient.transmissionStoreHandle.getStore(this);
 			
-			// Get Project:
-			Project project = projectStore.retrieveProject(projectID, projectFingerPrint);
-			if(project == null)
-			{
-				transmissionController.addLogLine(TAG, "Data sending canceled, project (ID: " + projectID + "; fingerprint: " + projectFingerPrint + ") not found.");
-				DataSendingSchedulingService.Cancel(app, projectID, projectFingerPrint); // cancel future alarms for this project
+			// Get Schedule:
+			sendSchedule = projectStore.retrieveSendScheduleByID(intent.getIntExtra(INTENT_KEY_SEND_SCHEDULE_ID, -1), transmissionStore);
+			if(sendSchedule == null || !sendSchedule.isEnabled())
 				return;
-			}
-			
-			// Get Schedule/Receiver:
-			SendingSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
-			if(sendSchedule == null)
-			{
-				transmissionController.addLogLine(TAG, "Data sending canceled, no schedule/receiver found for project " + project.toString(true));
-				DataSendingSchedulingService.Cancel(app, project); // cancel future alarms for this project
-				return;
-			}
 			
 			// TODO detect network reception/connectivity...
 	
 			// Send records:
-			transmissionController.sendRecords(project.getModel(), sendSchedule.getReceiver());
+			transmissionController.sendRecords(sendSchedule.getProject().getModel(), sendSchedule.getReceiver());
 			
 			// TOOD send files?
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error upon trying to send data for project with ID " + projectID + " and finger print " + projectFingerPrint, e);
+			if(sendSchedule != null)
+				Log.e(TAG, "Error upon trying to send data for project with ID " + sendSchedule.getProject().getID() + " and finger print " + sendSchedule.getProject().getFingerPrint(), e);
+			else
+				Log.e(TAG, "onHandleIntent()", e);
 		}
 		finally
 		{

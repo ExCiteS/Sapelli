@@ -22,15 +22,6 @@ import org.joda.time.DateTime;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
-import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
@@ -44,6 +35,15 @@ import android.os.Looper;
 import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 
 /**
  * IntentService which handles the reception of SMS messages (passed to it from SMSBroadcastReceiver)
@@ -125,6 +125,8 @@ public class IncomingSMSReceiverService extends IntentService
 	
 	private static void SetOrCancelResendRequestAlarm(Context context, int localID, DateTime alarmTime)
 	{
+		Log.i(TAG, "Setting/cancelling resend request alerm for transmission with local ID: " + localID);
+		
 		AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 		
 		Intent serviceIntent = new Intent(context, IncomingSMSReceiverService.class);
@@ -133,7 +135,7 @@ public class IncomingSMSReceiverService extends IntentService
 		PendingIntent pi = PendingIntent.getService(context, localID, serviceIntent, 0);
 	
 		// Cancel any previously scheduled alarm for the same transmission (i.e. if cancel=false we will effectively postpone the running of a previously set alarm)
-		am.cancel(pi);
+		am.cancel(pi); // (tested & found working, only cancels alarm for specified localID)
 		
 		// Set alarm, unless we are only cancelling (indicated by null alarmTime):
 		if(alarmTime != null)

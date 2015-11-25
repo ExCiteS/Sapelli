@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -31,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperation;
@@ -352,14 +353,15 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 			// Get stores:
 			TransmissionStore tStore = transmissionStoreHandle.getStore(this);
 			ProjectStore pStore = projectStoreHandle.getStore(this);
-		
-			// Get schedule (currently we support only 1 per project):
-			SendingSchedule schedule = pStore.retrieveSendScheduleForProject(project, tStore);
 			
-			// Get receiving correspondent and return as list:
-			return schedule != null && schedule.getReceiver() != null /*just in case*/ ?
-				Collections.singletonList(schedule.getReceiver()) :
-				Collections.<Correspondent> emptyList();
+			// Get schedules (and their receivers) for the project:
+			List<Correspondent> receivers = new ArrayList<Correspondent>();
+			for(SendSchedule schedule : pStore.retrieveSendSchedulesForProject(project, tStore))
+				if(schedule != null && schedule.getReceiver() != null /*just in case*/)
+					receivers.add(schedule.getReceiver());
+			
+			// Return list:
+			return receivers;
 		}
 		catch(Exception e)
 		{

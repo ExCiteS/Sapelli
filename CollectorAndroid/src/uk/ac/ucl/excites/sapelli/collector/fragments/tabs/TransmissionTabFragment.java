@@ -18,28 +18,34 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
+import java.util.List;
+
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
-import android.widget.Spinner;
+import android.widget.ListView;
+import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
-import uk.ac.ucl.excites.sapelli.collector.fragments.SMSReceiverFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.SendScheduleFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.collector.tasks.SendConfigurationHelpers;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
@@ -48,47 +54,30 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
  * 
  * @author Julia, mstevens
  */
-public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener, OnItemSelectedListener, StoreUser
+public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener
 {
 
+	public static final float SEC_IN_MIN = 60.0f;
+	
 	// Views
 	//	Sending...
 	private LinearLayout sendHeader;	
 	private SwitchCompat switchSend;
 	private LinearLayout sendSettings;
-	private Spinner spinReceiver;
-	private Button btnAddReceiver;
-	private Button btnEditReceiver;
-	private Button btnDeleteReceiver;
-	private EditText txtSendIntervalMin;
+	private ListView listSchedules;
+	private Button btnAddSchedule;
 	//	Receiving...
 	private LinearLayout receiveHeader;
 	private SwitchCompat switchReceive;
 	private LinearLayout receiveSettings;
 	
 	// Adapter:
-	private ArrayAdapter<Correspondent> spinReceiverAdapter;
+	private SendScheduleAdapter listScheduleAdapter;
 	
-	// DOA:
-	private TransmissionStore transmissionStore;
-	
-	// Model:
-	private SendingSchedule sendingSchedule;
-
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		try
-		{
-			// Get transmission store object:
-			transmissionStore = getOwner().getCollectorClient().transmissionStoreHandle.getStore(this);
-		}
-		catch(Exception e)
-		{
-			Log.e(getClass().getSimpleName(), "Could not get TransmissionStore object", e);
-			throw new IllegalStateException(e);
-		}
 	}
 
 	@Override
@@ -96,7 +85,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	{
 		return R.layout.tab_transmission;
 	}
-
+	
 	@Override
 	protected void setupUI(View rootLayout)
 	{
@@ -105,16 +94,10 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchSend = (SwitchCompat) rootLayout.findViewById(R.id.switchSend);
 		switchSend.setOnClickListener(this);
 		sendSettings = (LinearLayout) rootLayout.findViewById(R.id.sendSettings);
-		spinReceiver = (Spinner) rootLayout.findViewById(R.id.spinSendReceiver);
-		spinReceiver.setOnItemSelectedListener(this);
-		btnAddReceiver = (Button) rootLayout.findViewById(R.id.btnAddReceiver);
-		btnAddReceiver.setOnClickListener(this);
-		btnEditReceiver = (Button) rootLayout.findViewById(R.id.btnEditReceiver);
-		btnEditReceiver.setOnClickListener(this);
-		btnDeleteReceiver = (Button) rootLayout.findViewById(R.id.btnDeleteReceiver);
-		btnDeleteReceiver.setOnClickListener(this);
-		txtSendIntervalMin = (EditText) rootLayout.findViewById(R.id.txtSendIntervalMin);
-		
+		listSchedules = (ListView) rootLayout.findViewById(R.id.listSendSchedules);
+		btnAddSchedule = (Button) rootLayout.findViewById(R.id.btnAddSchedule);
+		btnAddSchedule.setOnClickListener(this);
+
 		// Receiving config...
 		receiveHeader = (LinearLayout) rootLayout.findViewById(R.id.receiveHeader);
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
@@ -122,66 +105,39 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
 	}
 	
-	private void toggleConfigGroup(View clickview, View expandview, boolean show)
+	private void toggleConfigGroup(boolean send, boolean enabled)
 	{
-		expandview.setVisibility(show ? View.VISIBLE : View.GONE);
-		clickview.setBackgroundResource(show ? R.layout.drop_shadow_top : R.layout.drop_shadow);
+		// Switch state:
+		(send ? switchSend : switchReceive).setChecked(enabled);
+		// Header background:
+		(send ? sendHeader : receiveHeader).setBackgroundResource(enabled ? R.drawable.drop_shadow_top : R.drawable.drop_shadow);
+		// Settings pane:
+		(send ? sendSettings : receiveSettings).setVisibility(enabled ? View.VISIBLE : View.GONE);
 	}
-
+	
 	@Override
 	protected void refresh(Project project)
 	{
 		if(project == null)
 			return;
 		
-		try
-		{
-			// Get current schedule:
-			sendingSchedule = getOwner().getProjectStore().retrieveSendScheduleForProject(project, transmissionStore);
-		}
-		catch(DBException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		if(sendingSchedule == null)
-			sendingSchedule = new SendingSchedule(project, false);
-		
 		// Update sending config UI parts:
-		switchSend.setChecked(sendingSchedule.isEnabled());
-		toggleConfigGroup(sendHeader, sendSettings, sendingSchedule.isEnabled());
-		if(sendingSchedule.isEnabled() || true) // TODO hack hack
-		{
-			// Load receivers:
-			spinReceiverAdapter =
-				new AdvancedSpinnerAdapter<Correspondent>(getOwner(), getOwner().getString(R.string.lstPleaseSelect), "None", transmissionStore.retrieveCorrespondents(false))
-				{
-					@Override
-					protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
-					{
-						if(receiver == null)
-							return null;
-						//else:
-						ReceiverDrawableProvider provider = new ReceiverDrawableProvider();
-						receiver.handle(provider);
-						return provider.drawableResourceId;
-					}
-				};
-			spinReceiver.setAdapter(spinReceiverAdapter);
-
-			// Select current receiver:
-			if(sendingSchedule.getReceiver() != null)
-				spinReceiver.setSelection(spinReceiverAdapter.getPosition(sendingSchedule.getReceiver()));
-			
-			// Set interval:
-			txtSendIntervalMin.setText(Float.valueOf((float) sendingSchedule.getTransmitIntervalS() / 60.0f).toString()); 
-		}
-	}
-	
-	private Correspondent getReceiver()
-	{
-		return spinReceiverAdapter.getItem(spinReceiver.getSelectedItemPosition());
+		// 	Get schedules for project:
+		List<SendSchedule> schedules = getSchedules();
+		//	Populate list:
+		listScheduleAdapter = new SendScheduleAdapter(listSchedules.getContext(), schedules); 
+		listSchedules.setAdapter(listScheduleAdapter);
+		registerForContextMenu(listSchedules);
+		
+		//	Set sending switch:
+		boolean sendingEnabled = false;
+		for(SendSchedule schedule : schedules)
+			if(schedule.isEnabled())
+			{
+				sendingEnabled = true;
+				break;
+			}
+		toggleConfigGroup(true, sendingEnabled);
 	}
 	
 	@Override
@@ -190,76 +146,131 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switch(v.getId())
 		{
 			case R.id.switchSend :
-				toggleConfigGroup(sendHeader, sendSettings, switchSend.isChecked());
+				toggleConfigGroup(true, switchSend.isChecked());
+				if(switchSend.isChecked())
+				{
+					// If there is no schedule make one...
+					if(listScheduleAdapter.isEmpty())
+						SendScheduleFragment.ShowAddDialog(this);
+				}
+				else
+					// Disable all schedules:
+					disableSending();
 				break;
 			case R.id.switchReceive :
-				toggleConfigGroup(receiveHeader, receiveSettings, switchReceive.isChecked());
+				toggleConfigGroup(false, switchReceive.isChecked());
 				break;
-			case R.id.btnAddReceiver :
-				SMSReceiverFragment.ShowAddDialog(getOwner());
-				break;
-			case R.id.btnEditReceiver :
-				if(getReceiver() != null)
-					getReceiver().handle(new Correspondent.Handler()
-					{
-						@Override
-						public void handle(SMSCorrespondent smsCorrespondent)
-						{
-							SMSReceiverFragment.ShowEditDialog(getOwner(), smsCorrespondent);
-						}
-					});
-				break;
-			case R.id.btnDeleteReceiver :
-				if(getReceiver() != null)
-				{
-					// TODO
-				}
+			case R.id.btnAddSchedule :
+				SendScheduleFragment.ShowAddDialog(this);
 				break;
 		}
 	}
 	
 	@Override
-	public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo)
 	{
-		btnEditReceiver.setEnabled(spinReceiverAdapter.getItem(position) != null);
-		btnDeleteReceiver.setEnabled(spinReceiverAdapter.getItem(position) != null);
-	}
-
-	@Override
-	public void onNothingSelected(AdapterView<?> parent)
-	{
-		// TODO Auto-generated method stub
-		
+		if(v.getId() == R.id.listSendSchedules)
+		{
+			SendSchedule schedule = listScheduleAdapter.getItem(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
+			menu.setHeaderTitle(getString(R.string.schedule) + " for " + schedule.getReceiver().getName());
+			// Menu items: 
+			int[] menuItemTitles = new int[] { R.string.editEtc, R.string.delete };
+			for(int m = 0; m < menuItemTitles.length; m++)
+				menu.add(Menu.NONE, menuItemTitles[m], m, menuItemTitles[m]);
+		}
 	}
 	
-	public void saveSettings()
+	@Override
+	public boolean onContextItemSelected(MenuItem item)
 	{
-		//TODO detect actual changes
+		SendSchedule schedule = listScheduleAdapter.getItem(((AdapterView.AdapterContextMenuInfo) item.getMenuInfo()).position);		
+		switch(item.getItemId())
+		{
+			case R.string.editEtc :
+				SendScheduleFragment.ShowEditDialog(this, schedule); // TODO callback?
+				break;
+			case R.string.delete :
+				delete(schedule);
+				break;
+		}
 		
-		sendingSchedule.setEnabled(switchSend.isChecked());
+		return true;
+	}
+	
+	public void disableSending()
+	{
+		if(listScheduleAdapter == null)
+			return;
+		boolean changed = false;
+		for(int s = 0; s < listScheduleAdapter.getCount(); s++)
+		{
+			SendSchedule schedule = listScheduleAdapter.getItem(s);
+			if(schedule != null && schedule.isEnabled())
+			{
+				schedule.setEnabled(false);
+				save(schedule, false);
+				changed = true;
+			}
+		}
+		if(changed)
+		{
+			listScheduleAdapter.notifyDataSetChanged();
+			SendConfigurationHelpers.reschedule(getOwner(), getProject(true));
+		}
+	}
+	
+	public List<SendSchedule> getSchedules()
+	{
+		return SendConfigurationHelpers.getSchedulesForProject(getOwner(), getProject(true));
+	}
+	
+	private void save(SendSchedule schedule, boolean reschedule)
+	{
+		SendConfigurationHelpers.saveSchedule(getOwner(), schedule, true);
+	}
+	
+	public void saveEdited(SendSchedule schedule)
+	{
+		// Store the new schedule:
+		save(schedule, true);
+	
+		// Update the list:
+		listScheduleAdapter.notifyDataSetChanged();
+	}
+	
+	/**
+	 * @param schedule the new SendSchedule, or null if creation of new schedule was cancelled
+	 */
+	public void addNew(SendSchedule schedule)
+	{
+		if(schedule != null)
+		{
+			// Store the new schedule:
+			save(schedule, true);
 		
-		sendingSchedule.setReceiver(getReceiver());
+			// Add it to the list:
+			listScheduleAdapter.add(schedule);
 			
-		//sendingSchedule.setTransmitIntervalS(transmitIntervalS)
+			// TODO msg to tell user to enable the schedule?
+		}
 		
-		// TODO input validation
-		
-		// Store new/updated schedule:
-		getOwner().getProjectStore().storeSendSchedule(sendingSchedule, transmissionStore);
-		
-		// TODO schedule (and unschedule old?)
-		//Log.d(getClass().getSimpleName(), "Starting alarm scheduler...");
-		//DataSendingSchedulingService.ScheduleAll(getOwner().getApplicationContext());
-		
+		// Open/close sending pane:
+		toggleConfigGroup(true, !listScheduleAdapter.isEmpty());
 	}
 	
-	@Override
-	public void onDestroy()
+	public void delete(SendSchedule schedule)
 	{
-		// clean up:
-		getOwner().getCollectorClient().transmissionStoreHandle.doneUsing(this);
-		// super:
-		super.onDestroy();
+		try
+		{
+			SendConfigurationHelpers.deleteSchedule(getOwner(), schedule);
+			
+			// Update UI:
+			refresh();
+		}
+		catch(Exception e)
+		{
+			Log.e(getClass().getSimpleName(), "Error upon deleting sendSchedule", e);
+		}
 	}
 
 	@Override
@@ -267,18 +278,83 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	{
 		return context.getString(R.string.tab_transmission);
 	}
-	
-	private class ReceiverDrawableProvider implements Correspondent.Handler
+
+	static public class ReceiverDrawableProvider implements Correspondent.Handler
 	{
 		
-		Integer drawableResourceId = null;
+		public Integer drawableResourceId = null;
 		
 		@Override
 		public void handle(SMSCorrespondent smsCorrespondent)
 		{
+			// TODO later we might differentiate based on smsCorrespondent.isBinary()
 			drawableResourceId = R.drawable.ic_sms_black_24dp;
 		}
 		
 	}
 	
+	private class SendScheduleAdapter extends AdvancedSpinnerAdapter<SendSchedule>
+	{
+		
+		public SendScheduleAdapter(Context context, List<SendSchedule> schedules)
+		{
+			super(context, R.layout.schedule_list_item, R.layout.schedule_list_item, R.id.lblReceiver, null, null, schedules);
+		}
+		
+		@Override
+		protected String getItemString(SendSchedule sendSchedule)
+		{
+			return sendSchedule.getReceiver().toString();
+		}
+
+		@Override
+		protected Integer getItemDrawableResourceId(int position, SendSchedule sendSchedule)
+		{
+			if(sendSchedule == null)
+				return null;
+			//else:
+			ReceiverDrawableProvider provider = new ReceiverDrawableProvider();
+			sendSchedule.getReceiver().handle(provider);
+			return provider.drawableResourceId;
+		}
+
+		@Override
+		protected View createView(final int position, final SendSchedule sendSchedule, CharSequence itemText, Integer itemDrawableResourceId, boolean center, View convertView, final ViewGroup parent, int resource)
+		{
+			ViewGroup layout = (ViewGroup) super.createView(position, sendSchedule, itemText, itemDrawableResourceId, center, convertView, parent, resource);
+			
+			// Set-up switch:
+			SwitchCompat switchEnabled = (SwitchCompat) layout.findViewById(R.id.switchEnabled);
+			switchEnabled.setChecked(sendSchedule.isEnabled());
+			switchEnabled.setOnCheckedChangeListener(new OnCheckedChangeListener()
+			{
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+				{
+					if(sendSchedule.isEnabled() != isChecked)
+					{
+						// dis/enable schedule:
+						sendSchedule.setEnabled(isChecked);
+						
+						// Save settings:
+						save(sendSchedule, true);	
+					}
+				}
+			});
+			
+			// Set settings label:
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder("; ");
+			//	Send interval:
+			bldr.append("Send interval: " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / SEC_IN_MIN).toString() + " minutes");
+			//	Heartbeat interval:
+			// TODO
+			//	Encrypt:
+			// TODO
+			((TextView) layout.findViewById(R.id.lblScheduleSettings)).setText(bldr.toString());
+			
+			return layout;
+		}
+		
+	}
+		
 }

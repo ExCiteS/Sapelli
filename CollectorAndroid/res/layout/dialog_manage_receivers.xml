@@ -21,22 +21,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/selectReceiver" />
-
     <ListView
-        android:id="@+id/ProjectsList"
+        android:id="@+id/listReceivers"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="4dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginBottom="3dp"
         android:cacheColorHint="#fff"
         android:choiceMode="singleChoice"
-        android:divider="@color/grey"
+        android:background="@drawable/drop_shadow"
+        android:divider="@color/dropShadowInnerOpaque"
         android:dividerHeight="1dip" >
 
         <requestFocus />
@@ -51,14 +45,14 @@
         	android:layout_height="wrap_content"
         	android:orientation="horizontal">
 	        <Button
-	            android:id="@+id/btnEditReceiverL"
+	            android:id="@+id/btnEditReceiver"
 	            style="?android:attr/buttonStyleSmall"
 	            android:layout_width="wrap_content"
 	            android:layout_height="wrap_content"
 	            android:text="@string/edit" />
 	
 	        <Button
-	            android:id="@+id/btnDeleteReceiverL"
+	            android:id="@+id/btnDeleteReceiver"
 	            style="?android:attr/buttonStyleSmall"
 	            android:layout_width="wrap_content"
 	            android:layout_height="wrap_content"
@@ -66,7 +60,7 @@
         </LinearLayout>
         
         <Button
-            android:id="@+id/btnAddReceiverL"
+            android:id="@+id/btnAddReceiver"
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

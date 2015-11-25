@@ -16,16 +16,16 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
- <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:orientation="vertical" >
 
-   <LinearLayout
+    <LinearLayout
         android:id="@+id/sendHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow"
+        android:background="@drawable/drop_shadow"
         android:clickable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal" >
@@ -34,122 +34,60 @@
             android:id="@+id/switchSend"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/send"
-            android:padding="10dp" />
+            android:padding="8dp"
+            android:text="@string/send" />
 
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/sendSettings"
-        android:layout_width="match_parent"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow_bottom"
+        android:background="@drawable/drop_shadow_bottom"
         android:orientation="vertical"
         android:visibility="gone" >
         
-		<TableLayout
-            android:layout_width="fill_parent"
-            android:layout_height="match_parent"
-            android:paddingLeft="15dp"
-            android:paddingStart="15dp"
-            android:paddingRight="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="5dp" >
-
-			<TableRow
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_horizontal" >
-                
-			    <TextView
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content"
-			        android:gravity="end"
-					android:paddingLeft="0dp"
-					android:paddingStart="0dp"
-			        android:paddingEnd="7dp"
-			        android:paddingRight="7dp"
-			        android:text="@string/receiver" />
-				
-				<Spinner
-		            android:id="@+id/spinSendReceiver"
-		            android:layout_width="0dp"
-		            android:layout_height="45.5dp"
-		            android:layout_weight="1"
-		            android:textAppearance="?android:attr/textAppearanceMedium" />
-		
-            </TableRow>
-            
-			<TableRow
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="end" >
-
-				<Button
-	                android:id="@+id/btnAddReceiver"
-	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="75dp"
-	                android:layout_height="wrap_content"
-	                android:text="@string/add" />
-				
-				<Button
-	                android:id="@+id/btnEditReceiver"
-	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="75dp"
-	                android:layout_height="wrap_content"
-	                android:text="@string/edit" />
-	            
-	            <Button
-	                android:id="@+id/btnDeleteReceiver"
-	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="75dp"
-	                android:layout_height="wrap_content"
-	                android:text="@string/delete" />
-			</TableRow>
-			
-            <TableRow
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_horizontal" >
-
-			    <TextView
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content"
-			        android:gravity="end"
-					android:paddingLeft="0dp"
-					android:paddingStart="0dp"
-			        android:paddingEnd="7dp"
-			        android:paddingRight="7dp"
-			        android:text="@string/interval" />
-				
-				<EditText
-		            android:id="@+id/txtSendIntervalMin"
-		            android:layout_width="25dp"
-		            android:layout_height="wrap_content"
-		            android:inputType="number"
-		            android:gravity="end"
-		            android:textAppearance="?android:attr/textAppearanceMedium" />
-				
-			    <TextView
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content"
-			        android:gravity="start"
-					android:paddingLeft="3.5dp"
-					android:paddingStart="3.5dp"
-			        android:paddingEnd="0dp"
-			        android:paddingRight="0dp"
-			        android:layout_weight="1"
-			        android:text="@string/minutes" />
-            </TableRow>
-            
-		</TableLayout>
+		<LinearLayout
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="vertical"
+			android:paddingLeft="10dp"
+			android:paddingStart="10dp"
+			android:paddingRight="10dp"
+			android:paddingEnd="10dp"
+			android:paddingBottom="4dp" >
+	        
+	        <TextView
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content"
+	            android:text="@string/scheduledReceivers" />
+	
+	        <ListView
+	            android:id="@+id/listSendSchedules"
+	            android:layout_width="match_parent"
+	            android:layout_height="fill_parent"
+	            android:background="@drawable/drop_shadow"
+	            android:choiceMode="none"
+	            android:divider="@color/dropShadowInnerOpaque"
+	            android:dividerHeight="1dp" />
+	
+	        <Button
+	            android:id="@+id/btnAddSchedule"
+	            style="?android:attr/buttonStyleSmall"
+	            android:layout_width="75dp"
+	            android:layout_height="40dp"
+	            android:layout_gravity="end"
+	            android:text="@string/add" />
+	        
+        </LinearLayout>
+        
     </LinearLayout>
 
-   <LinearLayout
+    <LinearLayout
         android:id="@+id/receiveHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow"
+        android:background="@drawable/drop_shadow"
         android:clickable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal" >
@@ -158,17 +96,16 @@
             android:id="@+id/switchReceive"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/receive"
-            android:padding="10dp" />
-
+            android:padding="8dp"
+            android:text="@string/receive" />
     </LinearLayout>
-    
-	<LinearLayout
-		android:id="@+id/receiveSettings"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:background="@layout/drop_shadow_bottom"
-		android:orientation="vertical"
-		android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/receiveSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/drop_shadow_bottom"
+        android:orientation="vertical"
+        android:visibility="gone" />
 
 </LinearLayout>

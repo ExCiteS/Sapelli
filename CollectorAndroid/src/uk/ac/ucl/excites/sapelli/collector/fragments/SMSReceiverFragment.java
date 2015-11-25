@@ -26,16 +26,14 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
-import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.collector.tasks.SendConfigurationHelpers;
+import uk.ac.ucl.excites.sapelli.collector.tasks.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
@@ -43,35 +41,38 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
  * @author mstevens
  *
  */
-public class SMSReceiverFragment extends ProjectManagerFragment implements DialogInterface.OnClickListener, StoreUser
+public class SMSReceiverFragment extends ProjectManagerFragment implements DialogInterface.OnClickListener
 {
 	
 	// STATIC -------------------------------------------------------
-	static public void ShowAddDialog(AppCompatActivity owner)
+	static public void ShowAddDialog(AppCompatActivity owner, ReceiverUpdateCallback callback)
 	{
-		new SMSReceiverFragment().show(owner.getSupportFragmentManager(), R.string.add + SMSCorrespondent.class.getSimpleName());
+		new SMSReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + SMSCorrespondent.class.getSimpleName());
 	}
 
-	static public void ShowEditDialog(AppCompatActivity owner, SMSCorrespondent editCorrespondent)
+	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, SMSCorrespondent editCorrespondent)
 	{
-		new SMSReceiverFragment(editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + SMSCorrespondent.class.getSimpleName());
+		new SMSReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + SMSCorrespondent.class.getSimpleName());
 	}
 	
 	// DYNAMIC ------------------------------------------------------
+	private final ReceiverUpdateCallback callback;
+	
 	private SMSCorrespondent editReceiver;
 	
 	private EditText txtReceiverName;
 	private EditText txtReceiverPhoneNumber;
 	private CheckBox chkBinarySMS;
 	
-	public SMSReceiverFragment()
+	public SMSReceiverFragment(ReceiverUpdateCallback callback)
 	{
-		this(null);
+		this(callback, null);
 	}
 	
-	public SMSReceiverFragment(SMSCorrespondent editCorrespondent)
+	public SMSReceiverFragment(ReceiverUpdateCallback callback, SMSCorrespondent receiver)
 	{
-		this.editReceiver = editCorrespondent;
+		this.callback = callback;
+		this.editReceiver = receiver;
 	}
 	
 	/* (non-Javadoc)
@@ -80,7 +81,12 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	@Override
 	protected Integer getLayoutID()
 	{
-		return R.layout.fragment_sms_receceiver;
+		return R.layout.dialog_sms_receiver;
+	}
+	
+	public boolean isEditing()
+	{
+		return editReceiver != null;
 	}
 	
 	/* (non-Javadoc)
@@ -93,7 +99,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		txtReceiverPhoneNumber = (EditText) rootLayout.findViewById(R.id.txtReceiverPhoneNumber);
 		chkBinarySMS = (CheckBox) rootLayout.findViewById(R.id.chkBinarySMS);
 		
-		if(editReceiver != null)
+		if(isEditing())
 		{
 			txtReceiverName.setText(editReceiver.getName());
 			txtReceiverPhoneNumber.setText(editReceiver.getPhoneNumberInternational());
@@ -101,9 +107,11 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		}
 		else if(DeviceControl.getSimCountryISOCode(getOwner()) != null)
 		{
+			txtReceiverName.setText("");
 			String countyCode = "+" + SMSCorrespondent.findCountryCode(DeviceControl.getSimCountryISOCode(getOwner()));
 			txtReceiverPhoneNumber.setText(countyCode);
 			txtReceiverPhoneNumber.setSelection(countyCode.length());
+			chkBinarySMS.setChecked(SMSCorrespondent.DEFAULT_BINARY_SMS);
 		}
 	}
 	
@@ -113,7 +121,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
 		.setIcon(R.drawable.ic_sms_black_36dp)
-		.setTitle(editReceiver == null ? R.string.addReceiver : R.string.editReceiver)
+		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
 		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
 		.setNegativeButton(android.R.string.cancel, this);
 		final AlertDialog dialog = builder.create();
@@ -137,7 +145,6 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 					dialog.dismiss();
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
-				// TODO callback?
 				break;
 		}
 	}
@@ -171,48 +178,34 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		//	Mode:
 		boolean binarySMS = chkBinarySMS.isChecked();
 		
-		if(editReceiver != null) // We are editing... 
-		{	// Check if actual changes were made:
+		// Check we are editing...
+		if(isEditing())
+		{	// We are, check if actual changes were made:
 			if(	!editReceiver.getName().equals(name) ||
 				!editReceiver.getPhoneNumber().equals(phoneNumber) ||
 				(editReceiver.getTransmissionType() == Type.BINARY_SMS) != binarySMS)
-			{
-				editReceiver.markAsUserDeleted();
-				store(editReceiver);
-				// TODO what to do with other projects using the same receiver?
-				editReceiver = null; // ensure we don't use it below
+			{	// The receiver has been changed...
+				//	We cannot alter existing correspondents to instead we delete (or hide it), and replace it by a new one to be stored below.
+				SendConfigurationHelpers.deleteCorrespondent(getOwner(), editReceiver); // TODO what with transmittable records scheduled for this receiver??
+				// TODO what to do with other projects using the same receiver? --> update their schedules! (And transmittables?)				
 			}
 			else
-				return true; // no changes made! (TODO callback?)
+				// No changes, we are done here...
+				return true;
 		}
 		
-		// Save new/edited correspondent:
-		SMSCorrespondent newReceiver = new SMSCorrespondent(name, phoneNumber, binarySMS);
-		store(newReceiver);
-		
-		// TODO callback
+		// Save correspondent:
+		SMSCorrespondent toSave = new SMSCorrespondent(name, phoneNumber, binarySMS);
+		SendConfigurationHelpers.saveCorrespondent(getOwner(), toSave);
+		if(callback != null)
+		{
+			if(!isEditing())
+				callback.newReceiver(toSave);
+			else
+				callback.editedReceiver(toSave, editReceiver);
+		}
 		
 		return true;
 	}
-	
-	private void store(SMSCorrespondent correspondent)
-	{
-		try
-		{
-			// Get RecordStore instance:
-			TransmissionStore tStore = getOwner().getCollectorClient().transmissionStoreHandle.getStore(this);
-			
-			// Store/update correspondent:
-			tStore.store(correspondent);
-		}
-		catch(Exception e)
-		{
-			Log.d(getClass().getSimpleName(), ExceptionHelpers.getMessageAndCause(e));
-		}
-		finally
-		{
-			getOwner().getCollectorClient().transmissionStoreHandle.doneUsing(this);
-		}
-	}
-	
+		
 }

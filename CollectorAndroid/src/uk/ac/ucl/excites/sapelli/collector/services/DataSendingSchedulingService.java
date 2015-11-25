@@ -18,12 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.services;
 
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendingSchedule;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import java.util.Collections;
+import java.util.List;
+
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
@@ -34,6 +31,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * Simple Service for scheduling alarms for projects that need transmission (activated on device boot).
@@ -49,6 +52,9 @@ public class DataSendingSchedulingService extends IntentService implements Store
 
 	private static final int DEFAULT_DELAY_MILLIS = 60 * 1000; // default delay is 1 minute
 
+	public static final String INTENT_KEY_PROJECT_ID = "projectId";
+	public static final String INTENT_KEY_PROJECT_FINGERPRINT = "fingerPrint";
+	
 	/**
 	 * Start the service with as task the scheduling of all projects that need sending
 	 * 
@@ -56,8 +62,15 @@ public class DataSendingSchedulingService extends IntentService implements Store
 	 */
 	public static void ScheduleAll(Context context)
 	{
-		Intent scheduleIntent = new Intent(context, DataSendingSchedulingService.class);
-		context.startService(scheduleIntent);
+		context.startService(new Intent(context, DataSendingSchedulingService.class));
+	}
+	
+	public static void Schedule(Context context, Project project)
+	{
+		Intent intent = new Intent(context, DataSendingSchedulingService.class);
+		intent.putExtra(INTENT_KEY_PROJECT_ID, project.getID());
+		intent.putExtra(INTENT_KEY_PROJECT_FINGERPRINT, project.getFingerPrint());
+		context.startService(intent);
 	}
 	
 	/**
@@ -68,23 +81,35 @@ public class DataSendingSchedulingService extends IntentService implements Store
 	 */
 	public static void Cancel(Context context, Project project)
 	{
-		Cancel(context, project.getID(), project.getFingerPrint());
+		Cancel(context, (AlarmManager) context.getSystemService(Context.ALARM_SERVICE), project);
+	}
+	
+	/**
+	 * @param context
+	 * @param intent
+	 */
+	public static void Cancel(Context context, PendingIntent intent)
+	{
+		((AlarmManager) context.getSystemService(Context.ALARM_SERVICE)).cancel(intent);
 	}
 	
 	/**
 	 * Cancel scheduled sending of data associated with the project with the given ID & finger print.
 	 * 
 	 * @param context
-	 * @param projectID
-	 * @param projectFingerPrint
+	 * @param alarmManager
+	 * @param project
 	 */
-	public static void Cancel(Context context, int projectID, int projectFingerPrint)
+	private static void Cancel(Context context, AlarmManager alarmManager, Project project)
 	{
 		try
 		{
-			((AlarmManager) context.getSystemService(Context.ALARM_SERVICE)).cancel(GetDataSendingIntent(context, projectID, projectFingerPrint));
+			alarmManager.cancel(GetDataSendingIntent(context, project.getID(), project.getFingerPrint(), null));
 		}
-		catch(Exception ignore) {}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Exception upon cancelling alarms", e);
+		}
 	}
 	
 	/**
@@ -92,12 +117,15 @@ public class DataSendingSchedulingService extends IntentService implements Store
 	 * @param projectFingerPrint
 	 * @return PendingIntent to start DataSendingService to send data for the given project
 	 */
-	private static PendingIntent GetDataSendingIntent(Context context, int projectID, int projectFingerPrint)
+	private static PendingIntent GetDataSendingIntent(Context context, int projectID, int projectFingerPrint, Integer sendScheduleId)
 	{
-		// Create the PendingIntent for the DataSenderService
+		// Create the PendingIntent for the DataSenderService:
 		Intent serviceIntent = new Intent(context, DataSendingService.class);
-		serviceIntent.putExtra(DataSendingService.INTENT_KEY_PROJECT_ID, projectID);
-		serviceIntent.putExtra(DataSendingService.INTENT_KEY_PROJECT_FINGERPRINT, projectFingerPrint);
+		// Action (matched by Intent.filterEquals(Intent)):
+		serviceIntent.setAction(DataSendingService.getIntentAction(projectID, projectFingerPrint));
+		// Extras (not matched by Intent.filterEquals(Intent)):
+		if(sendScheduleId != null)
+			serviceIntent.putExtra(DataSendingService.INTENT_KEY_SEND_SCHEDULE_ID, sendScheduleId);
 		return PendingIntent.getService(context, projectFingerPrint, serviceIntent, 0);
 		// Note: we use the project fingerprint as requestCode because it is much less likely to clash than the project id
 	}
@@ -114,6 +142,16 @@ public class DataSendingSchedulingService extends IntentService implements Store
 		super(DataSendingSchedulingService.class.getSimpleName());
 	}
 
+	/* (non-Javadoc)
+	 * @see android.app.IntentService#onStart(android.content.Intent, int)
+	 */
+	@Override
+	public void onStart(Intent intent, int startId)
+	{
+		Log.d(DataSendingSchedulingService.class.getSimpleName(), "Starting alarm scheduler...");
+		super.onStart(intent, startId);
+	}
+
 	/**
 	 * The IntentService calls this method from the default worker thread with the intent that started the service.
 	 * When this method returns, IntentService stops the service, as appropriate.
@@ -125,34 +163,37 @@ public class DataSendingSchedulingService extends IntentService implements Store
 		app = ((CollectorApp) getApplication());
 		alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
+		// Read intent data:
+		int projectID = intent.getIntExtra(INTENT_KEY_PROJECT_ID, -1);
+		int projectFingerPrint = intent.getIntExtra(INTENT_KEY_PROJECT_FINGERPRINT, -1);
+		
 		ProjectStore projectStore;
-		TransmissionStore sentTStore;
+		TransmissionStore transmissionStore;
 		try
 		{
 			// Get ProjectStore instance:
 			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			// Get SentTransmissionStore instance:
-			sentTStore = app.collectorClient.transmissionStoreHandle.getStore(this);
+			transmissionStore = app.collectorClient.transmissionStoreHandle.getStore(this);
 
-			// Check if projects require data transmission and set up alarms for the DataSenderService
-			Log.d(TAG, "Scanning projects for alarms that need to be set");
+			// Projects to schedule for...
+			List<Project> projects = (projectID != -1 ?
+										// Single project:
+										Collections.singletonList(projectStore.retrieveProject(projectID, projectFingerPrint)) :
+										// All projects:
+										projectStore.retrieveProjects());
+			
+			Log.d(TAG, "Setting data sending alarms for " + projects.size() + " projects...");
 	
-			// Set an Alarm, for each of the projects that has sending enabled
+			// Set an Alarms for each enabled sending schedule:
 			boolean atLeastOne = false;
-			for(Project project : projectStore.retrieveProjects())
+			for(Project project : projects)
 			{
-				SendingSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTStore);
-				if(sendSchedule != null)
-				{
-					scheduleSending(sendSchedule.getTransmitIntervalS() * 1000, project);
-					atLeastOne = true;
-				}
-				else
-				{
-					Log.d(TAG, "No schedule found for project \"" + project.toString(false) + "\"");
-					// Cancel any previously set alarm:
-					cancelSending(project);
-				}
+				// Cancel any previously set alarms:
+				Cancel(app, alarmManager, project);
+				// Schedule for each schedule:
+				for(SendSchedule sendSchedule : projectStore.retrieveSendSchedulesForProject(project, transmissionStore))
+					atLeastOne = scheduleSending(sendSchedule) | atLeastOne;
 			}
 	
 			// If we have at least one project needs to send, so make sure alarms are re-enabled on boot (if not boot receiver is disabled):
@@ -168,16 +209,16 @@ public class DataSendingSchedulingService extends IntentService implements Store
 			app.collectorClient.transmissionStoreHandle.doneUsing(this);
 		}
 	}
-
+	
 	/**
 	 * Set up an Alarm for a project that calls the {@link DataSendingService}, initially after a minute and then every <code>intervalMillis</code>
 	 * 
-	 * @param intervalMillis
-	 * @param project
+	 * @param sendSchedule
+	 * @return whether or not the alarm was scheduled
 	 */
-	private void scheduleSending(int intervalMillis, Project project)
+	private boolean scheduleSending(SendSchedule sendSchedule)
 	{
-		scheduleSending(DEFAULT_DELAY_MILLIS, intervalMillis, project);
+		return scheduleSending(DEFAULT_DELAY_MILLIS, sendSchedule);
 	}
 
 	/**
@@ -185,34 +226,33 @@ public class DataSendingSchedulingService extends IntentService implements Store
 	 * <code>intervalMillis</code>
 	 * 
 	 * @param triggerDelay
-	 * @param intervalMillis
-	 * @param project
+	 * @param sendSchedule
+	 * @return whether or not the alarm was scheduled
 	 */
-	private void scheduleSending(int triggerDelay, int intervalMillis, Project project)
+	private boolean scheduleSending(int triggerDelay, SendSchedule sendSchedule)
 	{
-		// Cancel existing alarm if there is one:
-		cancelSending(project);
-
-		// Setup the alarm to be triggered every intervalMillis
-		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis, getDataSendingIntent(project)); // TODO should we really be waking up the device for this?
-		Log.d(TAG, "Set sending alarm for project \"" + project.toString(false) + "\" to expire every " + intervalMillis + "ms after a delay of " + triggerDelay + "ms.");
-	}
-
-	/**
-	 * @param project
-	 */
-	private void cancelSending(Project project)
-	{
-		alarmManager.cancel(getDataSendingIntent(project));
-	}
-
-	/**
-	 * @param project
-	 * @return PendingIntent to start DataSendingService to send data for the given project
-	 */
-	private PendingIntent getDataSendingIntent(Project project)
-	{
-		return GetDataSendingIntent(app, project.getID(), project.getFingerPrint());
+		if(!sendSchedule.isEnabled())
+			return false;
+		
+		// Setup the alarm to be triggered every intervalMillis:
+		try
+		{
+			int intervalMillis = sendSchedule.getTransmitIntervalS() * 1000;
+			alarmManager.setRepeating(
+					AlarmManager.ELAPSED_REALTIME_WAKEUP, // TODO should we really be waking up the device for this?
+					SystemClock.elapsedRealtime() + triggerDelay,
+					intervalMillis,
+					GetDataSendingIntent(app, sendSchedule.getProject().getID(), sendSchedule.getProject().getFingerPrint(), sendSchedule.getID()));
+				
+				Log.d(TAG, "Set sending alarm for project \"" + sendSchedule.getProject().toString(false) + "\", and receiver \"" + sendSchedule.getReceiver().toString() + "\" to expire every " + intervalMillis + "ms after a delay of " + triggerDelay + "ms.");
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error upon scheduling alarm", e);
+			return false;
+		}
+		
+		return true;
 	}
 
 	/**

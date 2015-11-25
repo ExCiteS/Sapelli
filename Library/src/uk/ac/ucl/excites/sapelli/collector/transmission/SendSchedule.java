@@ -26,8 +26,10 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
  * 
  * @author benelliott, mstevens
  */
-public class SendingSchedule
+public class SendSchedule
 {
+	
+	static public final int DEFAULT_TRANSMIT_INTERVAL_SECONDS = 60 * 60; // = 1 hour
 	
 	private final Project project;
 	private Correspondent receiver;
@@ -43,10 +45,24 @@ public class SendingSchedule
 	
 	private boolean enabled;
 	
-	public SendingSchedule(Project project, boolean enabled)
+	/**
+	 * For every heartbeatInterval-th transmission attempt without data to be sent a "heartbeat" record will be sent instead.
+	 * If heartbeatInterval is 0 no heartbeats are ever sent.
+	 */
+	private int heartbeatInterval;
+	
+	/**
+	 * Used this to count the number of passed, subsequent transmission attempts during which there was no data to send.
+	 * When this number = heartbeatInterval a heartbeat must be sent.
+	 */
+	private int noDataToSendCounter;
+	
+	public SendSchedule(Project project, Correspondent receiver, boolean enabled)
 	{
 		this.project = project;
+		this.receiver = receiver;
 		this.enabled = enabled;
+		this.transmitIntervalS = DEFAULT_TRANSMIT_INTERVAL_SECONDS;
 	}
 	
 	/**
@@ -59,7 +75,7 @@ public class SendingSchedule
 	 * @param encrypt
 	 * @param enabled
 	 */
-	public SendingSchedule(Project project, int id, Correspondent receiver, int transmitIntervalS, boolean encrypt, boolean enabled)
+	public SendSchedule(Project project, int id, Correspondent receiver, int transmitIntervalS, boolean encrypt, boolean enabled, int heartbeatInterval, int noDataToSendCounter)
 	{
 		this.project = project;
 		this.id = id;
@@ -67,6 +83,8 @@ public class SendingSchedule
 		this.transmitIntervalS = transmitIntervalS;
 		this.encrypt = encrypt;
 		this.enabled = enabled;
+		this.heartbeatInterval = heartbeatInterval;
+		this.noDataToSendCounter = noDataToSendCounter;
 	}
 
 	/**
@@ -113,7 +131,7 @@ public class SendingSchedule
 	/**
 	 * @param receiver the receiver to set
 	 */
-	public SendingSchedule setReceiver(Correspondent receiver)
+	public SendSchedule setReceiver(Correspondent receiver)
 	{
 		this.receiver = receiver;
 		return this;
@@ -131,7 +149,7 @@ public class SendingSchedule
 	 * @param transmitIntervalS seconds between transmission attempts
 	 * @return 
 	 */
-	public SendingSchedule setTransmitIntervalS(int transmitIntervalS)
+	public SendSchedule setTransmitIntervalS(int transmitIntervalS)
 	{
 		this.transmitIntervalS = transmitIntervalS;
 		return this;
@@ -149,7 +167,7 @@ public class SendingSchedule
 	 * @param encrypt the encrypt to set
 	 * @return 
 	 */
-	public SendingSchedule setEncrypt(boolean encrypt)
+	public SendSchedule setEncrypt(boolean encrypt)
 	{
 		this.encrypt = encrypt;
 		return this;
@@ -167,10 +185,46 @@ public class SendingSchedule
 	 * @param enabled the enabled to set
 	 * @return 
 	 */
-	public SendingSchedule setEnabled(boolean enabled)
+	public SendSchedule setEnabled(boolean enabled)
 	{
 		this.enabled = enabled;
 		return this;
+	}
+
+	/**
+	 * @return the heartbeatInterval
+	 */
+	public int getHeartbeatInterval()
+	{
+		return heartbeatInterval;
+	}
+
+	/**
+	 * @param heartbeatInterval the heartbeatInterval to set
+	 */
+	public void setHeartbeatInterval(int heartbeatInterval)
+	{
+		if(this.heartbeatInterval != heartbeatInterval)
+			resetNoDataToSendCounter(); // also reset counter
+		this.heartbeatInterval = heartbeatInterval;
+	}
+
+	/**
+	 * @return the noDataToSendCounter
+	 */
+	public int getNoDataToSendCounter()
+	{
+		return noDataToSendCounter;
+	}
+
+	public void incrementNoDataToSendCounter()
+	{
+		noDataToSendCounter++;
+	}
+	
+	public void resetNoDataToSendCounter()
+	{
+		noDataToSendCounter = 0;
 	}
 	
 }
