@@ -18,13 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
-import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
+
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * @author julia, mstevens
@@ -96,6 +96,8 @@ public class SMSCorrespondent extends Correspondent
 		return formatDialable(phoneNumber);
 	}
 	
+	static final public boolean DEFAULT_BINARY_SMS = true;
+	
 	// DYNAMIC ------------------------------------------------------
 	private final PhoneNumber phoneNumber;
 	
@@ -106,7 +108,7 @@ public class SMSCorrespondent extends Correspondent
 	 */
 	public SMSCorrespondent(String name, PhoneNumber phoneNumber, boolean binarySMS)
 	{
-		super(name, binarySMS ? Transmission.Type.BINARY_SMS : Transmission.Type.TEXTUAL_SMS);
+		super(name, binarySMS ? Type.BINARY_SMS : Type.TEXTUAL_SMS);
 		if(phoneNumber == null)
 			throw new NullPointerException("Please provide a non-null PhoneNumber instance.");
 		this.phoneNumber = phoneNumber;
@@ -169,6 +171,17 @@ public class SMSCorrespondent extends Correspondent
 	public String getAddress()
 	{
 		return getAddressString(phoneNumber);
+	}
+	
+	public boolean isBinary()
+	{
+		return getTransmissionType() == Type.BINARY_SMS;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return getName() + " [" + getAddress() + "; " + (isBinary() ? "bin" : "txt") + "]";
 	}
 	
 	/**
