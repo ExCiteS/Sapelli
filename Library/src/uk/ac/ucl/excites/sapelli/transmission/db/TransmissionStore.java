@@ -855,6 +855,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		return retrieveTransmittableUserRecords(transmission.getCorrespondent(), model, getTransmissionSchema(false).createRecordReference(transmission.getLocalID()).getRecordQueryConstraint());
 	}
 	
+	/**
+	 * @param correspondent
+	 * @param model
+	 * @param timeOutS
+	 * @return
+	 */
 	public List<Record> retrieveTransmittableRecordsWithTimedOutTransmission(Correspondent correspondent, Model model, long timeOutS)
 	{
 		// Get all transmittables with an assigned transmission, ordered by the transmission:
