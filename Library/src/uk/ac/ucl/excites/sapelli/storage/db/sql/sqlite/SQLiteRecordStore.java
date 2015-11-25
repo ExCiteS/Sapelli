@@ -33,7 +33,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.ClassHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -354,11 +353,46 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private final StatementHandle ROWIDStatementHandle = new StatementHandle(SelectROWIDHelper.class);
-		private final StatementHandle insertStatementHandle = new StatementHandle(RecordInsertHelper.class);
-		private final StatementHandle updateStatementHandle = new StatementHandle(RecordUpdateHelper.class);
-		private final StatementHandle deleteStatementHandle = new StatementHandle(RecordDeleteHelper.class);
-		private final StatementHandle countStatementHandle = new StatementHandle(RecordCountHelper.class);
+		private final StatementHandle ROWIDStatementHandle = new StatementHandle(/*SelectROWIDHelper.class*/)
+		{
+			@Override
+			protected StatementHelper getHelper()
+			{
+				return new SelectROWIDHelper(SQLiteTable.this);
+			}
+		};
+		private final StatementHandle insertStatementHandle = new StatementHandle(/*RecordInsertHelper.class*/)
+		{
+			@Override
+			protected StatementHelper getHelper()
+			{
+				return new RecordInsertHelper(SQLiteTable.this);
+			}
+		};
+		private final StatementHandle updateStatementHandle = new StatementHandle(/*RecordUpdateHelper.class*/)
+		{
+			@Override
+			protected StatementHelper getHelper()
+			{
+				return new RecordUpdateHelper(SQLiteTable.this);
+			}
+		};
+		private final StatementHandle deleteStatementHandle = new StatementHandle(/*RecordDeleteHelper.class*/)
+		{
+			@Override
+			protected StatementHelper getHelper()
+			{
+				return new RecordDeleteHelper(SQLiteTable.this);
+			}
+		};
+		private final StatementHandle countStatementHandle = new StatementHandle(/*RecordCountHelper.class*/)
+		{
+			@Override
+			protected StatementHelper getHelper()
+			{
+				return new RecordCountHelper(SQLiteTable.this);
+			}
+		};
 
 		public SQLiteTable(Schema schema)
 		{
@@ -564,26 +598,26 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * 
 		 * @author mstevens
 		 */
-		@SuppressWarnings("rawtypes")
-		protected class StatementHandle implements Closeable
+		//@SuppressWarnings("rawtypes")
+		protected abstract class StatementHandle implements Closeable
 		{
 			
-			private final Class<? extends SQLRecordStore.StatementHelper> helperClass;
+			//private final Class<? extends SQLRecordStore.StatementHelper> helperClass;
 			private SQLiteStatement statement;
 			
-			/**
+			/*
 			 * @param helperClass Class of a StatementHelper subtype which (a) is contained in SQLiteRecordStore or SQLRecordStore, and (b) which has a constructor that takes only a SQL(ite)Table and creates a parameterised StatementHelper instance, if {@code null} is passed the getHelper() method must be overridden instead
 			 */
-			public StatementHandle(Class<? extends SQLRecordStore.StatementHelper> helperClass)
+			/*public StatementHandle(Class<? extends SQLRecordStore.StatementHelper> helperClass)
 			{
 				this.helperClass = helperClass;
-			}
+			}*/
 			
-			@SuppressWarnings("unchecked")
-			protected StatementHelper getHelper()
-			{
-				return ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
-			}
+			//@SuppressWarnings("unchecked")
+			protected abstract StatementHelper getHelper();
+			//{
+			//	return ClassHelpers.callFittingConstructor(helperClass, /*(a) containing SRS object:*/ SQLiteRecordStore.this, /*(b) table:*/ SQLiteTable.this);
+			//}
 			
 			public SQLiteStatement getStatement() throws DBException
 			{
