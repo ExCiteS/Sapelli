@@ -34,7 +34,7 @@
 	        <LinearLayout
 	            android:layout_width="match_parent"
 	            android:layout_height="wrap_content"
-	            android:background="@layout/drop_shadow"
+	            android:background="@drawable/drop_shadow"
 	            android:padding="10dp"
 	            android:gravity="center_horizontal"
 	            android:orientation="horizontal" >
@@ -70,7 +70,7 @@
 	        <LinearLayout
 	            android:layout_width="match_parent"
 	            android:layout_height="wrap_content"
-	            android:background="@layout/drop_shadow"
+	            android:background="@drawable/drop_shadow"
 	            android:padding="10dp"
 	            android:orientation="vertical">
 	            
@@ -155,7 +155,7 @@
 
     <FrameLayout
         android:id="@+id/btnRunProject"
-		android:background="@layout/button_style"
+		android:background="@drawable/tab_footer_button_style"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"

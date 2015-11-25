@@ -104,7 +104,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	private void toggleView(View clickview, View expandview)
 	{
 		expandview.setVisibility(expandview.isShown() ? View.GONE : View.VISIBLE);
-		clickview.setBackgroundResource(expandview.isShown() ? R.layout.drop_shadow_top : R.layout.drop_shadow);
+		clickview.setBackgroundResource(expandview.isShown() ? R.drawable.drop_shadow_top : R.drawable.drop_shadow);
 		((ImageView) ((ViewGroup) clickview).getChildAt(1))
 				.setImageResource(expandview.isShown() ? R.drawable.ic_action_collapse : R.drawable.ic_action_expand);
 	}
@@ -118,7 +118,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	private void disableToggle(View clickview, View expandview)
 	{
 		expandview.setVisibility(View.GONE);
-		clickview.setBackgroundResource(R.layout.drop_shadow);
+		clickview.setBackgroundResource(R.drawable.drop_shadow);
 		((ImageView) ((ViewGroup) clickview).getChildAt(1)).setVisibility(View.GONE);
 	}
 

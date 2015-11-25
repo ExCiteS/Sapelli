@@ -21,39 +21,39 @@
      <!-- Drop Shadow Stack -->
      <item>
         <shape>
-            <padding android:top="0dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
-            <solid android:color="#00CCCCCC" />
+            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <solid android:color="@color/dropShadowStack0" />
         </shape>
     </item>
      <item>
         <shape>
-            <padding android:top="0dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
-            <solid android:color="#10CCCCCC" />
+            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <solid android:color="@color/dropShadowStack1" />
         </shape>
     </item>
      <item>
         <shape>
-            <padding android:top="0dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
-            <solid android:color="#20CCCCCC" />
+            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <solid android:color="@color/dropShadowStack2" />
         </shape>
     </item>
      <item>
         <shape>
-            <padding android:top="0dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
-            <solid android:color="#30CCCCCC" />
+            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <solid android:color="@color/dropShadowStack3" />
         </shape>
     </item>
     <item>
         <shape>
-            <padding android:top="0dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
-            <solid android:color="#50CCCCCC" />
+            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <solid android:color="@color/dropShadowStack4" />
         </shape>
     </item>
 
     <!-- Background -->
     <item>
-		<shape>
+	<shape>
             <solid android:color="@color/white" />
-	    </shape>
+	</shape>
     </item>
 </layer-list>
