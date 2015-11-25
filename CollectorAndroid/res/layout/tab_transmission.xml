@@ -25,7 +25,7 @@
         android:id="@+id/sendHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow"
+        android:background="@drawable/drop_shadow"
         android:clickable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal" >
@@ -51,7 +51,7 @@
         android:id="@+id/sendSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow_bottom"
+        android:background="@drawable/drop_shadow_bottom"
         android:orientation="horizontal"
         android:visibility="gone" >
 
@@ -73,7 +73,7 @@
         android:id="@+id/receiveHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow"
+        android:background="@drawable/drop_shadow"
         android:clickable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal" >
@@ -99,7 +99,7 @@
         android:id="@+id/receiveSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@layout/drop_shadow_bottom"
+        android:background="@drawable/drop_shadow_bottom"
         android:padding="10dp"
         android:text="Some more settings"
         android:visibility="gone" />

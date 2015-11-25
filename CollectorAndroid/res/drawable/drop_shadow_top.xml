@@ -22,31 +22,31 @@
      <item>
         <shape>
             <padding android:top="1dp" android:right="1dp" android:bottom="0dp" android:left="1dp" />
-            <solid android:color="#00CCCCCC" />
+            <solid android:color="@color/dropShadowStack0" />
         </shape>
     </item>
      <item>
         <shape>
             <padding android:top="1dp" android:right="1dp" android:bottom="0dp" android:left="1dp" />
-            <solid android:color="#10CCCCCC" />
+            <solid android:color="@color/dropShadowStack1" />
         </shape>
     </item>
      <item>
         <shape>
             <padding android:top="1dp" android:right="1dp" android:bottom="0dp" android:left="1dp" />
-            <solid android:color="#20CCCCCC" />
+            <solid android:color="@color/dropShadowStack2" />
         </shape>
     </item>
      <item>
         <shape>
             <padding android:top="1dp" android:right="1dp" android:bottom="0dp" android:left="1dp" />
-            <solid android:color="#30CCCCCC" />
+            <solid android:color="@color/dropShadowStack3" />
         </shape>
     </item>
     <item>
         <shape>
             <padding android:top="1dp" android:right="1dp" android:bottom="0dp" android:left="1dp" />
-            <solid android:color="#50CCCCCC" />
+            <solid android:color="@color/dropShadowStack4" />
         </shape>
     </item>
 

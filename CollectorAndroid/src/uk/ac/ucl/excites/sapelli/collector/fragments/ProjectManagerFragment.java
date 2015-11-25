@@ -18,16 +18,18 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
-import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
 
 /**
  * This class makes if possible to safely tie fragments to a specific Activity (i.e. ProjectManagerActivity),
@@ -51,6 +53,13 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		this.activity = ProjectManagerActivity.class.isAssignableFrom(activity.getClass()) ? (ProjectManagerActivity) activity : null;
 
 		super.onAttach(activity);
+		
+		onOwnerAttached(this.activity);
+	}
+	
+	protected void onOwnerAttached(ProjectManagerActivity owner)
+	{
+		// does nothing by default
 	}
 
 	public ProjectManagerActivity getOwner()
@@ -58,6 +67,11 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		return activity;
 	}
 	
+	/**
+	 * Note: it's OK to return null from here
+	 * 
+	 * @see android.support.v4.app.Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
+	 */
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
@@ -76,9 +90,18 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	
 	protected View getRootLayout(LayoutInflater inflater, ViewGroup container)
 	{
-		View rootLayout = inflater.inflate(getLayoutID(), container, false);
-		setupUI(rootLayout);
-		uiReady = true;
+		View rootLayout = null;
+		try
+		{
+			rootLayout = inflater.inflate(getLayoutID(), container, false);
+			setupUI(rootLayout);
+			uiReady = true;
+		}
+		catch(Exception e)
+		{
+			Log.e(getClass().getSimpleName(), "Error upon inflating/setting-up framgement UI", e);
+			uiReady = false;
+		}
 		return rootLayout;
 	}
 	
@@ -93,6 +116,28 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	public boolean isUIReady()
 	{
 		return uiReady;
+	}
+	
+	protected void setDialogView(AlertDialog dialog)
+	{
+		setDialogView(dialog, null, null, null, null);
+	}
+	
+	protected void setDialogView(AlertDialog dialog, int viewSpacingLeft, int viewSpacingTop, int viewSpacingRight, int viewSpacingBottom)
+	{
+		setDialogView(dialog, viewSpacingLeft, viewSpacingTop, viewSpacingRight, viewSpacingBottom);
+	}
+	
+	private void setDialogView(AlertDialog dialog, Integer viewSpacingLeft, Integer viewSpacingTop, Integer viewSpacingRight, Integer viewSpacingBottom)
+	{
+		View rootLayout;
+		if(dialog != null && (rootLayout = getRootLayout()) != null)
+		{
+			if(viewSpacingLeft == null)
+				dialog.setView(rootLayout);
+			else
+				dialog.setView(rootLayout, viewSpacingLeft, viewSpacingTop, viewSpacingRight, viewSpacingBottom);
+		}
 	}
 
 	@Override

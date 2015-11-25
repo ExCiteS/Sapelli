@@ -99,6 +99,16 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 		return new RecordReference(value);
 	}
 	
+	public PrimaryKey getForeignSchemaPrimaryKey()
+	{
+		return getColumnSet(); // equivalent to: foreignSchema.getPrimaryKey()
+	}
+	
+	public Schema getForeignSchema()
+	{
+		return foreignSchema;
+	}
+	
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{

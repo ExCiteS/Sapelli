@@ -2604,8 +2604,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(order.isDefined())
 			{
 				bldr.append("ORDER BY");
-				bldr.append(table.getSQLColumn(order.getBy()).name);
-				bldr.append(order.isAsc() ? "ASC" : "DESC");
+				bldr.openTransaction(", ");
+				// Loop over orderings:
+				for(Order.Ordering ordering : order.getOrderings())
+				{
+					ColumnPointer<?> byCP = ordering.getBy();
+					SColumn sqlCol = table.getSQLColumn(byCP);
+					if(sqlCol != null)
+					{
+						// Column itself:
+						addOrderBy(sqlCol, ordering.isAsc());
+						// Special case...
+						if(sqlCol.isBoolColForAllOptionalValueSetCol())
+							// Order by each subcol as well:
+							addCompositeOrderBy((ValueSetColumn<?, ?>) byCP.getColumn(), ordering.isAsc());
+					}
+					else if(byCP.getColumn() instanceof ValueSetColumn<?, ?>)
+					{	// Ordering on composite column (which is split up in the SQLTable):
+						addCompositeOrderBy((ValueSetColumn<?, ?>) byCP.getColumn(), ordering.isAsc());
+					}
+					else
+						exception = new DBException("Failed to generate SQL for ORDER BY on column " + byCP.getQualifiedColumnName(table.schema));
+				}
+				bldr.commitTransaction();
 			}
 			//	LIMIT
 			if(query.isLimited())
@@ -2613,6 +2634,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append("LIMIT");
 				bldr.append(Integer.toString(query.getLimit()));
 			}
+		}
+		
+		private void addOrderBy(SColumn sqlCol, boolean asc)
+		{
+			bldr.openTransaction();
+			bldr.append(sqlCol.name);
+			bldr.append(asc ? "ASC" : "DESC");
+			bldr.commitTransaction();
+		}
+		
+		private void addCompositeOrderBy(ValueSetColumn<?, ?> valueSetCol, boolean asc)
+		{
+			for(SColumn subSqlCol : table.getSQLColumns(valueSetCol))
+				addOrderBy(subSqlCol, asc);
 		}
 		
 		/**
