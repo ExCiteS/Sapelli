@@ -51,6 +51,13 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		this.activity = ProjectManagerActivity.class.isAssignableFrom(activity.getClass()) ? (ProjectManagerActivity) activity : null;
 
 		super.onAttach(activity);
+		
+		onOwnerAttached(this.activity);
+	}
+	
+	protected void onOwnerAttached(ProjectManagerActivity owner)
+	{
+		// does nothing by default
 	}
 
 	public ProjectManagerActivity getOwner()
