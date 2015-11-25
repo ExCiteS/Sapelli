@@ -151,6 +151,7 @@
     <string name="exportRemove">Delete records after successful export</string>
     <string name="exportFetching">Fetching records…</string>
     <string name="exportQueryFailed">Failed to query for records, due to: %s.</string>
+    <string name="exportNoOutputFolder">Cannot run export due to unknown distination folder.</string>
     <string name="exportNoRecordsFound">No records meeting export criteria were found.</string>
     <string name="exportXRecords">Exporting %d records …</string>
     <string name="exportSuccessTitle">Success</string>
