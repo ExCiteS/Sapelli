@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in;
+package uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in;
 
 import org.joda.time.DateTime;
 
@@ -37,8 +37,8 @@ import android.util.Log;
 import android.widget.Toast;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;

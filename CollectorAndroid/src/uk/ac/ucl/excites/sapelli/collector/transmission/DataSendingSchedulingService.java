@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.services;
+package uk.ac.ucl.excites.sapelli.collector.transmission;
 
 import java.util.Collections;
 import java.util.List;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.tasks;
+package uk.ac.ucl.excites.sapelli.collector.transmission;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +24,6 @@ import java.util.List;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.services.DataSendingSchedulingService;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;

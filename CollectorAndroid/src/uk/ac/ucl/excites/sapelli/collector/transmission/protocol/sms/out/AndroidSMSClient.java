@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out;
+package uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -27,6 +27,7 @@ import android.content.Intent;
 import android.telephony.SmsManager;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.Helpers.SMSInfo;
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
@@ -34,7 +35,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.Helpers.SMSInfo;
 
 /**
  * @author Michalis Vitos, mstevens

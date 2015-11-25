@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out;
+package uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.Helpers.SMSInfo;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.Helpers.SMSInfo;
 
 /**
  * 

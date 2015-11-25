@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.services;
+package uk.ac.ucl.excites.sapelli.collector.transmission;
 
 import android.app.IntentService;
 import android.content.Intent;
@@ -24,8 +24,8 @@ import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
-import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out;
+package uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out;
 
 import android.app.Activity;
 import android.app.IntentService;
@@ -25,13 +25,13 @@ import android.telephony.SmsManager;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.Helpers.SMSInfo;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturn;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.Helpers.SMSInfo;
 import uk.ac.ucl.excites.sapelli.util.SMSStatusReport;
 
 /**

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.control;
+package uk.ac.ucl.excites.sapelli.collector.transmission.control;
 
 import java.io.IOException;
 
@@ -26,14 +26,15 @@ import android.telephony.PhoneNumberUtils;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.in.IncomingSMSReceiverService;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.out.AndroidSMSClient;
 
 /**
  * 
