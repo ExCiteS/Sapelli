@@ -86,10 +86,11 @@ public final class ClassHelpers
 			args = new Object[0];
 		cLoop : for(Constructor<?> constructor : clazz.getConstructors())
 		{
-			if(args.length != constructor.getParameterCount())
+			Class<?>[] paramTypes = constructor.getParameterTypes();
+			if(args.length != paramTypes.length) // avoid using constructor.getParameterCount() as its only supported since Java 1.8 (even though it is no documented as such, see: https://bugs.openjdk.java.net/browse/JDK-8030785)
 				continue;
 			int p = 0;
-			for(Class<?> paramType : constructor.getParameterTypes())
+			for(Class<?> paramType : paramTypes)
 				if(!paramType.isInstance(args[p++]))
 					continue cLoop;
 			// Found fitting constructor...
