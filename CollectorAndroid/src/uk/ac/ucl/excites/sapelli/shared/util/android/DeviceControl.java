@@ -60,9 +60,9 @@ public final class DeviceControl
 	}
 
 	/**
-	 * Time to wait after exiting the Airplane Mode for GSM to be connected
+	 * Number of seconds to wait after exiting the Airplane Mode for GSM to be connected
 	 */
-	public static final int POST_AIRPLANE_MODE_WAITING_TIME = 30;
+	public static final int POST_AIRPLANE_MODE_WAITING_TIME_S = 30;
 
 	/**
 	 * class should not be instantiated
@@ -183,7 +183,7 @@ public final class DeviceControl
 
 	public static boolean canSetAirplaneMode()
 	{
-		return (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) ? true : false;
+		return Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1;
 	}
 
 	public static void vibrate(Context context, int durationMS)

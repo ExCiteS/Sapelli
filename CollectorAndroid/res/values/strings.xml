@@ -206,6 +206,8 @@
     <string name="editSchedule">Edit send schedule</string>
     <string name="addReceiver">Add receiver</string>
     <string name="editReceiver">Edit receiver</string>
+    <string name="cycleInOutOfAirplaneMode">Cycle in &amp; out of airplane mode</string>
+    <string name="airplaneModeCycling">Airplane mode cycling</string>
     <string name="receiverName">Name:</string>
     <string name="receiverPhoneNumber">Phone number:</string>
     <string name="useBinarySMS">Use binary SMS</string>

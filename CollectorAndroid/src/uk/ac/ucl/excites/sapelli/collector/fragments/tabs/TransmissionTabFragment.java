@@ -46,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
@@ -345,7 +346,10 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			// Set settings label:
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder("; ");
 			//	Send interval:
-			bldr.append("Send interval: " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / SEC_IN_MIN).toString() + " minutes");
+			bldr.append(getString(R.string.interval) + " " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / SEC_IN_MIN).toString() + " minutes");
+			//	Airplane mode:
+			if(DeviceControl.canSetAirplaneMode() && sendSchedule.isAirplaneModeCycling())
+				bldr.append(getString(R.string.airplaneModeCycling));
 			//	Heartbeat interval:
 			// TODO
 			//	Encrypt:

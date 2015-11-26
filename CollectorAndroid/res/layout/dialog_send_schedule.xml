@@ -110,6 +110,13 @@
             android:paddingStart="3.5dp"
             android:text="@string/minutes" />
     </LinearLayout>
+    
+	<CheckBox
+	    android:id="@+id/checkAirplaneModeCycle"
+	    android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/cycleInOutOfAirplaneMode"
+        android:enabled="false" />
 
     <!-- TODO heartbeat interval -->
     <!-- TODO encryption -->

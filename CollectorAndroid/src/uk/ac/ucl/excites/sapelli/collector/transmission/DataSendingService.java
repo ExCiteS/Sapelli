@@ -23,10 +23,11 @@ import android.content.Intent;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.util.SignalMonitor;
 
 /**
  * IntentService which is awoken by a SendAlarm intent to send any pending Records for a particular Project according to the SendRecordsSchedule that it retrieves from the ProjectStore.
@@ -56,17 +57,29 @@ public class DataSendingService extends IntentService implements StoreUser
 	
 	private CollectorApp app;
 	private AndroidTransmissionController transmissionController;
+	private SignalMonitor signalMonitor;
 	
 	public DataSendingService()
 	{
 		super(DataSendingService.class.getSimpleName());
 	}
 
+	/* (non-Javadoc)
+	 * @see android.app.IntentService#onStart(android.content.Intent, int)
+	 */
+	@Override
+	public void onStart(Intent intent, int startId)
+	{
+		super.onStart(intent, startId);
+		
+		signalMonitor = SignalMonitor.Start(getApplicationContext());
+	}
+
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{	
 		Log.d(TAG, "Woken by alarm");
-		// alarm has just woken up the service with a project ID and fingerprint
+		// Alarm has just woken up the service with a project ID and fingerprint
 		
 		// Read intent data:
 		if(!intent.hasExtra(INTENT_KEY_SEND_SCHEDULE_ID))
@@ -75,7 +88,7 @@ public class DataSendingService extends IntentService implements StoreUser
 			return;
 		}
 		
-		SendSchedule sendSchedule= null;
+		SendSchedule sendSchedule = null;
 		ProjectStore projectStore;
 		TransmissionStore transmissionStore;
 		try
@@ -97,12 +110,8 @@ public class DataSendingService extends IntentService implements StoreUser
 			if(sendSchedule == null || !sendSchedule.isEnabled())
 				return;
 			
-			// TODO detect network reception/connectivity...
-	
-			// Send records:
-			transmissionController.sendRecords(sendSchedule.getProject().getModel(), sendSchedule.getReceiver());
-			
-			// TOOD send files?
+			// Attempt transmission:
+			transmit(sendSchedule, false);
 		}
 		catch(Exception e)
 		{
@@ -118,6 +127,41 @@ public class DataSendingService extends IntentService implements StoreUser
 		}
 	}
 	
+	public void transmit(SendSchedule sendSchedule, boolean leftAirplaneMode) throws Exception
+	{
+		if(isOnline(sendSchedule))
+		{	// We are online...
+			//	Send records:
+			transmissionController.sendRecords(sendSchedule.getProject().getModel(), sendSchedule.getReceiver());
+			//	TODO send files?
+		}
+		else if(!leftAirplaneMode && DeviceControl.inAirplaneMode(getApplicationContext()) && DeviceControl.canSetAirplaneMode() && sendSchedule.isAirplaneModeCycling())
+		{	// We are in airplane mode and we can and are configured to control it:
+			//	Leave airplane mode & wait...
+			DeviceControl.disableAirplaneModeAndWait(getApplicationContext(), DeviceControl.POST_AIRPLANE_MODE_WAITING_TIME_S);
+			//	Now try again:
+			transmit(sendSchedule, true);
+		}
+		else
+		{	// We are offline...
+			transmissionController.addLogLine(TAG, "Skipping transmission attempt for project (" + sendSchedule.getProject().toString(false) + ") due to lack of connectivity");
+		}
+	}
+	
+	public boolean isOnline(SendSchedule sendSchedule)
+	{
+		switch(sendSchedule.getReceiver().getTransmissionType())
+		{
+			case TEXTUAL_SMS:
+			case BINARY_SMS:
+				return signalMonitor.isInService();
+			case HTTP:
+			default:
+				Log.e(TAG, "Unsupported transmission type: " + sendSchedule.getReceiver().getTransmissionType().name());
+				return false;
+		}
+	}
+	
 	/* (non-Javadoc)
 	 * @see android.app.IntentService#onDestroy()
 	 */
@@ -126,214 +170,10 @@ public class DataSendingService extends IntentService implements StoreUser
 	{
 		if(transmissionController != null)
 			transmissionController.discard();
+		if(signalMonitor != null)
+			signalMonitor.stop();
+		
+		super.onDestroy();
 	}
 	
 }
-//
-//
-//public class DataSenderService extends Service
-//{
-//	// Create a Queue of local TempProjects TODO: get rid of local TempProject class
-//	private BlockingQueue<TempProject> projectQueue = new ArrayBlockingQueue<TempProject>(1024);
-//	// Use a single Thread and Send the Projects sequential
-//	private ExecutorService projectsExecutor = Executors.newSingleThreadExecutor();
-//
-//	private CollectorApp app;
-//	
-//	@Override
-//	public synchronized int onStartCommand(Intent intent, int flags, int startId)
-//	{
-//		app = (CollectorApp) getApplication();
-//		
-//		// TODO TEMP:
-//		TempProject p = new TempProject(intent.getExtras().getInt(SendAlarmManager.PROJECT_ID), intent.getExtras().getInt(SendAlarmManager.PROJECT_FINGERPRINT));
-//
-//		// Add project to queue:
-//		try
-//		{
-//			projectQueue.put(p);
-//		}
-//		catch(InterruptedException e)
-//		{
-//			Debug.e(e);
-//		}
-//
-//		// Run Projects in the queue:
-//		if(!projectsExecutor.isTerminated())
-//			projectsExecutor.execute(new Runnable()
-//			{
-//				@Override
-//				public void run()
-//				{
-//					while(!projectQueue.isEmpty())
-//						try
-//						{
-//							new ProjectSendingTask(DataSenderService.this, projectQueue.take());
-//						}
-//						catch(InterruptedException e)
-//						{
-//							Debug.e(e);
-//							break;
-//						}
-//
-//					// Stop the Android Service
-//					stopSelf();
-//				}
-//			});
-//
-//		return Service.START_NOT_STICKY;
-//	}
-//
-//	@Override
-//	public void onDestroy()
-//	{
-//		Debug.d("Service has been killed!");
-//	}
-//
-//	@Override
-//	public IBinder onBind(Intent intent)
-//	{
-//		return null;
-//	}
-//
-//
-//	/**
-//	 * Transmitting the data for a project
-//	 * 
-//	 * @author Michalis Vitos
-//	 * 
-//	 */
-//	public class ProjectSendingTask implements StoreHandle.StoreUser
-//	{
-//		private Project project;
-//		private SMSSendingTask smsSendingTask;
-//
-//		ProjectSendingTask(Context context, TempProject p)
-//		{
-//			// Load the project
-//			try
-//			{
-//				ProjectStore store = app.collectorClient.projectStoreHandle.getStore(this);
-//				this.project = store.retrieveProject(p.getId(), p.getFingerprint());
-//			}
-//			catch(Exception e)
-//			{
-//				Debug.e("Cannot Load Project: ", e);
-//			}
-//
-//			// TODO Get Project Settings:
-//			if(project != null)
-//			{
-//				project.isLogging();
-//
-//				// TODO query for records
-//
-//				// TODO If project has records to send
-//
-//				// TODO if project needs SMS transmission
-//				if(smsSendingTask == null)
-//					smsSendingTask = new SMSSendingTask(context);
-//
-//				smsSendingTask.send(project);
-//
-//				// TODO else if project needs Internet transmission
-//
-//				// If there were SMS Sending Tasks, terminate them
-//				if(smsSendingTask != null)
-//				{
-//					smsSendingTask.close();
-//					smsSendingTask = null;
-//				}
-//			}
-//		}
-//
-//		public class SMSSendingTask
-//		{
-//			private Context context;
-//			private SignalMonitor gsmMonitor;
-//
-//			public SMSSendingTask(final Context context)
-//			{
-//				this.context = context;
-//
-//				// Check for Airplane Mode
-//				if(DeviceControl.canToogleAirplaneMode() /* TODO && project needs to change AirplaneMode */)
-//					DeviceControl.disableAirplaneModeAndWait(context, DeviceControl.POST_AIRPLANE_MODE_WAITING_TIME);
-//
-//				// Check for SMS Signal
-//				setupSMSmonitor(context);
-//			}
-//
-//			public void send(Project p)
-//			{
-//				// TODO get List of Records
-//
-//				// Send records
-//				if(gsmMonitor.isInService())
-//				{
-//					// TODO Send them
-//
-//					// Test
-//					AndroidSMSSender smsSender = new AndroidSMSSender(context);
-//					// smsSender.send("Sapelli SMS Demo!!! " + TimeUtils.getPrettyTimestamp(), "phone");
-//				}
-//			}
-//
-//			/**
-//			 * Stop the Signal Monitor and Toggle the AirplaneMode
-//			 */
-//			public void close()
-//			{
-//				// Stop GSM Signal Monitor
-//				stopSingnalMonitor();
-//
-//				// Put device back to AirplaneMode if needed
-//				if(true /* TODO projects toggle AirplaneMode */)
-//					DeviceControl.enableAirplaneMode(context);
-//			}
-//
-//			/**
-//			 * Start a GSM SignalMonitor on the main UI thread by enqueuing the runnable action to be performed on a Handler
-//			 * 
-//			 * @param context
-//			 */
-//			private void setupSMSmonitor(final Context context)
-//			{
-//				Handler handler = new Handler(Looper.getMainLooper());
-//				handler.post(new Runnable()
-//				{
-//					@Override
-//					public void run()
-//					{
-//						gsmMonitor = new SignalMonitor(context);
-//
-//					}
-//				});
-//
-//				// Wait for the Signal Monitor listener to be established
-//				while(gsmMonitor == null)
-//				{
-//					try
-//					{
-//						Thread.sleep(100);
-//					}
-//					catch(InterruptedException e)
-//					{
-//						Debug.e(e);
-//					}
-//				}
-//			}
-//
-//			private void stopSingnalMonitor()
-//			{
-//				// Stop SignalMonitor Listener
-//				if(gsmMonitor != null)
-//				{
-//					gsmMonitor.stopSignalMonitor();
-//					gsmMonitor = null;
-//				}
-//			}
-//		}
-//	}
-//
-//}

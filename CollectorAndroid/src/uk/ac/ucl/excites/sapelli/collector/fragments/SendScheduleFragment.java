@@ -35,6 +35,9 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.Spinner;
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -46,6 +49,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers
 import uk.ac.ucl.excites.sapelli.collector.ui.adapters.ReceiverAdapter;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -129,6 +133,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	private Button btnDeleteReceiver;
 	private ViewGroup groupInterval;
 	private EditText txtSendIntervalMin;
+	private CheckBox checkAirplaneModeCycle;
 	
 	// Adapter:
 	private ReceiverAdapter spinReceiverAdapter;
@@ -197,6 +202,25 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 
 			public void onTextChanged(CharSequence s, int start, int before, int count) {}
 		});
+		
+		checkAirplaneModeCycle = (CheckBox) rootLayout.findViewById(R.id.checkAirplaneModeCycle);
+		checkAirplaneModeCycle.setChecked(schedule.isAirplaneModeCycling());
+		checkAirplaneModeCycle.setVisibility(DeviceControl.canSetAirplaneMode() ? View.VISIBLE : View.GONE);
+		checkAirplaneModeCycle.setOnCheckedChangeListener(
+			DeviceControl.canSetAirplaneMode() ? 
+				new OnCheckedChangeListener()
+				{
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+					{
+						if(schedule.isAirplaneModeCycling() != isChecked)
+						{
+							schedule.setAirplaneModeCycling(isChecked);
+							changed = true;
+						}
+					}
+				} :
+				null);
 	}
 	
 	private void updateReceivers(boolean requery)

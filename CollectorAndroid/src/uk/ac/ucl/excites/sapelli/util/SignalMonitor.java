@@ -31,7 +31,12 @@ import android.telephony.TelephonyManager;
 public class SignalMonitor extends PhoneStateListener
 {
 	
-	static protected final String TAG = "SignalMonitor";
+	static protected final String TAG = SignalMonitor.class.getSimpleName();
+	
+	static public SignalMonitor Start(Context context)
+	{
+		return new SignalMonitor(context);
+	}
 
 	private TelephonyManager telephonyManager;
 	private int serviceState;
@@ -43,7 +48,7 @@ public class SignalMonitor extends PhoneStateListener
 	 * home network or in roaming. 1 : Phone is not registered with any operator, the phone can be currently searching a new operator to register to, or not
 	 * searching to registration at all, or registration is denied, or radio signal is not available. 3 : Radio of telephony is explicitly powered off.
 	 */
-	public SignalMonitor(Context context)
+	private SignalMonitor(Context context)
 	{
 		this.telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 		telephonyManager.listen(this, PhoneStateListener.LISTEN_SERVICE_STATE | PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
@@ -92,7 +97,7 @@ public class SignalMonitor extends PhoneStateListener
 		return signalStrength;
 	}
 
-	public void stopSignalMonitor()
+	public void stop()
 	{
 		telephonyManager.listen(this, PhoneStateListener.LISTEN_NONE);
 	}

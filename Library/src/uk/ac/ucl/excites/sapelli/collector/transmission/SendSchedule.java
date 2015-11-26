@@ -41,6 +41,8 @@ public class SendSchedule
 	 */
 	private int transmitIntervalS;
 	
+	private boolean airplaneModeCycling = false;
+	
 	private boolean encrypt;
 	
 	private boolean enabled;
@@ -153,6 +155,22 @@ public class SendSchedule
 	{
 		this.transmitIntervalS = transmitIntervalS;
 		return this;
+	}
+
+	/**
+	 * @return the airplaneModeCycling
+	 */
+	public boolean isAirplaneModeCycling()
+	{
+		return airplaneModeCycling;
+	}
+
+	/**
+	 * @param airplaneModeCycling the airplaneModeCycling to set
+	 */
+	public void setAirplaneModeCycling(boolean airplaneModeCycling)
+	{
+		this.airplaneModeCycling = airplaneModeCycling;
 	}
 
 	/**
