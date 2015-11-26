@@ -64,7 +64,7 @@
     
     <item
 	    android:id="@+id/menuitem_manage_receivers"
-	    android:icon="@drawable/ic_sms_black_36dp"
+	    android:icon="@drawable/ic_transfer_white_36dp"
 	    android:onClick="manageReceivers"
 	    android:title="@string/manageReceivers"
 	    compat:showAsAction="never"/>

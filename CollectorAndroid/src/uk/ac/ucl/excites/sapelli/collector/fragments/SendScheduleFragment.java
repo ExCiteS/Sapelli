@@ -44,10 +44,9 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.collector.ui.adapters.ReceiverAdapter;
-import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
@@ -241,7 +240,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), getOwner().getCurrentProject(false)))
+		.setIcon(R.drawable.ic_transfer_black_36dp)
 		.setTitle(editing ? R.string.editSchedule : R.string.addSchedule)
 		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
 		.setNegativeButton(android.R.string.cancel, this);
