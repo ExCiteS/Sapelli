@@ -52,11 +52,22 @@ public final class DeviceControl
 	 */
 	public static boolean isOnline(Context context)
 	{
-		ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo netInfo = cm.getActiveNetworkInfo();
-		if(netInfo != null && netInfo.isConnected())
-			return true;
-		return false;
+		return isOnline(((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo());
+	}
+	
+	public static boolean isWifiOnline(Context context)
+	{
+		return isOnline(((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_WIFI));
+	}
+	
+	public static boolean isMobileOnline(Context context)
+	{
+		return isOnline(((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_MOBILE));
+	}
+	
+	private static boolean isOnline(NetworkInfo netInfo)
+	{
+		return netInfo != null && netInfo.isConnected();
 	}
 
 	/**

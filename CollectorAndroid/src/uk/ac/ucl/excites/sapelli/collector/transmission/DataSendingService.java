@@ -26,8 +26,8 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.shared.util.android.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.util.SignalMonitor;
 
 /**
  * IntentService which is awoken by a SendAlarm intent to send any pending Records for a particular Project according to the SendRecordsSchedule that it retrieves from the ProjectStore.
@@ -156,6 +156,7 @@ public class DataSendingService extends IntentService implements StoreUser
 			case BINARY_SMS:
 				return signalMonitor.isInService();
 			case HTTP:
+				return DeviceControl.isOnline(getApplicationContext());
 			default:
 				Log.e(TAG, "Unsupported transmission type: " + sendSchedule.getReceiver().getTransmissionType().name());
 				return false;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.util;
+package uk.ac.ucl.excites.sapelli.shared.util.android;
 
 import android.content.Context;
 import android.telephony.PhoneStateListener;
