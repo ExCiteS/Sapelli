@@ -28,7 +28,7 @@
         android:text="@string/receiverName" />
 
     <EditText
-        android:id="@+id/txtSMSReceiverName"
+        android:id="@+id/txtGeoKeyReceiverName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textCapWords"
@@ -40,20 +40,38 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="10dp"
-        android:text="@string/receiverPhoneNumber" />
+        android:text="@string/geokeyServerUrl" />
 
     <EditText
-        android:id="@+id/txtReceiverPhoneNumber"
+        android:id="@+id/txtGeoKeyServerURL"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="phone" />
-
-    <CheckBox
-        android:id="@+id/chkBinarySMS"
+        android:inputType="textUri" />
+    
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="10dp"
-        android:text="@string/useBinarySMS" />
+        android:text="@string/username" />
 
+    <EditText
+        android:id="@+id/txtUsername"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="text" />
+    
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:text="@string/password" />
+
+    <EditText
+        android:id="@+id/txtPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textWebPassword" />
 </LinearLayout>

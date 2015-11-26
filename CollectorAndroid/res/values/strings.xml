@@ -210,6 +210,9 @@
     <string name="airplaneModeCycling">Airplane mode cycling</string>
     <string name="receiverName">Name:</string>
     <string name="receiverPhoneNumber">Phone number:</string>
+    <string name="geokeyServerUrl">Server URL:</string>
+    <string name="username">Username:</string>
+    <string name="password">Password:</string>
     <string name="useBinarySMS">Use binary SMS</string>
     <string name="emptyReceiverName">Please enter a name.</string>
     <string name="invalidPhoneNumber">Please enter a valid phone number.</string>

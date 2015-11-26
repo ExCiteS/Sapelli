@@ -95,7 +95,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	@Override
 	protected void setupUI(View rootLayout)
 	{
-		txtReceiverName = (EditText) rootLayout.findViewById(R.id.txtReceiverName);
+		txtReceiverName = (EditText) rootLayout.findViewById(R.id.txtSMSReceiverName);
 		txtReceiverPhoneNumber = (EditText) rootLayout.findViewById(R.id.txtReceiverPhoneNumber);
 		chkBinarySMS = (CheckBox) rootLayout.findViewById(R.id.chkBinarySMS);
 		
