@@ -19,7 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.transmission;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
@@ -141,6 +143,19 @@ public final class SendConfigurationHelpers
 			Log.e(SendConfigurationHelpers.class.getSimpleName(), "Error upon querying for send schedules", e);
 			return Collections.<SendSchedule> emptyList();
 		}
+	}
+	
+	/**
+	 * @param activity
+	 * @param receiver
+	 * @return
+	 */
+	static public Set<Project> getProjectsUsingReceiver(ProjectManagerActivity activity, Correspondent receiver)
+	{
+		Set<Project> projects = new HashSet<Project>();
+		for(SendSchedule schedule : getSchedulesForReceiver(activity, receiver))
+			projects.add(schedule.getProject());
+		return projects;
 	}
 	
 	/**
