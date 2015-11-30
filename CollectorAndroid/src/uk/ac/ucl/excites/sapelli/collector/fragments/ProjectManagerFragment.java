@@ -118,19 +118,19 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		return uiReady;
 	}
 	
-	protected void setDialogView(AlertDialog dialog)
+	protected View setDialogView(AlertDialog dialog)
 	{
-		setDialogView(dialog, null, null, null, null);
+		return doSetDialogView(dialog, null, null, null, null);
 	}
 	
-	protected void setDialogView(AlertDialog dialog, int viewSpacingLeft, int viewSpacingTop, int viewSpacingRight, int viewSpacingBottom)
+	protected View setDialogView(AlertDialog dialog, int viewSpacingLeft, int viewSpacingTop, int viewSpacingRight, int viewSpacingBottom)
 	{
-		setDialogView(dialog, viewSpacingLeft, viewSpacingTop, viewSpacingRight, viewSpacingBottom);
+		return doSetDialogView(dialog, viewSpacingLeft, viewSpacingTop, viewSpacingRight, viewSpacingBottom);
 	}
 	
-	private void setDialogView(AlertDialog dialog, Integer viewSpacingLeft, Integer viewSpacingTop, Integer viewSpacingRight, Integer viewSpacingBottom)
+	private View doSetDialogView(AlertDialog dialog, Integer viewSpacingLeft, Integer viewSpacingTop, Integer viewSpacingRight, Integer viewSpacingBottom)
 	{
-		View rootLayout;
+		View rootLayout = null;
 		if(dialog != null && (rootLayout = getRootLayout()) != null)
 		{
 			if(viewSpacingLeft == null)
@@ -138,6 +138,7 @@ public abstract class ProjectManagerFragment extends DialogFragment
 			else
 				dialog.setView(rootLayout, viewSpacingLeft, viewSpacingTop, viewSpacingRight, viewSpacingBottom);
 		}
+		return rootLayout;
 	}
 
 	@Override

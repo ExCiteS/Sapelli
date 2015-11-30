@@ -63,7 +63,7 @@ public class AboutFragment extends ProjectManagerFragment
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
 				"<p>" + getString(R.string.license)  + "</p>" +
-				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));	
+				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));
 	}
 
 	@SuppressLint("InflateParams")
