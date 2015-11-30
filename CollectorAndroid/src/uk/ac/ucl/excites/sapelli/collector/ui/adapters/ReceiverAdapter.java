@@ -22,7 +22,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverDrawableProvider;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
@@ -49,9 +49,7 @@ public class ReceiverAdapter extends AdvancedSpinnerAdapter<Correspondent>
 		if(receiver == null)
 			return null;
 		//else:
-		ReceiverDrawableProvider provider = new ReceiverDrawableProvider();
-		receiver.handle(provider);
-		return provider.drawableResourceId;
+		return SendConfigurationHelpers.GetReceiverDrawable(receiver, false);
 	}
 	
 }

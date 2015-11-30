@@ -28,6 +28,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
@@ -120,7 +122,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(R.drawable.ic_sms_black_36dp)
+		.setIcon(SendConfigurationHelpers.GetSMSReceiverDrawable(isEditing() ? editReceiver.isBinary() : SMSCorrespondent.DEFAULT_BINARY_SMS, true))
 		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
 		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
 		.setNegativeButton(android.R.string.cancel, this);
@@ -130,7 +132,18 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		
 		// Set view:
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		View layout = getRootLayout();
+		dialog.setView(layout, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		
+		// Switch dialog icon based on chkBinarySMS state:
+		((CheckBox) layout.findViewById(R.id.chkBinarySMS)).setOnCheckedChangeListener(new OnCheckedChangeListener()
+		{
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+			{
+				dialog.setIcon(SendConfigurationHelpers.GetSMSReceiverDrawable(isChecked, true));
+			}
+		});
 		
 		return dialog;
 	}

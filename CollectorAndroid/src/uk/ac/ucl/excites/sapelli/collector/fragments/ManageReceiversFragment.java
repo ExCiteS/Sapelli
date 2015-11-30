@@ -37,7 +37,6 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers
 import uk.ac.ucl.excites.sapelli.collector.ui.adapters.ReceiverAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * @author mstevens
@@ -142,15 +141,7 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		{
 			case R.id.btnEditReceiver :
 				// TODO warn about projects that use the receiver
-				if(receiver != null)
-					receiver.handle(new Correspondent.Handler()
-					{
-						@Override
-						public void handle(SMSCorrespondent smsCorrespondent)
-						{
-							SMSReceiverFragment.ShowEditDialog(getOwner(), ManageReceiversFragment.this, smsCorrespondent);
-						}
-					});
+				SendConfigurationHelpers.openEditReceiverDialog(getOwner(), this, receiver);
 				// TODO request TransmissionTab update
 				break;
 			case R.id.btnDeleteReceiver :

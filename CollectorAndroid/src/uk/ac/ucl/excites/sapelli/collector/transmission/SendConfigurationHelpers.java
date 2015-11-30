@@ -26,8 +26,8 @@ import java.util.Set;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
+import uk.ac.ucl.excites.sapelli.collector.fragments.SMSReceiverFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
@@ -243,19 +243,82 @@ public final class SendConfigurationHelpers
 	}
 	
 	/**
+	 * @param activity
+	 * @param callback
+	 * @param receiver
+	 */
+	static public void openEditReceiverDialog(final ProjectManagerActivity activity, final ReceiverUpdateCallback callback, Correspondent receiver)
+	{
+		if(receiver == null)
+			return;
+		receiver.handle(new Correspondent.Handler()
+		{
+			@Override
+			public void handle(SMSCorrespondent smsCorrespondent)
+			{
+				SMSReceiverFragment.ShowEditDialog(activity, callback, smsCorrespondent);
+			}
+		});
+	}
+	
+	static private ReceiverDrawableProvider receiverDrawableProvider = new ReceiverDrawableProvider();
+	
+	/**
+	 * @param receiver
+	 * @param big
+	 * @return
+	 */
+	static public int GetReceiverDrawable(Correspondent receiver, boolean big)
+	{
+		if(receiver != null)
+		{
+			receiverDrawableProvider.drawableResourceId = null;
+			receiverDrawableProvider.big = big;
+			receiver.handle(receiverDrawableProvider);
+			if(receiverDrawableProvider.drawableResourceId != null)
+				return receiverDrawableProvider.drawableResourceId;
+		}
+		// fallback:
+		return big ? R.drawable.ic_transfer_black_36dp : R.drawable.ic_transfer_black_24dp;
+	}
+	
+	/**
+	 * @param smsCorrespondent
+	 * @param big
+	 * @return
+	 */
+	static public int GetSMSReceiverDrawable(SMSCorrespondent smsCorrespondent, boolean big)
+	{
+		return GetSMSReceiverDrawable(smsCorrespondent.isBinary(), big);
+	}
+	
+	/**
+	 * @param binary
+	 * @param big
+	 * @return
+	 */
+	static public int GetSMSReceiverDrawable(boolean binary, boolean big)
+	{
+		if(big)
+			return binary ? R.drawable.ic_sms_bin_black_36dp : R.drawable.ic_sms_txt_black_36dp;
+		else
+			return binary ? R.drawable.ic_sms_bin_black_24dp : R.drawable.ic_sms_txt_black_24dp;
+	}
+	
+	/**
 	 * @author mstevens
 	 *
 	 */
-	static public class ReceiverDrawableProvider implements Correspondent.Handler
+	static private class ReceiverDrawableProvider implements Correspondent.Handler
 	{
 		
 		public Integer drawableResourceId = null;
+		public boolean big;
 		
 		@Override
 		public void handle(SMSCorrespondent smsCorrespondent)
 		{
-			// TODO later we might differentiate based on smsCorrespondent.isBinary()
-			drawableResourceId = R.drawable.ic_sms_black_24dp;
+			drawableResourceId = GetSMSReceiverDrawable(smsCorrespondent, big); 
 		}
 		
 	}

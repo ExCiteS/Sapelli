@@ -43,7 +43,6 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.SendScheduleFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
-import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverDrawableProvider;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
@@ -299,9 +298,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			if(sendSchedule == null)
 				return null;
 			//else:
-			ReceiverDrawableProvider provider = new ReceiverDrawableProvider();
-			sendSchedule.getReceiver().handle(provider);
-			return provider.drawableResourceId;
+			return SendConfigurationHelpers.GetReceiverDrawable(sendSchedule.getReceiver(), false);
 		}
 
 		@Override

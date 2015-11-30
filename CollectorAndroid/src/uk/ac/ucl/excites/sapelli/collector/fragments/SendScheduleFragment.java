@@ -51,7 +51,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
@@ -286,15 +285,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 				createNewReceiver(getOwner(), this);
 				break;
 			case R.id.btnEditScheduleReceiver :
-				if(receiver != null)
-					receiver.handle(new Correspondent.Handler()
-					{
-						@Override
-						public void handle(SMSCorrespondent smsCorrespondent)
-						{
-							SMSReceiverFragment.ShowEditDialog(getOwner(),SendScheduleFragment.this, smsCorrespondent);
-						}
-					});
+				SendConfigurationHelpers.openEditReceiverDialog(getOwner(), this, receiver);
 				break;
 			case R.id.btnDeleteScheduleReceiver :
 				// TODO

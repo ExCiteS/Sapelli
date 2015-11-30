@@ -181,7 +181,12 @@ public class SMSCorrespondent extends Correspondent
 	@Override
 	public String toString()
 	{
-		return getName() + " [" + getAddress() + "; " + (isBinary() ? "bin" : "txt") + "]";
+		return toString(false);
+	}
+	
+	public String toString(boolean includeBinTxt)
+	{
+		return getName() + " [" + getAddress() + (includeBinTxt ? "; " + (isBinary() ? "bin" : "txt") : "") + "]";
 	}
 	
 	/**
