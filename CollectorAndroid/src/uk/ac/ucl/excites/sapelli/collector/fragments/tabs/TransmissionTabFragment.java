@@ -43,12 +43,11 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.SendScheduleFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverDrawableProvider;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
@@ -278,20 +277,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	public String getTabTitle(Context context)
 	{
 		return context.getString(R.string.tab_transmission);
-	}
-
-	static public class ReceiverDrawableProvider implements Correspondent.Handler
-	{
-		
-		public Integer drawableResourceId = null;
-		
-		@Override
-		public void handle(SMSCorrespondent smsCorrespondent)
-		{
-			// TODO later we might differentiate based on smsCorrespondent.isBinary()
-			drawableResourceId = R.drawable.ic_sms_black_24dp;
-		}
-		
 	}
 	
 	private class SendScheduleAdapter extends AdvancedSpinnerAdapter<SendSchedule>

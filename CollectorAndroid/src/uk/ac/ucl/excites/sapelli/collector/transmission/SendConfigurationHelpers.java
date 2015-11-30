@@ -24,12 +24,14 @@ import java.util.List;
 import java.util.Set;
 
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * @author mstevens
@@ -237,6 +239,24 @@ public final class SendConfigurationHelpers
 		public void editedReceiver(Correspondent newReceiver, Correspondent oldReceiver);
 		
 		public void deletedReceiver(Correspondent oldReceiver);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	static public class ReceiverDrawableProvider implements Correspondent.Handler
+	{
+		
+		public Integer drawableResourceId = null;
+		
+		@Override
+		public void handle(SMSCorrespondent smsCorrespondent)
+		{
+			// TODO later we might differentiate based on smsCorrespondent.isBinary()
+			drawableResourceId = R.drawable.ic_sms_black_24dp;
+		}
 		
 	}
 	
