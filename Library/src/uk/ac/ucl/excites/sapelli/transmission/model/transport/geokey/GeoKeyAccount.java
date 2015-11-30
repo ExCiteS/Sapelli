@@ -126,5 +126,11 @@ public class GeoKeyAccount extends Correspondent
 	{
 		handler.handle(this);
 	}
+	
+	@Override
+	public String toString()
+	{
+		return getName() + " [" + username + "@" + url + "]";
+	}
 
 }
