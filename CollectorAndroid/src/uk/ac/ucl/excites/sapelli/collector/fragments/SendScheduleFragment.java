@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import android.annotation.SuppressLint;
@@ -76,7 +75,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	{
 		ProjectManagerActivity activity = transmissionTab.getOwner();
 		
-		List<Correspondent> selectableReceivers = getSelectableCorrespondents(transmissionTab, schedule); 
+		List<Correspondent> selectableReceivers = SendConfigurationHelpers.getSelectableCorrespondents(activity, schedule); 
 		if(selectableReceivers.isEmpty())
 		{	// this can/should only happen when creating a SendSchedule (not when editing one)
 			createNewReceiver(activity, new ReceiverUpdateCallback()
@@ -101,23 +100,9 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		}
 	}
 	
-	static private List<Correspondent> getSelectableCorrespondents(TransmissionTabFragment transmissionTab, SendSchedule schedule)
-	{
-		List<Correspondent> usedReceivers = new ArrayList<Correspondent>();
-		for(SendSchedule projSched : transmissionTab.getSchedules())
-			if(projSched.getReceiver() != null)
-				usedReceivers.add(projSched.getReceiver());
-		List<Correspondent> selectableReceivers = new ArrayList<Correspondent>();
-		for(Correspondent receiver : SendConfigurationHelpers.getReceivers(transmissionTab.getOwner()))
-			if(receiver.equals(schedule.getReceiver()) || !usedReceivers.contains(receiver))
-				selectableReceivers.add(receiver);
-		return selectableReceivers;
-	}
-	
 	static private void createNewReceiver(ProjectManagerActivity activity, ReceiverUpdateCallback callback)
 	{
-		// TODO dialog to first chose correspondent type...
-		SMSReceiverFragment.ShowAddDialog(activity, callback);
+		PickReceiverTypeFragment.ShowDialog(activity, callback);
 	}
 	
 	// DYNAMIC ------------------------------------------------------
@@ -224,7 +209,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	private void updateReceivers(boolean requery)
 	{
 		if(requery)
-			selectableReceivers = getSelectableCorrespondents(transmissionTab, schedule);
+			selectableReceivers = SendConfigurationHelpers.getSelectableCorrespondents(getOwner(), schedule);
 		
 		// Adapter:
 		spinReceiverAdapter = new ReceiverAdapter(getOwner(), selectableReceivers, true);

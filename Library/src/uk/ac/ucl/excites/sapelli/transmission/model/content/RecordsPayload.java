@@ -90,6 +90,11 @@ public class RecordsPayload extends Payload
 	static protected final Compression[] COMPRESSION_MODES = { Compression.NONE, Compression.DEFLATE, Compression.LZMA };
 	static protected final IntegerRangeMapping COMPRESSION_FLAG_FIELD = new IntegerRangeMapping(0, COMPRESSION_MODES.length - 1);
 	
+	static public int GetType()
+	{
+		return BuiltinType.Records.ordinal();
+	}
+	
 	// DYNAMIC---------------------------------------------
 	protected Model model;
 	protected final Map<Schema, List<Record>> recordsBySchema;
@@ -99,9 +104,10 @@ public class RecordsPayload extends Payload
 		this.recordsBySchema = new HashMap<Schema, List<Record>>();
 	}
 	
+	@Override
 	public int getType()
 	{
-		return BuiltinType.Records.ordinal();
+		return GetType();
 	}
 	
 	/**

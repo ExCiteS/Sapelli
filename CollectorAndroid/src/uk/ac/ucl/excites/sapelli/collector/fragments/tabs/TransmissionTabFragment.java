@@ -94,8 +94,10 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchSend.setOnClickListener(this);
 		sendSettings = (LinearLayout) rootLayout.findViewById(R.id.sendSettings);
 		listSchedules = (ListView) rootLayout.findViewById(R.id.listSendSchedules);
+		registerForContextMenu(listSchedules);
 		btnAddSchedule = (Button) rootLayout.findViewById(R.id.btnAddSchedule);
 		btnAddSchedule.setOnClickListener(this);
+		registerForContextMenu(btnAddSchedule);
 
 		// Receiving config...
 		receiveHeader = (LinearLayout) rootLayout.findViewById(R.id.receiveHeader);
@@ -122,11 +124,11 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		
 		// Update sending config UI parts:
 		// 	Get schedules for project:
-		List<SendSchedule> schedules = getSchedules();
+		List<SendSchedule> schedules = SendConfigurationHelpers.getSchedulesForProject(getOwner(), project);
 		//	Populate list:
 		listScheduleAdapter = new SendScheduleAdapter(listSchedules.getContext(), schedules); 
 		listSchedules.setAdapter(listScheduleAdapter);
-		registerForContextMenu(listSchedules);
+		
 		
 		//	Set sending switch:
 		boolean sendingEnabled = false;
@@ -218,11 +220,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		}
 	}
 	
-	public List<SendSchedule> getSchedules()
-	{
-		return SendConfigurationHelpers.getSchedulesForProject(getOwner(), getProject(true));
-	}
-	
 	private void save(SendSchedule schedule, boolean reschedule)
 	{
 		SendConfigurationHelpers.saveSchedule(getOwner(), schedule, true);
@@ -244,17 +241,18 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	{
 		if(schedule != null)
 		{
+			// Automatically enable new schedule²:
+			schedule.setEnabled(true);
+			
 			// Store the new schedule:
 			save(schedule, true);
 		
-			// Add it to the list:
-			listScheduleAdapter.add(schedule);
-			
-			// TODO msg to tell user to enable the schedule?
+			// Refresh schedules:
+			refresh();
 		}
-		
-		// Open/close sending pane:
-		toggleConfigGroup(true, !listScheduleAdapter.isEmpty());
+		else
+			// Open/close sending pane:
+			toggleConfigGroup(true, !listScheduleAdapter.isEmpty());
 	}
 	
 	public void delete(SendSchedule schedule)

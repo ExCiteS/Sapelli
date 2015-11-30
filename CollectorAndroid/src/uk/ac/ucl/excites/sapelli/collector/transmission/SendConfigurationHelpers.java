@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.transmission;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -26,11 +27,13 @@ import java.util.Set;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
+import uk.ac.ucl.excites.sapelli.collector.fragments.GeoKeyReceiverFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.SMSReceiverFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
@@ -110,6 +113,24 @@ public final class SendConfigurationHelpers
 		{
 			Log.e(SendConfigurationHelpers.class.getSimpleName(), "Error upon applying sendSchedule(s)", e);
 		}
+	}
+	
+	/**
+	 * @param activity
+	 * @param schedule
+	 * @return
+	 */
+	static public List<Correspondent> getSelectableCorrespondents(ProjectManagerActivity activity, SendSchedule schedule)
+	{
+		List<Correspondent> usedReceivers = new ArrayList<Correspondent>();
+		for(SendSchedule projSched : getSchedulesForProject(activity, schedule.getProject()))
+			if(projSched.getReceiver() != null)
+				usedReceivers.add(projSched.getReceiver());
+		List<Correspondent> selectableReceivers = new ArrayList<Correspondent>();
+		for(Correspondent receiver : getReceivers(activity))
+			if(receiver.equals(schedule.getReceiver()) || !usedReceivers.contains(receiver))
+				selectableReceivers.add(receiver);
+		return selectableReceivers;
 	}
 	
 	/**
@@ -258,6 +279,12 @@ public final class SendConfigurationHelpers
 			{
 				SMSReceiverFragment.ShowEditDialog(activity, callback, smsCorrespondent);
 			}
+
+			@Override
+			public void handle(GeoKeyAccount geokeyAccount)
+			{
+				GeoKeyReceiverFragment.ShowEditDialog(activity, callback, geokeyAccount);
+			}
 		});
 	}
 	
@@ -306,6 +333,16 @@ public final class SendConfigurationHelpers
 	}
 	
 	/**
+	 * @param binary
+	 * @param big
+	 * @return
+	 */
+	static public int GetGeoKeyReceiverDrawable(boolean big)
+	{
+		return big ? R.drawable.ic_web_black_36dp : R.drawable.ic_web_black_24dp;
+	}
+	
+	/**
 	 * @author mstevens
 	 *
 	 */
@@ -319,6 +356,12 @@ public final class SendConfigurationHelpers
 		public void handle(SMSCorrespondent smsCorrespondent)
 		{
 			drawableResourceId = GetSMSReceiverDrawable(smsCorrespondent, big); 
+		}
+
+		@Override
+		public void handle(GeoKeyAccount geokeyAccount)
+		{
+			drawableResourceId = GetGeoKeyReceiverDrawable(big);
 		}
 		
 	}

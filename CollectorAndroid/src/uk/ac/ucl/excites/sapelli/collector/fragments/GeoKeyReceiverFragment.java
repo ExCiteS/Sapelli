@@ -18,8 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
-import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
-
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -27,51 +25,50 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient.AccountVerificationCallback;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 
 /**
  * @author mstevens
  *
  */
-public class SMSReceiverFragment extends ProjectManagerFragment implements DialogInterface.OnClickListener
+public class GeoKeyReceiverFragment extends ProjectManagerFragment implements DialogInterface.OnClickListener
 {
 	
 	// STATIC -------------------------------------------------------
 	static public void ShowAddDialog(AppCompatActivity owner, ReceiverUpdateCallback callback)
 	{
-		new SMSReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + SMSCorrespondent.class.getSimpleName());
+		new GeoKeyReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + GeoKeyAccount.class.getSimpleName());
 	}
 
-	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, SMSCorrespondent editCorrespondent)
+	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, GeoKeyAccount editCorrespondent)
 	{
-		new SMSReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + SMSCorrespondent.class.getSimpleName());
+		new GeoKeyReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + GeoKeyAccount.class.getSimpleName());
 	}
 	
 	// DYNAMIC ------------------------------------------------------
 	private final ReceiverUpdateCallback callback;
 	
-	private SMSCorrespondent editReceiver;
+	private GeoKeyAccount editReceiver;
 	
 	private EditText txtReceiverName;
-	private EditText txtReceiverPhoneNumber;
-	private CheckBox chkBinarySMS;
+	private EditText txtGeoKeyServerURL;
+	private EditText txtUsername;
+	private EditText txtPassword;
 	
-	public SMSReceiverFragment(ReceiverUpdateCallback callback)
+	public GeoKeyReceiverFragment(ReceiverUpdateCallback callback)
 	{
 		this(callback, null);
 	}
 	
-	public SMSReceiverFragment(ReceiverUpdateCallback callback, SMSCorrespondent receiver)
+	public GeoKeyReceiverFragment(ReceiverUpdateCallback callback, GeoKeyAccount receiver)
 	{
 		this.callback = callback;
 		this.editReceiver = receiver;
@@ -83,7 +80,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	@Override
 	protected Integer getLayoutID()
 	{
-		return R.layout.dialog_sms_receiver;
+		return R.layout.dialog_geokey_receiver;
 	}
 	
 	public boolean isEditing()
@@ -97,23 +94,24 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	@Override
 	protected void setupUI(View rootLayout)
 	{
-		txtReceiverName = (EditText) rootLayout.findViewById(R.id.txtSMSReceiverName);
-		txtReceiverPhoneNumber = (EditText) rootLayout.findViewById(R.id.txtReceiverPhoneNumber);
-		chkBinarySMS = (CheckBox) rootLayout.findViewById(R.id.chkBinarySMS);
+		txtReceiverName = (EditText) rootLayout.findViewById(R.id.txtGeoKeyReceiverName);
+		txtGeoKeyServerURL = (EditText) rootLayout.findViewById(R.id.txtGeoKeyServerURL);
+		txtUsername = (EditText) rootLayout.findViewById(R.id.txtUsername);
+		txtPassword = (EditText) rootLayout.findViewById(R.id.txtPassword);
 		
 		if(isEditing())
 		{
 			txtReceiverName.setText(editReceiver.getName());
-			txtReceiverPhoneNumber.setText(editReceiver.getPhoneNumberInternational());
-			chkBinarySMS.setChecked(editReceiver.getTransmissionType() == Type.BINARY_SMS);
+			txtGeoKeyServerURL.setText(editReceiver.getUrl());
+			txtUsername.setText(editReceiver.getUsername());
+			txtPassword.setText(editReceiver.getPassword()); // TODO "click to change"
 		}
 		else if(DeviceControl.getSimCountryISOCode(getOwner()) != null)
 		{
 			txtReceiverName.setText("");
-			String countyCode = "+" + SMSCorrespondent.findCountryCode(DeviceControl.getSimCountryISOCode(getOwner()));
-			txtReceiverPhoneNumber.setText(countyCode);
-			txtReceiverPhoneNumber.setSelection(countyCode.length());
-			chkBinarySMS.setChecked(SMSCorrespondent.DEFAULT_BINARY_SMS);
+			txtGeoKeyServerURL.setText("");
+			txtUsername.setText("");
+			txtPassword.setText("");
 		}
 	}
 	
@@ -122,7 +120,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(SendConfigurationHelpers.GetSMSReceiverDrawable(isEditing() ? editReceiver.isBinary() : SMSCorrespondent.DEFAULT_BINARY_SMS, true))
+		.setIcon(SendConfigurationHelpers.GetGeoKeyReceiverDrawable(true))
 		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
 		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
 		.setNegativeButton(android.R.string.cancel, this);
@@ -132,18 +130,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		
 		// Set view:
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		View layout = getRootLayout();
-		dialog.setView(layout, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
-		
-		// Switch dialog icon based on chkBinarySMS state:
-		((CheckBox) layout.findViewById(R.id.chkBinarySMS)).setOnCheckedChangeListener(new OnCheckedChangeListener()
-		{
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-			{
-				dialog.setIcon(SendConfigurationHelpers.GetSMSReceiverDrawable(isChecked, true));
-			}
-		});
+		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
 		
 		return dialog;
 	}
@@ -154,8 +141,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		switch(which)
 		{
 			case DialogInterface.BUTTON_POSITIVE :
-				if(saveChanges())
-					dialog.dismiss();
+				saveChanges(dialog);
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
 				break;
@@ -165,7 +151,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	/**
 	 * @return whether or not to dismiss the dialog
 	 */
-	private boolean saveChanges()
+	private void saveChanges(final DialogInterface dialog)
 	{
 		// Input validation:
 		//	Name:
@@ -174,29 +160,37 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		{
 			getOwner().showErrorDialog(R.string.emptyReceiverName);
 			txtReceiverName.requestFocus();
-			return false;
+			return;
 		}
-		//	PhoneNumber:
-		PhoneNumber phoneNumber = null;
-		try
+		//	URL:
+		String url = txtGeoKeyServerURL.getText().toString(); 
+		if(url.isEmpty())
 		{
-			phoneNumber = SMSCorrespondent.toPhoneNumber(txtReceiverPhoneNumber.getText().toString(), DeviceControl.getSimCountryISOCode(getOwner()));
+			txtGeoKeyServerURL.setBackgroundColor(R.color.red25percent);
+			return;
 		}
-		catch(Exception e)
+		//	Username:
+		String username = txtUsername.getText().toString();
+		if(username.isEmpty())
 		{
-			getOwner().showErrorDialog(R.string.invalidPhoneNumber);
-			txtReceiverPhoneNumber.requestFocus();
-			return false;
+			txtUsername.setBackgroundColor(R.color.red25percent);
+			return;
 		}
-		//	Mode:
-		boolean binarySMS = chkBinarySMS.isChecked();
+		//	Password:
+		String password = txtPassword.getText().toString(); 
+		if(password.isEmpty())
+		{
+			txtPassword.setBackgroundColor(R.color.red25percent);
+			return;
+		}
 		
 		// Check if we are editing...
 		if(isEditing())
 		{	// We are, check if actual changes were made:
 			if(	!editReceiver.getName().equals(name) ||
-				!editReceiver.getPhoneNumber().equals(phoneNumber) ||
-				(editReceiver.getTransmissionType() == Type.BINARY_SMS) != binarySMS)
+				!editReceiver.getUrl().equals(url) ||
+				!editReceiver.getUsername().equals(username) ||
+				!editReceiver.getPassword().equals(password))
 			{	// The receiver has been changed...
 				//	We cannot alter existing correspondents to instead we delete (or hide it), and replace it by a new one to be stored below.
 				SendConfigurationHelpers.deleteCorrespondent(getOwner(), editReceiver); // TODO what with transmittable records scheduled for this receiver??
@@ -204,21 +198,46 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 			}
 			else
 				// No changes, we are done here...
-				return true;
+				dialog.dismiss();
 		}
 		
-		// Save correspondent:
-		SMSCorrespondent toSave = new SMSCorrespondent(name, phoneNumber, binarySMS);
-		SendConfigurationHelpers.saveCorrespondent(getOwner(), toSave);
-		if(callback != null)
+		// Create correspondent:
+		final GeoKeyAccount toSave = new GeoKeyAccount(name, url, username, password);
+		
+		// Verify account:
+		// TODO block UI during verification
+		new GeoKeySapelliClient(getOwner()).verify(toSave, new AccountVerificationCallback()
 		{
-			if(!isEditing())
-				callback.newReceiver(toSave);
-			else
-				callback.editedReceiver(toSave, editReceiver);
-		}
+			@Override
+			public void validAccount()
+			{
+				// Save correspondent:
+				SendConfigurationHelpers.saveCorrespondent(getOwner(), toSave);
+				if(callback != null)
+				{
+					if(!isEditing())
+						callback.newReceiver(toSave);
+					else
+						callback.editedReceiver(toSave, editReceiver);
+				}
+				
+				// Close dialog:
+				dialog.dismiss();
+			}
+			
+			@Override
+			public void noInternet()
+			{
+				// TODO show msg box
+			}
+			
+			@Override
+			public void invalidAccount()
+			{
+				// TODO show msg box
+			}
+		});
 		
-		return true;
 	}
 		
 }

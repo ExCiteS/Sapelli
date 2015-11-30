@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model;
 
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
@@ -39,6 +40,8 @@ public abstract class Correspondent
 		public void handle(SMSCorrespondent smsCorrespondent);
 		
 		// TODO http server/client?
+		
+		public void handle(GeoKeyAccount geokeyAccount);
 		
 	}
 	

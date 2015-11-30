@@ -26,6 +26,7 @@ import android.telephony.PhoneNumberUtils;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -33,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
@@ -45,6 +47,7 @@ public class AndroidTransmissionController extends TransmissionController
 
 	private final CollectorApp app;
 	private AndroidSMSClient smsClient;
+	private GeoKeySapelliClient gkSapClient;
 	
 	public AndroidTransmissionController(CollectorApp app) throws DBException
 	{
@@ -64,8 +67,15 @@ public class AndroidTransmissionController extends TransmissionController
 	@Override
 	public HTTPClient getHTTPClient()
 	{
-		// TODO create Android HTTP client
 		return null;
+	}
+
+	@Override
+	public GeoKeyClient getGeoKeyClient()
+	{
+		if(gkSapClient == null)
+			gkSapClient = new GeoKeySapelliClient(app);
+		return gkSapClient;
 	}
 
 	@Override

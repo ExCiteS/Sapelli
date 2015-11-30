@@ -24,7 +24,6 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -105,7 +104,7 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(R.drawable.ic_sapelli_logo)
+		.setIcon(R.drawable.ic_transfer_black_36dp)
 		.setTitle(R.string.manageReceivers)
 		.setPositiveButton(android.R.string.ok, null); // listener will be set through the MakeNonDismission() call below
 		final AlertDialog dialog = builder.create();
@@ -114,7 +113,7 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		
 		// Set view:
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		dialog.setView(getRootLayout(), lrSpacingPx, 0, lrSpacingPx, 0);
 		
 		return dialog;
 	}
@@ -192,14 +191,9 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id)
 	{
-		Log.d(getTag(), "Clicked: " + position);
-		listReceivers.setItemChecked(position, true);
-		listReceiversAdapter.notifyDataSetChanged();
-		
 		boolean selected = getReceiver() != null;
 		btnEditReceiver.setEnabled(selected);
 		btnDeleteReceiver.setEnabled(selected);
-		Log.d(getTag(), "Selected: " + selected);
 	}
 
 }

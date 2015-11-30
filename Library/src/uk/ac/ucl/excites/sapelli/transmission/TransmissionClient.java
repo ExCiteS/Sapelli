@@ -35,6 +35,7 @@ import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 /**
  * @author mstevens
@@ -102,6 +103,16 @@ public abstract class TransmissionClient extends StorageClient
 	 * @return
 	 */
 	public TransmissionController.PayloadReceiver getCustomPayloadReceiver()
+	{
+		return null;
+	}
+	
+	/**
+	 * @param transmissionType
+	 * @param address
+	 * @return
+	 */
+	public Correspondent createCustomCorrespondent(Transmission.Type transmissionType, String address)
 	{
 		return null;
 	}

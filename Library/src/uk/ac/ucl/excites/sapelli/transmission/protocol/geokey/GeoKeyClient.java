@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2015 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,13 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.util;
+package uk.ac.ucl.excites.sapelli.transmission.protocol.geokey;
 
-/**
- * @author mstevens
- *
- */
-public class UnknownCorrespondentException extends IllegalArgumentException
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
+
+public interface GeoKeyClient
 {
+	
+	public void send(GeoKeyTransmission gkTransmission);
 
-	private static final long serialVersionUID = 1L;
-	
-	public UnknownCorrespondentException()
-	{
-		this("Unknown correspondent!");
-	}
-	
-	public UnknownCorrespondentException(String message)
-	{
-		super(message);
-	}
-	
 }

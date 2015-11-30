@@ -58,6 +58,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryM
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
@@ -140,6 +141,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	public abstract SMSClient getSMSClient();
 	
 	public abstract HTTPClient getHTTPClient();
+	
+	public abstract GeoKeyClient getGeoKeyClient();
 	
 	// ================= SEND =================
 	

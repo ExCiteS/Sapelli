@@ -138,7 +138,7 @@ public class SMSCorrespondent extends Correspondent
 	}
 
 	/**
-	 * To be called upon database retrieval only
+	 * To be called upon database retrieval only.
 	 * 
 	 * @param localID
 	 * @param name

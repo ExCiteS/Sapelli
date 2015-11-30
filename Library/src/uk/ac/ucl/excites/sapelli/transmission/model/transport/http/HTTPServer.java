@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
  * @author mstevens
  *
  */
-public class HTTPServer extends Correspondent
+public abstract class HTTPServer extends Correspondent
 {
 
 	private final String url;
@@ -36,6 +36,14 @@ public class HTTPServer extends Correspondent
 		this.url = url;
 	}
 	
+	/**
+	 * @return the url
+	 */
+	public String getUrl()
+	{
+		return url;
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Correspondent#getAddress()
 	 */
@@ -43,13 +51,6 @@ public class HTTPServer extends Correspondent
 	public String getAddress()
 	{
 		return url;
-	}
-
-	@Override
-	public void handle(Handler handle)
-	{
-		// TODO Auto-generated method stub
-		
 	}
 
 }

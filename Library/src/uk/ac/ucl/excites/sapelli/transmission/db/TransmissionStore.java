@@ -62,6 +62,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -70,6 +72,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryM
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.util.UnknownCorrespondentException;
 
 /**
  * Class to handle storage of transmissions and their parts. Based on {@link RecordStore}.
@@ -309,7 +312,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			return null;
 	}
 	
-	private Correspondent correspondentFromRecord(Record cRec)
+	@SuppressWarnings("unchecked")
+	private <C extends Correspondent> C correspondentFromRecord(Record cRec)
 	{
 		// Null check:
 		if(cRec == null)
@@ -331,12 +335,15 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			case HTTP:
 				corr = null; // TODO !!!
 				break;
+			case GeoKey:
+				corr = new GeoKeyAccount(name, address);
+				break;
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
 		}
 		if(CORRESPONDENT_COLUMN_USER_DELETED.retrieveValue(cRec))
 			corr.markAsUserDeleted();
-		return corr;
+		return (C) corr;
 	}
 	
 	/**
@@ -492,12 +499,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * @param payloadHash
 	 * @param numberOfParts
 	 * @return
-	 * @throws IllegalStateException if the correspondent is unknown
+	 * @throws UnknownCorrespondentException 
 	 */
-	private RecordsQuery getTransmissionsQuery(boolean received, Transmission.Type type, Integer localID, Integer remoteID, Correspondent correspondent, Integer payloadHash, Integer numberOfParts) throws IllegalStateException
+	private RecordsQuery getTransmissionsQuery(boolean received, Transmission.Type type, Integer localID, Integer remoteID, Correspondent correspondent, Integer payloadHash, Integer numberOfParts) throws UnknownCorrespondentException
 	{
 		if(correspondent != null && !correspondent.isLocalIDSet())
-			throw new IllegalStateException("Correspondent (" + correspondent.toString() + ") is unknown in database.");
+			throw new UnknownCorrespondentException("Correspondent (" + correspondent.toString() + ") is unknown in database.");
 		return new RecordsQuery(
 			// schema (sent/received):
 			getTransmissionSchema(received),						
@@ -576,7 +583,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		{
 			case BINARY_SMS:
 				// create a new SMSTransmission object:
-				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
+				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, this.<SMSCorrespondent> correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
 					binarySMST.addPart(new BinaryMessage(	binarySMST,
@@ -590,7 +597,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 				return binarySMST;
 			case TEXTUAL_SMS:
 				// create a new SMSTransmission object:
-				TextSMSTransmission textSMST = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
+				TextSMSTransmission textSMST = new TextSMSTransmission(client, this.<SMSCorrespondent> correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, numberOfSentResendRequests, lastResendReqSentAt);
 				// add each part we got from the query:
 				for(Record tPartRec : tPartRecs)
 					textSMST.addPart(new TextMessage(	textSMST,
@@ -604,6 +611,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			case HTTP:
 				return null; // TODO !!!
 				//return new HTTPTransmission(client, (HTTPServer) correspondentFromRecord(cRec), localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
+			case GeoKey:
+				return new GeoKeyTransmission(client, this.<GeoKeyAccount> correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, lastResendReqSentAt, receivedAt, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)));
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
 		}
@@ -681,9 +690,10 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * @param payloadHash
 	 * @param numberOfParts
 	 * @return
-	 * @throws IllegalStateException when more than 1 matching Transmission is found or the correspondent is unknown
+	 * @throws IllegalStateException when more than 1 matching Transmission is found
+	 * @throws UnknownCorrespondentException when the correspondent is unknown
 	 */
-	public Transmission<?> retrieveTransmission(boolean received, Transmission.Type type, Correspondent correspondent, int remoteID, int payloadHash, int numberOfParts) throws IllegalStateException
+	public Transmission<?> retrieveTransmission(boolean received, Transmission.Type type, Correspondent correspondent, int remoteID, int payloadHash, int numberOfParts) throws IllegalStateException, UnknownCorrespondentException
 	{
 		return retrieveTransmissionByQuery(getTransmissionsQuery(received, type, null, remoteID, correspondent, payloadHash, numberOfParts));
 	}
@@ -728,11 +738,17 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * @param received
 	 * @param correspondent
 	 * @return
-	 * @throws Exception
 	 */
-	public List<Transmission<?>> retrieveTransmissions(boolean received, Correspondent correspondent) throws Exception
+	public List<Transmission<?>> retrieveTransmissions(boolean received, Correspondent correspondent)
 	{
-		return retrieveTransmissionsByQuery(getTransmissionsQuery(received, null, null, null, correspondent, null, null));
+		try
+		{
+			return retrieveTransmissionsByQuery(getTransmissionsQuery(received, null, null, null, correspondent, null, null));
+		}
+		catch(UnknownCorrespondentException uce)
+		{
+			return Collections.<Transmission<?>> emptyList();
+		}
 	}
 
 	public void deleteTransmission(Transmission<?> transmission)
@@ -993,6 +1009,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		{
 			// does nothing (for now)
 		}
+
+		@Override
+		public void handle(GeoKeyAccount geokeyAccount)
+		{
+			// does nothing (for now)
+		}
 		
 	}
 	
@@ -1086,12 +1108,11 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			setPartBody(StringToBytes(txtMsg.getBody()));
 		}
 		
-		@Override
-		public void handle(HTTPTransmission httpT)
+		public void handleHTTPLike(Transmission<?> transmission, byte[] body)
 		{
 			// Set number of parts (always = 1):
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
-			if(httpT.received) // columns only occurs on receiving side
+			if(transmission.received) // columns only occurs on receiving side
 			{
 				// Set number of resend requests (always = 0):
 				TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.storeValue(tRec, 0);
@@ -1099,9 +1120,21 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			}
 			
 			// Create a single transmission part (only used to store the body):
-			Record tPartRec = newPartRecord(httpT); // adds to the list as well
+			Record tPartRec = newPartRecord(transmission); // adds to the list as well
 			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1l); // (foreign key is not set yet)
-			setPartBody(httpT.getBody()); // will set part body and body bit length
+			setPartBody(body); // will set part body and body bit length
+		}
+		
+		@Override
+		public void handle(HTTPTransmission httpT)
+		{
+			handleHTTPLike(httpT, httpT.getBody());
+		}
+
+		@Override
+		public void handle(GeoKeyTransmission geoKeyT)
+		{
+			handleHTTPLike(geoKeyT, geoKeyT.getBody());
 		}
 		
 		private void setPartBody(byte[] bodyBytes)
@@ -1118,7 +1151,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			TRANSMISSION_PART_COLUMN_BODY.storeValue(tPartRec, bodyBytes);
 			TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(tPartRec, bitLength);
 		}
-		
+
 	}
 	
 }

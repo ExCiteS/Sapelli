@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
@@ -57,6 +58,7 @@ public abstract class Transmission<C extends Correspondent>
 		BINARY_SMS,
 		TEXTUAL_SMS,
 		HTTP,
+		GeoKey,
 		// More later?
 	}
 	
@@ -71,6 +73,8 @@ public abstract class Transmission<C extends Correspondent>
 		public void handle(TextSMSTransmission txtSMST);
 		
 		public void handle(HTTPTransmission httpT);
+		
+		public void handle(GeoKeyTransmission geoKeyT);
 		
 	}
 	
