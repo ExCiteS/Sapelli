@@ -29,8 +29,6 @@ public abstract class Correspondent
 	
 	static public final String UNKNOWN_SENDER_NAME = "anonymous_sender";
 	
-	static public final boolean DEFAULT_USER_DELETED = false;
-	
 	static public final int CORRESPONDENT_NAME_MAX_LENGTH_CHARS = 128;
 	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS = 512;
 	static public final int CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES = 32;
@@ -55,7 +53,7 @@ public abstract class Correspondent
 	 * This way it won't show up in the transmission config UIs, but is
 	 * still kept around in the db such that old transmissions can still point to it. 
 	 */
-	private boolean userDeleted = DEFAULT_USER_DELETED;
+	private boolean userDeleted = false;
 	
 	/**
 	 * @param name
