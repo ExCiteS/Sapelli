@@ -52,7 +52,7 @@ public abstract class Correspondent
 	
 	/**
 	 * If {@code true} the correspondent is marked as deleted by the user.
-	 * This way it won't show up in the transmssion config UIs, but is
+	 * This way it won't show up in the transmission config UIs, but is
 	 * still kept around in the db such that old transmissions can still point to it. 
 	 */
 	private boolean userDeleted = DEFAULT_USER_DELETED;
