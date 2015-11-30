@@ -66,9 +66,9 @@ public class HTTPTransmission extends Transmission<HTTPServer>
 	 * @param body
 	 * @param receivedAt
 	 */
-	public HTTPTransmission(TransmissionClient client, HTTPServer sender, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
+	public HTTPTransmission(TransmissionClient client, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
 	{
-		super(client, sender, sendingSideID, payloadHash);
+		super(client, null, sendingSideID, payloadHash);
 		this.body = body;
 		setReceivedAt(receivedAt);
 	}
