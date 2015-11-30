@@ -177,9 +177,36 @@
 					<version>1.0.9</version>
 					<type>aar</type>
 				</dependency>
+				<dependency>
+					<groupId>com.facebook.conceal</groupId>
+					<artifactId>conceal</artifactId>
+					<version>1.0.1</version>
+					<type>aar</type>
+				</dependency>
 			</dependencies>
+			<!-- Needed for eclipse-aar-maven-plugin: -->
+			<!-- <pluginRepositories>
+				<pluginRepository>
+					<id>dropbox</id>
+					<url>https://dl.dropboxusercontent.com/u/52711537/maven-repo/</url>
+				</pluginRepository>
+			</pluginRepositories> -->
 			<build>
 				<plugins>
+					<!-- Generates eclipse projects from aar's: -->
+					<!-- <plugin>
+						<groupId>org.bitbucket.komo81</groupId>
+						<artifactId>eclipse-aar-maven-plugin</artifactId>
+						<version>1.0.0</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>clean</goal>
+									<goal>generate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin> -->
 					<plugin>
 						<groupId>org.codehaus.gmavenplus</groupId>
 						<artifactId>gmavenplus-plugin</artifactId>
