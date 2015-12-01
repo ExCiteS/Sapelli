@@ -16,14 +16,14 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<uk.ac.ucl.excites.sapelli.shared.util.android.view.CheckableLinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="0dp" >
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="fill_parent"
         android:orientation="vertical"
         android:layout_weight="1"
@@ -68,4 +68,4 @@
         android:focusable="false"
         android:padding="4dp" />
 
-</uk.ac.ucl.excites.sapelli.shared.util.android.view.CheckableLinearLayout>
+</LinearLayout>

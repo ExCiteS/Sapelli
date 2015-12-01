@@ -35,8 +35,6 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.Spinner;
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -125,7 +123,6 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	private List<Correspondent> selectableReceivers;
 	private SendSchedule schedule;
 	private final boolean editing;
-	private boolean changed = false;
 	
 	private SendScheduleFragment(TransmissionTabFragment transmissionTab, List<Correspondent> selectableReceivers, SendSchedule schedule, boolean editing)
 	{
@@ -144,8 +141,6 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	@Override
 	protected void setupUI(View rootLayout)
 	{
-		changed = false; // !!!
-		
 		groupReceiver = (ViewGroup) rootLayout.findViewById(R.id.groupReceiver);
 		spinReceiver = (Spinner) rootLayout.findViewById(R.id.spinSendReceiver);
 		spinReceiver.setOnItemSelectedListener(this);
@@ -173,12 +168,6 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 					return;
 				else
 					groupInterval.setBackgroundColor(Color.TRANSPARENT);
-				int intervalS = (int) (Float.valueOf(editable.toString()) * TransmissionTabFragment.SEC_IN_MIN);
-				if(intervalS != schedule.getTransmitIntervalS())
-				{
-					schedule.setTransmitIntervalS(intervalS);
-					changed = true;
-				}
 			}
 
 			public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -189,21 +178,6 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		checkAirplaneModeCycle = (CheckBox) rootLayout.findViewById(R.id.checkAirplaneModeCycle);
 		checkAirplaneModeCycle.setChecked(schedule.isAirplaneModeCycling());
 		checkAirplaneModeCycle.setVisibility(DeviceControl.canSetAirplaneMode() ? View.VISIBLE : View.GONE);
-		checkAirplaneModeCycle.setOnCheckedChangeListener(
-			DeviceControl.canSetAirplaneMode() ? 
-				new OnCheckedChangeListener()
-				{
-					@Override
-					public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-					{
-						if(schedule.isAirplaneModeCycling() != isChecked)
-						{
-							schedule.setAirplaneModeCycling(isChecked);
-							changed = true;
-						}
-					}
-				} :
-				null);
 	}
 	
 	private void updateReceivers(boolean requery)
@@ -242,17 +216,13 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	@Override
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
 	{
-		Correspondent selected = getReceiver();
-		if(!Objects.equals(schedule.getReceiver(), selected))
-		{
-			schedule.setReceiver(getReceiver());
+		boolean selected = getReceiver() != null;
+		if(selected)
 			groupReceiver.setBackgroundColor(Color.TRANSPARENT);
-			changed = true;
-		}
 		
 		// Update buttons:
-		btnEditReceiver.setEnabled(selected != null);
-		btnDeleteReceiver.setEnabled(selected != null);
+		btnEditReceiver.setEnabled(selected);
+		btnDeleteReceiver.setEnabled(selected);
 	}
 
 	private Correspondent getReceiver()
@@ -301,21 +271,47 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	
 	private boolean save()
 	{
-		// Input validation:
+		// Input validation & change detection:
 		boolean valid = true;
-		if(schedule.getReceiver() == null)
+		boolean changed = false;
+		//	Receiver:
+		Correspondent selectedReceiver = getReceiver();
+		if(selectedReceiver == null)
 		{
 			groupReceiver.setBackgroundResource(R.color.red25percent);
 			valid = false;
 		}
-		if(txtSendIntervalMin.getText().length() == 0)
+		else if(!Objects.equals(schedule.getReceiver(), selectedReceiver))
+		{
+			schedule.setReceiver(selectedReceiver);
+			changed = true;
+		}
+		//	Interval:
+		try
+		{
+			int intervalS = (int) (Float.valueOf(txtSendIntervalMin.getText().toString()) * TransmissionTabFragment.SEC_IN_MIN);
+			if(intervalS != schedule.getTransmitIntervalS())
+			{
+				schedule.setTransmitIntervalS(intervalS);
+				changed = true;
+			}
+		}
+		catch(Exception parsingError)
 		{
 			groupInterval.setBackgroundResource(R.color.red25percent);
 			valid = false;
 		}
-		if(valid)
-		{	// All ok...
-			if(editing && changed)
+		//	AirplaneModeCycle:
+		if(checkAirplaneModeCycle.getVisibility() == View.VISIBLE && schedule.isAirplaneModeCycling() != checkAirplaneModeCycle.isChecked())
+		{
+			schedule.setAirplaneModeCycling(checkAirplaneModeCycle.isChecked());
+			changed = true;
+		}
+		
+		// Report to transmission tab:
+		if(valid && (!editing || changed))
+		{
+			if(editing)
 				transmissionTab.saveEdited(schedule);
 			else
 				transmissionTab.addNew(schedule);
