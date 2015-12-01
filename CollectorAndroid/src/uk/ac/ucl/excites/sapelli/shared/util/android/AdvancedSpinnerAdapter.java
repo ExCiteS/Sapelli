@@ -195,7 +195,7 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 	 * @param item (never null)
 	 * @return
 	 */
-	protected String getItemString(I item)
+	protected CharSequence getItemString(I item)
 	{
 		return item.toString();
 	}
