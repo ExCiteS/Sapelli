@@ -128,8 +128,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		//	Populate list:
 		listScheduleAdapter = new SendScheduleAdapter(listSchedules.getContext(), schedules); 
 		listSchedules.setAdapter(listScheduleAdapter);
-		
-		
 		//	Set sending switch:
 		boolean sendingEnabled = false;
 		for(SendSchedule schedule : schedules)
@@ -248,7 +246,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			save(schedule, true);
 		
 			// Refresh schedules:
-			refresh();
+			listScheduleAdapter.add(schedule);
 		}
 		else
 			// Open/close sending pane:
@@ -280,7 +278,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	 * @author mstevens
 	 *
 	 */
-	private class SendScheduleAdapter extends AdvancedSpinnerAdapter<SendSchedule>
+	private class SendScheduleAdapter extends AdvancedSpinnerAdapter<SendSchedule> implements OnCheckedChangeListener
 	{
 		
 		public SendScheduleAdapter(Context context, List<SendSchedule> schedules)
@@ -310,22 +308,9 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			
 			// Set-up switch:
 			SwitchCompat switchEnabled = (SwitchCompat) layout.findViewById(R.id.switchEnabled);
+			switchEnabled.setTag(position); // we'll use this to get the correct schedule in onCheckedChanged()
 			switchEnabled.setChecked(sendSchedule.isEnabled());
-			switchEnabled.setOnCheckedChangeListener(new OnCheckedChangeListener()
-			{
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-				{
-					if(sendSchedule.isEnabled() != isChecked)
-					{
-						// dis/enable schedule:
-						sendSchedule.setEnabled(isChecked);
-						
-						// Save settings:
-						save(sendSchedule, true);	
-					}
-				}
-			});
+			switchEnabled.setOnCheckedChangeListener(this);
 			
 			// Set settings label:
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder("; ");
@@ -341,6 +326,27 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			((TextView) layout.findViewById(R.id.lblScheduleSettings)).setText(bldr.toString());
 			
 			return layout;
+		}
+		
+		@Override
+		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+		{
+			try
+			{
+				SendSchedule sendSchedule = getItem((Integer) buttonView.getTag()); // get schedule using tag
+				if(sendSchedule.isEnabled() != isChecked)
+				{
+					// dis/enable schedule:
+					sendSchedule.setEnabled(isChecked);
+					
+					// Save settings:
+					save(sendSchedule, true);	
+				}
+			}
+			catch(Exception e)
+			{
+				Log.e(TransmissionTabFragment.class.getSimpleName(), "Error upon handling schedule switch change", e);
+			}
 		}
 		
 	}

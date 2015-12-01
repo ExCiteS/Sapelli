@@ -313,10 +313,9 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 			groupInterval.setBackgroundResource(R.color.red25percent);
 			valid = false;
 		}
-		// All ok...
-		if(valid && changed)
-		{
-			if(editing)
+		if(valid)
+		{	// All ok...
+			if(editing && changed)
 				transmissionTab.saveEdited(schedule);
 			else
 				transmissionTab.addNew(schedule);
