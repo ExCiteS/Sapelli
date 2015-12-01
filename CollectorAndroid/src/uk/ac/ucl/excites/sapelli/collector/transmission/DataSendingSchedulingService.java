@@ -272,7 +272,7 @@ public class DataSendingSchedulingService extends IntentService implements Store
 	 * Note that this BroadcastReceiver is only registered to listen for boot events if Sapelli determines that there is at least one project that need to send
 	 * data.
 	 */
-	public class BootListener extends BroadcastReceiver
+	static public class BootListener extends BroadcastReceiver
 	{
 
 		@Override

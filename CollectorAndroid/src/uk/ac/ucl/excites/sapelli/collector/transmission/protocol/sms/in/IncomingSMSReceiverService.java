@@ -339,7 +339,7 @@ public class IncomingSMSReceiverService extends IntentService
 	/**
 	 * BroadcastReceiver that listens for device boot events and when one is received, schedules resend requests for any incomplete SMSTransmissions.
 	 */
-	public class BootListener extends BroadcastReceiver
+	static public class BootListener extends BroadcastReceiver
 	{
 
 		@Override
