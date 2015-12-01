@@ -145,13 +145,12 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 				break;
 			case R.id.btnDeleteReceiver :
 				// TODO warn about projects that use the receiver
-				if(SendConfigurationHelpers.deleteCorrespondent(getOwner(),receiver) != null)
+				if(SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver) != null)
 					deletedReceiver(receiver);				
 				getOwner().refreshAllTabs();
 				break;
 			case R.id.btnAddReceiver :
-				// TODO other correspondent types
-				SMSReceiverFragment.ShowAddDialog(getOwner(), this);
+				PickReceiverTypeFragment.ShowDialog(getOwner(), this);
 				break;
 		}
 	}

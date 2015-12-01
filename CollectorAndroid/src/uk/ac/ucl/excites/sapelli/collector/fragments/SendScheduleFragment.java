@@ -302,25 +302,26 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	private boolean save()
 	{
 		// Input validation:
+		boolean valid = true;
 		if(schedule.getReceiver() == null)
 		{
-			groupReceiver.setBackgroundColor(R.color.red25percent);
-			return false;
+			groupReceiver.setBackgroundResource(R.color.red25percent);
+			valid = false;
 		}
 		if(txtSendIntervalMin.getText().length() == 0)
 		{
-			groupInterval.setBackgroundColor(R.color.red25percent);
-			return false;
+			groupInterval.setBackgroundResource(R.color.red25percent);
+			valid = false;
 		}
 		// All ok...
-		if(changed)
+		if(valid && changed)
 		{
 			if(editing)
 				transmissionTab.saveEdited(schedule);
 			else
 				transmissionTab.addNew(schedule);
 		}
-		return true;
+		return valid;
 	}
 	
 	@Override

@@ -276,6 +276,10 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		return context.getString(R.string.tab_transmission);
 	}
 	
+	/**
+	 * @author mstevens
+	 *
+	 */
 	private class SendScheduleAdapter extends AdvancedSpinnerAdapter<SendSchedule>
 	{
 		
@@ -285,9 +289,9 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		}
 		
 		@Override
-		protected String getItemString(SendSchedule sendSchedule)
+		protected CharSequence getItemString(SendSchedule sendSchedule)
 		{
-			return sendSchedule.getReceiver().toString();
+			return SendConfigurationHelpers.getReceiverLabelText(sendSchedule.getReceiver());
 		}
 
 		@Override

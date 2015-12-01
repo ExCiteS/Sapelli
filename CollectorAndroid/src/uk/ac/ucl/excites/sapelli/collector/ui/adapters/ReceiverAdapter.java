@@ -44,6 +44,12 @@ public class ReceiverAdapter extends AdvancedSpinnerAdapter<Correspondent>
 	}
 	
 	@Override
+	protected CharSequence getItemString(Correspondent receiver)
+	{
+		return SendConfigurationHelpers.getReceiverLabelText(receiver);
+	}
+
+	@Override
 	protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
 	{
 		if(receiver == null)

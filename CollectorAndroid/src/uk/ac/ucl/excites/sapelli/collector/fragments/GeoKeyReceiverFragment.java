@@ -96,6 +96,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	{
 		txtReceiverName = (EditText) rootLayout.findViewById(R.id.txtGeoKeyReceiverName);
 		txtGeoKeyServerURL = (EditText) rootLayout.findViewById(R.id.txtGeoKeyServerURL);
+		txtGeoKeyServerURL.setTypeface(SendConfigurationHelpers.FONT_SANS_SERIF_CONDENSED);
 		txtUsername = (EditText) rootLayout.findViewById(R.id.txtUsername);
 		txtPassword = (EditText) rootLayout.findViewById(R.id.txtPassword);
 		
@@ -154,35 +155,38 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	private void saveChanges(final DialogInterface dialog)
 	{
 		// Input validation:
+		boolean valid = true;
 		//	Name:
 		String name = txtReceiverName.getText().toString();
 		if(name.isEmpty())
 		{
 			getOwner().showErrorDialog(R.string.emptyReceiverName);
 			txtReceiverName.requestFocus();
-			return;
+			valid = false;
 		}
 		//	URL:
 		String url = txtGeoKeyServerURL.getText().toString(); 
 		if(url.isEmpty())
 		{
-			txtGeoKeyServerURL.setBackgroundColor(R.color.red25percent);
-			return;
+			txtGeoKeyServerURL.setBackgroundResource(R.color.red25percent);
+			valid = false;
 		}
 		//	Username:
 		String username = txtUsername.getText().toString();
 		if(username.isEmpty())
 		{
-			txtUsername.setBackgroundColor(R.color.red25percent);
-			return;
+			txtUsername.setBackgroundResource(R.color.red25percent);
+			valid = false;
 		}
 		//	Password:
 		String password = txtPassword.getText().toString(); 
 		if(password.isEmpty())
 		{
-			txtPassword.setBackgroundColor(R.color.red25percent);
-			return;
+			txtPassword.setBackgroundResource(R.color.red25percent);
+			valid = false;
 		}
+		if(!valid)
+			return;
 		
 		// Check if we are editing...
 		if(isEditing())

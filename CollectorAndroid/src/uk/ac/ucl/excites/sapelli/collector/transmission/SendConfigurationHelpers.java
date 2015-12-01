@@ -24,6 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import android.graphics.Typeface;
+import android.text.SpannableString;
+import android.text.TextUtils;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
@@ -31,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.GeoKeyReceiverFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.SMSReceiverFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.CustomTypefaceSpan;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
@@ -41,6 +45,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
  */
 public final class SendConfigurationHelpers
 {
+	
+	static public final Typeface FONT_SANS_SERIF_CONDENSED = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
 
 	private SendConfigurationHelpers() {}
 	
@@ -305,7 +311,7 @@ public final class SendConfigurationHelpers
 			if(receiverDrawableProvider.drawableResourceId != null)
 				return receiverDrawableProvider.drawableResourceId;
 		}
-		// fallback:
+		// Fall-back:
 		return big ? R.drawable.ic_transfer_black_36dp : R.drawable.ic_transfer_black_24dp;
 	}
 	
@@ -362,6 +368,51 @@ public final class SendConfigurationHelpers
 		public void handle(GeoKeyAccount geokeyAccount)
 		{
 			drawableResourceId = GetGeoKeyReceiverDrawable(big);
+		}
+		
+	}
+	
+	static private ReceiverLabelTextProvider receiverLabelTextProvider = new ReceiverLabelTextProvider();
+	
+	static public CharSequence getReceiverLabelText(Correspondent receiver)
+	{
+		if(receiver != null)
+		{
+			receiverLabelTextProvider.labelText = null;
+			receiver.handle(receiverLabelTextProvider);
+			if(receiverLabelTextProvider.labelText != null)
+				return receiverLabelTextProvider.labelText;
+		}
+		// Fall-back:
+		return "";
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	static private class ReceiverLabelTextProvider implements Correspondent.Handler
+	{
+		
+		public CharSequence labelText = null;
+		
+		private void setLabel(Correspondent receiver, String address)
+		{
+			SpannableString condensedAddress = new SpannableString(address);
+			condensedAddress.setSpan(new CustomTypefaceSpan(FONT_SANS_SERIF_CONDENSED), 0, address.length(), 0);
+			labelText = TextUtils.concat(receiver.getName(), " [", condensedAddress, "]");
+		}
+		
+		@Override
+		public void handle(GeoKeyAccount geokeyAccount)
+		{
+			setLabel(geokeyAccount, geokeyAccount.getUsername() + "@" + geokeyAccount.getUrl());
+		}
+		
+		@Override
+		public void handle(SMSCorrespondent smsCorrespondent)
+		{
+			setLabel(smsCorrespondent, smsCorrespondent.getPhoneNumberInternational());
 		}
 		
 	}
