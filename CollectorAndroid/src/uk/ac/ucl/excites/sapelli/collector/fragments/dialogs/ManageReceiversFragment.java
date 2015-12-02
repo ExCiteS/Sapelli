@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
+import java.util.List;
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -26,15 +28,15 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
-import uk.ac.ucl.excites.sapelli.collector.ui.adapters.ReceiverAdapter;
+import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
@@ -42,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
  * @author mstevens
  *
  */
-public class ManageReceiversFragment extends ProjectManagerFragment implements OnItemClickListener, OnClickListener, DialogInterface.OnClickListener, ReceiverUpdateCallback 
+public class ManageReceiversFragment extends ProjectManagerFragment implements OnClickListener, DialogInterface.OnClickListener, ReceiverUpdateCallback 
 {
 	
 	// STATIC -------------------------------------------------------
@@ -56,8 +58,6 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	
 	private ListView listReceivers;
 	private ReceiverAdapter listReceiversAdapter;
-	private Button btnEditReceiver;
-	private Button btnDeleteReceiver;
 	private Button btnAddReceiver;
 	
 	public ManageReceiversFragment(ReceiverUpdateCallback callback)
@@ -81,22 +81,15 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	protected void setupUI(View rootLayout)
 	{
 		listReceivers = (ListView) rootLayout.findViewById(R.id.listReceivers);
-		listReceivers.setOnItemClickListener(this);
 		updateReceivers();
 		
-		btnEditReceiver = (Button) rootLayout.findViewById(R.id.btnEditReceiver);
-		btnEditReceiver.setOnClickListener(this);
-		btnEditReceiver.setEnabled(false);
-		btnDeleteReceiver = (Button) rootLayout.findViewById(R.id.btnDeleteReceiver);
-		btnDeleteReceiver.setOnClickListener(this);
-		btnDeleteReceiver.setEnabled(false);
 		btnAddReceiver = (Button) rootLayout.findViewById(R.id.btnAddReceiver);
 		btnAddReceiver.setOnClickListener(this);
 	}
 	
 	private void updateReceivers()
 	{
-		listReceiversAdapter = new ReceiverAdapter(getOwner(), SendConfigurationHelpers.getReceivers(getOwner()), false);
+		listReceiversAdapter = new ReceiverAdapter(SendConfigurationHelpers.getReceivers(getOwner())); 
 		listReceivers.setAdapter(listReceiversAdapter);
 	}
 	
@@ -136,23 +129,23 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	@Override
 	public void onClick(View v)
 	{
-		Correspondent receiver = getReceiver();
-		switch(v.getId())
+		if(v.getId() == R.id.btnAddReceiver)
+		{	// Add...
+			PickReceiverTypeFragment.ShowDialog(getOwner(), this);
+		}
+		else if(v.getId() == R.id.btnEditReceiver || v.getId() == R.id.btnDeleteReceiver)
 		{
-			case R.id.btnEditReceiver :
-				// TODO warn about projects that use the receiver
+			Correspondent receiver = listReceiversAdapter.getItem((Integer) v.getTag());
+			// TODO warn about projects that use the receiver
+			if(v.getId() == R.id.btnEditReceiver)
+			{	// Edit...
 				SendConfigurationHelpers.openEditReceiverDialog(getOwner(), this, receiver);
-				// TODO request TransmissionTab update
-				break;
-			case R.id.btnDeleteReceiver :
-				// TODO warn about projects that use the receiver
+			}
+			else
+			{	// Delete...
 				if(SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver) != null)
-					deletedReceiver(receiver);				
-				getOwner().refreshAllTabs();
-				break;
-			case R.id.btnAddReceiver :
-				PickReceiverTypeFragment.ShowDialog(getOwner(), this);
-				break;
+					deletedReceiver(receiver);
+			}
 		}
 	}
 	
@@ -172,6 +165,8 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		// Forward:
 		if(callback != null)
 			callback.editedReceiver(newReceiver, oldReceiver);
+		// Request TransmissionTab update:
+		getOwner().refreshTab(TransmissionTabFragment.class);
 	}
 	
 	@Override
@@ -181,19 +176,51 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		// Forward:
 		if(callback != null)
 			callback.deletedReceiver(oldReceiver);
+		// Request TransmissionTab update:		
+		getOwner().refreshTab(TransmissionTabFragment.class);
 	}
 	
-	private Correspondent getReceiver()
+	/**
+	 * @author mstevens
+	 *
+	 */
+	private class ReceiverAdapter extends AdvancedSpinnerAdapter<Correspondent>
 	{
-		return listReceiversAdapter.getItem(listReceivers.getCheckedItemPosition());
-	}
-
-	@Override
-	public void onItemClick(AdapterView<?> parent, View view, int position, long id)
-	{
-		boolean selected = getReceiver() != null;
-		btnEditReceiver.setEnabled(selected);
-		btnDeleteReceiver.setEnabled(selected);
+		
+		public ReceiverAdapter(List<Correspondent> receivers)
+		{
+			super(getOwner(), R.layout.manage_receiver_item, 0, R.id.lblReceiver, null, null, receivers);
+		}
+		
+		
+		@Override
+		protected CharSequence getItemString(Correspondent receiver)
+		{
+			return SendConfigurationHelpers.getReceiverLabelText(receiver, true);
+		}
+		
+		@Override
+		protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
+		{
+			return receiver == null ? null : SendConfigurationHelpers.GetReceiverDrawable(receiver, false);
+		}
+		
+		@Override
+		protected View createView(final int position, final Correspondent receiver, CharSequence itemText, Integer itemDrawableResourceId, boolean center, View convertView, final ViewGroup parent, int resource)
+		{
+			ViewGroup layout = (ViewGroup) super.createView(position, receiver, itemText, itemDrawableResourceId, center, convertView, parent, resource);
+			
+			// Set on click listener:
+			for(int btnId : new int[] { R.id.btnEditReceiver, R.id.btnDeleteReceiver })
+			{
+				View btn = layout.findViewById(btnId);
+				btn.setTag(position); // we'll use this to get the correct receiver in onClick()
+				btn.setOnClickListener(ManageReceiversFragment.this);
+			}
+			
+			return layout;
+		}
+		
 	}
 
 }

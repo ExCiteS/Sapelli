@@ -283,13 +283,13 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		
 		public SendScheduleAdapter(Context context, List<SendSchedule> schedules)
 		{
-			super(context, R.layout.schedule_list_item, R.layout.schedule_list_item, R.id.lblReceiver, null, null, schedules);
+			super(context, R.layout.schedule_list_item, 0, R.id.lblReceiver, null, null, schedules);
 		}
 		
 		@Override
 		protected CharSequence getItemString(SendSchedule sendSchedule)
 		{
-			return SendConfigurationHelpers.getReceiverLabelText(sendSchedule.getReceiver());
+			return SendConfigurationHelpers.getReceiverLabelText(sendSchedule.getReceiver(), false);
 		}
 
 		@Override
@@ -308,7 +308,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			
 			// Set-up switch:
 			SwitchCompat switchEnabled = (SwitchCompat) layout.findViewById(R.id.switchEnabled);
-			switchEnabled.setTag(position); // we'll use this to get the correct schedule in onCheckedChanged()
+			switchEnabled.setTag(position); // we'll use this to get the correct schedule in onCheckedChanged() below
 			switchEnabled.setChecked(sendSchedule.isEnabled());
 			switchEnabled.setOnCheckedChangeListener(this);
 			

@@ -55,6 +55,7 @@ import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.AboutFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.EnterURLFragment;
@@ -598,12 +599,24 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Refresh all tabs:
 		refreshAllTabs();
 		// Alternative (refresh only main tab):
-		//pagerAdapter.getItem(pagerAdapter.getTabIndex(MainTabFragment.class)).refresh();
+		//refreshTap(MainTabFragment.class);
 	}
 	
 	public void refreshAllTabs()
 	{
 		pagerAdapter.refresh();
+	}
+	
+	public void refreshTab(Class<? extends ProjectManagerTabFragment> tabClass)
+	{
+		try
+		{
+			pagerAdapter.getItem(ProjectManagerTabFragmentPagerAdapter.getTabIndex(tabClass)).refresh();
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error upon refreshing tab: " + tabClass != null ? tabClass.getSimpleName() : "null", e);
+		}
 	}
 
 	public boolean importRecords(MenuItem item)

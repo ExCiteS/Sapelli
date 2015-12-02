@@ -33,6 +33,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -44,8 +45,8 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragmen
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
-import uk.ac.ucl.excites.sapelli.collector.ui.adapters.ReceiverAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
+import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
@@ -118,7 +119,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	private CheckBox checkAirplaneModeCycle;
 	
 	// Adapter:
-	private ReceiverAdapter spinReceiverAdapter;
+	private ArrayAdapter<Correspondent> spinReceiverAdapter;
 	
 	// Model:
 	private List<Correspondent> selectableReceivers;
@@ -187,7 +188,26 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 			selectableReceivers = SendConfigurationHelpers.getSelectableCorrespondents(getOwner(), schedule);
 		
 		// Adapter:
-		spinReceiverAdapter = new ReceiverAdapter(getOwner(), selectableReceivers, true);
+		spinReceiverAdapter = new AdvancedSpinnerAdapter<Correspondent>(	getOwner(),
+																			R.layout.pick_receiver_item,
+																			R.layout.receiver_dropdown_item,
+																			AdvancedSpinnerAdapter.TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT,
+																			getString(R.string.lstPleaseSelect),
+																			null,
+																			selectableReceivers)
+		{
+			@Override
+			protected CharSequence getItemString(Correspondent receiver)
+			{
+				return SendConfigurationHelpers.getReceiverLabelText(receiver, false);
+			}
+	
+			@Override
+			protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
+			{
+				return receiver == null ? null : SendConfigurationHelpers.GetReceiverDrawable(receiver, false);
+			}
+		};
 		spinReceiver.setAdapter(spinReceiverAdapter);
 		
 		// Select current/"none" receiver:

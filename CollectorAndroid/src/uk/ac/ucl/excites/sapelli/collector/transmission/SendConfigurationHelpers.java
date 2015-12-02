@@ -372,16 +372,20 @@ public final class SendConfigurationHelpers
 		
 	}
 	
-	static private ReceiverLabelTextProvider receiverLabelTextProvider = new ReceiverLabelTextProvider();
+	static private ReceiverAddressStringProvider receiverAddressStringProvider = new ReceiverAddressStringProvider();
 	
-	static public CharSequence getReceiverLabelText(Correspondent receiver)
+	static public CharSequence getReceiverLabelText(Correspondent receiver, boolean multiLine)
 	{
 		if(receiver != null)
 		{
-			receiverLabelTextProvider.labelText = null;
-			receiver.handle(receiverLabelTextProvider);
-			if(receiverLabelTextProvider.labelText != null)
-				return receiverLabelTextProvider.labelText;
+			receiverAddressStringProvider.addressStr = null;
+			receiver.handle(receiverAddressStringProvider);
+			if(receiverAddressStringProvider.addressStr != null)
+			{
+				SpannableString condensedAddress = new SpannableString(receiverAddressStringProvider.addressStr);
+				condensedAddress.setSpan(new CustomTypefaceSpan(FONT_SANS_SERIF_CONDENSED), 0, receiverAddressStringProvider.addressStr.length(), 0);
+				return TextUtils.concat(receiver.getName(), multiLine ? "\n" : " ", "[", condensedAddress, "]");	
+			}
 		}
 		// Fall-back:
 		return "";
@@ -391,28 +395,21 @@ public final class SendConfigurationHelpers
 	 * @author mstevens
 	 *
 	 */
-	static private class ReceiverLabelTextProvider implements Correspondent.Handler
+	static private class ReceiverAddressStringProvider implements Correspondent.Handler
 	{
 		
-		public CharSequence labelText = null;
-		
-		private void setLabel(Correspondent receiver, String address)
-		{
-			SpannableString condensedAddress = new SpannableString(address);
-			condensedAddress.setSpan(new CustomTypefaceSpan(FONT_SANS_SERIF_CONDENSED), 0, address.length(), 0);
-			labelText = TextUtils.concat(receiver.getName(), " [", condensedAddress, "]");
-		}
+		public String addressStr = null;
 		
 		@Override
 		public void handle(GeoKeyAccount geokeyAccount)
 		{
-			setLabel(geokeyAccount, geokeyAccount.getUsername() + "@" + geokeyAccount.getUrl());
+			addressStr = geokeyAccount.getUsername() + "@" + geokeyAccount.getUrl();
 		}
 		
 		@Override
 		public void handle(SMSCorrespondent smsCorrespondent)
 		{
-			setLabel(smsCorrespondent, smsCorrespondent.getPhoneNumberInternational());
+			addressStr = smsCorrespondent.getPhoneNumberInternational();
 		}
 		
 	}

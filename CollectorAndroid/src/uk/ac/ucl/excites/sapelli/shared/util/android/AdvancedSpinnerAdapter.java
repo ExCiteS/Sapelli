@@ -25,7 +25,7 @@ public class AdvancedSpinnerAdapter<I> extends ArrayAdapter<I> implements Spinne
 {
 	
 	// STATIC -------------------------------------------------------
-	static protected final int TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT = 0;
+	static public final int TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT = 0;
 	
 	static private final Object DUMMY_TAG = new Object();
 	
