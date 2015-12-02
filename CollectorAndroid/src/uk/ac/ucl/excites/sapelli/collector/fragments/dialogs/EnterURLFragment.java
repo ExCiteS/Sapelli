@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.fragments;
+package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -24,6 +24,7 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 
 /**
  * @author mstevens
