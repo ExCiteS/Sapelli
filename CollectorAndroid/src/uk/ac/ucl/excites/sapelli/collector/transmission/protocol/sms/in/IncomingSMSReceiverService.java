@@ -23,7 +23,6 @@ import org.joda.time.DateTime;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
 import android.app.AlarmManager;
-import android.app.IntentService;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -37,8 +36,10 @@ import android.util.Log;
 import android.widget.Toast;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SignalMonitoringService;
 import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -51,7 +52,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessa
  * 
  * @author benelliott, mstevens
  */
-public class IncomingSMSReceiverService extends IntentService
+public class IncomingSMSReceiverService extends SignalMonitoringService
 {
 	
 	// STATIC -------------------------------------------------------
@@ -83,6 +84,12 @@ public class IncomingSMSReceiverService extends IntentService
 	 * used when receiving a message (task = {@link #TASK_REQUEST_RESEND})
 	 */
 	public static final String EXTRA_TRANSMISSION_ID = "localID";
+	
+	/**
+	 * If resend request cannot be sent due to lack of network service we will
+	 * wait 6 minutes before trying again. 
+	 */
+	private static final int RESEND_REQUEST_RETRY_DELAY_MS = 6 * 60 * 1000; 
 	
 	/**
 	 * Starts the SMSReceiverService to receive an SMS message *now*.
@@ -120,9 +127,14 @@ public class IncomingSMSReceiverService extends IntentService
 	 */
 	public static void CancelResendRequest(Context context, int localID)
 	{
-		SetOrCancelResendRequestAlarm(context, localID, null);
+		SetOrCancelResendRequestAlarm(context, localID, null /*cancel*/);
 	}
 	
+	/**
+	 * @param context
+	 * @param localID
+	 * @param alarmTime the DateTime at which the alarm goes off, or {@code null} if an existing request must be cancelled
+	 */
 	private static void SetOrCancelResendRequestAlarm(Context context, int localID, DateTime alarmTime)
 	{
 		Log.i(TAG, "Setting/cancelling resend request alerm for transmission with local ID: " + localID);
@@ -252,7 +264,8 @@ public class IncomingSMSReceiverService extends IntentService
 		}
 		catch(InvalidMessageException e)
 		{
-			Log.d(TAG, "Received SMS message was found not to be relevant to Sapelli.", e);
+			Log.i(TAG, "Received SMS message was found not to be relevant to Sapelli.");
+			Log.d(TAG, "\t" + InvalidMessageException.class.getSimpleName(), e);
 		}
 		catch(Exception e)
 		{
@@ -275,7 +288,7 @@ public class IncomingSMSReceiverService extends IntentService
 			throw new Exception("Android could not parse the SMS message from its PDU.");
 		
 		// Debug:
-		Log.d(TAG,"MESSAGE BODY: " + androidMsg.getMessageBody());
+		//Log.d(TAG,"MESSAGE BODY: " + androidMsg.getMessageBody());
 		
 		// Get sender phone number (we assume that if the number doesn't start with '+' the correct country is given by the current network (rather than the SIM)):
 		PhoneNumber senderPhoneNumber = SMSCorrespondent.toPhoneNumber(androidMsg.getOriginatingAddress(), DeviceControl.getNetworkCountryISOCode(this));
@@ -301,11 +314,14 @@ public class IncomingSMSReceiverService extends IntentService
 		Log.d(TAG, "Woken by alarm for sending resend request for transmission with local ID: " + localID);
 		try
 		{
-			// TODO check GSM signal!
-			// TODO reschedule later (when?) if no signal?
-			
-			// Send out resend request for any incomplete SMS transmissions:
-			transmissionController.sendSMSResendRequest(localID);
+			if(signalMonitor.isInService())
+			{	// Send out resend request for any incomplete SMS transmissions:
+				transmissionController.sendSMSResendRequest(localID);
+			}
+			else
+			{	// Try again in 6 minutes:
+				ScheduleResendRequest(getApplicationContext(), localID, TimeStamp.now().shift(RESEND_REQUEST_RETRY_DELAY_MS).toDateTime());
+			}
 		}
 		catch(Exception e)
 		{

@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.transmission;
 
-import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
@@ -26,7 +25,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.shared.util.android.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
@@ -43,7 +41,7 @@ import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
  * 
  * @author Michalis Vitos, benelliott, mstevens
  */
-public class DataSendingService extends IntentService implements StoreUser
+public class DataSendingService extends SignalMonitoringService implements StoreUser
 {
 	
 	private static final String TAG = DataSendingService.class.getSimpleName();
@@ -56,23 +54,10 @@ public class DataSendingService extends IntentService implements StoreUser
 	public static final String INTENT_KEY_SEND_SCHEDULE_ID = "sendScheduleId";
 	
 	private CollectorApp app;
-	private AndroidTransmissionController transmissionController;
-	private SignalMonitor signalMonitor;
-	
+	AndroidTransmissionController transmissionController;
 	public DataSendingService()
 	{
 		super(DataSendingService.class.getSimpleName());
-	}
-
-	/* (non-Javadoc)
-	 * @see android.app.IntentService#onStart(android.content.Intent, int)
-	 */
-	@Override
-	public void onStart(Intent intent, int startId)
-	{
-		super.onStart(intent, startId);
-		
-		signalMonitor = SignalMonitor.Start(getApplicationContext());
 	}
 
 	@Override
@@ -163,16 +148,11 @@ public class DataSendingService extends IntentService implements StoreUser
 		}
 	}
 	
-	/* (non-Javadoc)
-	 * @see android.app.IntentService#onDestroy()
-	 */
 	@Override
 	public void onDestroy()
 	{
 		if(transmissionController != null)
 			transmissionController.discard();
-		if(signalMonitor != null)
-			signalMonitor.stop();
 		
 		super.onDestroy();
 	}

@@ -76,9 +76,13 @@ public class SignalMonitor extends PhoneStateListener
 		return serviceState;
 	}
 
+	/**
+	 * @return whether the device is registered to a network (but perhaps with low signal strength) 
+	 * @see http://stackoverflow.com/a/3427615/1084488
+	 */
 	public boolean isInService()
 	{
-		return serviceState == ServiceState.STATE_IN_SERVICE;
+		return serviceState == ServiceState.STATE_IN_SERVICE && signalStrength >= 0 && signalStrength <= 31;
 	}
 
 	/**
