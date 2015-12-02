@@ -80,7 +80,7 @@
 		<dependency>
 			<groupId>com.googlecode.libphonenumber</groupId>
 			<artifactId>libphonenumber</artifactId>
-			<version>7.1.0</version>
+			<version>7.2.1</version>
 		</dependency>
 		<!-- <dependency> <groupId>com.madgag.spongycastle</groupId> <artifactId>core</artifactId> 
 			<version>1.50.0.0</version> </dependency> -->
