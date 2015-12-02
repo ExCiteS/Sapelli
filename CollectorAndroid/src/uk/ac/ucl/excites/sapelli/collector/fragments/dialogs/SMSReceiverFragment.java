@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.fragments;
+package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
@@ -32,6 +32,7 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;

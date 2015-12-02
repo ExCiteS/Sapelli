@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.fragments;
+package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -31,6 +31,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.ListView;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.collector.ui.adapters.ReceiverAdapter;
