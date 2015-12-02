@@ -307,10 +307,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		// Try to find sender:
 		SMSCorrespondent corr = transmissionStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
 		if(corr == null)
-		{	// make & store new correspondent
+			// make new correspondent
 			corr = new SMSCorrespondent(Correspondent.UNKNOWN_SENDER_NAME, phoneNumber, binarySMS);
-			transmissionStore.store(corr);
-		}
 		return corr;
 	}
 
