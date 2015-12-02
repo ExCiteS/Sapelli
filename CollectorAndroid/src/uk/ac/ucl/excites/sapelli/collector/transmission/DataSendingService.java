@@ -141,6 +141,7 @@ public class DataSendingService extends SignalMonitoringService implements Store
 			case BINARY_SMS:
 				return signalMonitor.isInService();
 			case HTTP:
+			case GeoKey:
 				return DeviceControl.isOnline(getApplicationContext());
 			default:
 				Log.e(TAG, "Unsupported transmission type: " + sendSchedule.getReceiver().getTransmissionType().name());
