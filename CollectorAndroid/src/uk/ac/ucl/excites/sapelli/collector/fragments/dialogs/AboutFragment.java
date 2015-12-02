@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.fragments;
+package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -28,6 +28,7 @@ import android.view.View;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 
 /**
