@@ -21,16 +21,21 @@ package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
- * A Constraint that either accepts all or refuses all records.
+ * A Constraint that either accepts or refuses all records.
  * 
  * @author mstevens
  */
 public class DummyConstraint extends Constraint
 {
 
-		
+	/**
+	 * A DummyConstraint instance which accepts all records.
+	 */
 	static public final DummyConstraint ACCEPT_ALL = new DummyConstraint(true);
 	
+	/**
+	 * A DummyConstraint instance which refuses all records.
+	 */
 	static public final DummyConstraint ACCEPT_NONE = new DummyConstraint(false);
 	
 	public final boolean allValid;
