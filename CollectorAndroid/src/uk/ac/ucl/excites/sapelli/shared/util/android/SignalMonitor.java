@@ -82,7 +82,7 @@ public class SignalMonitor extends PhoneStateListener
 	 */
 	public boolean isInService()
 	{
-		return serviceState == ServiceState.STATE_IN_SERVICE && signalStrength >= 0 && signalStrength <= 31;
+		return serviceState == ServiceState.STATE_IN_SERVICE /*&& signalStrength >= 0 && signalStrength <= 31*/; // don't include signal strength check as it is often stuck on 99 (error code)
 	}
 
 	/**
