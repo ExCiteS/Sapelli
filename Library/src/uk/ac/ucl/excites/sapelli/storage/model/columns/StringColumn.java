@@ -45,9 +45,8 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	//STATIC---------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	static private final Charset DEFAULT_CHARSET = Charsets.UTF_8;
-	static private final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
-	static private final char DEFAULT_SERIALISATION_DELIMITER = '\'';
+	static public final Charset DEFAULT_CHARSET = Charsets.UTF_8;
+	static public final char DEFAULT_SERIALISATION_DELIMITER = '\'';
 	
 	/**
 	 * The number of characters that can fit in the given number of bytes when the given Charset is used to encode them.
@@ -68,7 +67,8 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static int BytesNeededFor(int maxLengthChars, Charset charset)
 	{
-		return (int) Math.ceil(maxLengthChars * CharsetHelpers.GetMaxBytesPerChar(charset));
+		return (int) Math.min(	Math.ceil(maxLengthChars * ((double) CharsetHelpers.GetMaxBytesPerChar(charset))),
+								Integer.MAX_VALUE);
 	}
 	
 	/**
@@ -216,7 +216,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public StringColumn(String name, boolean optional, String defaultValue, char serialisationDelimiter)
 	{
-		this(name, optional, DEFAULT_MAX_LENGTH_BYTES, defaultValue, serialisationDelimiter);
+		this(name, optional, BytesNeededFor(Integer.MAX_VALUE /*theoretical max length of Java Strings*/, DEFAULT_CHARSET), DEFAULT_CHARSET, defaultValue, serialisationDelimiter);
 	}
 	
 	/**
