@@ -68,6 +68,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.DummyConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.NotConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
@@ -2362,7 +2363,21 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			else
 				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
 		}
-		
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor#visit(uk.ac.ucl.excites.sapelli.storage.queries.constraints.DummyConstraint)
+		 */
+		@Override
+		public void visit(DummyConstraint dummyConstr)
+		{
+			if(!dummyConstr.allValid)
+			{	// Add a condition that is always false to refuse all rows:
+				bldr.append(Integer.toString(0));
+				bldr.append(getComparisonOperator(Comparison.EQUAL));
+				bldr.append(Integer.toString(1));
+			}
+		}
+
 	}
 	
 	/**
