@@ -205,7 +205,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 			@Override
 			protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
 			{
-				return receiver == null ? null : SendConfigurationHelpers.GetReceiverDrawable(receiver, false);
+				return receiver == null ? null : SendConfigurationHelpers.getReceiverDrawable(receiver, false);
 			}
 		};
 		spinReceiver.setAdapter(spinReceiverAdapter);

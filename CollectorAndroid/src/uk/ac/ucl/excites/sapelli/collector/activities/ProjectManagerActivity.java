@@ -108,7 +108,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	// DYNAMICS-------------------------------------------------------
 	private DeviceID deviceID;
 	private ProjectStore projectStore;
-	private TransmissionStore transmissionStore;
 	private Project currentProject;
 	
 	private ArrayAdapter<ProjectDescriptor> projectListAdaptor;
@@ -236,7 +235,6 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		try
 		{
 			projectStore = getCollectorClient().projectStoreHandle.getStore(this);
-			transmissionStore = getCollectorClient().transmissionStoreHandle.getStore(this);
 		}
 		catch(Exception e)
 		{
@@ -521,9 +519,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	protected void onDestroy()
 	{
-		// signal that the activity no longer needs the stores:
+		// signal that the activity no longer needs the stores (projecStore and its internally use transmissionStore instance):
 		getCollectorApp().collectorClient.projectStoreHandle.doneUsing(this);
-		getCollectorApp().collectorClient.transmissionStoreHandle.doneUsing(this);
 		// super:
 		super.onDestroy();
 	}
@@ -857,7 +854,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 */
 	public TransmissionStore getTransmissionStore()
 	{
-		return transmissionStore;
+		return projectStore.getTransmissionStore(); // use the transmissionStore instance used by the ProjectStore
 	}
 
 	private String listWarnings(int titleStringId, List<String> warnings)

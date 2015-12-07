@@ -36,19 +36,45 @@ public abstract class SignalMonitoringService extends IntentService
 		super(name);
 	}
 
+	/**
+	 * This is the old onStart method that will be called on pre-2.0 Android.
+	 * On 2.0 or later onStartCommand() is used instead. 
+	 * 
+	 * @see android.app.IntentService#onStart(android.content.Intent, int)
+	 */
 	@Override
 	public void onStart(Intent intent, int startId)
 	{
+		startMonitoring();
 		super.onStart(intent, startId);
-		
-		signalMonitor = SignalMonitor.Start(getApplicationContext());
+	}
+
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId)
+	{
+		startMonitoring();
+	    return super.onStartCommand(intent, flags, startId);
+	}
+	
+	protected void startMonitoring()
+	{
+		if(signalMonitor == null)
+			signalMonitor = SignalMonitor.Start(getApplicationContext());
+	}
+	
+	protected void stopSignalMonitoring()
+	{
+		if(signalMonitor != null)
+		{
+			signalMonitor.stop();
+			signalMonitor = null;
+		}
 	}
 
 	@Override
 	public void onDestroy()
 	{
-		if(signalMonitor != null)
-			signalMonitor.stop();
+		stopSignalMonitoring();
 		
 		super.onDestroy();
 	}

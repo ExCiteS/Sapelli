@@ -29,8 +29,20 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 public class SendSchedule
 {
 	
+	// STATICS --------------------------------------------------------------------------
 	static public final int DEFAULT_TRANSMIT_INTERVAL_SECONDS = 60 * 60; // = 1 hour
 	
+	static public boolean isValidForTransmission(SendSchedule schedule)
+	{
+		return hasValidReceiver(schedule) && schedule.isEnabled() && schedule.isIDSet();
+	}
+	
+	static public boolean hasValidReceiver(SendSchedule schedule)
+	{
+		return schedule != null && schedule.getProject() != null && schedule.getReceiver() != null && !schedule.getReceiver().isUserDeleted();
+	}
+	
+	// DYNAMICS -------------------------------------------------------------------------
 	private final Project project;
 	private Correspondent receiver;
 	

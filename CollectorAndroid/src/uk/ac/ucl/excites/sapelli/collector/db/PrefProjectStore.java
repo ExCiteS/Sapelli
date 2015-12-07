@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
@@ -344,25 +345,25 @@ public class PrefProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void storeSendSchedule(SendSchedule schedule, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public void storeSendSchedule(SendSchedule schedule) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented");
 	}
 
 	@Override
-	public SendSchedule retrieveSendScheduleByID(int id, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public SendSchedule retrieveSendScheduleByID(int id) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented");
 	}
 
 	@Override
-	public List<SendSchedule> retrieveSendSchedulesForProject(Project project, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public List<SendSchedule> retrieveSendSchedulesForProject(ProjectDescriptor projDescr) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented");
 	}
 	
 	@Override
-	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented");
 	}
@@ -371,6 +372,24 @@ public class PrefProjectStore extends ProjectStore
 	public void deleteSendSchedule(SendSchedule schedule) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented");
+	}
+
+	@Override
+	public List<SendSchedule> retrieveEnabledSendSchedules(Type recieverTransmissionType) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented");
+	}
+
+	@Override
+	public TransmissionStore getTransmissionStore() throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented");
+	}
+
+	@Override
+	public void deleteSendSchedulesForProject(Project project) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented");	
 	}
 	
 	@SuppressWarnings("unchecked")

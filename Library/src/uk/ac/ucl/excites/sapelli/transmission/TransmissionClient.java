@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageObserver;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
@@ -75,6 +76,8 @@ public abstract class TransmissionClient extends StorageClient
 	}
 	
 	// DYNAMICS------------------------------------------------------
+	private final TransmissionStorageObserver transmissionStorageObserver;
+	
 	public final StoreHandle<TransmissionStore> transmissionStoreHandle = new StoreHandle<TransmissionStore>(new StoreCreator<TransmissionStore>()
 	{
 		@Override
@@ -86,7 +89,7 @@ public abstract class TransmissionClient extends StorageClient
 	
 	public TransmissionClient()
 	{
-		new TransmissionStorageObserver(); // no need to hold a reference to it, the object will register itself as a StorageObserver
+		transmissionStorageObserver = new TransmissionStorageObserver(); // will register itself as a StorageObserver
 	}
 	
 	/**
@@ -135,6 +138,16 @@ public abstract class TransmissionClient extends StorageClient
 	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
 	
 	/**
+	 * @param recordRef
+	 * @param receiver
+	 */
+	public void scheduleSending(List<Record> records, Correspondent receiver)
+	{
+		for(Record record : records)
+			transmissionStorageObserver.scheduleSending(record.getReference(), receiver);
+	}
+	
+	/**
 	 * Helper class to receive store event updates and let TransmissionStore update its "TransmitableRecords" table accordingly. 
 	 * 
 	 * @author mstevens
@@ -171,6 +184,11 @@ public abstract class TransmissionClient extends StorageClient
 			return true;
 		}
 		
+		public void scheduleSending(RecordReference recordRef, Correspondent receiver)
+		{
+			tStore.storeTransmittableRecord(receiver, recordRef, null); //TODO will this wipe tosend rec's for same rec that already had a transmission?
+		}
+		
 		@Override
 		public void storageEvent(RecordOperation operation, RecordReference recordRef)
 		{
@@ -181,7 +199,7 @@ public abstract class TransmissionClient extends StorageClient
 					{
 						case Inserted :
 						case Updated :
-							tStore.storeTransmittableRecord(receiver, recordRef, null); //TODO will this wipe tosend rec's for same rec that already had a transmission?
+							scheduleSending(recordRef, receiver);
 							break;
 						case Deleted :
 							tStore.deleteTransmittableRecord(recordRef); // record will be forgotten about for each receiver ...

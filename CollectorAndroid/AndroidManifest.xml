@@ -101,13 +101,13 @@
         </activity>
         
         <service
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.DataSendingSchedulingService"
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers$SchedulingService"
             android:icon="@drawable/ic_sapelli_logo"
             android:label="DataSendingSchedulingService" >
         </service>
         
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.DataSendingSchedulingService$BootListener"
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers$BootListener"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

@@ -32,10 +32,10 @@ import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 /**
  * Abstract super class for Project storage back-ends
@@ -216,37 +216,52 @@ public abstract class ProjectStore extends Store
 	 * Projects can have multiple SendingSchedules as long as they have a different receiver.
 	 * 
 	 * @param schedule
-	 * @param transmissionStore
 	 */
-	public abstract void storeSendSchedule(SendSchedule schedule, TransmissionStore transmissionStore);
+	public abstract void storeSendSchedule(SendSchedule schedule);
 	
 	/**
 	 * Retrieves a SendSchedule by ID.
 	 * 
 	 * @param id
-	 * @param transmissionStore
-	 * @return
-	 * @throws DBException
+	 * @return the matching SendSchedule, or {@code null} if there is no such SendSchedule in the db.
 	 */
-	public abstract SendSchedule retrieveSendScheduleByID(int id, TransmissionStore transmissionStore) throws DBException;
+	public abstract SendSchedule retrieveSendScheduleByID(int id);
 	
 	/**
-	 * @param project
-	 * @param transmissionStore
-	 * @return a list of sendingSchedules (each with a different receiver!) for the given project
-	 * @throws DBException
+	 * @param projDescr
+	 * @return a list of SendSchedules (each with a different receiver!) for the given Project(Descriptor)
 	 */
-	public abstract List<SendSchedule> retrieveSendSchedulesForProject(Project project, TransmissionStore transmissionStore) throws DBException;
+	public abstract List<SendSchedule> retrieveSendSchedulesForProject(ProjectDescriptor projDescr);
 	
 	/**
 	 * @param receiver
-	 * @param transmissionStore
-	 * @return a list of sendingSchedules which use the given receiver
-	 * @throws DBException
+	 * @return a list of SendSchedules which use the given receiver
 	 */
-	public abstract List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver, TransmissionStore transmissionStore) throws DBException;
+	public abstract List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver);
 	
+	/**
+	 * @param schedule
+	 */
 	public abstract void deleteSendSchedule(SendSchedule schedule);
+	
+	/**
+	 * @return a list of all SendSchedules which are currently enabled and are associated with an existing Project and an existing Correspondent
+	 */
+	public List<SendSchedule> retrieveEnabledSendSchedules()
+	{
+		return retrieveEnabledSendSchedules(null);
+	}
+	
+	/**
+	 * @param recieverTransmissionType only include receivers with the given transmission type (pass {@code null} to include any transmission type)
+	 * @return a list of all SendSchedules which are enabled and are associated with an existing Project and an existing Correspondent (i.e. receiver) with the given transmissionType
+	 */
+	public abstract List<SendSchedule> retrieveEnabledSendSchedules(Transmission.Type recieverTransmissionType);
+	
+	/**
+	 * @return the transmissionStore instance which is used by this ProjectStore instance
+	 */
+	public abstract TransmissionStore getTransmissionStore();
 
 	/**
 	 * Delete specific Project, identified by ProjectDescriptor
@@ -254,6 +269,13 @@ public abstract class ProjectStore extends Store
 	 * @param projectDescriptor
 	 */
 	public abstract void delete(ProjectDescriptor projectDescriptor);
+	
+	/**
+	 * Deletes all SendSchedules associates with the given Project.
+	 * 
+	 * @param project
+	 */
+	public abstract void deleteSendSchedulesForProject(Project project);
 	
 	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	

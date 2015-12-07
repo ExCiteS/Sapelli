@@ -46,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -76,17 +77,19 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.DummyConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 /**
  * A RecordStore based implementation of ProjectStore
  * 
  * @author mstevens
  */
-public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoProvider
+public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoProvider, StoreHandle.StoreUser
 {
 	
 	// STATICS---------------------------------------------
@@ -148,22 +151,22 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 	
 	//	Record-sending schedule Schema
-	static final public Schema SEND_RECORDS_SCHEDULE_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "SendRecordsSchedule");
+	static final public Schema SEND_SCHEDULE_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "SendRecordsSchedule");
 	//		Columns:
-	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_ID = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("ID", false));
-	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_PROJECT = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new ForeignKeyColumn("Project", ProjectRecordStore.PROJECT_SCHEMA, false));
-	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new ForeignKeyColumn("Receiver", TransmissionStore.CORRESPONDENT_SCHEMA, false));
-	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("RetransmitInterval", false, false)); // unsigned 32 bits
-	static final public BooleanColumn SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new BooleanColumn("Encrypt", false));
-	static final public BooleanColumn SEND_RECORDS_SCHEDULE_COLUMN_ENABLED = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new BooleanColumn("Enabled", false));
-	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("HeartbeatInterval", false, false, 0l)); // unsigned 32 bits
-	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_NO_DATA_COUNTER = SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("NoDataCounter", false, false, 0l)); // unsigned 32 bits
+	static final public IntegerColumn SEND_SCHEDULE_COLUMN_ID = SEND_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("ID", false));
+	static final public ForeignKeyColumn SEND_SCHEDULE_COLUMN_PROJECT = SEND_SCHEDULE_SCHEMA.addColumn(new ForeignKeyColumn("Project", ProjectRecordStore.PROJECT_SCHEMA, false));
+	static final public ForeignKeyColumn SEND_SCHEDULE_COLUMN_RECEIVER = SEND_SCHEDULE_SCHEMA.addColumn(new ForeignKeyColumn("Receiver", TransmissionStore.CORRESPONDENT_SCHEMA, false));
+	static final public IntegerColumn SEND_SCHEDULE_COLUMN_INTERVAL = SEND_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("RetransmitInterval", false, false)); // unsigned 32 bits
+	static final public BooleanColumn SEND_SCHEDULE_COLUMN_ENCRYPT = SEND_SCHEDULE_SCHEMA.addColumn(new BooleanColumn("Encrypt", false));
+	static final public BooleanColumn SEND_SCHEDULE_COLUMN_ENABLED = SEND_SCHEDULE_SCHEMA.addColumn(new BooleanColumn("Enabled", false));
+	static final public IntegerColumn SEND_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL = SEND_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("HeartbeatInterval", false, false, 0l)); // unsigned 32 bits
+	static final public IntegerColumn SEND_SCHEDULE_COLUMN_NO_DATA_COUNTER = SEND_SCHEDULE_SCHEMA.addColumn(new IntegerColumn("NoDataCounter", false, false, 0l)); // unsigned 32 bits
 	//		Set primary key & seal schema:
 	static
 	{
 		// Add index to enforce unique combination of project and correspondent:
-		SEND_RECORDS_SCHEDULE_SCHEMA.addIndex(new Index("IdxProjectCorrespondent", true, SEND_RECORDS_SCHEDULE_COLUMN_PROJECT, SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER));
-		SEND_RECORDS_SCHEDULE_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", SEND_RECORDS_SCHEDULE_COLUMN_ID), true /*seal!*/);
+		SEND_SCHEDULE_SCHEMA.addIndex(new Index("IdxProjectCorrespondent", true, SEND_SCHEDULE_COLUMN_PROJECT, SEND_SCHEDULE_COLUMN_RECEIVER));
+		SEND_SCHEDULE_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", SEND_SCHEDULE_COLUMN_ID), true /*seal!*/);
 	}
 	
 	// "Record receival" (incoming records) Schema -- may be used at some point in the future to keep track of sending correspondents
@@ -190,7 +193,9 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 			
 	// DYNAMICS--------------------------------------------
+	private final CollectorClient client;
 	private final RecordStoreWrapper<CollectorClient> rsWrapper;
+	private final TransmissionStore transmissionStore;
 	private final FileStorageProvider fileStorageProvider;
 	private final Map<Long, Project> cache;
 	
@@ -201,7 +206,9 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	 */
 	public ProjectRecordStore(CollectorClient client, FileStorageProvider fileStorageProvider) throws DBException
 	{
+		this.client = client;
 		this.rsWrapper = new RecordStoreWrapper<CollectorClient>(client);
+		this.transmissionStore = client.transmissionStoreHandle.getStore(this);
 		this.fileStorageProvider = fileStorageProvider;
 		this.cache = new HashMap<Long, Project>();
 	}
@@ -434,10 +441,10 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	@Override
 	public Project retrieveProject(String name, String variant, String version)
 	{
-		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
-																			new EqualityConstraint(PROJECT_NAME_COLUMN, name),
-																			new EqualityConstraint(PROJECT_VARIANT_COLUMN, variant != null ? variant : ""),
-																			new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
+		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(PROJECT_SCHEMA,
+																					new EqualityConstraint(PROJECT_NAME_COLUMN, name),
+																					new EqualityConstraint(PROJECT_VARIANT_COLUMN, variant != null ? variant : ""),
+																					new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
 	}
 
 	private Record queryProjectRecordByIDFingerPrint(int projectID, int projectFingerPrint)
@@ -466,9 +473,9 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	@Override
 	public Project retrieveV1Project(int schemaID, int schemaVersion)
 	{
-		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
-																			new EqualityConstraint(PROJECT_ID_COLUMN, schemaID),
-																			new EqualityConstraint(PROJECT_V1X_SCHEMA_VERSION_COLUMN, schemaVersion))));
+		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(PROJECT_SCHEMA,
+																					new EqualityConstraint(PROJECT_ID_COLUMN, schemaID),
+																					new EqualityConstraint(PROJECT_V1X_SCHEMA_VERSION_COLUMN, schemaVersion))));
 	}
 
 	/* (non-Javadoc)
@@ -502,15 +509,31 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			Constraint projectMatchConstraint = getProjectRecordReference(projectDescriptor).getRecordQueryConstraint();
 			// Delete project record:
 			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
-			// Delete associated FSI & HFK records:
-			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
-			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
+			// Delete associated FSI, HFK & SendSchedule records:
+			rsWrapper.recordStore.delete(new RecordsQuery(FSI_SCHEMA, projectMatchConstraint));
+			rsWrapper.recordStore.delete(new RecordsQuery(HFK_SCHEMA, projectMatchConstraint));
+			rsWrapper.recordStore.delete(new RecordsQuery(SEND_SCHEDULE_SCHEMA, projectMatchConstraint));
 			// Remove project from cache:
 			cache.remove(getCacheKey(projectDescriptor));
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
+			rsWrapper.client.logError("Error upon deleting project: " + projectDescriptor.toString(false), e);
+		}
+	}
+	
+
+	@Override
+	public void deleteSendSchedulesForProject(Project project)
+	{
+		try
+		{
+			if(project != null)
+				rsWrapper.recordStore.delete(new RecordsQuery(SEND_SCHEDULE_SCHEMA, new EqualityConstraint(SEND_SCHEDULE_COLUMN_PROJECT, getProjectRecordReference(project))));
+		}
+		catch(DBException e)
+		{
+			rsWrapper.client.logError("Error upon deleting SendSchedules for Project \"" + project.toString(false) + "\".", e);
 		}
 	}
 	
@@ -583,21 +606,21 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 
 	@Override
-	public void storeSendSchedule(SendSchedule schedule, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendSchedule schedule)
 	{
 		try
 		{
 			// Get record representation:
-			Record rec = SEND_RECORDS_SCHEDULE_SCHEMA.createRecord();
+			Record rec = SEND_SCHEDULE_SCHEMA.createRecord();
 			if(schedule.isIDSet())
-				SEND_RECORDS_SCHEDULE_COLUMN_ID.storeValue(rec, schedule.getID());
-			SEND_RECORDS_SCHEDULE_COLUMN_PROJECT.storeValue(rec, getProjectRecordReference(schedule.getProject()));
-			SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.storeValue(rec, transmissionStore.getCorrespondentRecordReference(schedule.getReceiver(), true, false));
-			SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(rec, schedule.getTransmitIntervalS());
-			SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.storeValue(rec, schedule.isEncrypt());
-			SEND_RECORDS_SCHEDULE_COLUMN_ENABLED.storeValue(rec, schedule.isEnabled());
-			SEND_RECORDS_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL.storeValue(rec, schedule.getHeartbeatInterval());
-			SEND_RECORDS_SCHEDULE_COLUMN_NO_DATA_COUNTER.storeValue(rec, schedule.getNoDataToSendCounter());
+				SEND_SCHEDULE_COLUMN_ID.storeValue(rec, schedule.getID());
+			SEND_SCHEDULE_COLUMN_PROJECT.storeValue(rec, getProjectRecordReference(schedule.getProject()));
+			SEND_SCHEDULE_COLUMN_RECEIVER.storeValue(rec, transmissionStore.getCorrespondentRecordReference(schedule.getReceiver(), true, false));
+			SEND_SCHEDULE_COLUMN_INTERVAL.storeValue(rec, schedule.getTransmitIntervalS());
+			SEND_SCHEDULE_COLUMN_ENCRYPT.storeValue(rec, schedule.isEncrypt());
+			SEND_SCHEDULE_COLUMN_ENABLED.storeValue(rec, schedule.isEnabled());
+			SEND_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL.storeValue(rec, schedule.getHeartbeatInterval());
+			SEND_SCHEDULE_COLUMN_NO_DATA_COUNTER.storeValue(rec, schedule.getNoDataToSendCounter());
 			
 			// Store/update the record in the db:
 			rsWrapper.recordStore.store(rec);
@@ -605,12 +628,12 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			// Check/set id on the object:
 			if(schedule.isIDSet()) // if the object already had an ID...
 			{	// then it should match the ID on the record, so let's verify:
-				if(schedule.getID() != SEND_RECORDS_SCHEDULE_COLUMN_ID.retrieveValue(rec).intValue())
+				if(schedule.getID() != SEND_SCHEDULE_COLUMN_ID.retrieveValue(rec).intValue())
 					throw new IllegalStateException("Non-matching schedule ID"); // this should never happen
 			}
 			else
 				// Set id in object as on the record: 
-				schedule.setID(SEND_RECORDS_SCHEDULE_COLUMN_ID.retrieveValue(rec).intValue());
+				schedule.setID(SEND_SCHEDULE_COLUMN_ID.retrieveValue(rec).intValue());
 		}
 		catch(DBException e)
 		{
@@ -619,11 +642,11 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 
 	@Override
-	public SendSchedule retrieveSendScheduleByID(int id, TransmissionStore transmissionStore) throws DBException
+	public SendSchedule retrieveSendScheduleByID(int id)
 	{
 		try
 		{
-			Record sendScheduleRecord = rsWrapper.recordStore.retrieveRecord(SEND_RECORDS_SCHEDULE_SCHEMA.createRecordReference(id));
+			Record sendScheduleRecord = rsWrapper.recordStore.retrieveRecord(SEND_SCHEDULE_SCHEMA.createRecordReference(id));
 			return getSendScheduleFromRecord(transmissionStore, sendScheduleRecord);
 		}
 		catch(Exception e)
@@ -634,20 +657,42 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 	
 	@Override
-	public List<SendSchedule> retrieveSendSchedulesForProject(Project project, TransmissionStore transmissionStore) throws DBException
+	public List<SendSchedule> retrieveSendSchedulesForProject(ProjectDescriptor projDescr)
 	{
-		return retrieveSendSchedules(new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT, getProjectRecordReference(project)), transmissionStore);
+		return retrieveSendSchedules(getProjectRecordReference(projDescr).getRecordQueryConstraint());
+	}
+	
+	private Constraint getReceiverConstraint(Correspondent receiver)
+	{
+		Constraint constr = null;
+		try
+		{
+			constr = transmissionStore.getCorrespondentRecordReference(receiver, false, false).getRecordQueryConstraint();
+		}
+		catch(DBException ignore) {}
+		// Check & return:
+		return constr != null ? constr : DummyConstraint.ACCEPT_NONE;
 	}
 	
 	@Override
-	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver, TransmissionStore transmissionStore) throws DBException
+	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver)
 	{
-		return retrieveSendSchedules(new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER, transmissionStore.getCorrespondentRecordReference(receiver, false, false)), transmissionStore);
+		return retrieveSendSchedules(getReceiverConstraint(receiver));
 	}
 	
-	private List<SendSchedule> retrieveSendSchedules(Constraint constraint, TransmissionStore transmissionStore) throws DBException
+	@Override
+	public List<SendSchedule> retrieveEnabledSendSchedules(Transmission.Type transmissionType)
 	{
-		List<Record> sendScheduleRecords = rsWrapper.recordStore.retrieveRecords(new RecordsQuery(SEND_RECORDS_SCHEDULE_SCHEMA, constraint));
+		List<SendSchedule> schedules = new ArrayList<SendSchedule>();
+		for(SendSchedule schedule : retrieveSendSchedules(new EqualityConstraint(SEND_SCHEDULE_COLUMN_ENABLED, Boolean.TRUE)))
+			if(schedule.getProject() != null && schedule.getReceiver() != null && (transmissionType == null || schedule.getReceiver().getTransmissionType() == transmissionType))
+				schedules.add(schedule);
+		return schedules;
+	}
+	
+	private List<SendSchedule> retrieveSendSchedules(Constraint constraint)
+	{
+		List<Record> sendScheduleRecords = rsWrapper.recordStore.retrieveRecords(new RecordsQuery(SEND_SCHEDULE_SCHEMA, constraint));
 		List<SendSchedule> schedules = new ArrayList<SendSchedule>(sendScheduleRecords.size());
 		for(Record sendScheduleRecord : sendScheduleRecords)
 			CollectionUtils.addIgnoreNull(schedules, getSendScheduleFromRecord(transmissionStore, sendScheduleRecord));
@@ -655,17 +700,12 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 	
 	@Override
-	public void deleteSendSchedule(SendSchedule schedule)
-	{
-		if(schedule.isIDSet())
-			deleteSendSchedule(schedule.getID());
-	}
-	
-	public void deleteSendSchedule(int sendingScheduleID)
+	public void deleteSendSchedule(SendSchedule sendSchedule)
 	{
 		try
 		{
-			rsWrapper.recordStore.delete(SEND_RECORDS_SCHEDULE_SCHEMA.createRecordReference(sendingScheduleID));
+			if(sendSchedule.isIDSet())
+				rsWrapper.recordStore.delete(SEND_SCHEDULE_SCHEMA.createRecordReference(sendSchedule.getID()));
 		}
 		catch(DBException e)
 		{
@@ -673,29 +713,38 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		}
 	}
 
-	private SendSchedule getSendScheduleFromRecord(TransmissionStore transmissionStore, Record sendScheduleRecord) throws DBException
+	/**
+	 * Note: may return SendSchedules with a null of userDeleted receiver.
+	 * 
+	 * @param transmissionStore
+	 * @param sendScheduleRecord
+	 * @return
+	 */
+	private SendSchedule getSendScheduleFromRecord(TransmissionStore transmissionStore, Record sendScheduleRecord)
 	{
 		if(sendScheduleRecord == null)
 			return null;
-		Project project = retrieveProject(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT.retrieveValue(sendScheduleRecord));
-		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQuery());
-		if(receiver == null)
-			try
-			{	// Delete schedules whose correspondent no longer exists:
-				deleteSendSchedule(SEND_RECORDS_SCHEDULE_COLUMN_ID.retrieveValue(sendScheduleRecord).intValue());
-				return null;
-			}
-		catch(Exception ignore) {}
-		return new SendSchedule(	project,
-									SEND_RECORDS_SCHEDULE_COLUMN_ID.retrieveValue(sendScheduleRecord).intValue(),
-									receiver,
-									SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.retrieveValue(sendScheduleRecord).intValue(),
-									SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.retrieveValue(sendScheduleRecord),
-									SEND_RECORDS_SCHEDULE_COLUMN_ENABLED.retrieveValue(sendScheduleRecord),
-									SEND_RECORDS_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL.retrieveValue(sendScheduleRecord).intValue(),
-									SEND_RECORDS_SCHEDULE_COLUMN_NO_DATA_COUNTER.retrieveValue(sendScheduleRecord).intValue());
+		Project project = retrieveProject(SEND_SCHEDULE_COLUMN_PROJECT.retrieveValue(sendScheduleRecord));
+		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(SEND_SCHEDULE_COLUMN_RECEIVER.retrieveValue(sendScheduleRecord).getRecordQuery());
+		return new SendSchedule(project,
+								SEND_SCHEDULE_COLUMN_ID.retrieveValue(sendScheduleRecord).intValue(),
+								receiver /* may be null or userDeleted*/,
+								SEND_SCHEDULE_COLUMN_INTERVAL.retrieveValue(sendScheduleRecord).intValue(),
+								SEND_SCHEDULE_COLUMN_ENCRYPT.retrieveValue(sendScheduleRecord),
+								SEND_SCHEDULE_COLUMN_ENABLED.retrieveValue(sendScheduleRecord),
+								SEND_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL.retrieveValue(sendScheduleRecord).intValue(),
+								SEND_SCHEDULE_COLUMN_NO_DATA_COUNTER.retrieveValue(sendScheduleRecord).intValue());
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#getTransmissionStore()
+	 */
+	@Override
+	public TransmissionStore getTransmissionStore()
+	{
+		return transmissionStore;
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
@@ -703,6 +752,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	protected void doClose() throws DBException
 	{
 		rsWrapper.doClose();
+		client.transmissionStoreHandle.doneUsing(this);
 	}
 
 	/* (non-Javadoc)
@@ -712,6 +762,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		rsWrapper.backup(backuper, destinationFolder);
+		backuper.addStoreForBackup(transmissionStore);
 	}
 
 	/* (non-Javadoc)

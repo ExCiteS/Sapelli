@@ -122,7 +122,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(SendConfigurationHelpers.GetGeoKeyReceiverDrawable(true))
+		.setIcon(SendConfigurationHelpers.getGeoKeyReceiverDrawable(true))
 		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
 		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
 		.setNegativeButton(android.R.string.cancel, this);

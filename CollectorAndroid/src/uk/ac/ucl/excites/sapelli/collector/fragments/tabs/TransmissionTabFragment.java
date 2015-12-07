@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
+import java.io.File;
 import java.util.List;
 
 import android.content.Context;
@@ -42,11 +43,13 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.SendScheduleFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
@@ -128,7 +131,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		//	Populate list:
 		listScheduleAdapter = new SendScheduleAdapter(listSchedules.getContext(), schedules); 
 		listSchedules.setAdapter(listScheduleAdapter);
-		//	Set sending switch:
+		//	Set sending switch (on if at least 1 schedule is enabled, off otherwise):
 		boolean sendingEnabled = false;
 		for(SendSchedule schedule : schedules)
 			if(schedule.isEnabled())
@@ -147,14 +150,16 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			case R.id.switchSend :
 				toggleConfigGroup(true, switchSend.isChecked());
 				if(switchSend.isChecked())
-				{
-					// If there is no schedule make one...
-					if(listScheduleAdapter.isEmpty())
+				{	// Sending is being switched on...
+					if(listScheduleAdapter.isEmpty()) // if there is no schedule make one...
 						SendScheduleFragment.ShowAddDialog(this);
+					//else
+						// TODO enable all schedules
 				}
 				else
-					// Disable all schedules:
-					disableSending();
+				{	// Sending is being switched off:
+					disableSending(); // disable all schedules
+				}
 				break;
 			case R.id.switchReceive :
 				toggleConfigGroup(false, switchReceive.isChecked());
@@ -207,26 +212,23 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			if(schedule != null && schedule.isEnabled())
 			{
 				schedule.setEnabled(false);
-				save(schedule, false);
+				save(schedule);
 				changed = true;
 			}
 		}
 		if(changed)
-		{
 			listScheduleAdapter.notifyDataSetChanged();
-			SendConfigurationHelpers.reschedule(getOwner(), getProject(true));
-		}
 	}
 	
-	private void save(SendSchedule schedule, boolean reschedule)
+	private void save(SendSchedule schedule)
 	{
-		SendConfigurationHelpers.saveSchedule(getOwner(), schedule, true);
+		SendConfigurationHelpers.saveSchedule(getOwner(), schedule);
 	}
 	
 	public void saveEdited(SendSchedule schedule)
 	{
 		// Store the new schedule:
-		save(schedule, true);
+		save(schedule);
 	
 		// Update the list:
 		listScheduleAdapter.notifyDataSetChanged();
@@ -235,18 +237,47 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	/**
 	 * @param schedule the new SendSchedule, or null if creation of new schedule was cancelled
 	 */
-	public void addNew(SendSchedule schedule)
+	public void addNew(final SendSchedule schedule)
 	{
 		if(schedule != null)
 		{
-			// Automatically enable new schedule²:
+			// Automatically enable new schedule:
 			schedule.setEnabled(true);
 			
 			// Store the new schedule:
-			save(schedule, true);
+			save(schedule);
 		
 			// Refresh schedules:
 			listScheduleAdapter.add(schedule);
+			
+			// Query for currently existing project data & propose transmission: 
+			ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), new ProjectTasks.ProjectDataCallaback()
+			{
+				@Override
+				public void projectDataQuerySuccess(final List<Record> records, List<File> mediaFiles)
+				{
+					if(!records.isEmpty())
+						getOwner().showYesNoDialog(
+							R.string.tab_transmission,
+							getString(R.string.sendExistingData, records.size(), mediaFiles.size(), schedule.getReceiver().getName()),
+							R.drawable.ic_transfer_black_36dp,
+							new Runnable()
+							{
+								@Override
+								public void run()
+								{
+									getOwner().getCollectorClient().scheduleSending(records, schedule.getReceiver());
+								}
+							},
+							false, null, false);
+				}
+
+				@Override
+				public void projectDataQueryFailure(Exception reason)
+				{
+					Log.e(TransmissionTabFragment.class.getSimpleName(), "Failed to query for records", reason);
+				}
+			});
 		}
 		else
 			// Open/close sending pane:
@@ -298,7 +329,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			if(sendSchedule == null)
 				return null;
 			//else:
-			return SendConfigurationHelpers.GetReceiverDrawable(sendSchedule.getReceiver(), false);
+			return SendConfigurationHelpers.getReceiverDrawable(sendSchedule.getReceiver(), false);
 		}
 
 		@Override
@@ -340,7 +371,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 					sendSchedule.setEnabled(isChecked);
 					
 					// Save settings:
-					save(sendSchedule, true);	
+					save(sendSchedule);	
 				}
 			}
 			catch(Exception e)

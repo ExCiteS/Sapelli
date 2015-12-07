@@ -37,6 +37,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
@@ -64,7 +66,8 @@ public final class ProjectTasks
 	 */
 	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallaback callback)
 	{
-		// Update records & media stats:
+		if(project == null)
+			return;
 		new RecordsTasks.QueryTask(owner, new RecordsTasks.QueryCallback()
 		{
 			@SuppressWarnings("unchecked")
@@ -290,6 +293,10 @@ public final class ProjectTasks
 			ProjectDescriptor projDescr = params[0];
 			if(projDescr != null)
 			{
+				// Cancel data sending alarms:
+				for(SendSchedule schedule : projectStore.retrieveSendSchedulesForProject(projDescr))
+					SchedulingHelpers.Cancel(getContext().getApplicationContext(), schedule);
+				
 				// Remove project from store:
 				projectStore.delete(projDescr);
 				

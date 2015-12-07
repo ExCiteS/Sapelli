@@ -53,24 +53,21 @@ public final class SendConfigurationHelpers
 	/**
 	 * @param activity
 	 * @param schedule
-	 * @param reschedule
 	 */
-	static public void saveSchedule(ProjectManagerActivity activity, SendSchedule schedule, boolean reschedule)
+	static public void saveSchedule(ProjectManagerActivity activity, SendSchedule schedule)
 	{
 		try
 		{
 			// Store schedule:
-			activity.getProjectStore().storeSendSchedule(schedule, activity.getTransmissionStore());
+			activity.getProjectStore().storeSendSchedule(schedule);
 			
-			// Apply if needed:
-			if(reschedule)
-				reschedule(activity, schedule.getProject());
+			// Set or cancel alarm:
+			SchedulingHelpers.ScheduleOrCancel(activity.getApplicationContext(), schedule);
 		}
 		catch(Exception e)
 		{
 			Log.e(SendConfigurationHelpers.class.getSimpleName(), "Error upon saving send schedule", e);
 		}
-		
 	}
 	
 	/**
@@ -84,8 +81,8 @@ public final class SendConfigurationHelpers
 			// Delete schedule:
 			activity.getProjectStore().deleteSendSchedule(schedule);
 			
-			// Cancel/reset alarms:
-			reschedule(activity, schedule.getProject());
+			// Cancel alarm:
+			SchedulingHelpers.Cancel(activity.getApplicationContext(), schedule);
 		}
 		catch(Exception e)
 		{
@@ -107,22 +104,6 @@ public final class SendConfigurationHelpers
 	
 	/**
 	 * @param activity
-	 * @param project
-	 */
-	static public void reschedule(ProjectManagerActivity activity, Project project)
-	{
-		try
-		{
-			DataSendingSchedulingService.Schedule(activity.getApplicationContext(), project);
-		}
-		catch(Exception e)
-		{
-			Log.e(SendConfigurationHelpers.class.getSimpleName(), "Error upon applying sendSchedule(s)", e);
-		}
-	}
-	
-	/**
-	 * @param activity
 	 * @param schedule
 	 * @return
 	 */
@@ -139,6 +120,20 @@ public final class SendConfigurationHelpers
 		return selectableReceivers;
 	}
 	
+	static private List<SendSchedule> filterSendSchedulesWithMissingReceiver(ProjectManagerActivity activity, List<SendSchedule> schedulesToFilter)
+	{
+		List<SendSchedule> schedules = new ArrayList<SendSchedule>();
+		for(SendSchedule schedule : schedulesToFilter)
+		{
+			if(SendSchedule.hasValidReceiver(schedule))
+				schedules.add(schedule);
+			else
+				// schedule has no receiver, delete it:
+				deleteSchedule(activity, schedule); // will also cancel alarms
+		}
+		return schedules;
+	}
+	
 	/**
 	 * @param project
 	 * @return
@@ -147,7 +142,7 @@ public final class SendConfigurationHelpers
 	{
 		try
 		{
-			return activity.getProjectStore().retrieveSendSchedulesForProject(project, activity.getTransmissionStore());
+			return filterSendSchedulesWithMissingReceiver(activity, activity.getProjectStore().retrieveSendSchedulesForProject(project));
 		}
 		catch(Exception e)
 		{
@@ -165,7 +160,7 @@ public final class SendConfigurationHelpers
 	{
 		try
 		{
-			return activity.getProjectStore().retrieveSendSchedulesForReceiver(receiver, activity.getTransmissionStore());
+			return filterSendSchedulesWithMissingReceiver(activity, activity.getProjectStore().retrieveSendSchedulesForReceiver(receiver));
 		}
 		catch(Exception e)
 		{
@@ -301,7 +296,7 @@ public final class SendConfigurationHelpers
 	 * @param big
 	 * @return
 	 */
-	static public int GetReceiverDrawable(Correspondent receiver, boolean big)
+	static public int getReceiverDrawable(Correspondent receiver, boolean big)
 	{
 		if(receiver != null)
 		{
@@ -320,9 +315,9 @@ public final class SendConfigurationHelpers
 	 * @param big
 	 * @return
 	 */
-	static public int GetSMSReceiverDrawable(SMSCorrespondent smsCorrespondent, boolean big)
+	static public int getSMSReceiverDrawable(SMSCorrespondent smsCorrespondent, boolean big)
 	{
-		return GetSMSReceiverDrawable(smsCorrespondent.isBinary(), big);
+		return getSMSReceiverDrawable(smsCorrespondent.isBinary(), big);
 	}
 	
 	/**
@@ -330,7 +325,7 @@ public final class SendConfigurationHelpers
 	 * @param big
 	 * @return
 	 */
-	static public int GetSMSReceiverDrawable(boolean binary, boolean big)
+	static public int getSMSReceiverDrawable(boolean binary, boolean big)
 	{
 		if(big)
 			return binary ? R.drawable.ic_sms_bin_black_36dp : R.drawable.ic_sms_txt_black_36dp;
@@ -343,7 +338,7 @@ public final class SendConfigurationHelpers
 	 * @param big
 	 * @return
 	 */
-	static public int GetGeoKeyReceiverDrawable(boolean big)
+	static public int getGeoKeyReceiverDrawable(boolean big)
 	{
 		return big ? R.drawable.ic_web_black_36dp : R.drawable.ic_web_black_24dp;
 	}
@@ -361,13 +356,13 @@ public final class SendConfigurationHelpers
 		@Override
 		public void handle(SMSCorrespondent smsCorrespondent)
 		{
-			drawableResourceId = GetSMSReceiverDrawable(smsCorrespondent, big); 
+			drawableResourceId = getSMSReceiverDrawable(smsCorrespondent, big); 
 		}
 
 		@Override
 		public void handle(GeoKeyAccount geokeyAccount)
 		{
-			drawableResourceId = GetGeoKeyReceiverDrawable(big);
+			drawableResourceId = getGeoKeyReceiverDrawable(big);
 		}
 		
 	}

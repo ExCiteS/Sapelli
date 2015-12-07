@@ -25,7 +25,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * IntentService which is awoken by a SendAlarm intent to send any pending Records for a particular Project according to the SendRecordsSchedule that it retrieves from the ProjectStore.
@@ -46,12 +45,17 @@ public class DataSendingService extends SignalMonitoringService implements Store
 	
 	private static final String TAG = DataSendingService.class.getSimpleName();
 	
-	/*package*/ static String getIntentAction(int projectID, int projectFingerPrint)
+	private static final String ACTION_PREFIX = "sendScheduleId_";
+	
+	/*package*/ static String getIntentAction(int sendScheduleId)
 	{
-		return "SendDataForProject:" + projectID + "_" + projectFingerPrint;
+		return ACTION_PREFIX + Integer.toString(sendScheduleId);
 	}
 	
-	public static final String INTENT_KEY_SEND_SCHEDULE_ID = "sendScheduleId";
+	/*package*/ static int parseSendScheduleId(String intentAction)
+	{
+		return Integer.valueOf(intentAction.substring(ACTION_PREFIX.length()));
+	}
 	
 	private CollectorApp app;
 	AndroidTransmissionController transmissionController;
@@ -63,19 +67,10 @@ public class DataSendingService extends SignalMonitoringService implements Store
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{	
-		Log.d(TAG, "Woken by alarm");
-		// Alarm has just woken up the service with a project ID and fingerprint
-		
-		// Read intent data:
-		if(!intent.hasExtra(INTENT_KEY_SEND_SCHEDULE_ID))
-		{	// data missing from intent!
-			Log.e(TAG,"Sender service woken by alarm but " + INTENT_KEY_SEND_SCHEDULE_ID + " was missing from the Intent.");
-			return;
-		}
+		Log.d(TAG, getClass().getSimpleName() + " handling intent (action: " + intent.getAction() + ")");
 		
 		SendSchedule sendSchedule = null;
 		ProjectStore projectStore;
-		TransmissionStore transmissionStore;
 		try
 		{
 			// do not get the app in the constructor(!):
@@ -87,13 +82,18 @@ public class DataSendingService extends SignalMonitoringService implements Store
 			// Get ProjectStore instance:
 			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			
-			// Get SentTransmissionStore instance:
-			transmissionStore = app.collectorClient.transmissionStoreHandle.getStore(this);
-			
 			// Get Schedule:
-			sendSchedule = projectStore.retrieveSendScheduleByID(intent.getIntExtra(INTENT_KEY_SEND_SCHEDULE_ID, -1), transmissionStore);
-			if(sendSchedule == null || !sendSchedule.isEnabled())
-				return;
+			int sendScheduleId = parseSendScheduleId(intent.getAction());
+			sendSchedule = projectStore.retrieveSendScheduleByID(sendScheduleId);
+			//	Check if schedule is valid (non-null, enabled, with id set, and with a non-null, non-userDeleted receiver):
+			if(!SendSchedule.isValidForTransmission(sendSchedule))
+			{	// Invalid schedule, cancel future alarms:
+				SchedulingHelpers.Cancel(getApplicationContext(), sendScheduleId);
+			}
+			else
+			{
+				Log.d(TAG, "SendSchedule: id=" + sendScheduleId + "; receiver=" + sendSchedule.getReceiver().getName());
+			}
 			
 			// Attempt transmission:
 			transmit(sendSchedule, false);
@@ -108,7 +108,6 @@ public class DataSendingService extends SignalMonitoringService implements Store
 		finally
 		{
 			app.collectorClient.projectStoreHandle.doneUsing(this);
-			app.collectorClient.transmissionStoreHandle.doneUsing(this);
 		}
 	}
 	

@@ -48,7 +48,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 
@@ -351,13 +350,12 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 			final Project project = getForm(schema).getProject(); // throws UnknownModelException
 			
 			// Get stores:
-			TransmissionStore tStore = transmissionStoreHandle.getStore(this);
 			ProjectStore pStore = projectStoreHandle.getStore(this);
 			
 			// Get schedules (and their receivers) for the project:
 			List<Correspondent> receivers = new ArrayList<Correspondent>();
-			for(SendSchedule schedule : pStore.retrieveSendSchedulesForProject(project, tStore))
-				if(schedule != null && schedule.getReceiver() != null /*just in case*/)
+			for(SendSchedule schedule : pStore.retrieveSendSchedulesForProject(project))
+				if(SendSchedule.hasValidReceiver(schedule))
 					receivers.add(schedule.getReceiver());
 			
 			// Return list:
@@ -370,7 +368,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		}	
 		finally
 		{
-			transmissionStoreHandle.doneUsing(this);
 			projectStoreHandle.doneUsing(this);
 		}
 	}

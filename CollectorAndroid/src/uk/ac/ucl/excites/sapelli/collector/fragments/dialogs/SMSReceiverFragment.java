@@ -123,7 +123,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	public Dialog onCreateDialog(Bundle savedInstanceState)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(SendConfigurationHelpers.GetSMSReceiverDrawable(isEditing() ? editReceiver.isBinary() : SMSCorrespondent.DEFAULT_BINARY_SMS, true))
+		.setIcon(SendConfigurationHelpers.getSMSReceiverDrawable(isEditing() ? editReceiver.isBinary() : SMSCorrespondent.DEFAULT_BINARY_SMS, true))
 		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
 		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
 		.setNegativeButton(android.R.string.cancel, this);
@@ -142,7 +142,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 			@Override
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
 			{
-				dialog.setIcon(SendConfigurationHelpers.GetSMSReceiverDrawable(isChecked, true));
+				dialog.setIcon(SendConfigurationHelpers.getSMSReceiverDrawable(isChecked, true));
 			}
 		});
 		

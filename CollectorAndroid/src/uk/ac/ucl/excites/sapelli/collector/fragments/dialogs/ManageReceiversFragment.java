@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
 import java.util.List;
+import java.util.Set;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -34,6 +35,7 @@ import android.widget.ListView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
@@ -136,13 +138,30 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		else if(v.getId() == R.id.btnEditReceiver || v.getId() == R.id.btnDeleteReceiver)
 		{
 			Correspondent receiver = listReceiversAdapter.getItem((Integer) v.getTag());
-			// TODO warn about projects that use the receiver
+			
+			Set<Project> projectsUsingReceiver = SendConfigurationHelpers.getProjectsUsingReceiver(getOwner(), receiver);
+			if(!projectsUsingReceiver.isEmpty())
+			{
+				getOwner().showYesNoDialog(R.string.manageReceivers, R.string.delete, R.drawable.ic_transfer_black_36dp, new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						
+					}
+				},
+				false,
+				null,
+				false);
+			}
+			
 			if(v.getId() == R.id.btnEditReceiver)
 			{	// Edit...
 				SendConfigurationHelpers.openEditReceiverDialog(getOwner(), this, receiver);
 			}
 			else
 			{	// Delete...
+				// TODO confirm delete msg box
 				if(SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver) != null)
 					deletedReceiver(receiver);
 			}
@@ -202,7 +221,7 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		@Override
 		protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
 		{
-			return receiver == null ? null : SendConfigurationHelpers.GetReceiverDrawable(receiver, false);
+			return receiver == null ? null : SendConfigurationHelpers.getReceiverDrawable(receiver, false);
 		}
 		
 		@Override

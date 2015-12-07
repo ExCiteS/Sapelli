@@ -243,6 +243,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		catch(Exception e)
 		{
 			recordStore.rollbackTransactions();
+			client.logError("Error upon storing correspondent", e);
 			throw e;
 		}
 		
@@ -297,7 +298,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * @param correspondent may be null (in which case this method just returns null as well)
 	 * @param storeIfNeeded whether to store the Correspondent if it isn't already
 	 * @param forceUpdate forces the Correspondent to be updated in the database
-	 * @return a RecordReference pointing to the Record representing the Correspondent in thr database, or null if it has never been stored (or is null itself)
+	 * @return a RecordReference pointing to the Record representing the Correspondent in the database, or null if it has never been stored (or is null itself)
 	 * @throws DBException
 	 */
 	public RecordReference getCorrespondentRecordReference(Correspondent correspondent, boolean storeIfNeeded, boolean forceUpdate) throws DBException
