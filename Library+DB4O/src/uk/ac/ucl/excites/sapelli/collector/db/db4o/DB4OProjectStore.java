@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -295,45 +296,63 @@ public class DB4OProjectStore extends ProjectStore
 	}
 	
 	@Override
-	public SendSchedule retrieveSendScheduleByID(int id, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public SendSchedule retrieveSendScheduleByID(int id) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 
 	@Override
-	public void storeSendSchedule(SendSchedule schedule, TransmissionStore transmissionStore)
+	public void storeSendSchedule(SendSchedule schedule)
 	{
-		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 
 	@Override
-	public List<SendSchedule> retrieveSendSchedulesForProject(Project project, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public List<SendSchedule> retrieveSendSchedulesForProject(ProjectDescriptor projDescr) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 	
 	@Override
-	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver, TransmissionStore transmissionStore) throws UnsupportedOperationException
+	public List<SendSchedule> retrieveSendSchedulesForReceiver(Correspondent receiver) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 
 	@Override
 	public void deleteSendSchedule(SendSchedule schedule) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("Method not implemented for DB4OProjectStore");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 	
 	@Override
 	public void serialise(Project project, OutputStream out) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("serialise() not implemented");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 
 	@Override
 	public Project deserialise(InputStream in) throws UnsupportedOperationException
 	{
-		throw new UnsupportedOperationException("deserialise() not implemented");
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
+	}
+
+	@Override
+	public List<SendSchedule> retrieveEnabledSendSchedules(Type recieverTransmissionType)
+	{
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
+	}
+
+	@Override
+	public TransmissionStore getTransmissionStore() throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
+	}
+
+	@Override
+	public void deleteSendSchedulesForProject(Project project) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}
 	
 }
