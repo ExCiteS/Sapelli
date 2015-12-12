@@ -47,8 +47,14 @@ public class GeoKeyAccount extends Correspondent
 	public GeoKeyAccount(String name, String url, String username, String password)
 	{
 		super(name, Type.GeoKey);
+		if(url == null || url.isEmpty())
+			throw new IllegalArgumentException("Url cannot be null or empty!");
 		this.url = url;
+		if(username == null || username.isEmpty())
+			throw new IllegalArgumentException("Username cannot be null or empty!");
 		this.username = username;
+		if(password == null)
+			throw new IllegalArgumentException("Password cannot be null!");
 		this.password = password;
 	}
 	
@@ -118,6 +124,8 @@ public class GeoKeyAccount extends Correspondent
 	 */
 	public void setToken(String token)
 	{
+		if(token == "")
+			token = null;
 		this.token = token;
 	}
 
@@ -131,6 +139,34 @@ public class GeoKeyAccount extends Correspondent
 	public String toString()
 	{
 		return getName() + " [" + username + "@" + url + "]";
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if(obj instanceof GeoKeyAccount)
+		{
+			GeoKeyAccount that = (GeoKeyAccount) obj;
+			return	super.equals(that) && // Correspondent#equals(Object)
+					this.url.equals(that.url) &&
+					this.username.equals(that.username) &&
+					this.password.equals(that.password);
+			// ignore token
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + url.hashCode();
+		hash = 31 * hash + username.hashCode();
+		hash = 31 * hash + password.hashCode();
+		// ignore token
+		return hash;
 	}
 
 }

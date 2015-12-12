@@ -150,7 +150,6 @@ public abstract class Correspondent
 			Correspondent that = (Correspondent) obj;
 			return	this.name.equals(that.name) &&
 					this.transmissionType == that.transmissionType &&
-					(this.getAddress() != null ? this.getAddress().equals(that.getAddress()) : that.getAddress() == null) &&
 					this.userDeleted == that.userDeleted;
 		}
 		return false;
@@ -162,7 +161,6 @@ public abstract class Correspondent
 		int hash = 1;
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + transmissionType.ordinal();
-		hash = 31 * hash + (getAddress() == null ? 0 : getAddress().hashCode());
 		hash = 31 * hash + (userDeleted ? 0 : 1);
 		return hash;
 	}

@@ -52,5 +52,27 @@ public abstract class HTTPServer extends Correspondent
 	{
 		return url;
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if(obj instanceof HTTPServer)
+		{
+			HTTPServer that = (HTTPServer) obj;
+			return	super.equals(that) && // Correspondent#equals(Object)
+					this.url.equals(that.url);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + url.hashCode();
+		return hash;
+	}
 
 }
