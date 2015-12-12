@@ -36,6 +36,11 @@ import java.util.Comparator;
 public class VersionComparator implements Comparator<String>
 {
 
+	static public boolean isAtLeast(String testVersion, String minimumVersion)
+	{
+		return new VersionComparator().compare(testVersion, minimumVersion) >= 0;
+	}
+	
 	public boolean equals(Object o1, Object o2)
 	{
 		if(o1 instanceof String && o2 instanceof String)
