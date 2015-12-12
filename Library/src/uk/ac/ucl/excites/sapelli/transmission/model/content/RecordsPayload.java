@@ -185,6 +185,11 @@ public class RecordsPayload extends Payload
 		return allRecords;
 	}
 	
+	public Model getModel()
+	{
+		return model;
+	}
+	
 	/**
 	 * @return all schemata for which the transmission contains records 
 	 */
