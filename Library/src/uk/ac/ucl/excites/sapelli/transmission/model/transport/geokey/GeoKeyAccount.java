@@ -49,7 +49,7 @@ public class GeoKeyAccount extends Correspondent
 		super(name, Type.GeoKey);
 		if(url == null || url.isEmpty())
 			throw new IllegalArgumentException("Url cannot be null or empty!");
-		this.url = url;
+		this.url = url + (url.endsWith("/") ? "" : "/"); // add trailing slash
 		if(username == null || username.isEmpty())
 			throw new IllegalArgumentException("Username cannot be null or empty!");
 		this.username = username;
@@ -109,6 +109,14 @@ public class GeoKeyAccount extends Correspondent
 	public String getPassword()
 	{
 		return password;
+	}
+	
+	/**
+	 * @return
+	 */
+	public boolean hasToken()
+	{
+		return token != null;
 	}
 
 	/**
