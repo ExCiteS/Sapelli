@@ -50,6 +50,15 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 	
 	/**
 	 * @param context
+	 * @param waitingMsgId
+	 */
+	public AsyncTaskWithWaitingDialog(C context, int waitingMsgId)
+	{
+		this(context, context.getString(waitingMsgId));
+	}
+	
+	/**
+	 * @param context
 	 * @param waitingMsg
 	 */
 	public AsyncTaskWithWaitingDialog(C context, String waitingMsg)
