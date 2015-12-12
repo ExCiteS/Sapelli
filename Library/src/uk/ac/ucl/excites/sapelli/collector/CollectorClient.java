@@ -235,6 +235,18 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	}
 	
 	/**
+	 * @param model
+	 * @return the project corresponding to the given model, or {@code null} if the model was {@code null), if no such project was found, or if no projectStore is available
+	 */
+	public Project getProject(Model model)
+	{
+		if(model == null)
+			return null;
+		else
+			return getProject(model.id);
+	}
+	
+	/**
 	 * @param modelID
 	 * @return the project corresponding to the given modelID, or {@code null} if no such project was found or if no projectStore is available
 	 */
