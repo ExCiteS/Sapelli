@@ -18,7 +18,19 @@
 
 package uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey;
 
+import java.util.List;
+import java.util.Map;
+
+import android.app.Activity;
 import android.content.Context;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliSession.ProjectSession;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
@@ -26,56 +38,44 @@ import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 
 public class GeoKeySapelliClient implements GeoKeyClient
 {
+	
+	private CollectorApp app;
+	
+	public GeoKeySapelliClient(CollectorApp app)
+	{
+		this.app = app;
+	}
+	
+	static String addTrailingSlash(String url)
+	{
+		return url + (url.endsWith("/") ? "" : "/");
+	}
 
-	private final Context context;
-	
-	public GeoKeySapelliClient(Context context)
-	{
-		this.context = context;
-	}
-	
-	public boolean login(GeoKeyAccount account)
-	{
-		// TODO get token & store in account object
-		return true;
-	}
-	
 	@Override
 	public void send(GeoKeyTransmission gkTransmission)
 	{
-		if(login(gkTransmission.getCorrespondent()))
+		GeoKeySapelliSession userSession = new GeoKeySapelliSession(app, gkTransmission.getCorrespondent());
+		if(userSession.login())
 		{
-			// DO SENDING ...
+			if(gkTransmission.getPayloadType() != RecordsPayload.GetType())
+				return; // should not happen (for now)
 			
-			// if successful & ...
-			if(gkTransmission.getPayloadType() == RecordsPayload.GetType())
+			RecordsPayload payload = (RecordsPayload) gkTransmission.getPayload();
+			Project project = app.collectorClient.getProject(payload.getModel());
+			
+			ProjectSession projectSession = userSession.openProjectSession(project);
+			
+			if(projectSession == null)
+				return;
+			
+			for(Map.Entry<Schema, List<Record>> entry : payload.getRecordsBySchema().entrySet())
 			{
-				// TODO send files
 				
-				
+				//projectSession.uploadRecords(entry.getValue());
 			}
-		}
-		else
-		{
 			
+			// TODO upload attachments
 		}
 	}
 	
-	public void verify(GeoKeyAccount account, AccountVerificationCallback callback)
-	{
-		// TODO use login(), run in asynctask with spinner blocking UI
-		callback.validAccount();
-	}
-	
-	public interface AccountVerificationCallback
-	{
-		
-		public void noInternet();
-		
-		public void validAccount();
-		
-		public void invalidAccount();
-		
-	}
-
 }

@@ -78,7 +78,7 @@
     <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">These files could not be found</string>
     <string name="downloading">Downloading …</string>
-    <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
+    <string name="connectionError">Connection error. Please check if you are connected to the Internet.</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
     <string name="notification">The Service is running.</string>
@@ -218,6 +218,7 @@
     <string name="geokeyServerUrl">URL:</string>
     <string name="username">Username:</string>
     <string name="password">Password:</string>
+    <string name="verifyingServerAndAccount">Checking server &amp; user credentials.</string>
     <string name="useBinarySMS">Use binary SMS</string>
     <string name="emptyReceiverName">Please enter a name.</string>
     <string name="invalidPhoneNumber">Please enter a valid phone number.</string>

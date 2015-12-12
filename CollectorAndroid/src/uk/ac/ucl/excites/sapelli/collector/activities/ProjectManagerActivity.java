@@ -682,7 +682,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	public void downloadFailure(String downloadUrl, Exception cause)
 	{
-		showErrorDialog(R.string.downloadError, false);
+		showErrorDialog(R.string.connectionError, false);
 	}
 	
 	@Override

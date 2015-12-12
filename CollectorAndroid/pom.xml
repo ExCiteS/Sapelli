@@ -82,6 +82,11 @@
 			<artifactId>crashlytics</artifactId>
 			<version>[1.1.13,)</version>
 		</dependency>
+		<dependency>
+			<groupId>com.loopj.android</groupId>
+			<artifactId>android-async-http</artifactId>
+			<version>1.4.9</version>
+		</dependency>
 		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
 			<version>1.0-pre-v11</version> <type>aar</type> </dependency> -->
 		<!-- <dependency> <groupId>com.dropbox</groupId> <artifactId>dropbox-android-sync-sdk</artifactId> 

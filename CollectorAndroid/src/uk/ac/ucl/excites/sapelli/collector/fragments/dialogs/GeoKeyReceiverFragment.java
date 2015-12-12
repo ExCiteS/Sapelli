@@ -30,8 +30,8 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient.AccountVerificationCallback;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyTasks;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyTasks.VerificationCallback;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
@@ -209,9 +209,8 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		// Create correspondent:
 		final GeoKeyAccount toSave = new GeoKeyAccount(name, url, username, password);
 		
-		// Verify account:
-		// TODO block UI during verification
-		new GeoKeySapelliClient(getOwner()).verify(toSave, new AccountVerificationCallback()
+		// Verify it:
+		GeoKeyTasks.VerifyServerAndAccount(getOwner(), toSave, new VerificationCallback()
 		{
 			@Override
 			public void validAccount()
@@ -225,7 +224,6 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 					else
 						callback.editedReceiver(toSave, editReceiver);
 				}
-				
 				// Close dialog:
 				dialog.dismiss();
 			}
@@ -233,16 +231,22 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			@Override
 			public void noInternet()
 			{
-				// TODO show msg box
+				getOwner().showErrorDialog(R.string.connectionError, false);
+			}
+			
+			@Override
+			public void invalidServer()
+			{
+				// TODO show msg box (TODO pass reason/exception)
 			}
 			
 			@Override
 			public void invalidAccount()
 			{
-				// TODO show msg box
+				// TODO show msg box (TODO pass reason/exception)
 			}
+			
 		});
-		
 	}
 		
 }

@@ -50,6 +50,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -150,8 +152,12 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		List<Record> recsToSend = new ArrayList<Record>();
 		
+		// TODO DELETE THIS!!!
+		for(Schema s : model.getSchemata())
+			recsToSend.addAll(recordStore.retrieveRecords(s));
+		
 		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
-		recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
+		//recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
 		
 		//Also include transmittable records which have a transmission which was never sent or not received since the timeout:
 		// recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithTimedOutTransmission(receiver, model, ));
@@ -189,6 +195,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				return new BinarySMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
 			case TEXTUAL_SMS:
 				return new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
+			case GeoKey:
+				return new GeoKeyTransmission(transmissionClient, (GeoKeyAccount) receiver, payload);
 			//case HTTP:
 			//	return  new HTTPTransmission(transmissionClient, receiver, payload); // TODO !!!
 			default:
