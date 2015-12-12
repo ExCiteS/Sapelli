@@ -56,3 +56,4 @@ release.properties
 
 .dropbox.attr
 /linecount.bat
+/CollectorAndroid/*.log
