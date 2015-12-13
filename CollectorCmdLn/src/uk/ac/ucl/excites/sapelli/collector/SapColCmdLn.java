@@ -215,7 +215,7 @@ public class SapColCmdLn
 		projectJSON.put("name", project.getName());
 		projectJSON.put("variant", project.getVariant());
 		projectJSON.put("version", project.getVersion());
-		projectJSON.put("geokey_project_name", project.toString(false));
+		projectJSON.put("display_name", project.toString(false));
 		projectJSON.put("sapelli_id", project.getID());
 		projectJSON.put("sapelli_fingerprint", project.getFingerPrint());
 		projectJSON.put("sapelli_model_id", project.getModel().id);
