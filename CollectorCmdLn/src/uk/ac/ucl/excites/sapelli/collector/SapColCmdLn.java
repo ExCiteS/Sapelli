@@ -59,6 +59,8 @@ public class SapColCmdLn
 		options.addOption("geokey", false, "Produce 'sapelli_project_info' (JSON) for geokey_sapelli");
 	}
 
+	static FileStorageProvider fsp;
+	
 	/**
 	 * @param args
 	 */
@@ -87,10 +89,7 @@ public class SapColCmdLn
 			baseFolder = new File(workingDir, "Sapelli");
 		if(!baseFolder.exists())
 			baseFolder.mkdir();
-		File dlFolder = new File(baseFolder, "downloads");
-		if(!dlFolder.exists())
-			dlFolder.mkdir();
-		FileStorageProvider fsp = new FileStorageProvider(baseFolder, dlFolder);
+		fsp = new FileStorageProvider(baseFolder, new File(System.getProperty("java.io.tmpdir")));
 
 		// Setup database(s)
 		// CollectorClient sapClient = new CollectorClient();
@@ -139,6 +138,7 @@ public class SapColCmdLn
 		System.out.println(" - version: " + project.getVersion());
 		System.out.println(" - display name: " + project.toString(false));
 		System.out.println(" - model id: " + project.getModel().id);
+		System.out.println(" - install-path: " + fsp.getProjectInstallationFolder(project, false).getAbsolutePath());
 		System.out.println(" - Forms:");
 		int f = 0;
 		for(Form frm : project.getForms())
@@ -173,6 +173,7 @@ public class SapColCmdLn
 		projectJSON.put("version", project.getVersion());
 		projectJSON.put("display-name", project.toString(false));
 		projectJSON.put("model-id", project.getModel().id);
+		projectJSON.put("install-path", fsp.getProjectInstallationFolder(project, false).getAbsolutePath());
 		ArrayNode formsJSON = factory.arrayNode();
 		for(Form frm : project.getForms())
 		{
@@ -217,7 +218,8 @@ public class SapColCmdLn
 		projectJSON.put("geokey_project_name", project.toString(false));
 		projectJSON.put("sapelli_id", project.getID());
 		projectJSON.put("sapelli_fingerprint", project.getFingerPrint());
-		projectJSON.put("model_id", project.getModel().id);
+		projectJSON.put("sapelli_model_id", project.getModel().id);
+		projectJSON.put("installation_path", fsp.getProjectInstallationFolder(project, false).getAbsolutePath());
 		ArrayNode formsJSON = factory.arrayNode();
 		for(Form frm : project.getForms())
 		{

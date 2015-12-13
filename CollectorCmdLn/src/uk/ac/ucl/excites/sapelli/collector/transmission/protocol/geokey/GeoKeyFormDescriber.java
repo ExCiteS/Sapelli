@@ -75,7 +75,7 @@ public class GeoKeyFormDescriber implements FieldVisitor
 		formNode.set("fields", fieldNodes);
 		formNode.set("locations", locationNodes);
 		formNode.put("stores_end_time", form.isStoreEndTime());
-		formNode.put("model_schema_number", form.getProject().getModel().getSchemaNumber(form.getSchema()));
+		formNode.put("sapelli_model_schema_number", form.getProject().getModel().getSchemaNumber(form.getSchema()));
 		return formNode;
 	}
 	
