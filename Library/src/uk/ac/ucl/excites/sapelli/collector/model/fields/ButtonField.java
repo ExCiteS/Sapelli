@@ -109,9 +109,13 @@ public class ButtonField extends Field
 	{
 		switch(columnType)
 		{
-			case BOOLEAN : return new BooleanColumn(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this));
-			case DATETIME : return TimeStampColumn.Century21NoMS(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this), true);
-			/* case NONE */ default : return null;
+			case BOOLEAN :
+				return new BooleanColumn(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this));
+			case DATETIME :
+				return TimeStampColumn.Century21NoMS(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this), true);
+			case NONE :
+			default :
+				return null;
 		}
 	}
 

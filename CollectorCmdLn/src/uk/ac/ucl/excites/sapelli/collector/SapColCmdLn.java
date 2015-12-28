@@ -28,17 +28,18 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyFormDescriber;
 
 /**
  * Simple command-line interface to load/verify (and in the future store) Sapelli Collector projects
@@ -55,8 +56,11 @@ public class SapColCmdLn
 		Option loadFile = Option.builder("load").hasArg().argName("sap_file").desc("Sapelli project (*.sap) to load").build();
 		options.addOption(loadFile);
 		options.addOption("json", false, "Produce JSON output");
+		options.addOption("geokey", false, "Produce 'sapelli_project_info' (JSON) for geokey_sapelli");
 	}
 
+	static FileStorageProvider fsp;
+	
 	/**
 	 * @param args
 	 */
@@ -85,10 +89,7 @@ public class SapColCmdLn
 			baseFolder = new File(workingDir, "Sapelli");
 		if(!baseFolder.exists())
 			baseFolder.mkdir();
-		File dlFolder = new File(baseFolder, "downloads");
-		if(!dlFolder.exists())
-			dlFolder.mkdir();
-		FileStorageProvider fsp = new FileStorageProvider(baseFolder, dlFolder);
+		fsp = new FileStorageProvider(baseFolder, new File(System.getProperty("java.io.tmpdir")));
 
 		// Setup database(s)
 		// CollectorClient sapClient = new CollectorClient();
@@ -108,10 +109,13 @@ public class SapColCmdLn
 			try
 			{
 				project = loader.load(sapFile);
-				if(!cmd.hasOption("json"))
-					printProjectInfo(sapFile, project);
-				else
+				if(cmd.hasOption("json"))
 					printProjectInfoJSON(sapFile, project);
+				else if(cmd.hasOption("geokey"))
+					printProjectInfoForGeoKey(sapFile, project);
+				else
+					printProjectInfo(sapFile, project);
+					
 			}
 			catch(Exception e)
 			{
@@ -134,6 +138,7 @@ public class SapColCmdLn
 		System.out.println(" - version: " + project.getVersion());
 		System.out.println(" - display name: " + project.toString(false));
 		System.out.println(" - model id: " + project.getModel().id);
+		System.out.println(" - install-path: " + fsp.getProjectInstallationFolder(project, false).getAbsolutePath());
 		System.out.println(" - Forms:");
 		int f = 0;
 		for(Form frm : project.getForms())
@@ -168,6 +173,7 @@ public class SapColCmdLn
 		projectJSON.put("version", project.getVersion());
 		projectJSON.put("display-name", project.toString(false));
 		projectJSON.put("model-id", project.getModel().id);
+		projectJSON.put("install-path", fsp.getProjectInstallationFolder(project, false).getAbsolutePath());
 		ArrayNode formsJSON = factory.arrayNode();
 		for(Form frm : project.getForms())
 		{
@@ -181,6 +187,50 @@ public class SapColCmdLn
 		
 		// Serialise:
 		mapper.writeTree(generator, projectJSON);
-	}
+	}	
 
+	/**
+	 * @param sapFile
+	 * @param project
+	 * @throws IOException
+	 * @see https://github.com/ExCiteS/geokey-sapelli
+	 */
+	static public void printProjectInfoForGeoKey(File sapFile, Project project) throws IOException
+	{
+		GeoKeyFormDescriber gkFormDescriber = new GeoKeyFormDescriber();
+		
+		// Create the node factory that gives us nodes.
+		JsonNodeFactory factory = new JsonNodeFactory(false);
+
+		// create a json factory to write the treenode as json. for the example
+		// we just write to console
+		JsonFactory jsonFactory = new JsonFactory();
+		JsonGenerator generator = jsonFactory.createGenerator(System.out);
+		ObjectMapper mapper = new ObjectMapper();
+
+		// the root node
+		ObjectNode projectJSON = factory.objectNode();
+		
+		// describe project:
+		projectJSON.put("name", project.getName());
+		projectJSON.put("variant", project.getVariant());
+		projectJSON.put("version", project.getVersion());
+		projectJSON.put("display_name", project.toString(false));
+		projectJSON.put("sapelli_id", project.getID());
+		projectJSON.put("sapelli_fingerprint", project.getFingerPrint());
+		projectJSON.put("sapelli_model_id", project.getModel().id);
+		projectJSON.put("installation_path", fsp.getProjectInstallationFolder(project, false).getAbsolutePath());
+		ArrayNode formsJSON = factory.arrayNode();
+		for(Form frm : project.getForms())
+		{
+			ObjectNode formNode = gkFormDescriber.getFormJSON(frm);
+			if(formNode != null)
+				formsJSON.add(formNode);
+		}
+		projectJSON.set("forms", formsJSON);
+		
+		// Serialise:
+		mapper.writeTree(generator, projectJSON);
+	}
+	
 }

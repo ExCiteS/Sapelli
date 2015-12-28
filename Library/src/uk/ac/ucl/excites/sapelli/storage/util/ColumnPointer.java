@@ -331,14 +331,14 @@ public class ColumnPointer<C extends Column<?>>
 	 * @param parents
 	 * @param column the pointed-at column
 	 */
-	public ColumnPointer(List<ValueSetColumn<?, ?>> parents, C column)
+	public ColumnPointer(List<? extends ValueSetColumn<?, ?>> parents, C column)
 	{
 		// Parents null check:
 		if(parents == null)
 			throw new NullPointerException("parents cannot be null, pass an empty list instead!");
 		// Build up stack and perform further null checks:
 		columnStack = new Stack<Column<?>>();
-		Iterator<ValueSetColumn<?, ?>> parentIter = parents.iterator();
+		Iterator<? extends ValueSetColumn<?, ?>> parentIter = parents.iterator();
 		while(columnStack.isEmpty() || columnStack.peek() != column)
 		{
 			Column<?> col = parentIter.hasNext() ? parentIter.next() : column;

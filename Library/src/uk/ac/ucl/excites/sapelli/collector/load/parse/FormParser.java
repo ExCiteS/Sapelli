@@ -436,8 +436,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_ORIENTATION, false));
 				newField(orField, attributes);
 				orField.setStoreAzimuth(attributes.getBoolean("storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
-				orField.setStoreAzimuth(attributes.getBoolean("storePitch", OrientationField.DEFAULT_STORE_PITCH));
-				orField.setStoreAzimuth(attributes.getBoolean("storeRoll", OrientationField.DEFAULT_STORE_ROLL));
+				orField.setStorePitch(attributes.getBoolean("storePitch", OrientationField.DEFAULT_STORE_PITCH));
+				orField.setStoreRoll(attributes.getBoolean("storeRoll", OrientationField.DEFAULT_STORE_ROLL));
 			}
 			// <BelongsTo>
 			else if(qName.equals(TAG_BELONGS_TO))

@@ -29,6 +29,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -369,6 +370,16 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 		return true;
 	}
 
+	/**
+	 * @param subColumn
+	 * @return
+	 * @throws IllegalArgumentException when the given column is not a subcolumn of this ValueSetColumn
+	 */
+	public String getQualifiedSubColumnName(Column<?> subColumn) throws IllegalArgumentException
+	{
+		return new ColumnPointer<Column<?>>(Collections.singletonList(this), subColumn).getQualifiedColumnName(QUALIFIED_NAME_SEPARATOR);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
 	 */
