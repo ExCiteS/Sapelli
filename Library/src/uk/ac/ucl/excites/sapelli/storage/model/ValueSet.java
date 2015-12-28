@@ -653,6 +653,36 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		}
 	}
 	
+	/**
+	 * Checks whether this ValueSet is *likely* to be the result of lossy storage/transmission.
+	 * This is done by comparing each current value to its lossyly encoding version, if all are
+	 * equal then the ValueSet is assumed to be the result of lossy storage/transmission (because
+	 * there is no further information loss when re-encoding now). If at least one value is different
+	 * from its lossyly encoded version than the ValueSet is assumed to still be in a lossless state.
+	 * 
+	 * @return
+	 */
+	public boolean isProbablyLossy()
+	{
+		if(!columnSet.canBeLossy())
+			return false;
+		for(Column<?> c : columnSet.getColumns(false))
+			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveAsLossyEncodedValue(this)))
+				return false; // at least value is different from its lossy version --> this ValueSet is lossless
+		return true;
+	}
+	
+	/**
+	 * Checks whether this ValueSet is *likely* to be in a lossless state.
+	 * 
+	 * @return
+	 * @see #isProbablyLossy()
+	 */
+	public boolean isProbablyLossless()
+	{
+		return !isProbablyLossy();
+	}
+	
 	@Override
 	public int hashCode()
 	{
