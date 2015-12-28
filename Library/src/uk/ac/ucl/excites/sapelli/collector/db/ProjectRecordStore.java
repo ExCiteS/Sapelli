@@ -132,11 +132,6 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	{
 		HFK_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN), true /*seal!*/);
 	}
-	// Seal the collector management model:
-	static
-	{
-		COLLECTOR_MANAGEMENT_MODEL.seal();
-	}
 	
 	// ColumnSet & columns used for Project serialisation (see serialise() & deserialise()): 
 	static private final ColumnSet PROJECT_SERIALISIATION_CS = new ColumnSet("ProjectSerialisation", false);
@@ -147,6 +142,12 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		PROJECT_SERIALISIATION_CS.seal();
 	}
 	
+	// Seal the model itself:
+	static
+	{
+		COLLECTOR_MANAGEMENT_MODEL.seal();
+	}
+			
 	// DYNAMICS--------------------------------------------
 	private final RecordStoreWrapper<CollectorClient> rsWrapper;
 	private final FileStorageProvider fileStorageProvider;
@@ -381,16 +382,21 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		return loadProject(descriptor);
 	}
 	
+	protected Project retrieveProject(RecordReference projectRecordReference)
+	{
+		return getProject(rsWrapper.recordStore.retrieveRecord(projectRecordReference));
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(java.lang.String, java.lang.String, java.lang.String)
 	 */
 	@Override
 	public Project retrieveProject(String name, String variant, String version)
 	{
-		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
-																			new EqualityConstraint(PROJECT_NAME_COLUMN, name),
-																			new EqualityConstraint(PROJECT_VARIANT_COLUMN, variant != null ? variant : ""),
-																			new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
+		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(PROJECT_SCHEMA,
+																					new EqualityConstraint(PROJECT_NAME_COLUMN, name),
+																					new EqualityConstraint(PROJECT_VARIANT_COLUMN, variant != null ? variant : ""),
+																					new EqualityConstraint(PROJECT_VERSION_COLUMN, version))));
 	}
 
 	private Record queryProjectRecordByIDFingerPrint(int projectID, int projectFingerPrint)
@@ -419,9 +425,9 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	@Override
 	public Project retrieveV1Project(int schemaID, int schemaVersion)
 	{
-		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(	PROJECT_SCHEMA,
-																			new EqualityConstraint(PROJECT_ID_COLUMN, schemaID),
-																			new EqualityConstraint(PROJECT_V1X_SCHEMA_VERSION_COLUMN, schemaVersion))));
+		return getProject(rsWrapper.recordStore.retrieveRecord(new FirstRecordQuery(PROJECT_SCHEMA,
+																					new EqualityConstraint(PROJECT_ID_COLUMN, schemaID),
+																					new EqualityConstraint(PROJECT_V1X_SCHEMA_VERSION_COLUMN, schemaVersion))));
 	}
 
 	/* (non-Javadoc)
@@ -455,15 +461,15 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			Constraint projectMatchConstraint = getProjectRecordReference(projectDescriptor).getRecordQueryConstraint();
 			// Delete project record:
 			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(PROJECT_SCHEMA), projectMatchConstraint));
-			// Delete associated FSI & HFK records:
-			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(FSI_SCHEMA), projectMatchConstraint));
-			rsWrapper.recordStore.delete(new RecordsQuery(Source.From(HFK_SCHEMA), projectMatchConstraint));
+			// Delete associated FSI, HFK & SendSchedule records:
+			rsWrapper.recordStore.delete(new RecordsQuery(FSI_SCHEMA, projectMatchConstraint));
+			rsWrapper.recordStore.delete(new RecordsQuery(HFK_SCHEMA, projectMatchConstraint));
 			// Remove project from cache:
 			cache.remove(getCacheKey(projectDescriptor));
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
+			rsWrapper.client.logError("Error upon deleting project: " + projectDescriptor.toString(false), e);
 		}
 	}
 	
