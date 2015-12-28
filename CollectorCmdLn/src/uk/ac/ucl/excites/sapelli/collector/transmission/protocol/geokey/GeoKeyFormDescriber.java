@@ -52,14 +52,14 @@ public class GeoKeyFormDescriber implements FieldVisitor
 {
 
 	private final JsonNodeFactory factory = new JsonNodeFactory(false);
-	private final ArrayNode fieldNodes = factory.arrayNode();
-	private final ArrayNode locationNodes = factory.arrayNode();
+	private ArrayNode fieldNodes;
+	private ArrayNode locationNodes;
 	
 	public ObjectNode getFormJSON(Form form)
 	{
 		// Initialise:
-		fieldNodes.removeAll();
-		locationNodes.removeAll();
+		fieldNodes = factory.arrayNode();
+		locationNodes = factory.arrayNode();
 		
 		// Check:
 		if(!form.isProducesRecords())
