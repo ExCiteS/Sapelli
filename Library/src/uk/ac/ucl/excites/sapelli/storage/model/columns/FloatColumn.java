@@ -155,30 +155,39 @@ public class FloatColumn extends NumberColumn<Double>
 	}
 
 	@Override
-	protected void write(Double value, BitOutputStream bitStream) throws IOException
+	protected void write(Double value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
-		if(doublePrecision)
+		if(doublePrecision || lossless)
 			bitStream.write(value);
 		else
 			bitStream.write(value.floatValue());
 	}
 
 	@Override
-	protected Double read(BitInputStream bitStream) throws IOException
+	protected Double read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
-		return doublePrecision ? bitStream.readDouble() : bitStream.readFloat();
+		return doublePrecision || lossless ? bitStream.readDouble() : bitStream.readFloat();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		return !doublePrecision; // more efficient than Column#canBeLossy()
 	}
 
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
-		return doublePrecision ? Double.SIZE : Float.SIZE;
+		return doublePrecision || lossless ? Double.SIZE : Float.SIZE;
 	}
 	
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
-		return doublePrecision ? Double.SIZE : Float.SIZE;
+		return getMinimumValueSize(lossless); // size is constant
 	}
 
 	@Override

@@ -182,17 +182,22 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * This is typically the given schemaColumn itself, unless a "binaryColumn" has been registered for it.
 	 * 
 	 * @param schemaColumn
+	 * @param forceLossless if {@code true} the "binaryColumn" will only be returned if it is lossless, otherwise the given (assumed lossless) schemaColumn is returned
 	 * @return
 	 */
-	protected Column<?> getBinaryColumn(Column<?> schemaColumn)
+	protected Column<?> getBinaryColumn(Column<?> schemaColumn, boolean forceLossless)
 	{
-		if(swapColumns != null)
+		if(!forceLossless && swapColumns != null)
 		{
 			int schemaColPos = columnSet.getColumnPosition(schemaColumn.name);
 			if(schemaColPos == Schema.UNKNOWN_COLUMN_POSITION)
 				throw new IllegalArgumentException("Unknown subcolumn \"" + schemaColumn.name + "\"!"); // this should never happen
 			if(swapColumns.containsKey(schemaColPos))
-				return swapColumns.get(schemaColPos);
+			{
+				Column<?> binaryCol = swapColumns.get(schemaColPos);
+				if(!forceLossless || !binaryCol.canBeLossy())
+					return binaryCol;
+			}
 		}
 		return schemaColumn;
 	}
@@ -236,11 +241,11 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 
 	@Override
-	protected void write(VS record, BitOutputStream bitStream) throws IOException
+	protected void write(VS record, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		for(Column<?> subCol : columnSet.getColumns(false))
-			if(!isColumnSkipped(subCol))
-				getBinaryColumn(subCol).writeObject(subCol.retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
+			if(lossless || !isColumnSkipped(subCol))
+				getBinaryColumn(subCol, lossless).writeObject(subCol.retrieveValue(record), bitStream, lossless); // will also write optional bit of the subcolumn if it is optional
 	}
 	
 	/**
@@ -249,12 +254,12 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	public abstract VS getNewValueSet();
 
 	@Override
-	protected VS read(BitInputStream bitStream) throws IOException
+	protected VS read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		VS valueSet = getNewValueSet();
 		for(Column<?> subCol : columnSet.getColumns(false))
-			if(!isColumnSkipped(subCol))
-				subCol.storeObject(valueSet, getBinaryColumn(subCol).readValue(bitStream));
+			if(lossless || !isColumnSkipped(subCol))
+				subCol.storeObject(valueSet, getBinaryColumn(subCol, lossless).readValue(bitStream, lossless));
 		return valueSet;
 	}
 
@@ -338,22 +343,24 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 		// does nothing
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#_getMaximumSize()
-	 */
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
-		return columnSet.getMaximumSize(false, getSkipColumns(false));
+		int total = 0;
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(lossless || !isColumnSkipped(subCol))
+				total += getBinaryColumn(subCol, lossless).getMaximumSize(lossless);
+		return total;
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#_getMinimumSize()
-	 */
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
-		return columnSet.getMinimumSize(false, getSkipColumns(false));
+		int total = 0;
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(lossless || !isColumnSkipped(subCol))
+				total += getBinaryColumn(subCol, lossless).getMinimumSize(lossless);
+		return total;
 	}
 
 	/* (non-Javadoc)

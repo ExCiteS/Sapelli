@@ -35,9 +35,9 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	static private final long serialVersionUID = 2L;
 	
 	//	Alternative latitude, longitude & altitude columns using 32 instead of 64 bits (used when doublePrecision=false):
-	static final private FloatColumn COLUMN_LATITUDE_32 = new FloatColumn(Location.COLUMN_LATITUDE.getName(), false, true, false);		// non-optional signed 32 bit float
-	static final private FloatColumn COLUMN_LONGITUDE_32 = new FloatColumn(Location.COLUMN_LONGITUDE.getName(), false, true, false);	// non-optional signed 32 bit float
-	static final private FloatColumn COLUMN_ALTITUDE_32 = new FloatColumn(Location.COLUMN_ALTITUDE.getName(), true, true, false);		// optional signed 32 bit float
+	static final private FloatColumn COLUMN_LATITUDE_32 = new FloatColumn(Location.COLUMN_LATITUDE.getName(), false, true, false);		// non-optional signed 32 bit float (lossy)
+	static final private FloatColumn COLUMN_LONGITUDE_32 = new FloatColumn(Location.COLUMN_LONGITUDE.getName(), false, true, false);	// non-optional signed 32 bit float (lossy)
+	static final private FloatColumn COLUMN_ALTITUDE_32 = new FloatColumn(Location.COLUMN_ALTITUDE.getName(), true, true, false);		// optional signed 32 bit float (lossy)
 		
 	//Dynamic--------------------------------------------------------
 	
@@ -86,7 +86,7 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 		if(!storeProvider)
 			addSkipColumn(Location.COLUMN_PROVIDER);
 		if(!doublePrecision)
-		{	// Use 32 bit float columns for binary storage of lat, lon & alt values:
+		{	// Use 32 bit float columns for (lossy) binary storage of lat, lon & alt values:
 			addBinaryColumn(Location.COLUMN_LATITUDE, COLUMN_LATITUDE_32);
 			addBinaryColumn(Location.COLUMN_LONGITUDE, COLUMN_LONGITUDE_32);
 			addBinaryColumn(Location.COLUMN_ALTITUDE, COLUMN_ALTITUDE_32);
@@ -115,7 +115,7 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	
 	public boolean isDoublePrecision()
 	{
-		return getBinaryColumn(Location.COLUMN_LATITUDE) == Location.COLUMN_LATITUDE; // (and not == COLUMN_LATITUDE_32)
+		return getBinaryColumn(Location.COLUMN_LATITUDE, false) == Location.COLUMN_LATITUDE; // (and not == COLUMN_LATITUDE_32)
 	}
 	
 	public boolean isStoreAltitude()

@@ -453,30 +453,30 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream, boolean)
 	 */
 	@Override
-	protected void write(L values, BitOutputStream bitStream) throws IOException
+	protected void write(L values, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		// Write size:
 		sizeField.write(values.size(), bitStream);
 		// Write values:
 		for(T value : values)
-			singleColumn.writeValue(value, bitStream);
+			singleColumn.writeValue(value, bitStream, lossless);
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.storage.io.BitInputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream, boolean)
 	 */
 	@Override
-	protected L read(BitInputStream bitStream) throws IOException
+	protected L read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		// Read size:
 		int size = sizeField.readInt(bitStream);
 		// Read values:
 		L values = getNewList(size);
 		for(int i = 0; i < size; i++)
-			values.add(singleColumn.readValue(bitStream));
+			values.add(singleColumn.readValue(bitStream, lossless));
 		return values;
 	}
 	
@@ -524,15 +524,24 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	}
 
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
-		return sizeField.size() + (getMaximumLength() * singleColumn.getMaximumSize());
+		return sizeField.size() + (getMaximumLength() * singleColumn.getMaximumSize(lossless));
 	}
 
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
-		return sizeField.size() + (getMinimumLength() * singleColumn.getMinimumSize());
+		return sizeField.size() + (getMinimumLength() * singleColumn.getMinimumSize(lossless));
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		return singleColumn.canBeLossy();
 	}
 
 	/**

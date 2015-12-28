@@ -70,19 +70,19 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.storage.io.BitOutputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream, boolean)
 	 */
 	@Override
-	protected void write(Boolean value, BitOutputStream bitStream) throws IOException
+	protected void write(Boolean value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		bitStream.write(value);
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.storage.model.Column#read(uk.ac.ucl.excites.storage.io.BitOutputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream, boolean)
 	 */
 	@Override
-	protected Boolean read(BitInputStream bitStream) throws IOException
+	protected Boolean read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		return bitStream.readBit();
 	}
@@ -97,15 +97,24 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	}
 
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
 		return 1;
 	}
 	
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
 		return 1;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		return false;
 	}
 
 	@Override

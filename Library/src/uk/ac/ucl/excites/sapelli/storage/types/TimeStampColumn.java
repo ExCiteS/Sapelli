@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.types;
 
 import java.io.IOException;
+import java.math.BigInteger;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -213,10 +214,11 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	protected IntegerRangeMapping timeMapping;
-	protected boolean keepMS;
-	protected boolean keepLocalTimezone;
-	protected boolean strict;
+	protected final IntegerRangeMapping timeMapping;
+	protected final IntegerRangeMapping msTimeMapping;
+	protected final boolean keepMS;
+	protected final boolean keepLocalTimezone;
+	protected final boolean strict;
 
 	/**
 	 * @param name
@@ -247,8 +249,8 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	public TimeStampColumn(String name, TimeStamp lowBound, TimeStamp highBound, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
 		this(	name,
-				new IntegerRangeMapping(	Math.round(lowBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d)),
-											Math.round(highBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d))),
+				new IntegerRangeMapping(Math.round(lowBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d)),
+										Math.round(highBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d))),
 				keepMS,
 				keepLocalTimezone,
 				strictHighBound,
@@ -260,7 +262,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	/**
 	 * @param name
 	 * @param lowBound earliest allowed DateTime (inclusive)
-	 * @param the number of bits to use
+	 * @param sizeBits the number of bits to use (in lossy mode)
 	 * @param keepMS whether to use millisecond-level (true) or second-level (false) accuracy
 	 * @param keepLocalTimezone whether or not to remember to local timezone
 	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any DateTime that fits in the allocated number of bits)
@@ -275,7 +277,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	/**
 	 * @param name
 	 * @param lowBound earliest allowed DateTime (inclusive)
-	 * @param the number of bits to use
+	 * @param sizeBits the number of bits to use (in lossy mode)
 	 * @param keepMS whether to use millisecond-level (true) or second-level (false) accuracy
 	 * @param keepLocalTimezone whether or not to remember to local timezone
 	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any DateTime that fits in the allocated number of bits)
@@ -286,8 +288,8 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	public TimeStampColumn(String name, TimeStamp lowBound, int sizeBits, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
 		this(	name,
-				IntegerRangeMapping.ForSize(	Math.round(lowBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d)),
-												sizeBits - (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0)),
+				IntegerRangeMapping.ForSize(Math.round(lowBound.getMsSinceEpoch() / (keepMS ? 1 : 1000d)),
+											sizeBits - (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0)),
 				keepMS,
 				keepLocalTimezone,
 				strictHighBound,
@@ -299,9 +301,12 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	private TimeStampColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
 		super(name, optional, defaultValue);
-		this.timeMapping = timeMapping;
 		this.keepMS = keepMS;
 		this.keepLocalTimezone = keepLocalTimezone;
+		this.timeMapping = timeMapping;
+		this.msTimeMapping = keepMS ?	timeMapping : 
+										new IntegerRangeMapping(timeMapping.lowBound().multiply(BigInteger.valueOf(1000)),
+																timeMapping.highBound().multiply(BigInteger.valueOf(1000)));
 		this.strict = strictHighBound;
 		
 		// Add automatic virtual version if requested:
@@ -399,10 +404,13 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 	
 	@Override
-	protected void write(TimeStamp value, BitOutputStream bitStream) throws IOException
+	protected void write(TimeStamp value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
-		timeMapping.write(Math.round(value.getMsSinceEpoch() / (keepMS ? 1 : 1000d)), bitStream);
-		if(keepLocalTimezone)
+		if(keepMS || lossless)
+			msTimeMapping.write(value.getMsSinceEpoch(), bitStream);
+		else
+			timeMapping.write(Math.round(value.getMsSinceEpoch() / 1000d), bitStream);
+		if(keepLocalTimezone || lossless)
 			bitStream.write(value.getQuarterHourOffsetWrtUTC(), TIMEZONE_QH_OFFSET_SIZE, true);
 	}
 
@@ -412,11 +420,16 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
-	protected TimeStamp read(BitInputStream bitStream) throws IOException
+	protected TimeStamp read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
-		long msSinceJavaEpoch = timeMapping.readLong(bitStream) * (keepMS ? 1 : 1000);
-		return new TimeStamp(msSinceJavaEpoch, keepLocalTimezone ? TimeStamp.getDateTimeZoneForQHOffset((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : DateTimeZone.UTC);
-	}		
+		return new TimeStamp(
+				keepMS || lossless ?
+					msTimeMapping.readLong(bitStream) :
+					timeMapping.readLong(bitStream) * 1000,
+				keepLocalTimezone || lossless ?
+					TimeStamp.getDateTimeZoneForQHOffset((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) :
+					DateTimeZone.UTC);
+	}
 
 	@Override
 	protected void validate(TimeStamp value) throws IllegalArgumentException
@@ -428,26 +441,35 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
 	@Override
-	protected int _getMinimumSize()
+	public boolean canBeLossy()
 	{
-		return timeMapping.size() + (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0);
+		return !keepMS || !keepLocalTimezone; // more efficient than Column#canBeLossy()
+	}
+
+	@Override
+	protected int getMinimumValueSize(boolean lossless)
+	{
+		return (lossless ? msTimeMapping : timeMapping).size() + (keepLocalTimezone || lossless ? TIMEZONE_QH_OFFSET_SIZE : 0);
 	}
 	
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
-		return _getMinimumSize(); //size is fixed
+		return getMinimumValueSize(lossless); // size is fixed
 	}
 	
 	public TimeStamp getLowBound()
 	{
-		return new TimeStamp(timeMapping.lowBound().longValue() * (keepMS ? 1 : 1000));
+		return new TimeStamp(msTimeMapping.lowBound().longValue());
 	}
 
 	public TimeStamp getHighBound()
 	{
-		return new TimeStamp(timeMapping.highBound(strict).longValue() * (keepMS ? 1 : 1000));
+		return new TimeStamp(msTimeMapping.highBound(strict).longValue());
 	}
 
 	@Override

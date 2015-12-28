@@ -387,7 +387,7 @@ public class RecordsPayload extends Payload
 								if(factoredOutValues.containsKey(c))
 								{	// Column is factored out:
 									out.write(true); // write factored-out flag = true
-									c.writeObject(factoredOutValues.get(c), out); // // Write factored out value
+									c.writeObject(factoredOutValues.get(c), out, false); // // Write factored out value
 								}
 								else
 									// Column is *not* factored out:
@@ -405,7 +405,7 @@ public class RecordsPayload extends Payload
 				CollectionUtils.addIgnoreNull(skipColumns, autoIncrementKeyColumn);				// auto-incrementing key,
 				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				for(Record r : recordsBySchema.get(schema))
-					r.writeToBitStream(out, false /* ... and virtual columns */, skipColumns);
+					r.writeToBitStream(out, false /* ... and virtual columns */, skipColumns, false);
 			}
 			
 			// Close the stream & return bits:
@@ -463,7 +463,7 @@ public class RecordsPayload extends Payload
 							if(!nonTransmittableColumns.contains(c) && c != autoIncrementKeyColumn)
 							{
 								if(in.readBit()) // Read factored-out flag, indicating whether column is factored-out; if = true: 
-									factoredOutValues.put(c, c.readValue(in)); // read factored out value
+									factoredOutValues.put(c, c.readValue(in, false)); // read factored out value
 							}
 						}
 					}
@@ -474,12 +474,12 @@ public class RecordsPayload extends Payload
 				CollectionUtils.addIgnoreNull(skipColumns, autoIncrementKeyColumn);				// auto-incrementing key,
 				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				while(	records.size() < numberOfRecordsForSchema &&					
-						in.bitsAvailable() >= schema.getMinimumSize(false /* ... and virtual columns */, skipColumns))
+						in.bitsAvailable() >= schema.getMinimumSize(false /* ... and virtual columns */, skipColumns, false))
 				{
 					// Get new Record instance:
 					record = schema.createRecord();
 					// Read record values from the stream, skipping virtual columns and factored-out columns:
-					record.readFromBitStream(in, false /* ... and virtual columns */, skipColumns);
+					record.readFromBitStream(in, false /* ... and virtual columns */, skipColumns, false);
 					// Set factored-out values:
 					for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
 						fEntry.getKey().storeObject(record, fEntry.getValue());

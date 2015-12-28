@@ -422,12 +422,13 @@ public class Schema extends ColumnSet implements Serializable
 	
 	/**
 	 * @param serialisedValues without virtual columns!
+	 * @param lossless whether the given byte array is a (guaranteed) lossless ({@code true}), or a (possibly) lossy ({@code false}) representation of the values
 	 * @return
 	 * @throws Exception 
 	 */
-	public Record createRecord(byte[] serialisedValues) throws IOException
+	public Record createRecord(byte[] serialisedValues, boolean lossless) throws IOException
 	{
-		return new Record(this, serialisedValues);
+		return new Record(this, serialisedValues, lossless);
 	}
 	
 	/**

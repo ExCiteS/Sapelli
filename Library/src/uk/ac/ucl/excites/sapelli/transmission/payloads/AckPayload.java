@@ -77,7 +77,7 @@ public class AckPayload extends Payload
 	{
 		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
 		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
-		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream);
+		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream, true);
 	}
 
 	@Override
@@ -85,7 +85,7 @@ public class AckPayload extends Payload
 	{
 		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
 		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
-		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream); 
+		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream, true); 
 	}
 
 	/**

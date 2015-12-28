@@ -52,14 +52,18 @@ public class PrimaryKey extends Index
 		// Check if we have at least 1 column:
 		if(columns == null || columns.length == 0)
 			throw new IllegalArgumentException("Primary key needs to span at least 1 column");
-		// Check if none of the columns are optional:
+		// Check if none of the columns are optional or lossy:
 		for(Column<?> idxCol : getColumns(false))
+		{
 			if(!idxCol.isRequired(true))
-				throw new IllegalArgumentException("An primary key cannot contain optional (i.e. nullable) (sub)columns!");
+				throw new IllegalArgumentException("A primary key cannot contain optional (i.e. nullable) (sub)columns!");
+			if(idxCol.canBeLossy())
+				throw new IllegalArgumentException("A primary key cannot contain lossy (sub)columns!");
+		}
 	}
 	
 	@Override
-    public boolean equals(Object obj)
+	public boolean equals(Object obj)
 	{
 		if(this == obj)
 			return true;
@@ -69,7 +73,7 @@ public class PrimaryKey extends Index
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + "PrimaryKey".hashCode(); // to differentiate from a normal index

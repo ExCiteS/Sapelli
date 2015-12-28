@@ -446,17 +446,18 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Converts the given {@code <T>} value to byte[] representation
 	 * 
 	 * @param value
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @return a byte[] or null in case of an error
 	 * @throws IOException if an I/O error happens
 	 */
-	public byte[] toBytes(T value) throws IOException
+	public byte[] toBytes(T value, boolean lossless) throws IOException
 	{
 		BitOutputStream bos = null;
 		try
 		{
 			ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
 			bos = new BitWrapOutputStream(baos);
-			writeValue(value, bos);
+			writeValue(value, bos, lossless);
 			bos.flush();
 			return baos.toByteArray();
 		}
@@ -470,16 +471,17 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Convert the given byte[] representation to a value of type {@code <T>}
 	 * 
 	 * @param bytes
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value
 	 * @throws IOException if an I/O error happens
 	 */
-	public T fromBytes(byte[] bytes) throws IOException
+	public T fromBytes(byte[] bytes, boolean lossless) throws IOException
 	{
 		BitInputStream bis = null;
 		try
 		{
 			bis = new BitWrapInputStream(new ByteArrayInputStream(bytes));
-			return readValue(bis);
+			return readValue(bis, lossless);
 		}
 		finally
 		{
@@ -490,13 +492,14 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	/**
 	 * @param valueSet should not be {@code null}
 	 * @param bitStream should not be {@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if the valueSet or the bitStream is {@code null}
 	 */
-	public final void retrieveAndWriteValue(ValueSet<?> valueSet, BitOutputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
+	public final void retrieveAndWriteValue(ValueSet<?> valueSet, BitOutputStream bitStream, boolean lossless) throws IOException, IllegalArgumentException, NullPointerException
 	{
-		writeValue(retrieveValue(valueSet), bitStream);
+		writeValue(retrieveValue(valueSet), bitStream, lossless);
 	}
 
 	/**
@@ -505,6 +508,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param value the value to write, given as an {@link Object}, may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws ClassCastException if the Object cannot be casted to type {@code <T>}
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null} 
 	 * @throws IllegalArgumentException if the value does not pass the validation test
@@ -512,9 +516,9 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
 	 */
-	public void writeObject(Object value, BitOutputStream bitStream) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
+	public void writeObject(Object value, BitOutputStream bitStream, boolean lossless) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
 	{
-		writeValue(convert(value), bitStream);
+		writeValue(convert(value), bitStream, lossless);
 	}
 
 	/**
@@ -522,11 +526,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param value the value to write may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null}
 	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
-	public void writeValue(T value, BitOutputStream bitStream) throws NullPointerException, IOException, IllegalArgumentException
+	public void writeValue(T value, BitOutputStream bitStream, boolean lossless) throws NullPointerException, IOException, IllegalArgumentException
 	{
 		if(optional)
 			bitStream.write(value != null); // write "presence"-bit
@@ -538,7 +543,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		if(value != null)
 		{
 			validate(value); // just in case, throws IllegalArgumentException if invalid
-			write(value, bitStream); // handled by subclass
+			write(value, bitStream, lossless); // handled by subclass
 		}
 	}
 
@@ -549,37 +554,40 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param value the value to be written, assumed to be non-{@code null}
 	 * @param bitStream the {@link BitOutputStream} to write to, assumed to be non-{@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
-	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
+	protected abstract void write(T value, BitOutputStream bitStream, boolean lossless) throws IOException;
 	
 	/**
 	 * @param valueSet the ValueSet in which to store the read value, should not be {@code null}
 	 * @param bitStream the {@link BitInputStream} to read from, should not be {@code null}
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, if the valueSet is {@code null}, or if the bitStream is {@code null}
 	 */
-	public final void readAndStoreValue(ValueSet<?> valueSet, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
+	public final void readAndStoreValue(ValueSet<?> valueSet, BitInputStream bitStream, boolean lossless) throws IOException, IllegalArgumentException, NullPointerException
 	{
-		storeValueUnchecked(valueSet, readValue(bitStream)); // we use storeValueUnchecked() instead of storeValue() because readValue() already performs all checks
+		storeValueUnchecked(valueSet, readValue(bitStream, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() already performs all checks
 	}
 
 	/**
 	 * Reads a value from the given {@link BitInputStream}.
 	 *
 	 * @param bitStream the {@link BitInputStream} to read from
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value that was read, should not be {@code null}
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
 	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws NullPointerException if the read value is {@code null} on an non-optional column, or if the bitStream is {@code null}
 	 */
-	public final T readValue(BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
+	public final T readValue(BitInputStream bitStream, boolean lossless) throws IOException, IllegalArgumentException, NullPointerException
 	{
 		T value = null;
 		if(!optional || bitStream.readBit()) // in case of optional column: only read value if "presence"-bit is true
 		{
-			value = read(bitStream);
+			value = read(bitStream, lossless);
 			if(value == null)
 				throw new NullPointerException(optional ? "Read null value even though presence-bit was set to true!" : "Non-optional value is null!");
 			validate(value); // throws IllegalArgumentException if invalid
@@ -591,10 +599,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Reads a value from the given {@link BitInputStream} without checks.
 	 *
 	 * @param bitStream the {@link BitInputStream} to read from, assumed to be non-{@code null}
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the read value
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
 	 */
-	protected abstract T read(BitInputStream bitStream) throws IOException;
+	protected abstract T read(BitInputStream bitStream, boolean lossless) throws IOException;
 
 	/**
 	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value, given as an {@link Object} which may need to be converted first.
@@ -666,8 +675,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	protected abstract void validate(T value) throws IllegalArgumentException;
 
-	public T getValueAsStoredBinary(T value)
+	/**
+	 * Simulates writing and reading of the given value using lossy encoding.
+	 * The returned result may thus have sustained information loss.
+	 * If this column does not support lossy encoding (i.e. {@link #canBeLossy()} returns {@code false}) the value is returned as-is.
+	 * 
+	 * @param value
+	 * @return value as retrieved from lossy binary representation
+	 */
+	public T getLossyEncodedValue(T value)
 	{
+		if(!canBeLossy())
+			return value;
+		// else:
 		BitOutputStream out = null;
 		BitInputStream in = null;
 		try
@@ -677,7 +697,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 			out = new BitWrapOutputStream(rawOut);
 
 			//Write value:
-			writeValue(value, out);
+			writeValue(value, out, false); // false: not lossless --> lossy
 
 			// Flush, close & get bytes:
 			out.flush();
@@ -687,7 +707,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 			in = new BitWrapInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
 
 			//Read value:
-			return readValue(in);
+			return readValue(in, false); // false: not lossless --> lossy
 		}
 		catch(Exception e)
 		{
@@ -702,9 +722,17 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		}
 	}
 
-	public T retrieveValueAsStoredBinary(ValueSet<?> valueSet)
+	/**
+	 * Retrieves the value for this column from the given valueSet and simulates writing and reading it using lossy encoding.
+	 * The returned result may thus have sustained information loss.
+	 * If this column does not support lossy encoding (i.e. {@link #canBeLossy()} returns {@code false}) the value is returned as-is.
+	 * 
+	 * @param valueSet
+	 * @return value as retrieved from lossy binary representation
+	 */
+	public T retrieveAsLossyEncodedValue(ValueSet<?> valueSet)
 	{
-		return getValueAsStoredBinary(retrieveValue(valueSet));
+		return getLossyEncodedValue(retrieveValue(valueSet));
 	}
 
 	/**
@@ -798,45 +826,82 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public boolean isVariableSize()
 	{
-		return optional ? true : (_getMinimumSize() != _getMaximumSize());
+		return isVariableSize(false) || isVariableSize(true);
+	}
+	
+	/**
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
+	 */
+	public boolean isVariableSize(boolean lossless)
+	{
+		return optional ? true : (getMinimumValueSize(lossless) != getMaximumValueSize(lossless));
+	}
+	
+	/**
+	 * Checks whether or not this column supports lossy (binary) encoding of its values.
+	 * "Lossy" (as opposed to "Lossless") encoding means that values may sustain information loss or reduced precision.
+	 * 
+	 * Subclasses may override this with more efficient implementations.
+	 * 
+	 * @return
+	 */
+	public boolean canBeLossy()
+	{
+		return (getMinimumValueSize(false) != getMinimumValueSize(true)) || (getMaximumValueSize(false) != getMaximumValueSize(true)); 
+	}
+	
+	/**
+	 * Checks whether or not this column will always encoding its values losslessly (i.e. never lossyly).
+	 * "Lossy" (as opposed to "Lossless") encoding means that values may sustain information loss or reduced precision.
+	 * 
+	 * @return
+	 */
+	public boolean isAlwaysLossless()
+	{
+		return !canBeLossy();
 	}
 
 	/**
 	 * Returns the maximum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
 	 *
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
 	 * @return
 	 */
-	public int getMaximumSize()
+	public final int getMaximumSize(boolean lossless)
 	{
-		return (optional ? 1 : 0) + _getMaximumSize();
+		return (optional ? 1 : 0) + getMaximumValueSize(lossless);
 	}
 
 	/**
 	 * Returns the maximum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
 	 *
+	 * @param lossless if {@code true} the returned maximum size is that of a losslessly encoded value, if {@code false} the returned maximum size is that of a lossyly encoded value
 	 * @return
 	 */
-	protected abstract int _getMaximumSize();
+	protected abstract int getMaximumValueSize(boolean lossless);
 
 	/**
 	 * Returns the minimum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
 	 *
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
 	 * @return
 	 */
-	public int getMinimumSize()
+	public final int getMinimumSize(boolean lossless)
 	{
 		if(optional)
 			return 1;
 		else
-			return _getMinimumSize();
+			return getMinimumValueSize(lossless);
 	}
 
 	/**
 	 * Returns the minimum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
 	 *
+	 * @param lossless if {@code true} the returned minimum size is that of a losslessly encoded value, if {@code false} the returned minimum size is that of a lossyly encoded value
 	 * @return
 	 */
-	protected abstract int _getMinimumSize();
+	protected abstract int getMinimumValueSize(boolean lossless);
 
 	/**
 	 * Equality check, compares optionalness, type and size/content restrictions but not the column name
