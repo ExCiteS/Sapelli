@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLNameEncoder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
@@ -745,10 +746,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 
 	public String getSpecification()
 	{
-		return toString() 	+ " ["	+ (optional ? "optional" : "required") + "; "
-									+ (this instanceof VirtualColumn ? "virtual; " : "")
-									+ getMinimumSize() + (isVariableSize() ? ("-" + getMaximumSize()) : "") + " bits"
-							+ "]";
+		TransactionalStringBuilder blr = new TransactionalStringBuilder();
+		blr.append(toString());
+		blr.append(" [");
+		blr.openTransaction("; ");
+		blr.append(optional ? "optional" : "required");
+		if(this instanceof VirtualColumn)
+			blr.append("virtual");
+		if(canBeLossy())
+			blr.append("lossy size: " + getMinimumSize(false) + (isVariableSize(false) ? ("-" + getMaximumSize(false)) : "") + " bits");
+		blr.append((canBeLossy() ? "lossless " : "") + "size: " + getMinimumSize(true) + (isVariableSize(true) ? ("-" + getMaximumSize(true)) : "") + " bits");
+		blr.commitTransaction();
+		blr.append("]");
+		return blr.toString();
 	}
 
 	public String getTypeString()
