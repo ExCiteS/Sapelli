@@ -79,34 +79,35 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 				// Not allowed anywhere:
 				case '.'		:	/* not allowed at start of XML names, but nowhere in our Column names because it is the ValueSetColumn.QUALIFIED_NAME_SEPARATOR */
 				case ','		:	/* not allowed anywhere in XML names. Moreover it is one of our supported CSV separators. */
-				case '?'		:	/* not allowed anywhere in XML names.*/
-				case '!'		:	/* not allowed anywhere in XML names.*/
+				case '?'		:	/* not allowed anywhere in XML names. */
+				case '!'		:	/* not allowed anywhere in XML names. */
 				case ':'		:	/* is allowed anywhere in XML names but we take it out anyway to avoid some XML tools recognising it as an XML namespace separator */
 				case ';'		:	/* not allowed anywhere in XML names. Moreover it is one of our supported CSV separators. */
-				case '\''		:	/* not allowed anywhere in XML names.*/
-				case '"'		:	/* not allowed anywhere in XML names.*/
-				case '/'		:	/* not allowed anywhere in XML names.*/
-				case '\\'		:	/* not allowed anywhere in XML names.*/
-				case '@'		:	/* not allowed anywhere in XML names.*/
-				case '('		:	/* not allowed anywhere in XML names.*/
-				case ')'		:	/* not allowed anywhere in XML names.*/
-				case '['		:	/* not allowed anywhere in XML names.*/
-				case ']'		:	/* not allowed anywhere in XML names.*/
-				case '{'		:	/* not allowed anywhere in XML names.*/
-				case '}'		:	/* not allowed anywhere in XML names.*/
-				case '&'		:	/* not allowed anywhere in XML names.*/
-				case '%'		:	/* not allowed anywhere in XML names.*/
-				case '$'		:	/* not allowed anywhere in XML names.*/
-				case '\u00A3'	:	/* (Pound sign) not allowed anywhere in XML names.*/
-				case '+'		:	/* not allowed anywhere in XML names.*/
-				case '*'		:	/* not allowed anywhere in XML names.*/
-				case '#'		:	/* not allowed anywhere in XML names.*/
-				case '|'		:	/* not allowed anywhere in XML names.*/
-				case '~'		:	/* not allowed anywhere in XML names.*/
-				case ' '		:	/* not allowed anywhere in XML names.*/
+				case '\''		:	/* not allowed anywhere in XML names. */
+				case '"'		:	/* not allowed anywhere in XML names. */
+				case '/'		:	/* not allowed anywhere in XML names. */
+				case '\\'		:	/* not allowed anywhere in XML names. */
+				case '@'		:	/* not allowed anywhere in XML names. */
+				case '('		:	/* not allowed anywhere in XML names. */
+				case ')'		:	/* not allowed anywhere in XML names. */
+				case '['		:	/* not allowed anywhere in XML names. */
+				case ']'		:	/* not allowed anywhere in XML names. */
+				case '{'		:	/* not allowed anywhere in XML names. */
+				case '}'		:	/* not allowed anywhere in XML names. */
+				case '&'		:	/* not allowed anywhere in XML names. */
+				case '%'		:	/* not allowed anywhere in XML names. */
+				case '$'		:	/* not allowed anywhere in XML names. */
+				case '\u00A3'	:	/* (Pound sign) not allowed anywhere in XML names. */
+				case '+'		:	/* not allowed anywhere in XML names. */
+				case '*'		:	/* not allowed anywhere in XML names. */
+				case '#'		:	/* not allowed anywhere in XML names. */
+				case '|'		:	/* not allowed anywhere in XML names. */
+				case '~'		:	/* not allowed anywhere in XML names. */
+				case ' '		:	/* not allowed anywhere in XML names. */
 				case '\t'		:	/* not allowed anywhere in XML names. Moreover it is one of our supported CSV separators. */
-				case '\r'		:	/* not allowed anywhere in XML names.*/
-				case '\n'		:	/* not allowed anywhere in XML names.*/
+				case '\r'		:	/* not allowed anywhere in XML names. */
+				case '\n'		:	/* not allowed anywhere in XML names. */
+				case '='		:	/* is allowed anywhere in XML names, but we used in special header fields of our CSV format which shouldn't be confused for column headers. */
 					prevNeedsReplace++;
 					break;
 				// Not allowed at start, OK elsewhere:
