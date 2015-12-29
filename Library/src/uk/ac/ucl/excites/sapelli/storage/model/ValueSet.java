@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -654,33 +655,48 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet is *likely* to be the result of lossy storage/transmission.
-	 * This is done by comparing each current value to its lossyly encoding version, if all are
+	 * <p>
+	 * Checks whether this ValueSet is *likely* to be the result of lossy storage/transmission.</p>
+	 * <p>
+	 * This is done by comparing each current value to its lossyly encoded version, if all are
 	 * equal then the ValueSet is assumed to be the result of lossy storage/transmission (because
 	 * there is no further information loss when re-encoding now). If at least one value is different
-	 * from its lossyly encoded version than the ValueSet is assumed to still be in a lossless state.
+	 * from its lossyly encoded version than the ValueSet is assumed to still be in a lossless state.</p>
+	 * <p>
+	 * This method not 100% foolproof because it relies on assumptions which may not always hold true:<br/>
+	 * First there is the assumption that lossless values are always different from their lossy version.
+	 * This is not always the case, for example a timestamp like 2015-10-21T11:29:54.000+02:00 will stay
+	 * the same in lossy form because the number of ms is 0 already. Were this to happen for all columns
+	 * which can be lossy then the whole ValueSet will be considered lossy even if it is still lossless.
+	 * This issue is side-stepped if the ColumnSet contains the {@link LosslessFlagColumn}, because for
+	 * this column a lossless value will never equal the lossy version. In the presence of this column
+	 * this method thus becomes a lot more reliable, even though it is not directly used here (unlike
+	 * in the {@link Record#isLossy()} and {@link Record#isLossless()} overrides).<br/>
+	 * Second there is the assumption that once a value has been encoded lossyly it will not change
+	 * again if it is encoded lossyly again later (in other words, there is no further information loss).
+	 * This is true for all currently existing columns which support lossy encoding.</p>
 	 * 
 	 * @return
 	 */
-	public boolean isProbablyLossy()
+	public boolean isLossy()
 	{
 		if(!columnSet.canBeLossy())
 			return false;
 		for(Column<?> c : columnSet.getColumns(false))
 			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveAsLossyEncodedValue(this)))
-				return false; // at least value is different from its lossy version --> this ValueSet is lossless
+				return false; // at least 1 value is different from its lossy version --> this ValueSet is considered lossless
 		return true;
 	}
 	
 	/**
-	 * Checks whether this ValueSet is *likely* to be in a lossless state.
+	 * Checks whether this ValueSet is *likely* to still be in a lossless state.
 	 * 
 	 * @return
-	 * @see #isProbablyLossy()
+	 * @see #isLossy()
 	 */
-	public boolean isProbablyLossless()
+	public boolean isLossless()
 	{
-		return !isProbablyLossy();
+		return !isLossy();
 	}
 	
 	@Override

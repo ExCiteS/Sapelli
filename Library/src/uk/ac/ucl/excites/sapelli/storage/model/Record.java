@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
@@ -193,6 +195,30 @@ public class Record extends RecordValueSet<Schema>
 					.getRecordQueryConstraint(allowBlanks /*... but perhaps from here instead*/);
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ValueSet#isLossy()
+	 */
+	@Override
+	public boolean isLossy()
+	{
+		if(getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+			return LosslessFlagColumn.INSTANCE.isLossy(this); // more efficient and more reliable than ValueSet#isLossy()
+		//else:
+		return super.isLossy();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ValueSet#isLossless()
+	 */
+	@Override
+	public boolean isLossless()
+	{
+		if(getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+			return LosslessFlagColumn.INSTANCE.isLossless(this); // more efficient and more reliable than ValueSet#isLossless()
+		//else:
+		return super.isLossless();
+	}
+
 	/**
 	 * @param obj
 	 * @param checkSchema

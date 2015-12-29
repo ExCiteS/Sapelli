@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
@@ -316,6 +317,9 @@ public class Schema extends ColumnSet implements Serializable
 			this.addColumn(autoKeyCol, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
+		// Add column to keep track of lossless/lossy-ness:
+		if(hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS) && !containsColumn(LosslessFlagColumn.INSTANCE) && canBeLossy())
+			this.addColumn(LosslessFlagColumn.INSTANCE);
 	}
 		
 	/**
