@@ -1,6 +1,21 @@
 /**
+ * Sapelli data collection platform: http://sapelli.org
  * 
+ * Copyright 2012-2015 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
  */
+
 package uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades;
 
 import java.util.ArrayList;
@@ -32,11 +47,12 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
  * It reflects a number of important changes that have been made in the Sapelli Storage layer:
  * 	- new way of serialising Model objects in {@link Model#MODEL_SCHEMA} records;
  *  - the renaming of the {@link Model#MODEL_SERIALISATION_COLUMN};
- *  - the Schema {@code {@link Schema#flags} mechanism
+ *  - the Schema {@code {@link Schema#flags} mechanism;
  *  - the new {@link Model#SCHEMA_NAME_COLUMN};
  *  - the renaming of existing tables according to the new names of certain internal tables and the way of generating and storing table names in general;
- *  - the name {@link Model#SCHEMA_TABLE_NAME_COLUMN}
- *  - the new use, in {@link SQLiteRecordStore}, of a top-level {@link SQLiteBooleanColumn} to represent {@link ValueSetColumn}s with all-optional subcolumns, in order to maintain the difference between a null ValueSet and an empty one.  
+ *  - the name {@link Model#SCHEMA_TABLE_NAME_COLUMN};
+ *  - the new use, in {@link SQLiteRecordStore}, of a top-level {@link SQLiteBooleanColumn} to represent {@link ValueSetColumn}s with all-optional subcolumns, in order to maintain the difference between a null ValueSet and an empty one;
+ *  - the addition of the {@link LosslessFlagColumn} in tables of Schemata that have the {@link StorageClient#SCHEMA_FLAG_TRACK_LOSSLESSNESS} flag.
  * 
  * Note: This upgrade only works if the tableName for ProjectRecordStore#PROJECT_SCHEMA does not change (i.e. remains "Collector_Projects")
  * 

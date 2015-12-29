@@ -111,6 +111,8 @@ public abstract class SQLRecordStoreUpgrader
 				recordStore.setVersion(step.toVersion);
 				// Close transaction:
 				recordStore.commitTransaction();
+				// Run clean-up before continuing with next upgrade step or completing upgrade:
+				recordStore.cleanup();
 			}
 			catch(Exception e)
 			{
@@ -219,6 +221,11 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
+		 * Calls {@link SQLRecordStore#cleanup()}.
+		 * 
+		 * Note that this method is already called after completion of each upgrade step, so UpgradeSteps
+		 * should only call this themselves in case they require a cleanup to happen during the step itself.
+		 * 
 		 * @see SQLRecordStore#cleanup()
 		 */
 		public void cleanup(SQLRecordStore<?, ?, ?> recordStore) throws DBException
