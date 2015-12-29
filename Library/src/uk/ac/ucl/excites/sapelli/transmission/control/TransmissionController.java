@@ -152,10 +152,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		List<Record> recsToSend = new ArrayList<Record>();
 		
-		// TODO DELETE THIS!!!
-		for(Schema s : model.getSchemata())
-			recsToSend.addAll(recordStore.retrieveRecords(s));
-		
 		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
 		//recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
 		
