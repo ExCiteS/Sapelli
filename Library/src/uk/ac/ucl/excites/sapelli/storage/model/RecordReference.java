@@ -90,7 +90,7 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	 */
 	protected RecordReference(Schema referencedSchema, byte[] serialisedKeyPartValues) throws NullPointerException, IOException
 	{
-		super(referencedSchema.getPrimaryKey(), serialisedKeyPartValues, true /*always lossless!*/);
+		super(referencedSchema.getPrimaryKey(), serialisedKeyPartValues, true /*always lossless, as values are part of PK!*/);
 		this.referencedSchema = referencedSchema;
 	}
 
