@@ -97,7 +97,7 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 		}
 
 		@Override
-		protected TableConverter getTableConverter(Schema newSchema) throws DBException
+		protected void customiseTableConverter(Schema newSchema, final TableConverter tableConverter) throws DBException
 		{
 			// Find the form the schema is backing (if it is):
 			Form form = null;
@@ -109,7 +109,7 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 			
 			// Check if we have a form:
 			if(form == null)
-				return new TransparentTableConverter(newSchema);
+				return;
 			
 			// Just to be sure:
 			if(!newSchema.equals(form.getSchema()))
@@ -123,16 +123,16 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 			
 			// If there are no media fields we don't need to replace any columns:
 			if(mediaFields.isEmpty())
-				return new TransparentTableConverter(newSchema);
+				return;
 			
 			// Return ColumnsReplacer which will generate oldSchema with the v1x MediaField columns
 			//	and convert oldRecords to new ones (as well as rename the media attachment files):
-			return new ColumnsReplacer(newSchema)
+			tableConverter.addColumnReplacer(new ColumnReplacer()
 			{
 				@Override
-				protected boolean isColumnUnchanged(Column<?> newColumn)
+				public boolean matches(Column<?> newColumn)
 				{
-					return !mediaFields.containsKey(newColumn.name);
+					return mediaFields.containsKey(newColumn.name);
 				}
 				
 				@Override
@@ -144,13 +144,12 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 				@Override
 				protected Object convertValue(Column<?> newColumn, Record oldRecord)
 				{
-					MediaField mf = mediaFields.get(newColumn.name);
 					// Convert value & rename attachment files:
-					return mf.convertV1XColumnValue(oldRecord, true, fileStorageProvider);
+					return mediaFields.get(newColumn.name).convertV1XColumnValue(oldRecord, true, fileStorageProvider);
 				}
-			};
+			});
 		}
-			
-	}
 	
+	}
+
 }
