@@ -127,7 +127,7 @@ public abstract class ProjectStore extends Store
 	 * @throws ProjectDuplicateException some implementation may throw this in case of a identification or signature clash
 	 */
 	protected abstract void doAdd(Project project) throws ProjectDuplicateException;
-	
+
 	/**
 	 * Retrieves all projects
 	 * 
@@ -152,7 +152,7 @@ public abstract class ProjectStore extends Store
 	{
 		return retrieveProject(name, null, version);
 	}
-		
+
 	/**
 	 * Retrieves specific Project
 	 * 
