@@ -58,23 +58,24 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	
 	/**
 	 * @param columnSet
-	 * @param serialisedValues
-	 * @throws NullPointerException
-	 * @throws IOException
-	 */
-	public RecordValueSet(CS columnSet, byte[] serialisedValues) throws NullPointerException, IOException
-	{
-		super(columnSet, serialisedValues);
-	}
-
-	/**
-	 * @param columnSet
-	 * @param serialisedValues
+	 * @param serialisedValues String to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
 	 * @throws Exception
 	 */
 	public RecordValueSet(CS columnSet, String serialisedValues) throws Exception
 	{
 		super(columnSet, serialisedValues);
+	}
+	
+	/**
+	 * @param columnSet
+	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns and may or may not be {@code lossless}ly encoded, i.e. the array must be as produced by {@code #toBytes(lossless)})
+	 * @param lossless whether the given byte array is a (guaranteed) lossless ({@code true}), or a (possibly) lossy ({@code false}) representation of the values
+	 * @throws NullPointerException
+	 * @throws IOException
+	 */
+	public RecordValueSet(CS columnSet, byte[] serialisedValues, boolean lossless) throws NullPointerException, IOException
+	{
+		super(columnSet, serialisedValues, lossless);
 	}
 
 	/**

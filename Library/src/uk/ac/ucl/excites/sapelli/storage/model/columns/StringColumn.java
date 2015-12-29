@@ -402,7 +402,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 
 	@Override
-	protected void write(String value, BitOutputStream bitStream) throws IOException
+	protected void write(String value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		// Write length:
 		sizeField.write(StringUtils.sizeBytes(value, getCharset()), bitStream);
@@ -411,7 +411,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 
 	@Override
-	protected String read(BitInputStream bitStream) throws IOException
+	protected String read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		//Read length:
 		int numberOfBytes = sizeField.read(bitStream).intValue();
@@ -420,13 +420,13 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
 		return sizeField.size(); // when stored string is empty: just the size field
 	}
 	
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
 		return sizeField.size() + (getMaximumBytes() * Byte.SIZE);
 	}
@@ -446,6 +446,15 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 		return MaximumCharsIn(getMaximumBytes(), getCharset());
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		return false;
+	}
+
 	@Override
 	protected boolean equalRestrictions(Column<String> otherColumn)
 	{

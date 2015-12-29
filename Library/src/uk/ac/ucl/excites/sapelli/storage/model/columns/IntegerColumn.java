@@ -389,7 +389,7 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 	
 	@Override
-	protected void write(Long value, BitOutputStream bitStream) throws IOException
+	protected void write(Long value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		if(rangeMapping != null)
 			rangeMapping.write(value, bitStream);
@@ -398,7 +398,7 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 
 	@Override
-	protected Long read(BitInputStream bitStream) throws IOException
+	protected Long read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		if(rangeMapping != null)
 			return rangeMapping.read(bitStream).longValue();
@@ -407,13 +407,13 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 	
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
 		return size;
 	}
 	
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
 		return size;
 	}
@@ -424,6 +424,15 @@ public class IntegerColumn extends NumberColumn<Long>
 	public boolean isSigned()
 	{
 		return signed;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		return false;
 	}
 
 	@Override

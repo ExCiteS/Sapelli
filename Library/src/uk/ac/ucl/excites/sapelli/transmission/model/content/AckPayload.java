@@ -69,7 +69,7 @@ public class AckPayload extends ResponsePayload
 	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
 		super.write(bitstream);
-		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream);
+		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream, true);
 	}
 
 	/* (non-Javadoc)
@@ -79,7 +79,7 @@ public class AckPayload extends ResponsePayload
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
 	{
 		super.read(bitstream);
-		subjectReceivedAt = new TimeStamp(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream).getMsSinceEpoch(), DateTimeZone.getDefault());
+		subjectReceivedAt = new TimeStamp(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream, true).getMsSinceEpoch(), DateTimeZone.getDefault());
 		// the TimeStamp read by the column is in UTC so we convert to local timezone (of this device, i.e. the receiver) to match the other timestamps stored with transmissions 
 	}
 

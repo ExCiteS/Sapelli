@@ -420,78 +420,143 @@ public class ColumnSet implements Serializable
 	}
 
 	/**
-	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on data input)
+	 * @return whether or not the size taken up by binary stored ValueSets of this ColumnSet varies at run-time (i.e. depending on data input)
 	 */
 	public boolean isVariableSize()
 	{
-		return isVariableSize(false, Collections.<Column<?>> emptySet());
+		return isVariableSize(false) || isVariableSize(true);
 	}
 	
 	/**
-	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on data input)
-	 * 
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return whether or not the size taken up by binary stored ValueSets of this ColumnSet varies at run-time (i.e. depending on input)
+	 */
+	public boolean isVariableSize(boolean lossless)
+	{
+		return isVariableSize(false, Collections.<Column<?>> emptySet(), lossless);
+	}
+	
+	/**
 	 * @param includeVirtual
 	 * @param skipColumns columns to ignore in the total
-	 * @return
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return whether or not the size taken up by binary stored ValueSets of this ColumnSet varies at run-time (i.e. depending on data input)
 	 */
-	public boolean isVariableSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
+	public boolean isVariableSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless)
 	{
 		for(Column<?> c : getColumns(includeVirtual))
-			if(!skipColumns.contains(c) && c.isVariableSize())
+			if(!skipColumns.contains(c) && c.isVariableSize(lossless))
 				return true;
 		return false;
 	}
 	
 	/**
-	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
-	 * Includes all non-virtual columns in the count.
-	 * 
+	 * Returns the minimum effective number of bits a ValueSet of this ColumnSet takes
+	 * up when written to a most-efficient (possibly lossy) binary representation.
+	 *
 	 * @return
 	 */
-	public int getMinimumSize()
+	public final int getMinimumSize()
 	{
-		return getMinimumSize(false, Collections.<Column<?>>emptySet());
+		return canBeLossy() ?
+			// it is logical to assume that the minimum size for lossy encoding will always be smaller than that of lossless encoding, ...
+			Math.min(getMinimumSize(true), getMinimumSize(false)) /* ... but we check to be sure */ :
+			getMinimumSize(true);
 	}
 	
 	/**
-	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Returns the minimum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
+	 * Includes all non-virtual columns in the count.
+	 * 
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return
+	 */
+	public int getMinimumSize(boolean lossless)
+	{
+		return getMinimumSize(false, Collections.<Column<?>> emptySet(), lossless);
+	}
+	
+	/**
+	 * Returns the minimum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
 	 * 
 	 * @param includeVirtual
 	 * @param skipColumns columns to ignore in the total
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
 	 * @return
 	 */
-	public int getMinimumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
+	public int getMinimumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless)
 	{
 		int total = 0;
 		for(Column<?> c : getColumns(includeVirtual, skipColumns))
-			total += c.getMinimumSize();
+			total += c.getMinimumSize(lossless);
 		return total;
 	}
 	
 	/**
-	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
-	 * Includes all non-virtual columns in the count.
-	 * 
+	 * Returns the maximum effective number of bits a ValueSet of this ColumnSet takes
+	 * up when written to the least-efficient (likely lossless) binary representation.
+	 *
 	 * @return
 	 */
-	public int getMaximumSize()
+	public final int getMaximumSize()
 	{
-		return getMaximumSize(false, Collections.<Column<?>> emptySet());
+		return canBeLossy() ?
+			// it is logical to assume that the maximum size for lossless encoding will always be bigger than that of lossy encoding, ...
+			Math.max(getMaximumSize(true), getMaximumSize(false)) /* ... but we check to be sure */ :
+			getMaximumSize(true);
+	}
+	
+	/**
+	 * Returns the maximum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
+	 * Includes all non-virtual columns in the count.
+	 * 
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return
+	 */
+	public int getMaximumSize(boolean lossless)
+	{
+		return getMaximumSize(false, Collections.<Column<?>> emptySet(), lossless);
 	}
 
 	/**
-	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Returns the maximum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
 	 * 
 	 * @param includeVirtual
 	 * @param skipColumns columns to ignore the total
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
 	 * @return
 	 */
-	public int getMaximumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
+	public int getMaximumSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless)
 	{
 		int total = 0;
 		for(Column<?> c : getColumns(includeVirtual, skipColumns))
-			total += c.getMaximumSize();
+			total += c.getMaximumSize(lossless);
 		return total;
+	}
+	
+	/**
+	 * Checks whether or not this ColumnSet contains at least 1 column which supports lossy (binary) encoding of its values.
+	 * "Lossy" (as opposed to "Lossless") encoding means that values may sustain information loss or reduced precision.
+	 * 
+	 * @return
+	 */
+	public boolean canBeLossy()
+	{
+		for(Column<?> column : getColumns(false)) // ignore virtual columns
+			if(column.canBeLossy())
+				return true; // at least 1 column can produce lossy output
+		return false;
+	}
+	
+	/**
+	 * Checks whether all columns in this ColumnSet will always encoding their values losslessly (i.e. never lossyly).
+	 * "Lossy" (as opposed to "Lossless") encoding means that values may sustain information loss or reduced precision.
+	 * 
+	 * @return
+	 */
+	public boolean isAlwaysLossless()
+	{
+		return !canBeLossy();
 	}
 	
 	@Override

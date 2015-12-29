@@ -52,9 +52,10 @@ public abstract class TransmissionClient extends StorageClient
 	static private final int SCHEMA_FLAG_TRANSMISSION_LAYER =	1 << 6;
 	
 	/**
-	 * Schema flag indicating that records of the Schema can be transmitted using the Transmission/Payload classes
+	 * Schema flag indicating that records of the Schema can be transmitted using the Transmission/Payload classes.
+	 * Being transmittable implies we also keep track of lossless/lossy-ness.
 	 */
-	static public final int SCHEMA_FLAG_TRANSMITTABLE = 		1 << 7;
+	static public final int SCHEMA_FLAG_TRANSMITTABLE = 		SCHEMA_FLAG_TRACK_LOSSLESSNESS | 1 << 7;
 	
 	// Note: flag bits 8 & 9 are reserved for future Transmission layer usage
 	

@@ -111,15 +111,15 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 
 	@Override
-	protected void write(TT value, BitOutputStream bitStream) throws IOException
+	protected void write(TT value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
-		targetColumn.write(value, bitStream);
+		targetColumn.write(value, bitStream, lossless);
 	}
 
 	@Override
-	protected TT read(BitInputStream bitStream) throws IOException
+	protected TT read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
-		return targetColumn.read(bitStream);
+		return targetColumn.read(bitStream, lossless);
 	}
 
 	@Override
@@ -135,15 +135,15 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
-		return targetColumn._getMaximumSize();
+		return targetColumn.getMaximumValueSize(lossless);
 	}
 
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
-		return targetColumn._getMinimumSize();
+		return targetColumn.getMinimumValueSize(lossless);
 	}
 
 	@Override

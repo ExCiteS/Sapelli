@@ -107,10 +107,10 @@ public class ByteArrayColumn extends Column<byte[]>
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream, boolean)
 	 */
 	@Override
-	protected void write(byte[] value, BitOutputStream bitStream) throws IOException
+	protected void write(byte[] value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		//Write length:
 		sizeField.write(value.length, bitStream);
@@ -119,10 +119,10 @@ public class ByteArrayColumn extends Column<byte[]>
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.storage.io.BitInputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream, boolean)
 	 */
 	@Override
-	protected byte[] read(BitInputStream bitStream) throws IOException
+	protected byte[] read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		//Read length:
 		int numberOfBytes = sizeField.read(bitStream).intValue();
@@ -149,13 +149,13 @@ public class ByteArrayColumn extends Column<byte[]>
 	}
 
 	@Override
-	protected int _getMinimumSize()
+	protected int getMinimumValueSize(boolean lossless)
 	{
 		return sizeField.size(); // when stored array has 0 lengthy: just the size field is stored
 	}
 	
 	@Override
-	protected int _getMaximumSize()
+	protected int getMaximumValueSize(boolean lossless)
 	{
 		return sizeField.size() + sizeField.highBound().intValue() * Byte.SIZE;
 	}
@@ -179,7 +179,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + sizeField.hashCode();

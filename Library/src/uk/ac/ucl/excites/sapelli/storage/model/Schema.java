@@ -26,8 +26,10 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
@@ -315,6 +317,9 @@ public class Schema extends ColumnSet implements Serializable
 			this.addColumn(autoKeyCol, false /*no virtual versions to consider*/, false	/*avoid endless sealing loop!*/);
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
+		// Add column to keep track of lossless/lossy-ness:
+		if(hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS) && !containsColumn(LosslessFlagColumn.INSTANCE) && canBeLossy())
+			this.addColumn(LosslessFlagColumn.INSTANCE);
 	}
 		
 	/**
@@ -421,12 +426,13 @@ public class Schema extends ColumnSet implements Serializable
 	
 	/**
 	 * @param serialisedValues without virtual columns!
+	 * @param lossless whether the given byte array is a (guaranteed) lossless ({@code true}), or a (possibly) lossy ({@code false}) representation of the values
 	 * @return
 	 * @throws Exception 
 	 */
-	public Record createRecord(byte[] serialisedValues) throws IOException
+	public Record createRecord(byte[] serialisedValues, boolean lossless) throws IOException
 	{
-		return new Record(this, serialisedValues);
+		return new Record(this, serialisedValues, lossless);
 	}
 	
 	/**
@@ -557,11 +563,28 @@ public class Schema extends ColumnSet implements Serializable
 	
 	public String getSpecification()
 	{
-		StringBuffer bff = new StringBuffer();
+		TransactionalStringBuilder bff = new TransactionalStringBuilder();
 		bff.append(toString() + ":");
 		for(Column<?> c : getColumns(true))
+		{
 			bff.append("\n\t- " + c.getSpecification());
-		// TODO add indexes & primary key to schema specs
+			bff.openTransaction();
+			bff.append(" <");
+			bff.openTransaction(", ");
+			if(hasPrimaryKey() && getPrimaryKey().containsColumn(c))
+				bff.append("PK:" + getPrimaryKey().name);
+			for(Index i : getIndexes(false))
+				if(i.containsColumn(c))
+					bff.append("I:" + i.name);
+			if(!bff.isCurrentTransactionEmpty())
+			{
+				bff.commitTransaction();
+				bff.append(">");
+				bff.commitTransaction(false);
+			}
+			else
+				bff.rollbackTransactions(2);
+		}	
 		return bff.toString();
 	}
 	
