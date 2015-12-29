@@ -55,6 +55,10 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	static public final String UTC_OFFSET_VIRTUAL_COLUMN_NAME = "UCTOffsetH";
 	static public final String RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME = "UnixMS";
 	
+	static private final TimeStamp START_21ST_CENTURY = new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC));
+	static private final TimeStamp END_21ST_CENTURY = new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC));
+	static private final TimeStamp START_2008 = new TimeStamp(new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC));
+	
 	/**
 	 * Returns a TimeStampColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
 	 * the number of milliseconds since (or to, if negative) the Java/Unix epoch of 1970/01/01 00:00:00 UTC.
@@ -118,7 +122,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 	
 	/**
-	 * Returns a TimeStampColumn that can hold any millisecond-accurate timestamp in the 21st century, including a local timezone reference.
+	 * Returns a TimeStampColumn that can hold any millisecond-accurate timestamp in the 21st century (taken as starting on 2000/01/01 and ending on 2100/01/01), including a local timezone reference.
 	 * Takes up 49 bits.
 	 * 
 	 * @param name
@@ -132,7 +136,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 	
 	/**
-	 * Returns a TimeStampColumn that can hold any millisecond-accurate timestamp in the 21st century, including a local timezone reference.
+	 * Returns a TimeStampColumn that can hold any millisecond-accurate timestamp in the 21st century (taken as starting on 2000/01/01 and ending on 2100/01/01), including a local timezone reference.
 	 * Takes up 49 bits.
 	 * 
 	 * @param name
@@ -143,11 +147,11 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 */
 	static public TimeStampColumn Century21(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC)), new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC)), true, true, false, optional, defaultValue, addVirtuals);
+		return new TimeStampColumn(name, START_21ST_CENTURY, END_21ST_CENTURY, true, true, false, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
-	 * Returns a TimeStampColumn that can hold any second-accurate timestamp in the 21st century, including a local timezone reference
+	 * Returns a TimeStampColumn that can hold any second-accurate timestamp in the 21st century (taken as starting on 2000/01/01 and ending on 2100/01/01), including a local timezone reference
 	 * Takes up 39 bits.
 	 * 
 	 * @param name
@@ -161,7 +165,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 	
 	/**
-	 * Returns a TimeStampColumn that can hold any second-accurate timestamp in the 21st century, including a local timezone reference
+	 * Returns a TimeStampColumn that can hold any second-accurate timestamp in the 21st century (taken as starting on 2000/01/01 and ending on 2100/01/01), including a local timezone reference
 	 * Takes up 39 bits.
 	 * 
 	 * @param name
@@ -172,7 +176,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 */
 	static public TimeStampColumn Century21NoMS(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC)), new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC)), false, true, false, optional, defaultValue, addVirtuals);
+		return new TimeStampColumn(name, START_21ST_CENTURY, END_21ST_CENTURY, false, true, false, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -205,7 +209,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 */
 	static public TimeStampColumn Compact(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, new TimeStamp(new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC)), 30 /*bits*/, false, false, false, optional, defaultValue, addVirtuals);
+		return new TimeStampColumn(name, START_2008, 30 /*bits*/, false, false, false, optional, defaultValue, addVirtuals);
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -417,9 +421,11 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	@Override
 	protected void validate(TimeStamp value) throws IllegalArgumentException
 	{
-		DateTimeFormatter formatter = TimeUtils.ISOWithMSFormatter;
 		if(!timeMapping.inRange(Math.round(value.getMsSinceEpoch() / (keepMS ? 1 : 1000d)), strict))
+		{
+			DateTimeFormatter formatter = TimeUtils.ISOWithMSFormatter;
 			throw new IllegalArgumentException("The given DateTime (" + value.format(formatter) + ") is outside the allowed range (from " + getLowBound().format(formatter) + " to " + getHighBound().format(formatter) + ").");
+		}
 	}
 
 	@Override
