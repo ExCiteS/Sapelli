@@ -11,8 +11,8 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.DefaultValueColumnAdder;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.TableConverter;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.TransparentTableConverter;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeOperations;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
@@ -23,6 +23,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
@@ -122,7 +123,13 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 				upgradeOps.renameTable(recordStore, oldName, schema.tableName);
 			
 			// Get a TableConverter for the schema:
-			TableConverter tableConverter = getTableConverter(schema);
+			TableConverter tableConverter = new TableConverter(schema, schema.flags & ~StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS); // un-set the lossless flag on the old schema
+			// Add a column replacer to to deal with the added LosslessFlagColumn in schemas that have that flag:
+			if(schema.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+				tableConverter.addColumnReplacer(new DefaultValueColumnAdder(LosslessFlagColumn.INSTANCE));
+			
+			// Give subclass the change to further tweak the table converter:
+			customiseTableConverter(schema, tableConverter);
 			
 			// Check if schema has at least one (non-virtual) ValueSetColumn with all-optional subcolumns:
 			boolean hasValueSetColWithAllOptionalSubCols = false;
@@ -134,7 +141,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 				}
 			
 			// Check if we need to do anything:
-			if(tableConverter instanceof TransparentTableConverter && !hasValueSetColWithAllOptionalSubCols)
+			if(tableConverter.isTransparent() && !hasValueSetColWithAllOptionalSubCols)
 				// this schema/table does not need conversion.
 				continue;
 			
@@ -171,7 +178,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 		// Upgrade step done!
 	}
 	
-	protected abstract TableConverter getTableConverter(Schema newSchema) throws DBException;
+	protected abstract void customiseTableConverter(Schema newSchema, TableConverter tableConverter) throws DBException;
 	
 	/**
 	 * @param schema

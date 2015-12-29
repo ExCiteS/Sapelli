@@ -801,7 +801,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 				// Schema column (= Model ID + Schema#):
 				recordReference.getReferencedSchema().getMetaRecordReference(),
 				// PKValues column:
-				recordReference.toBytes(),
+				recordReference.toBytes(true),
 				// Transmission column:
 				transmission != null ? getTransmissionSchema(false).createRecordReference(transmission.getLocalID()) : null));
 		}
@@ -824,7 +824,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 													// Schema column (= Model ID + Schema#):
 													recordReference.getReferencedSchema().getMetaRecordReference().getRecordQueryConstraint(),
 													// PKValueBytes column:
-													new EqualityConstraint(TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES, recordReference.toBytes())));
+													new EqualityConstraint(TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES, recordReference.toBytes(true))));
 		}
 		catch(Exception e)
 		{

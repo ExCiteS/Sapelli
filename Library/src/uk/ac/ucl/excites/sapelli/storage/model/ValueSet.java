@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -122,14 +123,15 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * Creates an initialised ValueSet.
 	 * 
 	 * @param columnSet
-	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
+	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns and may or may not be {@code lossless}ly encoded, i.e. the array must be as produced by {@code #toBytes(lossless)})
+	 * @param lossless whether the given byte array is a (guaranteed) lossless ({@code true}), or a (possibly) lossy ({@code false}) representation of the values
 	 * @throws NullPointerException when schema is null
 	 * @throws IOException when reading serialisedValues fails (or they are invalid)
 	 */
-	public ValueSet(CS columnSet, byte[] serialisedValues) throws NullPointerException, IOException
+	public ValueSet(CS columnSet, byte[] serialisedValues, boolean lossless) throws NullPointerException, IOException
 	{
 		this(columnSet);
-		fromBytes(serialisedValues); // validation will be applied
+		fromBytes(serialisedValues, lossless); // validation will be applied
 	}
 	
 	/**
@@ -464,10 +466,11 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	/**
 	 * Serialise the ValueSet to a byte array, excluding virtual columns.
 	 * 
-	 * @return
+	 * @param lossless if {@code true} all values are to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are to be lossyly encoded, and the values of the others losslessly.
+	 * @return a byte[] representation of the values of this ValueSet
 	 * @throws IOException
 	 */
-	public byte[] toBytes() throws IOException
+	public byte[] toBytes(boolean lossless) throws IOException
 	{
 		BitOutputStream out = null;
 		try
@@ -477,7 +480,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			out = new BitWrapOutputStream(rawOut);
 				
 			// Write record:
-			this.writeToBitStream(out);
+			this.writeToBitStream(out, lossless);
 			
 			// Flush & close the stream and get bytes:
 			out.flush();
@@ -498,11 +501,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * Write all ValueSet values to the given bitStream, excluding those of virtual columns.
 	 * 
 	 * @param bitStream
+	 * @param lossless if {@code true} all values are to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are to be lossyly encoded, and the values of the others losslessly.
 	 * @throws IOException
 	 */
-	public void writeToBitStream(BitOutputStream bitStream) throws IOException
+	public void writeToBitStream(BitOutputStream bitStream, boolean lossless) throws IOException
 	{
-		writeToBitStream(bitStream, false, Collections.<Column<?>> emptySet());
+		writeToBitStream(bitStream, false, Collections.<Column<?>> emptySet(), lossless);
 	}
 	
 	/**
@@ -511,11 +515,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param bitStream
 	 * @param includeVirtual whether or not to include the values corresponding to virtual columns
 	 * @param skipColumns columns *not* to include the values of
+	 * @param lossless if {@code true} all values are to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are to be lossyly encoded, and the values of the others losslessly.
 	 * @throws IOException
 	 */
-	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
+	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless) throws IOException
 	{
-		writeColumnsToBitStream(bitStream, columnSet.getColumns(includeVirtual, skipColumns));
+		writeColumnsToBitStream(bitStream, columnSet.getColumns(includeVirtual, skipColumns), lossless);
 	}
 	
 	/**
@@ -523,14 +528,15 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param bitStream
 	 * @param columns columns to include the values of
+	 * @param lossless if {@code true} all values are to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are to be lossyly encoded, and the values of the others losslessly.
 	 * @throws IOException
 	 */
-	public void writeColumnsToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns) throws IOException
+	public void writeColumnsToBitStream(BitOutputStream bitStream, List<? extends Column<?>> columns, boolean lossless) throws IOException
 	{
 		try
 		{	// Write fields:
 			for(Column<?> c : columns)
-				c.retrieveAndWriteValue(this, bitStream);
+				c.retrieveAndWriteValue(this, bitStream, lossless);
 		}
 		catch(Exception e)
 		{
@@ -542,10 +548,11 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * Deserialise the ValueSet from a byte array, excluding virtual columns.
 	 * 
 	 * @param bytes
+	 * @param lossless if {@code true} all values are expected to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are expected to be lossyly encoded, and the values of the others losslessly.
 	 * @return the record itself
 	 * @throws IOException
 	 */
-	public ValueSet<CS> fromBytes(byte[] bytes) throws IOException
+	public ValueSet<CS> fromBytes(byte[] bytes, boolean lossless) throws IOException
 	{
 		BitInputStream in = null;
 		try
@@ -555,7 +562,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			in = new BitWrapInputStream(rawIn);
 				
 			// Read record:
-			this.readFromBitStream(in);
+			this.readFromBitStream(in, lossless);
 		}
 		catch(Exception e)
 		{
@@ -572,11 +579,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * Read all ValueSet values from the given bitStream, excluding those of virtual columns.
 	 * 
 	 * @param bitStream
+	 * @param lossless if {@code true} all values are expected to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are expected to be lossyly encoded, and the values of the others losslessly.
 	 * @throws IOException
 	 */
-	public void readFromBitStream(BitInputStream bitStream) throws IOException
+	public void readFromBitStream(BitInputStream bitStream, boolean lossless) throws IOException
 	{
-		readFromBitStream(bitStream, false, Collections.<Column<?>> emptySet());
+		readFromBitStream(bitStream, false, Collections.<Column<?>> emptySet(), lossless);
 	}
 	
 	/**
@@ -585,11 +593,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param bitStream
 	 * @param includeVirtual whether or not to expect the values corresponding to virtual columns, if {@code true} these values will be read from the stream but not stored (i.e. they will effectively be skipped)
 	 * @param skipColumns columns *not* to expect the values of
+	 * @param lossless if {@code true} all values are expected to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are expected to be lossyly encoded, and the values of the others losslessly.
 	 * @throws IOException
 	 */
-	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
+	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless) throws IOException
 	{
-		readColumnsFromBitStream(bitStream, columnSet.getColumns(includeVirtual, skipColumns));
+		readColumnsFromBitStream(bitStream, columnSet.getColumns(includeVirtual, skipColumns), lossless);
 	}
 	
 	/**
@@ -597,18 +606,19 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param bitStream
 	 * @param columns columns to expect the values of
+	 * @param lossless if {@code true} all values are expected to be losslessly encoded; if {@code false} the values of columns which {@link #canBeLossy()} are expected to be lossyly encoded, and the values of the others losslessly.
 	 * @throws IOException
 	 */
-	public void readColumnsFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns) throws IOException
+	public void readColumnsFromBitStream(BitInputStream bitStream, List<? extends Column<?>> columns, boolean lossless) throws IOException
 	{
 		try
 		{	// Read fields:
 			for(Column<?> c : columns)
 			{
 				if(c instanceof VirtualColumn)
-					c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
+					c.readValue(bitStream, lossless); // read but don't store values of virtual columns (i.e. we skip them in the stream)
 				else
-					c.readAndStoreValue(this, bitStream);
+					c.readAndStoreValue(this, bitStream, lossless);
 			}
 		}
 		catch(Exception e)
@@ -618,17 +628,18 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Gets the size of this ValueSet in number of bits
+	 * Gets the size of this ValueSet in number of bits, when written to binary representation.
 	 * 
+	 * @param lossless whether to use lossless ({@code true}) or lossy ({@code false}) encoding
 	 * @return
 	 */
-	public int getSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
+	public int getSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless)
 	{
 		BitOutputStream out = null;
 		try
 		{
 			out = new BitWrapOutputStream(new ByteArrayOutputStream());
-			this.writeToBitStream(out, includeVirtual, skipColumns);
+			this.writeToBitStream(out, includeVirtual, skipColumns, lossless);
 			return out.getNumberOfBitsWritten();
 		}
 		catch(IOException e)
@@ -641,6 +652,51 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		{
 			StreamHelpers.SilentClose(out);
 		}
+	}
+	
+	/**
+	 * <p>
+	 * Checks whether this ValueSet is *likely* to be the result of lossy storage/transmission.</p>
+	 * <p>
+	 * This is done by comparing each current value to its lossyly encoded version, if all are
+	 * equal then the ValueSet is assumed to be the result of lossy storage/transmission (because
+	 * there is no further information loss when re-encoding now). If at least one value is different
+	 * from its lossyly encoded version than the ValueSet is assumed to still be in a lossless state.</p>
+	 * <p>
+	 * This method not 100% foolproof because it relies on assumptions which may not always hold true:<br/>
+	 * First there is the assumption that lossless values are always different from their lossy version.
+	 * This is not always the case, for example a timestamp like 2015-10-21T11:29:54.000+02:00 will stay
+	 * the same in lossy form because the number of ms is 0 already. Were this to happen for all columns
+	 * which can be lossy then the whole ValueSet will be considered lossy even if it is still lossless.
+	 * This issue is side-stepped if the ColumnSet contains the {@link LosslessFlagColumn}, because for
+	 * this column a lossless value will never equal the lossy version. In the presence of this column
+	 * this method thus becomes a lot more reliable, even though it is not directly used here (unlike
+	 * in the {@link Record#isLossy()} and {@link Record#isLossless()} overrides).<br/>
+	 * Second there is the assumption that once a value has been encoded lossyly it will not change
+	 * again if it is encoded lossyly again later (in other words, there is no further information loss).
+	 * This is true for all currently existing columns which support lossy encoding.</p>
+	 * 
+	 * @return
+	 */
+	public boolean isLossy()
+	{
+		if(!columnSet.canBeLossy())
+			return false;
+		for(Column<?> c : columnSet.getColumns(false))
+			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveAsLossyEncodedValue(this)))
+				return false; // at least 1 value is different from its lossy version --> this ValueSet is considered lossless
+		return true;
+	}
+	
+	/**
+	 * Checks whether this ValueSet is *likely* to still be in a lossless state.
+	 * 
+	 * @return
+	 * @see #isLossy()
+	 */
+	public boolean isLossless()
+	{
+		return !isLossy();
 	}
 	
 	@Override
@@ -661,10 +717,10 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	/**
 	 * @param obj
 	 * @param checkColumnSet
-	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asLossyEncoded whether or not to compare values as if they've been "lossyly" written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	public boolean equals(Object obj, boolean checkColumnSet, boolean asStoredBinary)
+	public boolean equals(Object obj, boolean checkColumnSet, boolean asLossyEncoded)
 	{
 		if(this == obj)
 			return true;
@@ -682,7 +738,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 					return false;
 			}
 			// Compare values for each column:
-			return hasEqualValues(other, asStoredBinary);
+			return hasEqualValues(other, asLossyEncoded);
 		}
 		else
 			return false;
@@ -704,12 +760,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * If {@code asStoredBinary} is {@code true} the ValueSets must be of the same schema, otherwise an exception will be thrown.
 	 * 
 	 * @param other another ValueSet
-	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asLossyEncoded whether or not to compare values as if they've been "lossyly" written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	public boolean hasEqualValues(ValueSet<?> other, boolean asStoredBinary)
+	public boolean hasEqualValues(ValueSet<?> other, boolean asLossyEncoded)
 	{
-		return hasEqualValues(other, Collections.<Column<?>> emptySet(), asStoredBinary);
+		return hasEqualValues(other, Collections.<Column<?>> emptySet(), asLossyEncoded);
 	}
 
 	/**
@@ -730,14 +786,14 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param other another ValueSet
 	 * @param skipColumns ignore these columns
-	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asLossyEncoded whether or not to compare values as if they've been "lossyly" written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	public boolean hasEqualValues(ValueSet<?> other, Set<? extends Column<?>> skipColumns, boolean asStoredBinary)
+	public boolean hasEqualValues(ValueSet<?> other, Set<? extends Column<?>> skipColumns, boolean asLossyEncoded)
 	{
 		return other == null ?	false :
-								(!skipColumns.isEmpty() || asStoredBinary ?
-									hasEqualValuesForColumns(other, this.columnSet.getColumns(false, skipColumns), asStoredBinary) :
+								(!skipColumns.isEmpty() || asLossyEncoded ?
+									hasEqualValuesForColumns(other, this.columnSet.getColumns(false, skipColumns), asLossyEncoded) :
 									this == other || Arrays.deepEquals(this.values, other.values));
 	}
 	
@@ -760,17 +816,17 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param other another ValueSet
 	 * @param columns the columns that will be checked, unless they appear in skipColumns
-	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asLossyEncoded whether or not to compare values as if they've been "lossyly" written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	public boolean hasEqualValuesForColumns(ValueSet<?> other, Collection<? extends Column<?>> columns, boolean asStoredBinary)
+	public boolean hasEqualValuesForColumns(ValueSet<?> other, Collection<? extends Column<?>> columns, boolean asLossyEncoded)
 	{
 		if(other == null)
 			return false;
 		if(this != other)
 			for(Column<?> c : columns)
-				if(	!Objects.deepEquals(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),
-										asStoredBinary ? c.retrieveValueAsStoredBinary(other) : c.retrieveValue(other)))
+				if(	!Objects.deepEquals(asLossyEncoded ? c.retrieveAsLossyEncodedValue(this) : c.retrieveValue(this),
+										asLossyEncoded ? c.retrieveAsLossyEncodedValue(other) : c.retrieveValue(other)))
 					return false;
 		return true;
 	}

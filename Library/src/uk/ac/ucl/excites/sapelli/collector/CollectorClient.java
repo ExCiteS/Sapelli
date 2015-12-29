@@ -89,7 +89,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	/**
 	 * Flags used on Schemata for all Collector data records.
 	 */
-	static public final int SCHEMA_FLAGS_COLLECTOR_DATA = 		SCHEMA_FLAG_COLLECTOR_LAYER | SCHEMA_FLAG_EXPORTABLE;
+	static public final int SCHEMA_FLAGS_COLLECTOR_DATA = 		SCHEMA_FLAG_COLLECTOR_LAYER | SCHEMA_FLAG_EXPORTABLE | SCHEMA_FLAG_TRANSMITTABLE;
 	
 	/**
 	 * Flags used on Schemata for automatically-generated ("auxiliary") Collector data records.

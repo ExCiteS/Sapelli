@@ -845,7 +845,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				{
 					try
 					{
-						return listCol.toBytes(value);
+						return listCol.toBytes(value, true);
 					}
 					catch(Exception e)
 					{
@@ -859,7 +859,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				{
 					try
 					{
-						return listCol.fromBytes(value);
+						return listCol.fromBytes(value, true);
 					}
 					catch(Exception e)
 					{

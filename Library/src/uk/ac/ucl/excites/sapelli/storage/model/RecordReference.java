@@ -84,13 +84,13 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	 * Creates a new RecordReference, to be used for referencing a record of the given schema, which is initialised with the given serialised key part values.
 	 * 
 	 * @param referencedSchema (also called "foreign" schema)
-	 * @param serialisedKeyPartValues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
+	 * @param serialisedKeyPartValues byte array to initialise the recordReference with, the number of values must match number of columns in primary key of the referencedSchema, and all values must be encoded losslessly
 	 * @throws NullPointerException	if the referencedSchema does not have a primary key
 	 * @throws IOException when reading serialisedValues fails
 	 */
 	protected RecordReference(Schema referencedSchema, byte[] serialisedKeyPartValues) throws NullPointerException, IOException
 	{
-		super(referencedSchema.getPrimaryKey(), serialisedKeyPartValues);
+		super(referencedSchema.getPrimaryKey(), serialisedKeyPartValues, true /*always lossless!*/);
 		this.referencedSchema = referencedSchema;
 	}
 
@@ -127,7 +127,7 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	}
 	
 	/**
-	 * Copy constructor
+	 * Copy constructor.
 	 * 
 	 * @param another
 	 */
@@ -188,7 +188,7 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	}
 	
 	@Override
-    public int hashCode()
+	public int hashCode()
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + referencedSchema.hashCode();
@@ -196,7 +196,7 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	}
 	
 	@Override
-    public boolean equals(Object obj)
+	public boolean equals(Object obj)
 	{
 		if(this == obj)
 			return true;

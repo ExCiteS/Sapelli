@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
 
@@ -39,7 +41,7 @@ public class Record extends RecordValueSet<Schema>
 	// Dynamics------------------------------------------------------
 	
 	/**
-	 * Creates a new "empty" record of the given schema
+	 * Creates a new "empty" record of the given schema.
 	 * 
 	 * @param schema
 	 */
@@ -49,7 +51,7 @@ public class Record extends RecordValueSet<Schema>
 	}
 	
 	/**
-	 * Creates an initialised record
+	 * Creates an initialised record.
 	 * 
 	 * @param schema
 	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column (the value for an auto-incrementing primary key is allowed to be null)
@@ -78,7 +80,7 @@ public class Record extends RecordValueSet<Schema>
 	}
 	
 	/**
-	 * Creates an initialised record
+	 * Creates an initialised record.
 	 * 
 	 * @param schema
 	 * @param serialisedValues String to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
@@ -90,20 +92,21 @@ public class Record extends RecordValueSet<Schema>
 	}
 
 	/**
-	 * Creates an initialised record
+	 * Creates an initialised record.
 	 * 
 	 * @param schema
-	 * @param serialisedValues byte array to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
+	 * @param serialisedValues byte array to initialise ValueSet with (should not contain values of virtual columns and may or may not be {@code lossless}ly encoded, i.e. the array must be as produced by {@code #toBytes(lossless)})
+	 * @param lossless whether the given byte array is a (guaranteed) lossless ({@code true}), or a (possibly) lossy ({@code false}) representation of the values
 	 * @throws NullPointerException when schema is null
 	 * @throws IOException when reading serialisedValues fails
 	 */
-	protected Record(Schema schema, byte[] serialisedValues) throws NullPointerException, IOException
+	protected Record(Schema schema, byte[] serialisedValues, boolean lossless) throws NullPointerException, IOException
 	{
-		super(schema, serialisedValues);
+		super(schema, serialisedValues, lossless);
 	}
 	
 	/**
-	 * Copy constructor
+	 * Copy constructor.
 	 * 
 	 * @param another
 	 */
@@ -192,6 +195,30 @@ public class Record extends RecordValueSet<Schema>
 					.getRecordQueryConstraint(allowBlanks /*... but perhaps from here instead*/);
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ValueSet#isLossy()
+	 */
+	@Override
+	public boolean isLossy()
+	{
+		if(getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+			return LosslessFlagColumn.INSTANCE.isLossy(this); // more efficient and more reliable than ValueSet#isLossy()
+		//else:
+		return super.isLossy();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ValueSet#isLossless()
+	 */
+	@Override
+	public boolean isLossless()
+	{
+		if(getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+			return LosslessFlagColumn.INSTANCE.isLossless(this); // more efficient and more reliable than ValueSet#isLossless()
+		//else:
+		return super.isLossless();
+	}
+
 	/**
 	 * @param obj
 	 * @param checkSchema

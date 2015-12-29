@@ -48,6 +48,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 
 /**
  * MediaField base class.
@@ -411,7 +412,7 @@ public abstract class MediaField extends Field
 	 */
 	public File getNewAttachmentFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
-		long creationTimeOffset = System.currentTimeMillis() - Form.GetStartTime(record, true).getMsSinceEpoch();
+		long creationTimeOffset = System.currentTimeMillis() - Form.GetStartTime(record).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
 		return new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename);
 	}
@@ -700,7 +701,7 @@ public abstract class MediaField extends Field
 		public String generateFilename(ValueSet<?> record, Long creationTimeOffset)
 		{
 			// Elements:
-			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record, true));
+			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record));
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename
@@ -741,6 +742,12 @@ public abstract class MediaField extends Field
 		
 		private static final long serialVersionUID = 2L;
 		
+		/**
+		 * This is the "V1X" version of the Form start time column (minus the virtual versions).
+		 * We needs this because since v2.0 Beta 17 primary key columns can no longer be lossy.
+		 */
+		private static final TimeStampColumn COLUMN_TIMESTAMP_START_V1X = TimeStampColumn.Century21NoMS(Form.COLUMN_TIMESTAMP_START_NAME, false, false);
+		
 		public FileNameGeneratorV1X(String fieldID, boolean obfuscateFilename, boolean obfuscateExtension, String fileExtension)
 		{
 			super(fieldID, obfuscateFilename, obfuscateExtension, fileExtension);
@@ -758,9 +765,9 @@ public abstract class MediaField extends Field
 		 */
 		@Override
 		public String generateFilename(ValueSet<?> record, Integer attachmentNumber)
-		{	
+		{
 			// Elements:
-			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record, true));
+			String dateTime = TimeUtils.getTimestampForFileName(COLUMN_TIMESTAMP_START_V1X.getLossyEncodedValue(Form.GetStartTime(record)));
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename

@@ -120,6 +120,13 @@ public abstract class StorageClient implements StorageObserver
 	static public final int SCHEMA_FLAG_KEEP_HISTORY =		SCHEMA_FLAG_TRACK_CHANGES | 1 << 3;
 	
 	/**
+	 * Schema flag indicating that records of the Schema keep track of their lossless- or lossy-ness.
+	 */
+	static public final int SCHEMA_FLAG_TRACK_LOSSLESSNESS = 1 << 4;
+	
+	// Note: flag bit 5 is reserved for future Storage layer usage
+	
+	/**
 	 * Flags used on "internal" Storage layer Schemata.
 	 */
 	static public final int SCHEMA_FLAGS_STORAGE_INTERNAL =	SCHEMA_FLAG_STORAGE_LAYER;

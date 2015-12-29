@@ -430,7 +430,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		return loadProject(descriptor);
 	}
 	
-	private Project retrieveProject(RecordReference projectRecordReference)
+	protected Project retrieveProject(RecordReference projectRecordReference)
 	{
 		return getProject(rsWrapper.recordStore.retrieveRecord(projectRecordReference));
 	}
@@ -785,7 +785,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			Record fsiRecord = retrieveFSIRecord(form); // we query the projectStore to save time...
 			if(fsiRecord == null) // ... but we don't rely on it:
 				fsiRecord = getFSIRecord(form); // may trigger optionality analysis
-			fsiRecordBytesList.add(fsiRecord.toBytes());
+			fsiRecordBytesList.add(fsiRecord.toBytes(true));
 		}
 		
 		// Create serialisedProject valueSet:
@@ -793,7 +793,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		
 		// Return as byte array:
 		BitOutputStream bitsOut = new BitWrapOutputStream(out);
-		serialisedProjectVS.writeToBitStream(bitsOut);
+		serialisedProjectVS.writeToBitStream(bitsOut, true);
 		bitsOut.flush();
 	}
 
@@ -806,14 +806,14 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		// Deserialise valueSet:
 		BitInputStream bitsIn = new BitWrapInputStream(in);
 		ValueSet<ColumnSet> serialisedProjectVS = new ValueSet<ColumnSet>(PROJECT_SERIALISIATION_CS);
-		serialisedProjectVS.readFromBitStream(bitsIn);
+		serialisedProjectVS.readFromBitStream(bitsIn, true);
 		bitsIn.close();
 		
 		// Retrieve FSI records:
 		List<byte[]> fsiRecordBytesList = PROJECT_SERIALISIATION_FSI_RECORDS_COLUMN.retrieveValue(serialisedProjectVS);
 		final List<Record> fsiRecords = new ArrayList<Record>(fsiRecordBytesList.size());
 		for(byte[] fsiRecordBytes : fsiRecordBytesList)
-			fsiRecords.add(FSI_SCHEMA.createRecord(fsiRecordBytes));
+			fsiRecords.add(FSI_SCHEMA.createRecord(fsiRecordBytes, true));
 	
 		// Retrieve & parse Project XML:
 		return ProjectLoader.ParseProjectXML(

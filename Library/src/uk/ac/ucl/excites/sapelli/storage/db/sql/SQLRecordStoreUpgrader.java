@@ -249,90 +249,63 @@ public abstract class SQLRecordStoreUpgrader
 	/**
 	 * @author mstevens
 	 */
-	public interface TableConverter
+	static public class TableConverter
 	{
 		
-		public Schema getNewSchema();
+		protected final Model newModel;
+		protected final Schema newSchema;
+		protected final int oldSchemaFlags;
+		protected List<ColumnReplacer> columnReplacers = new ArrayList<ColumnReplacer>();
 		
-		public Schema getOldSchema();
+		public TableConverter(Schema newSchema)
+		{
+			this(newSchema, newSchema.flags); // flags are unchanged between new & old schema
+		}
 		
-		public List<Record> convertRecords(List<Record> oldRecords);
-		
-	}
-	
-	/**
-	 * @author mstevens
-	 */
-	static public final class TransparentTableConverter implements TableConverter
-	{
-		
-		private final Schema newSchema;
-		
-		public TransparentTableConverter(Schema newSchema)
+		public TableConverter(Schema newSchema, int oldSchemaFlags)
 		{
 			this.newSchema = newSchema;
-		}
-
-		@Override
-		public Schema getNewSchema()
-		{
-			return newSchema;
-		}
-
-		@Override
-		public Schema getOldSchema()
-		{
-			return newSchema;
-		}
-
-		@Override
-		public List<Record> convertRecords(List<Record> oldRecords)
-		{
-			return oldRecords;
-		}
-		
-	}
-	
-	/**
-	 * @author mstevens
-	 */
-	static public abstract class ColumnsReplacer implements TableConverter
-	{
-		
-		private final Model newModel;
-		private final Schema newSchema;
-		
-		public ColumnsReplacer(Schema newSchema)
-		{
-			this.newSchema = newSchema;
+			this.oldSchemaFlags = oldSchemaFlags;
 			this.newModel = newSchema.model;
 		}
 		
-		@Override
 		public Schema getNewSchema()
 		{
 			return newSchema;
 		}
 		
-		@Override
 		public Schema getOldSchema()
 		{
+			if(isTransparent())
+				return newSchema;
+			// else:
 			// Construct a fake recreation of the Schema (and its Model) with "v1x" MediaField columns, this "oldSchema" should be compatible with table as it currently exists in the database:
 			Model oldModel;
 			if(newModel.hasDefaultSchemaFlags())
 				oldModel = new Model(newModel.id, newModel.name, newModel.getDefaultSchemaFlags());
 			else
 				oldModel = new Model(newModel.id, newModel.name);
+			
 			// Insert fake versions of the schemata occurring in the Model before the one we care about:
 			for(int s = 0; s < newSchema.modelSchemaNumber; s++)
-				new Schema(oldModel, "Fake", "FakeTable", 0);
+				new Schema(oldModel, "Fake_" + s, "FakeTable_" + s, 0);
+			
 			// Create (& insert into the oldModel) a replica of the newSchema, with the old version of the columns that have been changed:
-			Schema oldSchema = new Schema(oldModel, newSchema.getName(), newSchema.tableName, newSchema.flags);
+			Schema oldSchema = new Schema(oldModel, newSchema.getName(), newSchema.tableName, oldSchemaFlags);
 			for(Column<?> newColumn : newSchema.getColumns(false))
-				if(isColumnUnchanged(newColumn))
+			{
+				ColumnReplacer cr = getColumnReplacer(newColumn);
+				if(cr == null)
+					// Column is the same in new and old schema:
 					oldSchema.addColumn(newColumn);
 				else
-					oldSchema.addColumn(getOldColumn(newColumn));
+				{
+					Column<?> oldColumn = cr.getOldColumn(newColumn);
+					if(oldColumn != null)
+						oldSchema.addColumn(oldColumn);
+				}
+			}
+			
 			// Set PK & seal oldSchema:
 			if(newSchema.hasPrimaryKey())
 			{
@@ -341,13 +314,17 @@ public abstract class SQLRecordStoreUpgrader
 				if(newPK instanceof AutoIncrementingPrimaryKey)
 				{
 					IntegerColumn newAutoIncrPKCol = ((AutoIncrementingPrimaryKey) newPK).getColumn();
-					oldPK = new AutoIncrementingPrimaryKey(newPK.getName(), isColumnUnchanged(newAutoIncrPKCol) ? newAutoIncrPKCol : (IntegerColumn) getOldColumn(newAutoIncrPKCol));
+					ColumnReplacer cr = getColumnReplacer(newAutoIncrPKCol);
+					oldPK = new AutoIncrementingPrimaryKey(newPK.getName(), cr == null ? newAutoIncrPKCol : (IntegerColumn) cr.getOldColumn(newAutoIncrPKCol));
 				}
 				else
 				{
 					List<Column<?>> oldPKCols = new ArrayList<Column<?>>();
 					for(Column<?> newPKCol : newPK.getColumns(false))
-						oldPKCols.add(isColumnUnchanged(newPKCol) ? newPKCol : getOldColumn(newPKCol));
+					{
+						ColumnReplacer cr = getColumnReplacer(newPKCol);
+						oldPKCols.add(cr == null ? newPKCol : cr.getOldColumn(newPKCol));
+					}
 					oldPK = new PrimaryKey(newPK.getName(), oldPKCols.toArray(new Column<?>[oldPKCols.size()]));
 				}
 				oldSchema.setPrimaryKey(oldPK, true); // and seal
@@ -355,17 +332,23 @@ public abstract class SQLRecordStoreUpgrader
 			else
 				oldSchema.seal();
 			// Note: non-PK indexes are no replicated, this should not be necessary to query the old table.
+			
 			// Insert fake versions of the schemata occurring in the Model after the one we care about:
 			while(oldModel.getNumberOfSchemata() < newModel.getNumberOfSchemata())
-				new Schema(oldModel, "Fake", "FakeTable", 0);
+				new Schema(oldModel, "Fake_" + oldModel.getNumberOfSchemata(), "FakeTable_" + oldModel.getNumberOfSchemata(), 0);
+			
 			// Seal oldModel:
 			oldModel.seal();
+			
+			// Done:
 			return oldSchema;
 		}
 		
-		@Override
 		public List<Record> convertRecords(List<Record> oldRecords)
 		{
+			if(isTransparent())
+				return oldRecords;
+			// else:
 			List<Record> newRecords = new ArrayList<Record>(oldRecords.size());
 			for(Record oldRecord : oldRecords)
 			{
@@ -374,23 +357,94 @@ public abstract class SQLRecordStoreUpgrader
 				newRecords.add(newRecord);
 				// Copy or convert values:
 				for(Column<?> newColumn : newSchema.getColumns(false))
-					if(isColumnUnchanged(newColumn))
+				{
+					ColumnReplacer cr = getColumnReplacer(newColumn);
+					if(cr == null)
 						newColumn.copyValue(oldRecord, newRecord);
 					else
-						newColumn.storeObject(newRecord, convertValue(newColumn, oldRecord));
+						newColumn.storeObject(newRecord, cr.convertValue(newColumn, oldRecord));
+				}
 			}
 			return newRecords;
 		}
 		
-		protected abstract boolean isColumnUnchanged(Column<?> newColumn);
+		/**
+		 * @param cr
+		 */
+		public void addColumnReplacer(ColumnReplacer cr)
+		{
+			columnReplacers.add(cr);
+		}
+		
+		public boolean isTransparent()
+		{
+			return columnReplacers.isEmpty() && newSchema.flags == oldSchemaFlags;
+		}
 		
 		/**
 		 * @param newColumn
-		 * @return the old version of the given column
+		 * @return a {@link ColumnReplacer} instance matching the given new column, or {@code null} if the given column is unchanged from the old schema
+		 */
+		public ColumnReplacer getColumnReplacer(Column<?> newColumn)
+		{
+			for(ColumnReplacer cr : columnReplacers)
+				if(cr.matches(newColumn))
+					return cr;
+			return null;
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public abstract class ColumnReplacer
+	{
+		
+		public abstract boolean matches(Column<?> newColumn);
+		
+		/**
+		 * @return the old version of the given column, or {@code null} if the new column is entirely new (only allowed for non-PK columns!)
 		 */
 		protected abstract Column<?> getOldColumn(Column<?> newColumn);
 		
 		protected abstract Object convertValue(Column<?> newColumn, Record oldRecord);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public class DefaultValueColumnAdder extends ColumnReplacer
+	{
+		
+		private final Column<?> newColumn;
+		
+		/**
+		 * @param newColumn
+		 */
+		public DefaultValueColumnAdder(Column<?> newColumn)
+		{
+			this.newColumn = newColumn;
+		}
+
+		@Override
+		public boolean matches(Column<?> newColumn)
+		{
+			return this.newColumn == newColumn;
+		}
+
+		@Override
+		protected Column<?> getOldColumn(Column<?> newColumn)
+		{
+			return null; // there is no old version of this column, it is entirely new
+		}
+
+		@Override
+		protected Object convertValue(Column<?> newColumn, Record oldRecord)
+		{
+			return this.newColumn.defaultValue;
+		}
 		
 	}
 	
