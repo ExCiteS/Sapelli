@@ -51,7 +51,8 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
  *  - the new {@link Model#SCHEMA_NAME_COLUMN};
  *  - the renaming of existing tables according to the new names of certain internal tables and the way of generating and storing table names in general;
  *  - the name {@link Model#SCHEMA_TABLE_NAME_COLUMN};
- *  - the new use, in {@link SQLiteRecordStore}, of a top-level {@link SQLiteBooleanColumn} to represent {@link ValueSetColumn}s with all-optional subcolumns, in order to maintain the difference between a null ValueSet and an empty one.
+ *  - the new use, in {@link SQLiteRecordStore}, of a top-level {@link SQLiteBooleanColumn} to represent {@link ValueSetColumn}s with all-optional subcolumns, in order to maintain the difference between a null ValueSet and an empty one;
+ *  - the addition of the {@link LosslessFlagColumn} in tables of Schemata that have the {@link StorageClient#SCHEMA_FLAG_TRACK_LOSSLESSNESS} flag.
  * 
  * Note: This upgrade only works if the tableName for ProjectRecordStore#PROJECT_SCHEMA does not change (i.e. remains "Collector_Projects")
  * 
