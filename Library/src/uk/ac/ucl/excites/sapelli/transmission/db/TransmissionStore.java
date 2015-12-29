@@ -807,7 +807,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err); // TODO
+			client.logError("Error upon storing transmittable", e);
 		}
 	}
 	
@@ -828,7 +828,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err); // TODO
+			client.logError("Error upon deleting transmittable(s)", e);
 		}
 	}
 	
