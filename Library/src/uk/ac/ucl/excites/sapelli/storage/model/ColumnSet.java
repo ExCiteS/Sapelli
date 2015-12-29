@@ -420,30 +420,52 @@ public class ColumnSet implements Serializable
 	}
 
 	/**
-	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on data input)
+	 * @return whether or not the size taken up by binary stored ValueSets of this ColumnSet varies at run-time (i.e. depending on data input)
 	 */
 	public boolean isVariableSize()
 	{
-		return isVariableSize(false, Collections.<Column<?>> emptySet());
+		return isVariableSize(false) || isVariableSize(true);
 	}
 	
 	/**
-	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on data input)
-	 * 
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return whether or not the size taken up by binary stored ValueSets of this ColumnSet varies at run-time (i.e. depending on input)
+	 */
+	public boolean isVariableSize(boolean lossless)
+	{
+		return isVariableSize(false, Collections.<Column<?>> emptySet(), lossless);
+	}
+	
+	/**
 	 * @param includeVirtual
 	 * @param skipColumns columns to ignore in the total
-	 * @return
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return whether or not the size taken up by binary stored ValueSets of this ColumnSet varies at run-time (i.e. depending on data input)
 	 */
-	public boolean isVariableSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
+	public boolean isVariableSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns, boolean lossless)
 	{
 		for(Column<?> c : getColumns(includeVirtual))
-			if(!skipColumns.contains(c) && c.isVariableSize())
+			if(!skipColumns.contains(c) && c.isVariableSize(lossless))
 				return true;
 		return false;
 	}
 	
 	/**
-	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Returns the minimum effective number of bits a ValueSet of this ColumnSet takes
+	 * up when written to a most-efficient (possibly lossy) binary representation.
+	 *
+	 * @return
+	 */
+	public final int getMinimumSize()
+	{
+		return canBeLossy() ?
+			// it is logical to assume that the minimum size for lossy encoding will always be smaller than that of lossless encoding, ...
+			Math.min(getMinimumSize(true), getMinimumSize(false)) /* ... but we check to be sure */ :
+			getMinimumSize(true);
+	}
+	
+	/**
+	 * Returns the minimum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
 	 * Includes all non-virtual columns in the count.
 	 * 
 	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
@@ -455,7 +477,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Returns the minimum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
 	 * 
 	 * @param includeVirtual
 	 * @param skipColumns columns to ignore in the total
@@ -471,7 +493,21 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Returns the maximum effective number of bits a ValueSet of this ColumnSet takes
+	 * up when written to the least-efficient (likely lossless) binary representation.
+	 *
+	 * @return
+	 */
+	public final int getMaximumSize()
+	{
+		return canBeLossy() ?
+			// it is logical to assume that the maximum size for lossless encoding will always be bigger than that of lossy encoding, ...
+			Math.max(getMaximumSize(true), getMaximumSize(false)) /* ... but we check to be sure */ :
+			getMaximumSize(true);
+	}
+	
+	/**
+	 * Returns the maximum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
 	 * Includes all non-virtual columns in the count.
 	 * 
 	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
@@ -483,7 +519,7 @@ public class ColumnSet implements Serializable
 	}
 
 	/**
-	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Returns the maximum effective number of bits a ValueSet of this ColumnSet takes up when written to a binary representation.
 	 * 
 	 * @param includeVirtual
 	 * @param skipColumns columns to ignore the total

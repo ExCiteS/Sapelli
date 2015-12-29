@@ -861,9 +861,26 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	{
 		return !canBeLossy();
 	}
+	
+	/**
+	 * Returns the maximum effective number of bits values for this column take up
+	 * when written to the least-efficient (likely lossless) binary representation,
+	 * including the presence-bit in case of an optional column.
+	 *
+	 * @return
+	 */
+	public final int getMaximumSize()
+	{
+		return canBeLossy() ?
+			// it is logical to assume that the maximum size for lossless encoding will always be bigger than that of lossy encoding, ...
+			Math.max(getMaximumSize(true), getMaximumSize(false)) /* ... but we check to be sure */ :
+			getMaximumSize(true);
+	}
 
 	/**
-	 * Returns the maximum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
+	 * Returns the maximum effective number of bits values for this column take up
+	 * when written to a binary representation, including the presence-bit in case
+	 * of an optional column.
 	 *
 	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
 	 * @return
@@ -874,13 +891,29 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Returns the maximum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
+	 * Returns the maximum number of bits values for this column take up when written to
+	 * a binary representation, _without_ the presence-bit in case of an optional column.
 	 *
 	 * @param lossless if {@code true} the returned maximum size is that of a losslessly encoded value, if {@code false} the returned maximum size is that of a lossyly encoded value
 	 * @return
 	 */
 	protected abstract int getMaximumValueSize(boolean lossless);
 
+	/**
+	 * Returns the minimum effective number of bits values for this column take
+	 * up when written to a most-efficient (possibly lossy) binary representation,
+	 * including the presence-bit in case of an optional column.
+	 *
+	 * @return
+	 */
+	public final int getMinimumSize()
+	{
+		return canBeLossy() ?
+			// it is logical to assume that the minimum size for lossy encoding will always be smaller than that of lossless encoding, ...
+			Math.min(getMinimumSize(true), getMinimumSize(false)) /* ... but we check to be sure */ :
+			getMinimumSize(true);
+	}
+	
 	/**
 	 * Returns the minimum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
 	 *
