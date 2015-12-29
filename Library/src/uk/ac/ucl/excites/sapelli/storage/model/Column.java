@@ -28,6 +28,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
@@ -443,11 +446,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	public abstract String toString(T value);
 
 	/**
-	 * Converts the given {@code <T>} value to byte[] representation
+	 * Converts the given {@code <T>} value to binary representation and returns the result as a {@code byte[]}.
 	 * 
 	 * @param value
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
-	 * @return a byte[] or null in case of an error
+	 * @return a byte[] array
 	 * @throws IOException if an I/O error happens
 	 */
 	public byte[] toBytes(T value, boolean lossless) throws IOException
@@ -455,7 +458,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		BitOutputStream bos = null;
 		try
 		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			bos = new BitWrapOutputStream(baos);
 			writeValue(value, bos, lossless);
 			bos.flush();
@@ -465,12 +468,38 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		{
 			StreamHelpers.SilentClose(bos);
 		}
+		/*//Alternative implementation:
+		return toBits(value, lossless).toByteArray();*/
+	}
+	
+	/**
+	 * Converts the given {@code <T>} value to binary representation and returns the result as a {@link BitArray}.
+	 * 
+	 * @param value
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
+	 * @return a {@link BitArray}
+	 * @throws IOException if an I/O error happens
+	 */
+	public BitArray toBits(T value, boolean lossless) throws IOException
+	{
+		BitArrayOutputStream bitsOut = null;
+		try
+		{
+			bitsOut = new BitArrayOutputStream();
+			writeValue(value, bitsOut, lossless);
+			bitsOut.flush();
+			return bitsOut.toBitArray();
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(bitsOut);
+		}
 	}
 
 	/**
-	 * Convert the given byte[] representation to a value of type {@code <T>}
+	 * Convert the given binary representation to a value of type {@code <T>}.
 	 * 
-	 * @param bytes
+	 * @param bytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value
 	 * @throws IOException if an I/O error happens
@@ -481,6 +510,30 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		try
 		{
 			bis = new BitWrapInputStream(new ByteArrayInputStream(bytes));
+			return readValue(bis, lossless);
+		}
+		finally
+		{
+			StreamHelpers.SilentClose(bis);
+		}
+		/*//Alternative implementation:
+		return fromBits(BitArray.FromBytes(bytes), lossless);*/
+	}
+	
+	/**
+	 * Convert the given binary representation to a value of type {@code <T>}.
+	 * 
+	 * @param bits binary representation of a column value, given as a {@link BitArray}
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @return the value
+	 * @throws IOException if an I/O error happens
+	 */
+	public T fromBits(BitArray bits, boolean lossless) throws IOException
+	{
+		BitInputStream bis = null;
+		try
+		{
+			bis = new BitArrayInputStream(bits);
 			return readValue(bis, lossless);
 		}
 		finally
@@ -688,37 +741,18 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		if(!canBeLossy())
 			return value;
 		// else:
-		BitOutputStream out = null;
-		BitInputStream in = null;
 		try
 		{
-			//Output stream:
-			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitWrapOutputStream(rawOut);
-
-			//Write value:
-			writeValue(value, out, false); // false: not lossless --> lossy
-
-			// Flush, close & get bytes:
-			out.flush();
-			out.close();
-
-			//Input stream:
-			in = new BitWrapInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
-
-			//Read value:
-			return readValue(in, false); // false: not lossless --> lossy
+			// Convert to lossy binary representation and then back to a T value to return:
+			return fromBytes(toBytes(value, false), false); // false: not lossless --> lossy
+			/*//Alternative implementation:
+			return fromBits(toBits(value, false), false); // false: not lossless --> lossy*/
 		}
 		catch(Exception e)
 		{
-			System.err.println("Error in retrieveValueAsStoredBinary(Record): " + e.getLocalizedMessage());
+			System.err.println("Error in getLossyEncodedValue(Record): " + e.getLocalizedMessage());
 			e.printStackTrace();
 			return null;
-		}
-		finally
-		{
-			StreamHelpers.SilentClose(out);
-			StreamHelpers.SilentClose(in);
 		}
 	}
 
