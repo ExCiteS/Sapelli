@@ -377,35 +377,48 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 
 	/**
-	 * Finds schema tables that have become empty and drops them, along with
-	 * deleting the corresponding row from the Schemata table.
+	 * Finds schema tables that have become empty and drops them,
+	 * along with deleting the corresponding row from the Schemata
+	 * table. It also (re-)checks whether tables (still) exist in
+	 * the database (important for upgrades!). 
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
 	 */
 	protected void cleanup() throws DBException
 	{
 		// Find empty tables & release all table resources:
-		List<STable> emptyTables = null;
-		for(STable table : tables.values())
+		List<Map.Entry<RecordReference, STable>> emptyTables = null;
+		for(Iterator<Map.Entry<RecordReference, STable>> tablesIt = tables.entrySet().iterator(); tablesIt.hasNext();)
 		{
+			Map.Entry<RecordReference, STable> tableEntry = tablesIt.next();
+			STable table = tableEntry.getValue();
 			try
 			{
-				// Check if table is empty:
-				if(table.isInDB() && table.isEmpty())
+				// Check if this table exists in the db:
+				if(!table.isInDB(true)) // true: really check against db
+				{	// The table doesn't exist in the db, so forget about it:
+					tablesIt.remove(); // removes entry from tables map
+				}
+				// When the table does exist, check if table if it is empty:
+				else if(table.isEmpty())
 				{
+					// remember empty table so we can drop it below:
 					if(emptyTables == null)
-						emptyTables = new ArrayList<STable>();
-					emptyTables.add(table);
+						emptyTables = new ArrayList<Map.Entry<RecordReference, STable>>();
+					emptyTables.add(tableEntry);
+					// we can already remove its entry from tables map
+					tablesIt.remove();
 				}
 				// Release table resources:
 				table.release();
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error during cleanup", dbE);
 				continue;
 			}
 		}
+		
 		// Release resources on "system tables":
 		schemataTable.release();
 		modelsTable.release();
@@ -418,9 +431,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			{
 				Set<Model> possiblyRemovableModels = new HashSet<Model>();
 				// Forget schemata & drop tables:
-				for(STable emptyTable : emptyTables)
+				for(Map.Entry<RecordReference, STable> emptyTableEntry : emptyTables)
 				{
-					RecordReference schemaMetaRecordRef = Schema.GetMetaRecordReference(emptyTable.schema);
+					RecordReference schemaMetaRecordRef = emptyTableEntry.getKey();
+					STable emptyTable = emptyTableEntry.getValue();
 					
 					// Unregister (i.e. "forget") the schema (which the table corresponds to) in the schemataTable:
 					schemataTable.delete(schemaMetaRecordRef);
@@ -430,9 +444,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					
 					// Remember model:
 					possiblyRemovableModels.add(emptyTable.schema.getModel());
-					
-					// Remove from tables map:
-					tables.remove(schemaMetaRecordRef);
 				}
 				// Forget models if none of their schemata correspond to an existing (and at this point non-empty) table in the database:
 				modelLoop : for(Model model : possiblyRemovableModels)
@@ -452,7 +463,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				}
 				catch(DBException dbE2)
 				{
-					dbE2.printStackTrace(System.err);
+					client.logError("Error during cleanup rollback", dbE2);
 				}
 				throw dbE;
 			}
@@ -1026,7 +1037,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public boolean isInDB()
 		{
-			if(existsInDB == null)
+			return isInDB(false);
+		}
+		
+		public boolean isInDB(boolean forceCheck)
+		{
+			if(existsInDB == null || forceCheck)
 				existsInDB = doesTableExist(tableName);
 			return existsInDB;
 		}
