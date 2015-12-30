@@ -178,6 +178,15 @@ public class SMSCorrespondent extends Correspondent
 		return getTransmissionType() == Type.BINARY_SMS;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Correspondent#favoursLosslessPayload()
+	 */
+	@Override
+	public boolean favoursLosslessPayload()
+	{
+		return false; // TODO perhaps we can make this user-configurable at some point. 
+	}
+
 	@Override
 	public String toString()
 	{

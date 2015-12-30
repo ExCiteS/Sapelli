@@ -53,6 +53,15 @@ public abstract class HTTPServer extends Correspondent
 		return url;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Correspondent#favoursLosslessPayload()
+	 */
+	@Override
+	public boolean favoursLosslessPayload()
+	{
+		return true;
+	}
+
 	@Override
 	public boolean equals(Object obj)
 	{

@@ -143,6 +143,15 @@ public class GeoKeyAccount extends Correspondent
 		handler.handle(this);
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Correspondent#favoursLosslessPayload()
+	 */
+	@Override
+	public boolean favoursLosslessPayload()
+	{
+		return true;
+	}
+
 	@Override
 	public String toString()
 	{

@@ -139,6 +139,11 @@ public abstract class Correspondent
 	{
 		this.userDeleted = true;
 	}
+	
+	/**
+	 * @return whether or not this Correspondent (and transmission medium) favours losslessly encoded payloads over lossyly encoded ones.
+	 */
+	public abstract boolean favoursLosslessPayload();
 
 	@Override
 	public boolean equals(Object obj)
