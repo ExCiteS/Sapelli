@@ -36,14 +36,11 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
@@ -390,8 +387,7 @@ public class RecordsPayload extends Payload
 			for(Schema schema : schemataInT)
 			{
 				// Get columns which should *not* be transmitted:
-				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema);
-				IntegerColumn autoIncrementKeyColumn = schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? ((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn() : null;
+				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema); // includes auto-incr-PK columns
 				
 				// Get records:
 				List<Record> records = recordsBySchema.get(schema);
@@ -414,7 +410,7 @@ public class RecordsPayload extends Payload
 						if(first)
 						{	// Get values of first record:
 							for(Column<?> c : schema.getColumns(false))
-								if(!nonTransmittableColumns.contains(c) && c != autoIncrementKeyColumn) // ignore non-transmittable columns & auto-incrementing key column
+								if(!nonTransmittableColumns.contains(c)) // ignore non-transmittable columns
 									factoredOutValues.put(c, c.retrieveValueAsBits(records.get(0), lossless)); // treat all columns as potentially factored-out
 							first = false;
 						}
@@ -438,7 +434,7 @@ public class RecordsPayload extends Payload
 						// Write factored-out flags & the actual factored out values:
 						for(Column<?> c : schema.getColumns(false))
 						{	// for all transmittable columns:
-							if(!nonTransmittableColumns.contains(c) && c != autoIncrementKeyColumn)
+							if(!nonTransmittableColumns.contains(c))
 							{
 								if(factoredOutValues.containsKey(c))
 								{	// Column is factored out:
@@ -458,7 +454,6 @@ public class RecordsPayload extends Payload
 				
 				// Write record data, skipping ...
 				Set<Column<?>> skipColumns = new HashSet<Column<?>>(nonTransmittableColumns); 	// ... non-transmittable,
-				CollectionUtils.addIgnoreNull(skipColumns, autoIncrementKeyColumn);				// auto-incrementing key,
 				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				for(Record r : recordsBySchema.get(schema))
 					r.writeToBitStream(out, false /* ... and virtual columns */, skipColumns, lossless);
@@ -495,8 +490,7 @@ public class RecordsPayload extends Payload
 			for(Schema schema : schemataInT)
 			{
 				// Get columns which should *not* be transmitted:
-				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema);
-				IntegerColumn autoIncrementKeyColumn = schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? ((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn() : null;
+				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema); // includes auto-incr-PK columns
 				
 				// Create & store list for the records that will be decoded:
 				List<Record> records = new ArrayList<Record>();
@@ -515,7 +509,7 @@ public class RecordsPayload extends Payload
 						factoredOutValues = new HashMap<Column<?>, Object>();
 						for(Column<?> c : schema.getColumns(false))
 						{	// for all transmittable columns:
-							if(!nonTransmittableColumns.contains(c) && c != autoIncrementKeyColumn)
+							if(!nonTransmittableColumns.contains(c))
 							{
 								if(in.readBit()) // Read factored-out flag, indicating whether column is factored-out; if = true: 
 									factoredOutValues.put(c, c.readValue(in, lossless)); // read factored out value
@@ -526,7 +520,6 @@ public class RecordsPayload extends Payload
 				
 				// Read record data, skipping ...
 				Set<Column<?>> skipColumns = new HashSet<Column<?>>(nonTransmittableColumns); 	// ... non-transmittable,
-				CollectionUtils.addIgnoreNull(skipColumns, autoIncrementKeyColumn);				// auto-incrementing key,
 				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				while(	records.size() < numberOfRecordsForSchema &&					
 						in.bitsAvailable() >= schema.getMinimumSize(false /* ... and virtual columns */, skipColumns, lossless))

@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -26,12 +28,14 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageObserver;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
@@ -131,12 +135,38 @@ public abstract class TransmissionClient extends StorageClient
 	
 	/**
 	 * Returns columns from the given schema that should not be transmitted.
-	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
+	 * It is assumed these are optional columns, or non-optional columns with a default value.
 	 * 
 	 * @param schema
 	 * @return
 	 */
-	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
+	public final Set<Column<?>> getNonTransmittableColumns(Schema schema)
+	{
+		Set<Column<?>> nonTransmitCols = new HashSet<Column<?>>();
+		
+		// We should *not* transmit values of auto-incrementing PKs as they may clash with records on the receiving side:
+		if(schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
+			nonTransmitCols.add(((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn());
+		
+		// Add other non-transmittable "internal" (i.e. known at transmission or storage-layer) columns here...
+		
+		// Add client cols:
+		CollectionUtils.addAllIgnoreNull(nonTransmitCols, getNonTransmittableClientColumns(schema));
+		
+		return nonTransmitCols;
+	}
+	
+	/**
+	 * Subclasses can override this to returns (additional) columns from the given schema that should not be
+	 * transmitted. It is assumed these are optional columns, or non-optional columns with a default value.
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	public Set<Column<?>> getNonTransmittableClientColumns(Schema schema)
+	{
+		return Collections.<Column<?>> emptySet(); // nothing by default.
+	}
 	
 	/**
 	 * @param recordRef

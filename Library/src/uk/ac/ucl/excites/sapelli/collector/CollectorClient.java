@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
@@ -42,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -382,13 +380,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		{
 			projectStoreHandle.doneUsing(this);
 		}
-	}
-
-	@Override
-	public Set<Column<?>> getNonTransmittableColumns(Schema schema)
-	{
-		// TODO get rid of this
-		return Collections.<Column<?>>emptySet(); // TODO pass transmission & export related columns
 	}
 
 }
