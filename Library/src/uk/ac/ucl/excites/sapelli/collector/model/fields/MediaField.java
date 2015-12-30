@@ -767,7 +767,7 @@ public abstract class MediaField extends Field
 		public String generateFilename(ValueSet<?> record, Integer attachmentNumber)
 		{
 			// Elements:
-			String dateTime = TimeUtils.getTimestampForFileName(COLUMN_TIMESTAMP_START_V1X.getLossyEncodedValue(Form.GetStartTime(record)));
+			String dateTime = TimeUtils.getTimestampForFileName(COLUMN_TIMESTAMP_START_V1X.toLossy(Form.GetStartTime(record)));
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename

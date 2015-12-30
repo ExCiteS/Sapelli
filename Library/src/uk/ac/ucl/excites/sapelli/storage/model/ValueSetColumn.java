@@ -115,18 +115,23 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 	
 	/**
-	 * Add a column that needs to be skipped upon reading/writing to binary storage/transmission and
+	 * @return new "sub-ValueSet" instance
+	 */
+	public abstract VS getNewValueSet();
+	
+	/**
+	 * Register a column that needs to be skipped upon reading/writing to binary representations and
 	 * optionally also for serialisation/deserialisation to/from String
 	 * 
-	 * @param skipColumn a non-virtual(!) column that is part of the schema
+	 * @param schemaColumn a non-virtual(!) column that is part of the schema
 	 */
-	protected void addSkipColumn(Column<?> skipColumn)
+	protected void skipColumn(Column<?> schemaColumn)
 	{
-		if(skipColumn == null)
+		if(schemaColumn == null)
 			throw new NullPointerException("skipColumn cannot be null!");
-		int position = columnSet.getColumnPosition(skipColumn.name);
+		int position = columnSet.getColumnPosition(schemaColumn.name);
 		if(position == Schema.UNKNOWN_COLUMN_POSITION)
-			throw new IllegalArgumentException("Unknown subcolumn \"" + skipColumn.name + "\"!");
+			throw new IllegalArgumentException("Unknown subcolumn \"" + schemaColumn.name + "\"!");
 		if(skipColumnPositions == null)
 			skipColumnPositions = new HashSet<Integer>();
 		skipColumnPositions.add(position);
@@ -139,9 +144,10 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 			return Collections.<Column<?>> emptySet();
 		if(skipColumns == null)
 		{
-			skipColumns = new HashSet<Column<?>>();
+			Set<Column<?>> mutableSkipColumns = new HashSet<Column<?>>();
 			for(int pos : skipColumnPositions)
-				skipColumns.add(columnSet.getColumn(pos));
+				mutableSkipColumns.add(columnSet.getColumn(pos));
+			skipColumns = Collections.unmodifiableSet(mutableSkipColumns);
 		}
 		return skipColumns;
 	}
@@ -152,16 +158,16 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 	
 	/**
-	 * Specify a column instance to be used instead of one of the schemaColumns
-	 * when reading/writing from/to binary storage.
-	 * The binaryColumn must be other same content type as the schemaColumn,
+	 * Register a column instance, the {@code binaryColumn}, to be used instead of one
+	 * of the {@code schemaColumn}s when reading/writing from/to binary representations.
+	 * The {@code binaryColumn} must be other same content type as the  {@code schemaColumn},
 	 * but no names, optionality or other other restrictions are checked.
 	 * Use with care!
 	 * 
-	 * @param schemaColumn
-	 * @param binaryColumn
+	 * @param schemaColumn a non-virtual(!) column that is part of the schema
+	 * @param binaryColumn a Column to use instead of the  {@code schemaColumn} when reading/writing from/to binary representations
 	 */
-	protected void addBinaryColumn(Column<?> schemaColumn, Column<?> binaryColumn)
+	protected void swapColumn(Column<?> schemaColumn, Column<?> binaryColumn)
 	{
 		if(schemaColumn == null)
 			throw new NullPointerException("schemaColumn cannot be null!");
@@ -178,30 +184,29 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 	
 	/**
-	 * Get column to use when store/retrieve values in binary form.
-	 * This is typically the given schemaColumn itself, unless a "binaryColumn" has been registered for it.
+	 * Get sub-column to use when reading/writing from/to binary representations.
+	 * Often this is given schemaColumn itself, unless it has been swapped for a "binaryColumn".
 	 * 
 	 * @param schemaColumn
-	 * @param forceLossless if {@code true} the "binaryColumn" will only be returned if it is lossless, otherwise the given (assumed lossless) schemaColumn is returned
+	 * @see #swapColumn(Column, Column)
 	 * @return
 	 */
-	protected Column<?> getBinaryColumn(Column<?> schemaColumn, boolean forceLossless)
+	protected Column<?> getBinaryColumn(Column<?> schemaColumn)
 	{
-		if(!forceLossless && swapColumns != null)
+		if(swapColumns != null)
 		{
 			int schemaColPos = columnSet.getColumnPosition(schemaColumn.name);
 			if(schemaColPos == Schema.UNKNOWN_COLUMN_POSITION)
 				throw new IllegalArgumentException("Unknown subcolumn \"" + schemaColumn.name + "\"!"); // this should never happen
 			if(swapColumns.containsKey(schemaColPos))
-			{
-				Column<?> binaryCol = swapColumns.get(schemaColPos);
-				if(!forceLossless || !binaryCol.canBeLossy())
-					return binaryCol;
-			}
+				return swapColumns.get(schemaColPos);
 		}
 		return schemaColumn;
 	}
 	
+	/**
+	 * @return whether or not all subcolumns are optional
+	 */
 	public boolean hasAllOptionalSubColumns()
 	{
 		for(Column<?> subCol : columnSet.getColumns(false))
@@ -244,23 +249,32 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	protected void write(VS record, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		for(Column<?> subCol : columnSet.getColumns(false))
-			if(lossless || !isColumnSkipped(subCol))
-				getBinaryColumn(subCol, lossless).writeObject(subCol.retrieveValue(record), bitStream, lossless); // will also write optional bit of the subcolumn if it is optional
+			if(lossless || !isColumnSkipped(subCol)) // never skip a column if lossless
+				getBinaryColumn(subCol).writeObject(subCol.retrieveValue(record), bitStream, lossless); // will also write optional bit of the subcolumn if it is optional
 	}
 	
-	/**
-	 * @return new "subrecord" instance
-	 */
-	public abstract VS getNewValueSet();
-
 	@Override
 	protected VS read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
 		VS valueSet = getNewValueSet();
 		for(Column<?> subCol : columnSet.getColumns(false))
-			if(lossless || !isColumnSkipped(subCol))
-				subCol.storeObject(valueSet, getBinaryColumn(subCol, lossless).readValue(bitStream, lossless));
+			if(lossless || !isColumnSkipped(subCol)) // never skip a column if lossless
+				subCol.storeObject(valueSet, getBinaryColumn(subCol).readValue(bitStream, lossless));
 		return valueSet;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		if(skipColumnPositions != null)
+			return true; // some columns may be skipped, when this happens information is most likely lost -> lossy
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(getBinaryColumn(subCol).canBeLossy())
+				return true; // one of the columns used for binary writing/reading can produce lossy output
+		return false;
 	}
 
 	/**
@@ -349,7 +363,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 		int total = 0;
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(lossless || !isColumnSkipped(subCol))
-				total += getBinaryColumn(subCol, lossless).getMaximumSize(lossless);
+				total += getBinaryColumn(subCol).getMaximumSize(lossless);
 		return total;
 	}
 
@@ -359,7 +373,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 		int total = 0;
 		for(Column<?> subCol : columnSet.getColumns(false))
 			if(lossless || !isColumnSkipped(subCol))
-				total += getBinaryColumn(subCol, lossless).getMinimumSize(lossless);
+				total += getBinaryColumn(subCol).getMinimumSize(lossless);
 		return total;
 	}
 

@@ -74,22 +74,22 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 		super(name, Location.COLUMN_SET, optional, defaultValue);
 		// "Skip columns": skip the things we don't want to store binary:
 		if(!storeAltitude)
-			addSkipColumn(Location.COLUMN_ALTITUDE);
+			skipColumn(Location.COLUMN_ALTITUDE);
 		if(!storeBearing)
-			addSkipColumn(Location.COLUMN_BEARING);
+			skipColumn(Location.COLUMN_BEARING);
 		if(!storeSpeed)
-			addSkipColumn(Location.COLUMN_SPEED);
+			skipColumn(Location.COLUMN_SPEED);
 		if(!storeAccuracy)
-			addSkipColumn(Location.COLUMN_ACCURACY);
+			skipColumn(Location.COLUMN_ACCURACY);
 		if(!storeTime)
-			addSkipColumn(Location.COLUMN_TIME);
+			skipColumn(Location.COLUMN_TIME);
 		if(!storeProvider)
-			addSkipColumn(Location.COLUMN_PROVIDER);
+			skipColumn(Location.COLUMN_PROVIDER);
 		if(!doublePrecision)
 		{	// Use 32 bit float columns for (lossy) binary storage of lat, lon & alt values:
-			addBinaryColumn(Location.COLUMN_LATITUDE, COLUMN_LATITUDE_32);
-			addBinaryColumn(Location.COLUMN_LONGITUDE, COLUMN_LONGITUDE_32);
-			addBinaryColumn(Location.COLUMN_ALTITUDE, COLUMN_ALTITUDE_32);
+			swapColumn(Location.COLUMN_LATITUDE, COLUMN_LATITUDE_32);
+			swapColumn(Location.COLUMN_LONGITUDE, COLUMN_LONGITUDE_32);
+			swapColumn(Location.COLUMN_ALTITUDE, COLUMN_ALTITUDE_32);
 		}
 	}
 
@@ -115,7 +115,7 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	
 	public boolean isDoublePrecision()
 	{
-		return getBinaryColumn(Location.COLUMN_LATITUDE, false) == Location.COLUMN_LATITUDE; // (and not == COLUMN_LATITUDE_32)
+		return getBinaryColumn(Location.COLUMN_LATITUDE) == Location.COLUMN_LATITUDE; // (and not == COLUMN_LATITUDE_32)
 	}
 	
 	public boolean isStoreAltitude()

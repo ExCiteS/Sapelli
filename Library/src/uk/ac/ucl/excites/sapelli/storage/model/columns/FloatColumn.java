@@ -158,15 +158,21 @@ public class FloatColumn extends NumberColumn<Double>
 	protected void write(Double value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		if(doublePrecision || lossless)
+			// write as double (64 bits):
 			bitStream.write(value);
 		else
+			// write as float (32 bits):
 			bitStream.write(value.floatValue());
 	}
 
 	@Override
 	protected Double read(BitInputStream bitStream, boolean lossless) throws IOException
 	{
-		return doublePrecision || lossless ? bitStream.readDouble() : bitStream.readFloat();
+		return (doublePrecision || lossless) ?
+			// read as double (64 bits):
+			bitStream.readDouble() :
+			// read as float (32 bits):
+			bitStream.readFloat();
 	}
 
 	/* (non-Javadoc)

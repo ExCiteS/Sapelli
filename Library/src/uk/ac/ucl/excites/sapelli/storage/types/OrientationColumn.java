@@ -56,11 +56,11 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	{
 		super(name, Orientation.COLUMN_SET, optional, defaultValue);
 		if(!storeAzimuth)
-			addSkipColumn(Orientation.COLUMN_AZIMUTH);
+			skipColumn(Orientation.COLUMN_AZIMUTH);
 		if(!storePitch)
-			addSkipColumn(Orientation.COLUMN_PITCH);
+			skipColumn(Orientation.COLUMN_PITCH);
 		if(!storeRoll)
-			addSkipColumn(Orientation.COLUMN_ROLL);
+			skipColumn(Orientation.COLUMN_ROLL);
 	}
 	
 	@Override
