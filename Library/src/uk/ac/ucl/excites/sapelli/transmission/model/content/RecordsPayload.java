@@ -46,11 +46,12 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
- * TODO implemtent SentCallback mark records as sent!
+ * TODO ? implement SentCallback to mark records as sent!?
  * 
  * @author mstevens
  */
@@ -129,6 +130,10 @@ public class RecordsPayload extends Payload
 			if(!record.isFilled())
 				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping? TODO what with autoIncrementingPK? should such records be transferable at all?
 			Schema schema = record.getSchema();
+			
+			// Check if transmittable:
+			if(!schema.hasFlags(TransmissionClient.SCHEMA_FLAG_TRANSMITTABLE))
+				throw new IllegalArgumentException("Schema of given record(s) is not transmittable.");
 			
 			// Model:
 			if(recordsBySchema.isEmpty())
