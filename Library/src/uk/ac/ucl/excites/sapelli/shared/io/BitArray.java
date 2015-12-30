@@ -90,6 +90,8 @@ public class BitArray implements Iterable<Boolean>
 	 */
 	public BitArray(BitSet bits, int length)
 	{
+		if(bits == null)
+			throw new NullPointerException("bits cannot be null!");
 		if(length < 0)
 			throw new IllegalArgumentException("length cannot be negative!");
 		this.bits = bits;
@@ -172,8 +174,11 @@ public class BitArray implements Iterable<Boolean>
 	public int hashCode()
 	{
 		int hash = 1;
+		hash = 31 * hash + length;
+		hash = 31 * hash + bits.hashCode();
+		/*// Less efficient alternative for line above:
 		for(int i = 0; i < length; i++)
-			hash = 31 * hash + (get(i) ? 0 : 1);
+			hash = 31 * hash + (get(i) ? 0 : 1);*/
 		return hash;
 	}
 	
@@ -186,10 +191,12 @@ public class BitArray implements Iterable<Boolean>
 			BitArray that = (BitArray) obj;
 			if(this.length != that.length)
 				return false;
+			return this.bits.equals(that.bits);
+			/*// Less efficient alternative for line above:
 			for(int i = 0; i < length; i++)
 				if(this.get(i) != that.get(i))
 					return false;
-			return true;
+			return true;*/
 		}
 		return false;
 	}
