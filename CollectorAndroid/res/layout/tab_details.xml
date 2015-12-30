@@ -84,24 +84,6 @@
 	                    android:paddingStart="0dp"
 	                    android:paddingRight="7dp"
 	                    android:paddingEnd="7dp"
-	                    android:text="@string/id"
-	                    android:textColor="@color/black" />
-	
-	                <TextView
-	                    android:id="@+id/lblProjectID"
-	                    android:textColor="@color/colorPrimaryDark" />
-	            </TableRow>
-	            
-	            <TableRow
-	                android:layout_width="wrap_content"
-	                android:layout_height="wrap_content" >
-	
-	                <TextView
-	                    android:gravity="end"
-	                    android:paddingLeft="0dp"
-	                    android:paddingStart="0dp"
-	                    android:paddingRight="7dp"
-	                    android:paddingEnd="7dp"
 	                    android:text="@string/variant"
 	                    android:textColor="@color/black" />
 	
@@ -138,6 +120,24 @@
 	                    android:paddingStart="0dp"
 	                    android:paddingRight="7dp"
 	                    android:paddingEnd="7dp"
+	                    android:text="@string/id"
+	                    android:textColor="@color/black" />
+	
+	                <TextView
+	                    android:id="@+id/lblProjectID"
+	                    android:textColor="@color/colorPrimaryDark" />
+	            </TableRow>
+	            
+	            <TableRow
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content" >
+	
+	                <TextView
+	                    android:gravity="end"
+	                    android:paddingLeft="0dp"
+	                    android:paddingStart="0dp"
+	                    android:paddingRight="7dp"
+	                    android:paddingEnd="7dp"
 	                    android:text="@string/fingerprint"
 	                    android:textColor="@color/black" />
 	
@@ -156,11 +156,11 @@
 	                    android:paddingStart="0dp"
 	                    android:paddingRight="7dp"
 	                    android:paddingEnd="7dp"
-	                    android:text="@string/numForms"
+	                    android:text="@string/modelID"
 	                    android:textColor="@color/black" />
 	
 	                <TextView
-	                    android:id="@+id/lblProjectNumberOfForms"
+	                    android:id="@+id/lblProjectModelID"
 	                    android:textColor="@color/colorPrimaryDark" />
 	            </TableRow>
 	            
@@ -174,11 +174,11 @@
 	                    android:paddingStart="0dp"
 	                    android:paddingRight="7dp"
 	                    android:paddingEnd="7dp"
-	                    android:text="@string/modelID"
+	                    android:text="@string/numForms"
 	                    android:textColor="@color/black" />
 	
 	                <TextView
-	                    android:id="@+id/lblProjectModelID"
+	                    android:id="@+id/lblProjectNumberOfForms"
 	                    android:textColor="@color/colorPrimaryDark" />
 	            </TableRow>
 	        </TableLayout>

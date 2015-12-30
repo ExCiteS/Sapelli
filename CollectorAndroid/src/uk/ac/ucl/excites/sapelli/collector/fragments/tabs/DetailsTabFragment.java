@@ -39,12 +39,12 @@ public class DetailsTabFragment extends ProjectManagerTabFragment
 	static private int[] labelIDs =
 	{
 		R.id.lblProjectName,
-		R.id.lblProjectID,
 		R.id.lblProjectVariant,
 		R.id.lblProjectVersion,
+		R.id.lblProjectID,
 		R.id.lblProjectFingerPrint,
-		R.id.lblProjectNumberOfForms,
-		R.id.lblProjectModelID
+		R.id.lblProjectModelID,
+		R.id.lblProjectNumberOfForms
 	};
 
 	private final List<TextView> lblTextViews = new ArrayList<TextView>(labelIDs.length);
@@ -81,23 +81,26 @@ public class DetailsTabFragment extends ProjectManagerTabFragment
 			for(TextView lblTextView : lblTextViews)
 				switch(lblTextView.getId())
 				{
-					case R.id.lblProjectID :
-						lblTextView.setText(Integer.toString(project.getID()));
-						break;
+					case R.id.lblProjectName :
+						lblTextView.setText(project.getName());
+						break;					
 					case R.id.lblProjectVariant :
 						lblTextView.setText(project.getVariant() != null ? project.getVariant() : "");
 						break;
 					case R.id.lblProjectVersion :
 						lblTextView.setText(project.getVersion());
 						break;
+					case R.id.lblProjectID :
+						lblTextView.setText(Integer.toString(project.getID()));
+						break;
 					case R.id.lblProjectFingerPrint :
 						lblTextView.setText(Integer.toString(project.getFingerPrint()));
 						break;
-					case R.id.lblProjectNumberOfForms :
-						lblTextView.setText(Integer.toString(project.getNumberOfForms()));
-						break;
 					case R.id.lblProjectModelID :
 						lblTextView.setText(Long.toString(project.getModel().id));
+						break;
+					case R.id.lblProjectNumberOfForms :
+						lblTextView.setText(Integer.toString(project.getNumberOfForms()));
 						break;
 				}
 	}
