@@ -81,7 +81,9 @@ public class ImportColumnValueParser extends ExImportColumnValueHelper
 	{
 		try
 		{
-			this.value = (valueString != null && !valueString.isEmpty() ? column.parse(valueString) : null);
+			this.value = column.stringToValue(valueString);
+			/*// Equivalent to:
+			this.value = (valueString != null && !valueString.isEmpty() ? column.parse(valueString) : null);*/
 		}
 		catch(Exception e)
 		{
