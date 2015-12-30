@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 
-import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
@@ -201,10 +200,12 @@ public class Record extends RecordValueSet<Schema>
 	@Override
 	public boolean isLossy()
 	{
-		if(getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+		if(!columnSet.canBeLossy())
+			return false;
+		else if(columnSet.containsColumn(LosslessFlagColumn.INSTANCE)) // Equivalent to: columnSet.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS) && columnSet.canBeLossy()
 			return LosslessFlagColumn.INSTANCE.isLossy(this); // more efficient and more reliable than ValueSet#isLossy()
-		//else:
-		return super.isLossy();
+		else
+			return super.isLossy();
 	}
 
 	/* (non-Javadoc)
@@ -213,10 +214,12 @@ public class Record extends RecordValueSet<Schema>
 	@Override
 	public boolean isLossless()
 	{
-		if(getSchema().hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS))
+		if(!columnSet.canBeLossy())
+			return true;
+		else if(columnSet.containsColumn(LosslessFlagColumn.INSTANCE)) // Equivalent to: columnSet.hasFlags(StorageClient.SCHEMA_FLAG_TRACK_LOSSLESSNESS) && columnSet.canBeLossy()
 			return LosslessFlagColumn.INSTANCE.isLossless(this); // more efficient and more reliable than ValueSet#isLossless()
-		//else:
-		return super.isLossless();
+		else
+			return super.isLossless();
 	}
 
 	/**

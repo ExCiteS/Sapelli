@@ -170,75 +170,61 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		if(defaultValue != null)
 			validate(defaultValue);
 	}
+	
+	/**
+	 * @return the Class of the column's type T
+	 */
+	public abstract Class<T> getType();
 
 	/**
 	 * @return a copy of this Column
 	 */
 	public abstract Column<T> copy();
+	
+	/**
+	 * @return the name
+	 */
+	public String getName()
+	{
+		return name;
+	}
 
 	/**
-	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
-	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
-	 * @throws ParseException
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parse value is invalid
-	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
+	 * @return the optional
 	 */
-	public void parseAndStoreValue(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public final boolean isOptional()
 	{
-		storeValue(valueSet, stringToValue(valueString));
+		return optional;
+	}
+	
+	public final boolean isRequired()
+	{
+		return isRequired(false); // don't recurse by default
 	}
 	
 	/**
-	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
-	 * @return the corresponding value of type {@code <T>}, or {@code null} if the given valueString was {@code null} or empty {@code String}
-	 * @throws ParseException
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
-	 */
-	public T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
-	{
-		if(valueString == null || valueString.isEmpty()) // empty String is treated as null!
-			return null;
-		else
-			return parse(valueString);
-	}
-
-	/**
-	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String}!
-	 * @return the parsed value as type {@code <T>}
-	 * @throws ParseException
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
-	 */
-	public abstract T parse(String valueString) throws ParseException, IllegalArgumentException, NullPointerException;
-
-	/**
-	 * Stores the given Object value in this column on the given record.
-	 *
-	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
-	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
-	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
-	 * @throws NullPointerException if value is null on an non-optional column
-	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
-	 * @see #convert(Object)
-	 */
-	public void storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
-	{
-		storeValue(valueSet, convert(valueObject));
-	}
-	
-	/**
-	 * Retrieves previously stored value for this column at a given {@code from} ValueSet and 
-	 * stores is in this column of the given {@code to} ValueSet. Performs optionality check and validation.
+	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
 	 * 
-	 * @param from the {@link ValueSet} to retrieve the value from, should not be {@code null}
-	 * @param to the valueSet in which to store the value, may not be {@code null}
-	 * @throws IllegalArgumentException when this column is not part of one of the ValueSets' {@link ColumnSet}, nor compatible with a column by the same name that is
-	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if one of the ValueSets is {@code null}
+	 * @param recurse whether or not to check recursively if all subColumns are also a non-optional
+	 * @return whether the column is (recursively) non-optional 
 	 */
-	public void copyValue(ValueSet<?> from, ValueSet<?> to)
+	public boolean isRequired(boolean recurse)
 	{
-		storeValue(to, retrieveValue(from));
+		return !optional;
+	}
+	
+	/**
+	 * Default implementation only performs an unchecked cast.
+	 * To be overridden by subclasses which need to perform additional conversion in order to accept a wider range of value types.
+	 * 
+	 * @param valueObject as {@link Object}, or {@code null}
+	 * @return converted value of type {@code <T>}, or {@code null} if given valueObject was {@code null}
+	 * @throws ClassCastException
+	 */
+	@SuppressWarnings("unchecked")
+	public T convert(Object valueObject) throws ClassCastException
+	{
+		return (T) valueObject;
 	}
 	
 	/**
@@ -275,6 +261,65 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * Stores the given Object value in this column on the given ValueSet.
+	 *
+	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
+	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
+	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
+	 * @see #convert(Object)
+	 */
+	public void storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
+	{
+		storeValue(valueSet, convert(valueObject));
+	}
+	
+	/**
+	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
+	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
+	 * @throws ParseException
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parsed value is invalid
+	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
+	 */
+	public void parseAndStoreValue(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	{
+		storeValue(valueSet, stringToValue(valueString));
+	}
+	
+	/**
+	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * 
+	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
+	 * @param bytes binary representation of a column value, given as a {@code byte[]}
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
+	 * @throws NullPointerException if the given {@code byte[]} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
+	 * @throws IOException if an I/O error happens
+	 * @see #fromBytes(byte[], boolean)
+	 */
+	public void storeBytes(ValueSet<?> valueSet, byte[] bytes, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	{
+		storeValueUnchecked(valueSet, fromBytes(bytes, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBytes()) already performs all checks
+	}
+	
+	/**
+	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * 
+	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
+	 * @param bytes binary representation of a column value, given as a {@link BitArray}
+	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
+	 * @throws NullPointerException if the given {@link BitArray} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
+	 * @throws IOException if an I/O error happens
+	 * @see #fromBits(BitArray, boolean)
+	 */
+	public void storeBits(ValueSet<?> valueSet, BitArray bits, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	{
+		storeValueUnchecked(valueSet, fromBits(bits, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBits()) already performs all checks
+	}
+	
+	/**
 	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is non-optional(!).
 	 * Use with care!
 	 * 
@@ -301,7 +346,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Retrieves previously stored value for this column at a given valueSet and casts it to the relevant native type (T).
+	 * Retrieves previously stored value for this column from the given valueSet and casts it to the relevant native type (T).
 	 *
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @return stored value (may be {@code null})
@@ -311,6 +356,48 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws IllegalArgumentException
 	{
 		return (T) valueSet.getValue(this);
+	}
+	
+	/**
+	 * Retrieves previously stored value for this column from the given valueSet and converts it to a String representation.
+	 * 
+	 * @param valueSet should not be {@code null}
+	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column
+	 * @see #valueToString(Object)
+	 */
+	public String retrieveValueAsString(ValueSet<?> valueSet)
+	{
+		return valueToString(retrieveValue(valueSet));
+	}
+	
+	/**
+	 * Retrieves previously stored value for this column from the given valueSet, converts it to a binary representation and returns the result as a {@code byte[]}.
+	 * 
+	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
+	 * @return stored value as a {@code byte[]}
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws IOException if an I/O error happens
+	 * @see #toBytes(Object, boolean)
+	 */
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> byte[] retrieveValueAsBytes(VS valueSet, boolean lossless) throws IllegalArgumentException, IOException
+	{
+		return toBytes(retrieveValue(valueSet), lossless);
+	}
+	
+	/**
+	 * Retrieves previously stored value for this column from the given valueSet, converts it to a binary representation and returns the result as a {@link BitArray}.
+	 * 
+	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
+	 * @return stored value as a {@link BitArray}
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws IOException if an I/O error happens
+	 * @see #toBits(Object, boolean)
+	 */
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> BitArray retrieveValueAsBits(VS valueSet, boolean lossless) throws IllegalArgumentException, IOException
+	{
+		return toBits(retrieveValue(valueSet), lossless);
 	}
 
 	/**
@@ -394,13 +481,35 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * @param valueSet should not be {@code null}
-	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column
+	 * Parses a string representation of a value to produce a instance of {@code <T>}.
+	 * Accepts {@code null} or empty {@code String}s but treats them as representing a {@code null} value.
+	 * If no {@code null} or empty {@code String}s are expected it may be better to call {@link #parse(String)} instead.
+	 * 
+	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
+	 * @return the corresponding value of type {@code <T>}, or {@code null} if the given valueString was {@code null} or empty {@code String}
+	 * @throws ParseException
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
 	 */
-	public String retrieveValueAsString(ValueSet<?> valueSet)
+	public T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		return valueToString(retrieveValue(valueSet));
+		if(valueString == null || valueString.isEmpty()) // empty String is treated as null!
+			return null;
+		else
+			return parse(valueString);
 	}
+
+	/**
+	 * Parses a string representation of a value to produce a instance of {@code <T>}.
+	 * Does *not* accept {@code null} or empty {@code String}s, if these are expected it may be better to use {@link #stringToValue(String)}.
+	 * 
+	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String}!
+	 * @return the parsed value as type {@code <T>}
+	 * @throws ParseException
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 */
+	public abstract T parse(String valueString) throws ParseException, IllegalArgumentException, NullPointerException;
 	
 	/**
 	 * @param value may be {@code null}, in which case {@code null} is returned
@@ -423,20 +532,6 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	public String objectToString(Object valueObject) throws ClassCastException
 	{
 		return valueToString(convert(valueObject));
-	}
-	
-	/**
-	 * Default implementation only performs an unchecked cast.
-	 * To be overridden by subclasses which need to perform additional conversion in order to accept a wider range of value types.
-	 * 
-	 * @param valueObject as {@link Object}, or {@code null}
-	 * @return converted value of type {@code <T>}, or {@code null} if given valueObject was {@code null}
-	 * @throws ClassCastException
-	 */
-	@SuppressWarnings("unchecked")
-	public T convert(Object valueObject) throws ClassCastException
-	{
-		return (T) valueObject;
 	}
 
 	/**
@@ -502,15 +597,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value
+	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 */
-	public T fromBytes(byte[] bytes, boolean lossless) throws IOException
+	public T fromBytes(byte[] bytes, boolean lossless) throws IllegalArgumentException, IOException
 	{
 		BitInputStream bis = null;
 		try
 		{
 			bis = new BitWrapInputStream(new ByteArrayInputStream(bytes));
-			return readValue(bis, lossless);
+			return readValue(bis, lossless); // validates value
 		}
 		finally
 		{
@@ -526,15 +622,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bits binary representation of a column value, given as a {@link BitArray}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value
+	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 */
-	public T fromBits(BitArray bits, boolean lossless) throws IOException
+	public T fromBits(BitArray bits, boolean lossless) throws IllegalArgumentException, IOException
 	{
 		BitInputStream bis = null;
 		try
 		{
 			bis = new BitArrayInputStream(bits);
-			return readValue(bis, lossless);
+			return readValue(bis, lossless); // validates value
 		}
 		finally
 		{
@@ -577,7 +674,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	/**
 	 * Writes the given {@code <T>} value to the given {@link BitOutputStream}.
 	 *
-	 * @param value the value to write may be {@code null} if column is optional
+	 * @param value the value to write, may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null}
@@ -727,108 +824,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @throws IllegalArgumentException	in case of invalid value
 	 */
 	protected abstract void validate(T value) throws IllegalArgumentException;
-
-	/**
-	 * Simulates writing and reading of the given value using lossy encoding.
-	 * The returned result may thus have sustained information loss.
-	 * If this column does not support lossy encoding (i.e. {@link #canBeLossy()} returns {@code false}) the value is returned as-is.
-	 * 
-	 * @param value
-	 * @return value as retrieved from lossy binary representation
-	 */
-	public T getLossyEncodedValue(T value)
-	{
-		if(!canBeLossy())
-			return value;
-		// else:
-		try
-		{
-			// Convert to lossy binary representation and then back to a T value to return:
-			return fromBytes(toBytes(value, false), false); // false: not lossless --> lossy
-			/*//Alternative implementation:
-			return fromBits(toBits(value, false), false); // false: not lossless --> lossy*/
-		}
-		catch(Exception e)
-		{
-			System.err.println("Error in getLossyEncodedValue(Record): " + e.getLocalizedMessage());
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-	/**
-	 * Retrieves the value for this column from the given valueSet and simulates writing and reading it using lossy encoding.
-	 * The returned result may thus have sustained information loss.
-	 * If this column does not support lossy encoding (i.e. {@link #canBeLossy()} returns {@code false}) the value is returned as-is.
-	 * 
-	 * @param valueSet
-	 * @return value as retrieved from lossy binary representation
-	 */
-	public T retrieveAsLossyEncodedValue(ValueSet<?> valueSet)
-	{
-		return getLossyEncodedValue(retrieveValue(valueSet));
-	}
-
-	/**
-	 * @return the name
-	 */
-	public String getName()
-	{
-		return name;
-	}
-
-	/**
-	 * @return the optional
-	 */
-	public final boolean isOptional()
-	{
-		return optional;
-	}
-	
-	public final boolean isRequired()
-	{
-		return isRequired(false); // don't recurse by default
-	}
 	
 	/**
-	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
+	 * Retrieves previously stored value for this column at a given {@code from} ValueSet and 
+	 * stores is in this column of the given {@code to} ValueSet. Performs optionality check and validation.
 	 * 
-	 * @param recurse whether or not to check recursively if all subColumns are also a non-optional
-	 * @return whether the column is (recursively) non-optional 
+	 * @param from the {@link ValueSet} to retrieve the value from, should not be {@code null}
+	 * @param to the valueSet in which to store the value, may not be {@code null}
+	 * @throws IllegalArgumentException when this column is not part of one of the ValueSets' {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if one of the ValueSets is {@code null}
 	 */
-	public boolean isRequired(boolean recurse)
+	public void copyValue(ValueSet<?> from, ValueSet<?> to)
 	{
-		return !optional;
+		storeValue(to, retrieveValue(from));
 	}
-
-	public String toString()
-	{
-		return	getTypeString() + "Column:" + name;
-	}
-
-	public String getSpecification()
-	{
-		TransactionalStringBuilder blr = new TransactionalStringBuilder();
-		blr.append(toString());
-		blr.append(" [");
-		blr.openTransaction("; ");
-		blr.append(optional ? "optional" : "required");
-		if(this instanceof VirtualColumn)
-			blr.append("virtual");
-		if(canBeLossy())
-			blr.append("lossy size: " + getMinimumSize(false) + (isVariableSize(false) ? ("-" + getMaximumSize(false)) : "") + " bits");
-		blr.append((canBeLossy() ? "lossless " : "") + "size: " + getMinimumSize(true) + (isVariableSize(true) ? ("-" + getMaximumSize(true)) : "") + " bits");
-		blr.commitTransaction();
-		blr.append("]");
-		return blr.toString();
-	}
-
-	public String getTypeString()
-	{
-		return getType().getSimpleName();
-	}
-
-	public abstract Class<T> getType();
 	
 	public T retrieveValueCopy(Record record)
 	{
@@ -854,28 +863,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return
 	 */
 	protected abstract T copy(T value);
-
-	/**
-	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
-	 */
-	public boolean isVariableSize()
-	{
-		return isVariableSize(false) || isVariableSize(true);
-	}
-	
-	/**
-	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
-	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
-	 */
-	public boolean isVariableSize(boolean lossless)
-	{
-		return optional ? true : (getMinimumValueSize(lossless) != getMaximumValueSize(lossless));
-	}
 	
 	/**
 	 * Checks whether or not this column supports lossy (binary) encoding of its values.
 	 * "Lossy" (as opposed to "Lossless") encoding means that values may sustain information loss or reduced precision.
 	 * 
+	 * The default implementation relies on comparing the minimum and maximum size of lossy versus lossless binary representations.
 	 * Subclasses may override this with more efficient implementations.
 	 * 
 	 * @return
@@ -894,6 +887,68 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	public boolean isAlwaysLossless()
 	{
 		return !canBeLossy();
+	}
+	
+	/**
+	 * Simulates the information loss sustained by converting the given value to lossy binary encoding and back.
+	 * If this column does not support lossy encoding (i.e. {@link #canBeLossy()} returns {@code false}) the value is returned as-is.
+	 * 
+	 * @param value
+	 * @return value as retrieved from lossy binary representation
+	 */
+	public T toLossy(T value)
+	{
+		if(!canBeLossy())
+			return value;
+		// else:
+		try
+		{
+			// Convert to lossy binary representation and then back to a T value to return:
+			return fromBytes(toBytes(value, false), false); // false: not lossless --> lossy
+			/*//Alternative implementation:
+			return fromBits(toBits(value, false), false); // false: not lossless --> lossy*/
+		}
+		catch(Exception e)
+		{
+			System.err.println("Error in getLossyEncodedValue(Record): " + e.getLocalizedMessage());
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	/**
+	 * <p>
+	 * Retrieves previously stored value for this column from the given valueSet.
+	 * If {@code asLossy} is {@code true}, {@link #canBeLossy()} returns {@code true}, *and* if the valueSet is not already in a lossy state, then
+	 * (and only then) the retrieved value is being returned as if retrieved from a lossy binary representation.</p>
+	 * <p>
+	 * The difference between calling {@code retrieveValue(valueSet, true)} and {@link #retrieveAsLossy(ValueSet)} is that the latter does not involves a
+	 * call to {@link ValueSet#isLossy()} (which may itself call {@link #retrieveAsLossy(ValueSet)}, hence we need both methods to avoid endless loops).</p>
+	 *
+	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
+	 * @param asLossy whether or not to simulate the information loss sustained by converting the retrieved value to lossy binary encoding and back
+	 * @return stored value (may be {@code null}), possibly made lossy
+	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 */
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet, boolean asLossy) throws IllegalArgumentException
+	{
+		if(!asLossy || !canBeLossy() || valueSet.isLossy() /*whole ValueSet is already lossy*/)
+			return retrieveValue(valueSet);
+		else
+			return retrieveAsLossy(valueSet);
+	}
+	
+	/**
+	 * Retrieves previously stored value for this column from the given valueSet and simulates the
+	 * information loss sustained by converting the value to lossy binary encoding and back.
+	 * If this column does not support lossy encoding (i.e. {@link #canBeLossy()} returns {@code false}) the retrieved value is returned as-is.
+	 * 
+	 * @param valueSet
+	 * @return value as retrieved from lossy binary representation
+	 */
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveAsLossy(VS valueSet)
+	{
+		return toLossy(retrieveValue(valueSet));
 	}
 	
 	/**
@@ -971,87 +1026,28 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	protected abstract int getMinimumValueSize(boolean lossless);
 
 	/**
-	 * Equality check, compares optionalness, type and size/content restrictions but not the column name
-	 *
-	 * @param obj object to compare this one with
-	 * @return whether or not the given Object is an identical Column (except for its name)
-	 * @see java.lang.Object#equals(java.lang.Object)
+	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
 	 */
-	@Override
-	public boolean equals(Object obj)
+	public boolean isVariableSize()
 	{
-		return equals(obj, true, true);
-	}
-
-	/**
-	 * Equality check, compares optionalness, type and size/content restrictions, AND if checkName is true also the column name
-	 *
-	 * @param obj object to compare this one with
-	 * @param checkName whether or not to compare the column name
-	 * @param whether or not to check the restrictions
-	 * @return whether or not the given Object is an identical/equivalent Column
-	 */
-	@SuppressWarnings("unchecked")
-	public boolean equals(Object obj, boolean checkName, boolean checkRestrictions)
-	{
-		if(this == obj) // compare pointers first
-			return true;
-		if(this.getClass().isInstance(obj))
-		{
-			Column<T> that = (Column<T>) obj;
-			if(this.optional != that.optional)
-				return false;
-			// Check names:
-			if(checkName && !this.name.equals(that.name))
-				return false;
-			// Check virtual versions:
-			if(!Objects.equals(this.virtualVersions, that.virtualVersions))
-				return false;
-			// Check defaultValue:
-			if(!Objects.equals(this.defaultValue, that.defaultValue))
-				return false;
-			// Check restrictions (size/content):
-			return !checkRestrictions || equalRestrictions(that);
-		}
-		else
-			return false;
+		return isVariableSize(false) || isVariableSize(true);
 	}
 	
 	/**
-	 * Checks if this column is compatible with another in terms of type, optionality & restrictions
-	 * 
-	 * @param another
-	 * @return
+	 * @param lossless whether to assume lossless ({@code true}) or lossy ({@code false}) value encoding
+	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
 	 */
-	@SuppressWarnings("unchecked")
-	protected boolean isCompatible(Column<?> another)
+	public boolean isVariableSize(boolean lossless)
 	{
-		if(this.getClass().isInstance(another))
-			return this.optional == another.optional && equalRestrictions((Column<T>) another);
-		else
-			return false;
+		return optional ? true : (getMinimumValueSize(lossless) != getMaximumValueSize(lossless));
 	}
-
-	protected abstract boolean equalRestrictions(Column<T> otherColumn);
-
+	
 	/**
 	 * Accept a ColumnVisitor. The column is excepted to call one of the visitor's visit() methods.
 	 * 
 	 * @param visitor
 	 */
 	public abstract void accept(ColumnVisitor visitor);
-
-	@Override
-	public int hashCode()
-	{
-		int hash = 1;
-		hash = 31 * hash + getTypeString().hashCode();
-		hash = 31 * hash + name.hashCode();
-		hash = 31 * hash + (optional ? 0 : 1);
-		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());
-		hash = 31 * hash + (defaultValue == null ? 0 : defaultValue.hashCode());
-		return hash;
-	}
 
 	/**
 	 * Add a virtual version of this column.
@@ -1203,6 +1199,109 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 				return compareValues(lhs, rhs);
 			}
 		};
+	}
+	
+	public String toString()
+	{
+		return getTypeString() + "Column:" + name;
+	}
+	
+	public String getTypeString()
+	{
+		return getType().getSimpleName();
+	}
+
+	public String getSpecification()
+	{
+		TransactionalStringBuilder blr = new TransactionalStringBuilder();
+		blr.append(toString());
+		blr.append(" [");
+		blr.openTransaction("; ");
+		blr.append(optional ? "optional" : "required");
+		if(this instanceof VirtualColumn)
+			blr.append("virtual");
+		if(canBeLossy())
+			blr.append("lossy size: " + getMinimumSize(false) + (isVariableSize(false) ? ("-" + getMaximumSize(false)) : "") + " bits");
+		blr.append((canBeLossy() ? "lossless " : "") + "size: " + getMinimumSize(true) + (isVariableSize(true) ? ("-" + getMaximumSize(true)) : "") + " bits");
+		blr.commitTransaction();
+		blr.append("]");
+		return blr.toString();
+	}
+	
+	/**
+	 * Equality check, compares optionalness, type and size/content restrictions but not the column name
+	 *
+	 * @param obj object to compare this one with
+	 * @return whether or not the given Object is an identical Column (except for its name)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		return equals(obj, true, true);
+	}
+
+	/**
+	 * Equality check, compares optionalness, type and size/content restrictions, AND if checkName is true also the column name
+	 *
+	 * @param obj object to compare this one with
+	 * @param checkName whether or not to compare the column name
+	 * @param whether or not to check the restrictions
+	 * @return whether or not the given Object is an identical/equivalent Column
+	 */
+	@SuppressWarnings("unchecked")
+	public boolean equals(Object obj, boolean checkName, boolean checkRestrictions)
+	{
+		if(this == obj) // compare pointers first
+			return true;
+		if(this.getClass().isInstance(obj))
+		{
+			Column<T> that = (Column<T>) obj;
+			if(this.optional != that.optional)
+				return false;
+			// Check names:
+			if(checkName && !this.name.equals(that.name))
+				return false;
+			// Check virtual versions:
+			if(!Objects.equals(this.virtualVersions, that.virtualVersions))
+				return false;
+			// Check defaultValue:
+			if(!Objects.equals(this.defaultValue, that.defaultValue))
+				return false;
+			// Check restrictions (size/content):
+			return !checkRestrictions || equalRestrictions(that);
+		}
+		else
+			return false;
+	}
+	
+	/**
+	 * Checks if this column is compatible with another in terms of type, optionality & restrictions
+	 * 
+	 * @param another
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	protected boolean isCompatible(Column<?> another)
+	{
+		if(this.getClass().isInstance(another))
+			return this.optional == another.optional && equalRestrictions((Column<T>) another);
+		else
+			return false;
+	}
+
+	protected abstract boolean equalRestrictions(Column<T> otherColumn);
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + getTypeString().hashCode();
+		hash = 31 * hash + name.hashCode();
+		hash = 31 * hash + (optional ? 0 : 1);
+		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());
+		hash = 31 * hash + (defaultValue == null ? 0 : defaultValue.hashCode());
+		return hash;
 	}
 
 }

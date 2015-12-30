@@ -146,6 +146,15 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		return targetColumn.getMinimumValueSize(lossless);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#canBeLossy()
+	 */
+	@Override
+	public boolean canBeLossy()
+	{
+		return targetColumn.canBeLossy();
+	}
+
 	@Override
 	protected boolean equalRestrictions(Column<TT> otherColumn)
 	{
