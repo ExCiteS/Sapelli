@@ -164,7 +164,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		while(!recsToSend.isEmpty())
 		{
 			// Create a new Payload:
-			RecordsPayload payload = (RecordsPayload) Payload.New(Payload.BuiltinType.Records);
+			RecordsPayload payload = new RecordsPayload(receiver.favoursLosslessPayload());
 
 			// Create a new Transmission:
 			Transmission<?> transmission = createOutgoingTransmission(payload, receiver);

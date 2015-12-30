@@ -38,7 +38,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -96,12 +95,33 @@ public class RecordsPayload extends Payload
 		return BuiltinType.Records.ordinal();
 	}
 	
+	/**
+	 * By default RecordsPayload uses lossy encoding on columns which support it.
+	 */
+	static private final boolean DEFAULT_LOSSLESS_ENCODING = false; 
+	
 	// DYNAMIC---------------------------------------------
 	protected Model model;
 	protected final Map<Schema, List<Record>> recordsBySchema;
 	
+	/**
+	 * Whether or not to force lossless encoding across all columns.
+	 */
+	protected boolean lossless;
+	
 	public RecordsPayload()
 	{
+		this(DEFAULT_LOSSLESS_ENCODING);
+	}
+	
+	/**
+	 * To be used on the sending side only.
+	 * 
+	 * @param lossless whether or not to force lossless encoding across all columns.
+	 */
+	public RecordsPayload(boolean lossless)
+	{
+		this.lossless = lossless;
 		this.recordsBySchema = new HashMap<Schema, List<Record>>();
 	}
 	
@@ -230,6 +250,22 @@ public class RecordsPayload extends Payload
 		return recordsBySchema.isEmpty();
 	}
 	
+	/**
+	 * @return whether or not this RecordsPayload encodes records losslessly
+	 */
+	public boolean isUsingLosslessEncoding()
+	{
+		return lossless;
+	}
+	
+	/**
+	 * @return whether or not this RecordsPayload encodes records lossyly
+	 */
+	public boolean isUsingLossyEncoding()
+	{
+		return !lossless;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#doSerialise(uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream)
 	 */
@@ -244,8 +280,10 @@ public class RecordsPayload extends Payload
 			Schema[] schemataInT = new Schema[numberOfDifferentSchemataInTransmission];
 			
 			// Write HEADER PART 1 ----------------------------------
-			//  Format version (2 bits):
+			//	Format version (2 bits):
 			FORMAT_VERSION_FIELD.write(DEFAULT_FORMAT, out);
+			//	Lossless flag:
+			out.write(lossless);
 			//	Model & schema identification:
 			// 		Write Model ID (56 bits):
 			Model.MODEL_ID_FIELD.write(model.getID(), out);
@@ -302,11 +340,13 @@ public class RecordsPayload extends Payload
 	protected void read(BitInputStream in) throws IOException, RecordsPayloadDecodeException, UnknownModelException
 	{
 		// Read HEADER ----------------------------------------------
-		//	Read format version:
+		//	Format version:
 		short format = FORMAT_VERSION_FIELD.readShort(in);
 		if(format > HIGHEST_SUPPORTED_FORMAT)
 			throw new RecordsPayloadDecodeException(this, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
-		//	Read schema identification:
+		//	Lossless flag:
+		this.lossless = in.readBit();
+		//	Model & schema identification:
 		//		Read Model ID & loop-up model:
 		this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.readLong(in));
 		//		Read schema occurrence bits:
@@ -363,11 +403,11 @@ public class RecordsPayload extends Payload
 					throw new TransmissionCapacityExceededException("Cannot fit " + records.size() + " of schema " + schema.getName() + " (max allowed: " + numberOfRecordsPerSchemaField.highBound(false) + ").");
 				
 				// Factoring-out logic ...
-				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();
+				Map<Column<?>, BitArray> factoredOutValues = Collections.<Column<?>, BitArray> emptyMap();
 				if(records.size() > 1)
 				{	// Only if there is more than 1 record for this schema:
 					// 	Get factored out values ...
-					factoredOutValues = new HashMap<Column<?>, Object>();
+					factoredOutValues = new HashMap<Column<?>, BitArray>();
 					boolean first = true;
 					for(Record r : records)
 					{
@@ -375,15 +415,15 @@ public class RecordsPayload extends Payload
 						{	// Get values of first record:
 							for(Column<?> c : schema.getColumns(false))
 								if(!nonTransmittableColumns.contains(c) && c != autoIncrementKeyColumn) // ignore non-transmittable columns & auto-incrementing key column
-									factoredOutValues.put(c, c.retrieveValue(records.get(0))); // treat all columns as potentially factored-out
+									factoredOutValues.put(c, c.retrieveValueAsBits(records.get(0), lossless)); // treat all columns as potentially factored-out
 							first = false;
 						}
 						else
 						{	// Check if these values are these same in subsequent records:
-							for(Iterator<Map.Entry<Column<?>, Object>> it = factoredOutValues.entrySet().iterator(); it.hasNext();) // use an iterator so we can remove in the for-loop
+							for(Iterator<Map.Entry<Column<?>, BitArray>> it = factoredOutValues.entrySet().iterator(); it.hasNext();) // use an iterator so we can remove in the for-loop
 							{
-								Map.Entry<Column<?>, Object> entry = it.next();
-								if(!Objects.deepEquals(entry.getValue(), entry.getKey().retrieveValue(r)))
+								Map.Entry<Column<?>, BitArray> entry = it.next();
+								if(!entry.getValue().equals(entry.getKey().retrieveValueAsBits(r, lossless)))
 									it.remove(); // value mismatch -> this column can not be factored out
 							}
 							if(factoredOutValues.isEmpty())
@@ -403,7 +443,7 @@ public class RecordsPayload extends Payload
 								if(factoredOutValues.containsKey(c))
 								{	// Column is factored out:
 									out.write(true); // write factored-out flag = true
-									c.writeObject(factoredOutValues.get(c), out, false); // // Write factored out value
+									out.write(factoredOutValues.get(c)); // write factored out value
 								}
 								else
 									// Column is *not* factored out:
@@ -421,7 +461,7 @@ public class RecordsPayload extends Payload
 				CollectionUtils.addIgnoreNull(skipColumns, autoIncrementKeyColumn);				// auto-incrementing key,
 				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				for(Record r : recordsBySchema.get(schema))
-					r.writeToBitStream(out, false /* ... and virtual columns */, skipColumns, false);
+					r.writeToBitStream(out, false /* ... and virtual columns */, skipColumns, lossless);
 			}
 			
 			// Close the stream & return bits:
@@ -478,7 +518,7 @@ public class RecordsPayload extends Payload
 							if(!nonTransmittableColumns.contains(c) && c != autoIncrementKeyColumn)
 							{
 								if(in.readBit()) // Read factored-out flag, indicating whether column is factored-out; if = true: 
-									factoredOutValues.put(c, c.readValue(in, false)); // read factored out value
+									factoredOutValues.put(c, c.readValue(in, lossless)); // read factored out value
 							}
 						}
 					}
@@ -489,12 +529,12 @@ public class RecordsPayload extends Payload
 				CollectionUtils.addIgnoreNull(skipColumns, autoIncrementKeyColumn);				// auto-incrementing key,
 				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				while(	records.size() < numberOfRecordsForSchema &&					
-						in.bitsAvailable() >= schema.getMinimumSize(false /* ... and virtual columns */, skipColumns, false))
+						in.bitsAvailable() >= schema.getMinimumSize(false /* ... and virtual columns */, skipColumns, lossless))
 				{
 					// Get new Record instance:
 					record = schema.createRecord();
 					// Read record values from the stream, skipping virtual columns and factored-out columns:
-					record.readFromBitStream(in, false /* ... and virtual columns */, skipColumns, false);
+					record.readFromBitStream(in, false /* ... and virtual columns */, skipColumns, lossless);
 					// Set factored-out values:
 					for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
 						fEntry.getKey().storeObject(record, fEntry.getValue());
