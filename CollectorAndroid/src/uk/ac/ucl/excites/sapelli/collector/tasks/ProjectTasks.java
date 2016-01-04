@@ -62,7 +62,7 @@ public final class ProjectTasks
 	 * @param project
 	 * @param callback
 	 */
-	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallaback callback)
+	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallback callback)
 	{
 		// Update records & media stats:
 		new RecordsTasks.QueryTask(owner, new RecordsTasks.QueryCallback()
@@ -97,7 +97,7 @@ public final class ProjectTasks
 		}).execute(new RecordsQuery(Source.From(project.getModel())));
 	}
 	
-	static public interface ProjectDataCallaback
+	static public interface ProjectDataCallback
 	{
 		
 		public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles);
