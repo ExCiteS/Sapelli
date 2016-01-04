@@ -57,6 +57,7 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.AboutFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.EnterURLFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.MainTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
@@ -719,20 +720,25 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		super.onActivityResult(requestCode, resultCode, intent);
 
 		if(resultCode != Activity.RESULT_OK)
+		{
+			//Log.d(TAG, "onActivityResult() called with non-OK resultCode (requestCode: " + requestCode + "; resultCode: " + resultCode + ")!");
 			return;
+		}
 		//else...
 		Uri uri = intent.getData();
+		boolean skipRefreshOnMainTabResume = false;
 		switch(requestCode)
 		{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
-			case RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD:
+				skipRefreshOnMainTabResume = true; // see explanation below
 				// Get the File path from the Uri
 				loadProject(FileUtils.getPath(this, uri));
 				break;
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
+				skipRefreshOnMainTabResume = true; // see explanation below
 				importFrom(FileUtils.getFile(this, uri));
 				break;
 				
@@ -741,10 +747,23 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 				if(scanResult != null)
 				{
+					skipRefreshOnMainTabResume = true; // see explanation below
 					loadProject(scanResult.getContents());
 				}
 				break;
 		}
+		
+		/* Note: after onActivityResult() the activity's and each visible tab's onResume() method will
+		 * be called. In the case of the MainTabFragment this would normally trigger a refreshing of
+		 * the project data stats, which makes no sense if it happens before/during project loading or
+		 * data importing (or twice). Hence we tell the MainTabFragment no to refresh itself upon the
+		 * next onResume() call: */
+		if(skipRefreshOnMainTabResume)
+			try
+			{
+				pagerAdapter.getTab(MainTabFragment.class).setSkipRefreshOnNextResume(true);
+			}
+			catch(Exception ignore) {}
 	}
 
 	public void importFrom(File exportedDataFile)

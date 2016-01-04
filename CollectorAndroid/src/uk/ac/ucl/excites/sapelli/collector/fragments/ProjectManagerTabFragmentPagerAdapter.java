@@ -75,7 +75,17 @@ public class ProjectManagerTabFragmentPagerAdapter extends FragmentPagerAdapter
 	{
 		return tabs.length;
 	}
-
+	
+	public ProjectManagerTabFragment getTab(Class<? extends ProjectManagerTabFragment> tabClass)
+	{
+		return getItem(getTabIndex(tabClass));
+	}
+	
+	public ProjectManagerTabFragment getTab(int position)
+	{
+		return getItem(position);
+	}
+	
 	@Override
 	public ProjectManagerTabFragment getItem(int position)
 	{
