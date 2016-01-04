@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -48,9 +47,8 @@ public class ProjectLoaderStorer implements ProjectLoader.ProjectChecker, Warnin
 	/**
 	 * @param fileStorageProvider
 	 * @param projectStore
-	 * @throws FileStorageException
 	 */
-	public ProjectLoaderStorer(FileStorageProvider fileStorageProvider, ProjectStore projectStore) throws FileStorageException
+	public ProjectLoaderStorer(FileStorageProvider fileStorageProvider, ProjectStore projectStore)
 	{
 		this(fileStorageProvider, projectStore, null); // no post-processing
 	}
@@ -58,9 +56,8 @@ public class ProjectLoaderStorer implements ProjectLoader.ProjectChecker, Warnin
 	/**
 	 * @param fileStorageProvider
 	 * @param projectStore
-	 * @throws FileStorageException
 	 */
-	public ProjectLoaderStorer(FileStorageProvider fileStorageProvider, ProjectStore projectStore, PostProcessor postProcessor) throws FileStorageException
+	public ProjectLoaderStorer(FileStorageProvider fileStorageProvider, ProjectStore projectStore, PostProcessor postProcessor)
 	{
 		this.loader = new ProjectLoader(fileStorageProvider, postProcessor, this);
 		this.projectStore = projectStore;

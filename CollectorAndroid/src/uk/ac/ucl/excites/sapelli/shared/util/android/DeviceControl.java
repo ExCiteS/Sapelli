@@ -33,6 +33,7 @@ import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -45,29 +46,51 @@ public final class DeviceControl
 	protected static final String SAMSUNG_S7710_SD_PATH = "/storage/extSdCard";
 
 	/**
-	 * Check if the device is connected to Internet
+	 * Check if the device is connected to the Internet.
 	 * 
-	 * @param mContext
+	 * @param context
 	 * @return
 	 */
 	public static boolean isOnline(Context context)
 	{
-		return isOnline(((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo());
+		return isOnline(context, null);
 	}
 	
+	/**
+	 * Check if the device is connected to the Internet via Wi-Fi.
+	 * 
+	 * @param context
+	 * @return
+	 */
 	public static boolean isWifiOnline(Context context)
 	{
-		return isOnline(((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_WIFI));
+		return isOnline(context, ConnectivityManager.TYPE_WIFI);
 	}
 	
+	/**
+	 * Check if the device is connected to the Internet via mobile/cellular data (2G/3G/4G).
+	 * 
+	 * @param cntext
+	 * @return
+	 */
 	public static boolean isMobileOnline(Context context)
 	{
-		return isOnline(((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_MOBILE));
+		return isOnline(context, ConnectivityManager.TYPE_MOBILE);
 	}
 	
-	private static boolean isOnline(NetworkInfo netInfo)
+	private static boolean isOnline(Context context, Integer networkType)
 	{
-		return netInfo != null && netInfo.isConnected();
+		try
+		{
+			ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+			NetworkInfo netInfo = networkType != null ? cm.getNetworkInfo(networkType) : cm.getActiveNetworkInfo();
+			return netInfo != null && netInfo.isConnected();
+		}
+		catch(Exception e)
+		{
+			Log.e(DeviceControl.class.getSimpleName(), "isOnline()", e);
+		}
+		return false;
 	}
 
 	/**

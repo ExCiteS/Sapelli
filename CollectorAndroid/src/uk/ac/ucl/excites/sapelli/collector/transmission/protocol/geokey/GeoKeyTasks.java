@@ -44,7 +44,7 @@ public final class GeoKeyTasks
 			new AsyncTaskWithWaitingDialog<BaseActivity, GeoKeyAccount, Boolean>(owner, R.string.verifyingServerAndAccount)
 			{
 				@Override
-				protected Boolean doInBackground(GeoKeyAccount... params)
+				protected Boolean runInBackground(GeoKeyAccount... params)
 				{
 					return new GeoKeySapelliSession(getContext(), params[0]).login();
 				}

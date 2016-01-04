@@ -315,7 +315,7 @@ public class DeviceID
 		}
 
 		@Override
-		protected Integer doInBackground(Void... params)
+		protected Integer runInBackground(Void... params)
 		{
 			Context context = getContext();
 			if(context == null)

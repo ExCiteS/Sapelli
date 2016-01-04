@@ -359,7 +359,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		}
 	
 		@Override
-		protected File doInBackground(@SuppressWarnings("unchecked") Set<Folder>... params)
+		protected File runInBackground(@SuppressWarnings("unchecked") Set<Folder>... params)
 		{
 			File destZipFile = null;
 			File tmpFolder = null;
