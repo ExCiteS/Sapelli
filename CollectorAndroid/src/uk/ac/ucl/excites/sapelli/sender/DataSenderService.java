@@ -31,8 +31,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -51,13 +55,6 @@ import uk.ac.ucl.excites.sapelli.transmission.Sender;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.os.IBinder;
-import android.util.Log;
 
 
 /**
@@ -115,7 +112,7 @@ public class DataSenderService extends Service implements Sender, StoreHandle.St
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
 	
-		setServiceForeground(this);
+		//setServiceForeground(this);
 		
 		// DataAccess instance:
 		try
@@ -444,7 +441,7 @@ public class DataSenderService extends Service implements Sender, StoreHandle.St
 	}
 	
 
-	@SuppressWarnings("deprecation")
+	/*@SuppressWarnings("deprecation")
 	public void setServiceForeground(Context mContext)
 	{
 		final int myID = 9999;
@@ -462,7 +459,7 @@ public class DataSenderService extends Service implements Sender, StoreHandle.St
 
 		mNotification.flags |= Notification.FLAG_NO_CLEAR;
 		startForeground(myID, mNotification);
-	}
+	}*/
 
 	/**
 	 * Checks if a scheduledFuture is currently executing its task
