@@ -31,7 +31,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Debug;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -50,8 +49,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
@@ -97,8 +96,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	static protected final String DEMO_PROJECT = "demo.excites";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
-	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
-	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 3;
+	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
 	
 	private static final int PAGER_MARGIN_DIP = 4;
 
@@ -256,7 +254,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		updateProjectList(false);
 		
 		// stop tracing
-		Debug.stopMethodTracing();
+		//Debug.stopMethodTracing();
 	}
 	
 	/*private void demoMode()
@@ -348,7 +346,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			if(!result.isEmpty())
 			{
 				// In case the currentProject and the previously active one are no longer
-				//	available (see below) we switch to the first project in the list list:
+				//	available (see below) we switch to the first project in the list:
 				switchTo = result.get(0);
 				
 				// If there is a currently active project...
@@ -478,28 +476,28 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	}
 	
 	/**
-	 * Click on the big '+' actionbar button
+	 * Browse for project file to load project from.
 	 * 
 	 * @param menuItem
 	 */
 	public void browse(MenuItem menuItem)
 	{
-		browse(true);
-		closeDrawer(null);
-	}
-	
-	public void browse(boolean loadImmediately)
-	{
-		// Use the GET_CONTENT intent from the utility class
-		Intent target = FileUtils.createGetContentIntent();
-		// Create the chooser Intent
-		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+		// Open file picker to let user chose a project file to load:
 		try
 		{
-			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
-			startActivityForResult(intent, loadImmediately ? RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD : RETURN_BROWSE_FOR_PROJECT_LOAD);
+			// Use the GET_CONTENT intent from the utility class
+			Intent target = FileUtils.createGetContentIntent();
+			
+			// Create the chooser Intent
+			Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+			
+			// Start file picker activity:
+			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 		}
 		catch(ActivityNotFoundException e){}
+		
+		// Close drawer:
+		closeDrawer(null); // won't do anything if it is not open
 	}
 	
 	public void enterURL(MenuItem menuItem)
@@ -583,7 +581,11 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Refresh all tabs:
 		refreshAllTabs();
 		// Alternative (refresh only main tab):
-		//pagerAdapter.getItem(pagerAdapter.getTabIndex(MainTabFragment.class)).refresh();
+		/*try
+		{
+			pagerAdapter.getTab(MainTabFragment.class).refresh();
+		}
+		catch(Exception ignore) {}*/
 	}
 	
 	public void refreshAllTabs()
