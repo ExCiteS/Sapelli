@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.tasks;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import android.content.Context;
@@ -221,9 +222,9 @@ public final class RecordsTasks
 		@SafeVarargs
 		protected final List<Record> doInBackgroundWith(RecordStore recordStore, List<Record>... params) throws Exception
 		{
-			// Delete records:
-			List<Record> recordsToStore = params[0];
+			List<Record> recordsToStore = (params != null && params.length != 0) ? params[0] : Collections.<Record> emptyList();
 			publishProgress(getContext().getString(R.string.storingXRecords, recordsToStore.size()));
+			// TODO once change track branch is merged we probably can report back about number of records inserted/updated/skipped
 			recordStore.store(recordsToStore);
 			return recordsToStore;
 		}
@@ -237,7 +238,7 @@ public final class RecordsTasks
 				if(failure != null)
 					callback.storeFailure(failure);
 				else
-					callback.storeSuccess(result);
+					callback.storeSuccess(result.size(), 0, 0); // TODO updated & skipped!
 			}
 		}
 		
@@ -246,7 +247,7 @@ public final class RecordsTasks
 	public interface StoreCallback
 	{
 		
-		public void storeSuccess(List<Record> storedRecords);
+		public void storeSuccess(int newRecords, int updatedRecords, int skippedDuplicates);
 		
 		public void storeFailure(Exception reason);
 		

@@ -733,17 +733,29 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-				new RecordsTasks.XMLImportTask(this, this).execute(FileUtils.getFile(this, uri)); // run XMLImportTask ...
+				importFrom(FileUtils.getFile(this, uri));
 				break;
 				
 			// QR Reader
 			case IntentIntegrator.REQUEST_CODE:
 				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
-				if (scanResult != null) {
-					String fileUrl = intent.getStringExtra("SCAN_RESULT");
-					loadProject(fileUrl);
+				if(scanResult != null)
+				{
+					loadProject(scanResult.getContents());
 				}
 				break;
+		}
+	}
+
+	public void importFrom(File exportedDataFile)
+	{
+		try
+		{
+			new RecordsTasks.XMLImportTask(this, this).execute(exportedDataFile);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog(getString(R.string.importStartFailed, ExceptionHelpers.getMessageAndCause(e)), false);
 		}
 	}
 
@@ -758,16 +770,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
 		{
 			@Override
-			public void storeSuccess(List<Record> storedRecords)
+			public void storeSuccess(int newRecords, int updatedRecords, int skippedDuplicates)
 			{
-				showInfoDialog("Succesfully imported " + storedRecords.size() + " records."); // TODO report skipped duplicates
+				showInfoDialog(getString(R.string.importSuccess, newRecords, updatedRecords, skippedDuplicates));
 				onDataChanged();
 			}
 			
 			@Override
 			public void storeFailure(Exception reason)
 			{
-				showErrorDialog("Error upon storing imported records: " + reason.getMessage(), false);
+				showErrorDialog(getString(R.string.importStoreFailed, reason.getMessage()), false);
 				onDataChanged();
 			}
 		}).execute(records);
@@ -776,18 +788,21 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	public void importFailure(Exception reason)
 	{
-		try
+		if(reason instanceof UnknownModelException)
 		{
-			throw reason;
+			UnknownModelException ume = (UnknownModelException) reason;
+			showErrorDialog(
+				getString(
+					R.string.importFailed,
+					(ume.getSchemaName() != null ?
+						getString(
+							R.string.schemaFormNotFound,
+							ume.getSchemaName()) :
+						ume.getMessage())),
+				false);
 		}
-		catch(UnknownModelException ume)
-		{
-			showErrorDialog("Error upon importing records: " + (ume.getSchemaName() != null ? "could not find matching project/form (Project:Form = " + ume.getSchemaName() + ")" : ume.getMessage()));
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Error upon importing records: " + e.getMessage(), false);
-		}
+		else
+			showErrorDialog(getString(R.string.importFailed, reason.getMessage()), false);
 	}
 
 	/**

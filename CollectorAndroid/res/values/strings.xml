@@ -55,6 +55,11 @@
     <string name="statistics">Statistics</string>
     <string name="export_records">Export records</string>
     <string name="import_records_menuitem">Import records</string>
+    <string name="importStartFailed">Failed to start record import from: %s</string>
+    <string name="importFailed">Error upon importing records: %s</string>
+    <string name="importSuccess">Import succesfull. Added %1$s new records, updated %2$s existing records, and skipped %3$s duplicates.</string>
+    <string name="importStoreFailed">Error upon storing imported records: %s</string>
+    <string name="schemaFormNotFound">Could not find matching project/form (Project:Form = %s)</string>
     <string name="delete">Delete</string>
     <string name="delete_data">Delete data</string>
     <string name="in_export">In- &amp; export</string>
