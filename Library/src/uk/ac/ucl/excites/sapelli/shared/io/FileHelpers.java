@@ -332,9 +332,17 @@ public final class FileHelpers
 	{
 		if(directory == null)
 			return false;
-		if(!directory.exists())
-			return directory.mkdirs();
-		return directory.isDirectory();
+		try
+		{
+			if(!directory.exists())
+				return directory.mkdirs();
+			return directory.isDirectory();
+		}
+		catch(SecurityException se)
+		{
+			se.printStackTrace(System.err);
+			return false;
+		}
 	}
 
 	/**
@@ -440,7 +448,15 @@ public final class FileHelpers
 	 */
 	static public boolean isReadableFile(File file)
 	{
-		return file != null && file.exists() && file.isFile() && file.canRead();
+		try
+		{
+			return file != null && file.exists() && file.isFile() && file.canRead();
+		}
+		catch(SecurityException se)
+		{
+			se.printStackTrace(System.err);
+			return false;
+		}
 	}
 
 	/**
@@ -449,7 +465,15 @@ public final class FileHelpers
 	 */
 	static public boolean isReadableWritableDirectory(File directory)
 	{
-		return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
+		try
+		{
+			return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
+		}
+		catch(SecurityException se)
+		{
+			se.printStackTrace(System.err);
+			return false;
+		}
 	}
 	
 	/**
