@@ -291,6 +291,8 @@ public abstract class MediaField extends Field
 	 */
 	public int getAttachmentCount(Record record)
 	{
+		if(record == null)
+			return 0; // just to be sure (see https://github.com/ExCiteS/Sapelli/issues/40)
 		List<Long> currentOffsets = getCurrentAttachmentOffsets(record);
 		return currentOffsets != null ? currentOffsets.size() : 0;
 	}
@@ -328,6 +330,9 @@ public abstract class MediaField extends Field
 	 */
 	public void addAttachmentToRecord(File attachment, Record record)
 	{
+		// check if we have a record
+		if(record == null)
+			return;
 		// check if adding would exceed max no attachments for this field
 		if(isMaxAttachmentsReached(record))
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
@@ -352,6 +357,9 @@ public abstract class MediaField extends Field
 	 */
 	public void removeAttachmentFromRecord(File attachment, Record record)
 	{
+		// check if we have a record:
+		if(record == null)
+			return;
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// remove creationTimeOffset from column
@@ -425,9 +433,15 @@ public abstract class MediaField extends Field
 	 */
 	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record)
 	{
+		// Check if we have a record:
+		if(record == null)
+			return Collections.<File> emptyList();
+		
+		// Get offsets:
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets == null || offsets.isEmpty())
 			return Collections.<File> emptyList(); // return an empty list
+		
 		// Construct list of files:	
 		List<File> files = new ArrayList<File>();
 		for(Long offset : offsets)
@@ -437,6 +451,8 @@ public abstract class MediaField extends Field
 	
 	public File getAttachment(FileStorageProvider fileStorageProvider, Record record, int index)
 	{
+		if(record == null)
+			return null;
 		return getAttachmentFromOffset(fileStorageProvider, record, getCreationTimeOffset(record, index));
 	}
 	
@@ -469,6 +485,8 @@ public abstract class MediaField extends Field
 	 */
 	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record)
 	{
+		if(record == null)
+			return null;
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets == null || offsets.size() < 1)
 			return null;

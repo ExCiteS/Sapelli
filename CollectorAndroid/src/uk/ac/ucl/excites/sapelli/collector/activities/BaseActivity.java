@@ -95,7 +95,7 @@ public abstract class BaseActivity extends AppCompatActivity
 			catch(FileStorageRemovedException e)
 			{
 				Log.e(getClass().getSimpleName(), "Error getting fileStorageProvider", e);
-				// Inform the user and close the application
+				// Inform the user and close the application:
 				final Runnable useAlternativeStorage = new Runnable()
 				{
 					@Override
@@ -110,11 +110,37 @@ public abstract class BaseActivity extends AppCompatActivity
 			catch(FileStorageUnavailableException e)
 			{
 				Log.e(getClass().getSimpleName(), "Error getting fileStorageProvider", e);
-				// Inform the user and close the application
+				// Inform the user and close the application:
 				showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 			}
 		}
 		return fileStorageProvider;
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public interface FileStorageTask
+	{
+		
+		/**
+		 * @param fsp guaranteed non-null
+		 */
+		public void run(FileStorageProvider fsp);
+		
+	}
+	
+	/**
+	 * @param task
+	 */
+	public void runFileStorageTask(FileStorageTask task)
+	{
+		FileStorageProvider fsp = getFileStorageProvider(); // if this returns null an error dialog will show and upon OK the activity will finish, ...
+		if(fsp == null) // ... so abort task in that case...
+			return;
+		else
+			task.run(fsp);
 	}
 
 	public void showOKDialog(int titleId, int messageId)

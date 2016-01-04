@@ -55,14 +55,20 @@
     <string name="statistics">Statistics</string>
     <string name="export_records">Export records</string>
     <string name="import_records_menuitem">Import records</string>
+    <string name="importStartFailed">Failed to start record import from: %s</string>
+    <string name="importFailed">Error upon importing records: %s</string>
+    <string name="importSuccess">Import succesfull. Added %1$s new records, updated %2$s existing records, and skipped %3$s duplicates.</string>
+    <string name="importStoreFailed">Error upon storing imported records: %s</string>
+    <string name="schemaFormNotFound">Could not find matching project/form (Project:Form = %s)</string>
     <string name="delete">Delete</string>
     <string name="delete_data">Delete data</string>
     <string name="in_export">In- &amp; export</string>
     <string name="more_options">Additional options</string>
     <string name="settings">Settings</string>
     <string name="pleaseSelect">Please select a Sapelli file</string>
+    <string name="invalidFile">File could not be found or is not readable.</string>
     <string name="noBareXMLProjects">The loading of bare XML files is no longer supported. Please package your project in a .sap file.</string>
-    <string name="unsupportedExtension">Unsupported Sapelli project file extension (%1$s), supported extensions are %2$s.</string>
+    <string name="unsupportedExtension">Unsupported Sapelli project file extension (%1$s), supported extensions are %2$s. Do you want to try loading a project from this file anyway?</string>
     <string name="projectLoading">Loading project …</string>
     <string name="projectRemoving">Removing project …</string>
     <string name="sapelliFileLoadFailure">Failed to load or store Sapelli project (source: %1$s).\nCause: %2$s</string>
@@ -71,6 +77,7 @@
     <string name="missingFiles">These files could not be found</string>
     <string name="downloading">Downloading …</string>
     <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
+    <string name="downloadErrorWithCause">Download error: %s.\nPlease check if you are connected to the Internet.</string>
     <string name="photoCameraErrorFatal">Cannot detect camera to take mandatory picture; cancelling record and exiting project&#8230;</string>
     <string name="videoCameraErrorFatal">Cannot detect camera to record mandatory video; cancelling record and exiting project&#8230;</string>
     <string name="photoCameraErrorSkip">Cannot detect camera to take picture; skipping field \"%1$s\"&#8230;</string>
@@ -85,6 +92,7 @@
     <string name="fingerprint">Finger print</string>
     <string name="numForms">Number of forms</string>
     <string name="modelID">Model ID</string>
+    <string name="storageError">Storage error: %s</string>
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>
     <string name="useAlternativeStorage">Try another …</string>

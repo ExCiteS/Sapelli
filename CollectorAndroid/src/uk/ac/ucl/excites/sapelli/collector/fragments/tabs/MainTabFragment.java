@@ -31,8 +31,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
@@ -96,7 +96,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), project));
 			
 			// Query for project data:
-			ProjectTasks.RunProjectDataQueries(getOwner(), project, new ProjectTasks.ProjectDataCallaback()
+			ProjectTasks.RunProjectDataQueries(getOwner(), project, new ProjectTasks.ProjectDataCallback()
 			{
 				@Override
 				public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles)
@@ -159,7 +159,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 		final Project project = getProject(false);
 		if(owner == null || project == null)
 			return; // just in case
-		ProjectTasks.RunProjectDataQueries(owner, project, new ProjectTasks.ProjectDataCallaback()
+		ProjectTasks.RunProjectDataQueries(owner, project, new ProjectTasks.ProjectDataCallback()
 		{
 			@Override
 			public void projectDataQuerySuccess(final List<Record> records, final List<File> mediaFiles)

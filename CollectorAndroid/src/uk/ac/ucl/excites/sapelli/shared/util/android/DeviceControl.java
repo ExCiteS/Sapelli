@@ -33,6 +33,7 @@ import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -52,10 +53,17 @@ public final class DeviceControl
 	 */
 	public static boolean isOnline(Context context)
 	{
-		ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo netInfo = cm.getActiveNetworkInfo();
-		if(netInfo != null && netInfo.isConnected())
-			return true;
+		try
+		{
+			ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+			NetworkInfo netInfo = cm.getActiveNetworkInfo();
+			if(netInfo != null && netInfo.isConnected())
+				return true;
+		}
+		catch(Exception e)
+		{
+			Log.e(DeviceControl.class.getSimpleName(), "isOnline()", e);
+		}
 		return false;
 	}
 

@@ -21,16 +21,19 @@
     xmlns:compat="http://schemas.android.com/apk/res-auto"
     android:id="@+id/menuLoad">
 	<item
+	    android:id="@+id/miBrowse"
 	    android:icon="@drawable/ic_folder_outline_white_36dp"
 	    android:onClick="browse"
 	    android:title="@string/browse"
 	    compat:showAsAction="ifRoom" />
 	<item
+	    android:id="@+id/miScanQRCode"
 	    android:icon="@drawable/ic_qrcode_white_36dp"
 	    android:onClick="scanQR"
 	    android:title="@string/scan_qr_code"
 	    compat:showAsAction="ifRoom" />
 	<item
+	    android:id="@+id/miEnterURL"
 	    android:icon="@drawable/ic_cloud_download_white_36dp"
 	    android:title="@string/enter_url"
 	    android:onClick="enterURL"

@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.load;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,9 +60,9 @@ public class ProjectLoader implements WarningKeeper
 	 */
 	static public boolean HasSapelliFileExtension(File file)
 	{
-		String path = file.getAbsolutePath().toLowerCase();
-		for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
-			if(path.endsWith("." + extention))
+		String fileExt = FileHelpers.getFileExtension(file);
+		for(String sapExt : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
+			if(sapExt.equalsIgnoreCase(fileExt))
 				return true;
 		return false;
 	}
@@ -176,14 +177,12 @@ public class ProjectLoader implements WarningKeeper
 	private final PostProcessor postProcessor;
 	private List<String> warnings;
 	
-	private final File tempFolder;
 	private final ProjectParser parser;
 
 	/**
 	 * @param fileStorageProvider
-	 * @throws FileStorageException
 	 */
-	public ProjectLoader(FileStorageProvider fileStorageProvider) throws FileStorageException
+	public ProjectLoader(FileStorageProvider fileStorageProvider)
 	{
 		this(fileStorageProvider, null, null); // no post-processing, nor checking
 	}
@@ -192,20 +191,14 @@ public class ProjectLoader implements WarningKeeper
 	 * @param fileStorageProvider
 	 * @param postProcessor (may be null)
 	 * @param checker (may be null)
-	 * @throws FileStorageException
 	 */
-	public ProjectLoader(FileStorageProvider fileStorageProvider, PostProcessor postProcessor, ProjectChecker checker) throws FileStorageException
+	public ProjectLoader(FileStorageProvider fileStorageProvider, PostProcessor postProcessor, ProjectChecker checker)
 	{
 		if(fileStorageProvider == null)
 			throw new NullPointerException("fileStorageProvider cannot be null!");
 		this.fileStorageProvider = fileStorageProvider;
 		this.postProcessor = postProcessor;
 		this.checker = checker;
-		
-		// Get/create the temp folder:
-		tempFolder = fileStorageProvider.getTempFolder(true);
-		
-		// Create the project folder
 		this.parser = new ProjectParser();
 	}
 	
@@ -232,18 +225,23 @@ public class ProjectLoader implements WarningKeeper
 	{
 		clearWarnings();
 		Project project = null;
-		File extractFolder = new File(tempFolder.getAbsolutePath() + File.separator + System.currentTimeMillis());
+		File extractFolder = null;
 		try
 		{
+			// STEP 0 - Create the extraction folder:
+			extractFolder = new File(fileStorageProvider.getTempFolder(true), "" + System.currentTimeMillis());
+			if(!FileHelpers.createDirectory(extractFolder))
+				throw new FileStorageException("Could not create folder to extract project file into.");
+			
 			// STEP 1 - Extract the content of the Sapelli file to a new subfolder of the temp folder:
 			try
 			{
-				FileHelpers.createDirectory(extractFolder);
-				Unzipper.unzip(sapelliFileInputStream, extractFolder);
+				if(Unzipper.unzip(sapelliFileInputStream, extractFolder) == 0)
+					throw new Exception("Sapelli file is not a valid ZIP archive or does not contain any files.");
 			}
-			catch(Exception e)
+			catch(IOException ioe)
 			{
-				throw new Exception("Error on extracting contents of Sapelli file.", e);
+				throw new Exception("Error on extracting contents of Sapelli file.", ioe.getCause());
 			}
 			
 			// STEP 2 - Parse PROJECT.xml:
@@ -302,6 +300,7 @@ public class ProjectLoader implements WarningKeeper
 		{
 			// Delete temp or install folder:
 			FileUtils.deleteQuietly(extractFolder);
+			
 			// Re-throw Exception:
 			throw e;
 		}

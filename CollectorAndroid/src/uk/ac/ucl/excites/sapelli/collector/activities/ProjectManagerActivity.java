@@ -31,7 +31,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Debug;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -50,14 +49,17 @@ import android.widget.ListView;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.AboutFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.EnterURLFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.MainTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
@@ -97,8 +99,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	static protected final String DEMO_PROJECT = "demo.excites";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
-	public static final int RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD = 2;
-	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 3;
+	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
 	
 	private static final int PAGER_MARGIN_DIP = 4;
 
@@ -256,7 +257,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		updateProjectList(false);
 		
 		// stop tracing
-		Debug.stopMethodTracing();
+		//Debug.stopMethodTracing();
 	}
 	
 	/*private void demoMode()
@@ -323,7 +324,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 
 		@Override
-		protected List<ProjectDescriptor> doInBackground(Void... params)
+		protected List<ProjectDescriptor> runInBackground(Void... params)
 		{
 			return projectStore.retrieveProjectsOrDescriptors();
 		}
@@ -348,7 +349,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			if(!result.isEmpty())
 			{
 				// In case the currentProject and the previously active one are no longer
-				//	available (see below) we switch to the first project in the list list:
+				//	available (see below) we switch to the first project in the list:
 				switchTo = result.get(0);
 				
 				// If there is a currently active project...
@@ -478,28 +479,28 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	}
 	
 	/**
-	 * Click on the big '+' actionbar button
+	 * Browse for project file to load project from.
 	 * 
 	 * @param menuItem
 	 */
 	public void browse(MenuItem menuItem)
 	{
-		browse(true);
-		closeDrawer(null);
-	}
-	
-	public void browse(boolean loadImmediately)
-	{
-		// Use the GET_CONTENT intent from the utility class
-		Intent target = FileUtils.createGetContentIntent();
-		// Create the chooser Intent
-		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+		// Open file picker to let user chose a project file to load:
 		try
 		{
-			// if view == null this means we've been called from loadProject(), i.e. the user has clicked "Load" instead of "Browse":
-			startActivityForResult(intent, loadImmediately ? RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD : RETURN_BROWSE_FOR_PROJECT_LOAD);
+			// Use the GET_CONTENT intent from the utility class
+			Intent target = FileUtils.createGetContentIntent();
+			
+			// Create the chooser Intent
+			Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+			
+			// Start file picker activity:
+			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 		}
 		catch(ActivityNotFoundException e){}
+		
+		// Close drawer:
+		closeDrawer(null); // won't do anything if it is not open
 	}
 	
 	public void enterURL(MenuItem menuItem)
@@ -583,7 +584,11 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Refresh all tabs:
 		refreshAllTabs();
 		// Alternative (refresh only main tab):
-		//pagerAdapter.getItem(pagerAdapter.getTabIndex(MainTabFragment.class)).refresh();
+		/*try
+		{
+			pagerAdapter.getTab(MainTabFragment.class).refresh();
+		}
+		catch(Exception ignore) {}*/
 	}
 	
 	public void refreshAllTabs()
@@ -614,7 +619,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 */
 	public boolean backupSapelli(MenuItem item)
 	{
-		Backup.Run(this, getFileStorageProvider());
+		runFileStorageTask(new FileStorageTask()
+		{
+			@Override
+			public void run(FileStorageProvider fsp)
+			{
+				Backup.Run(ProjectManagerActivity.this, fsp);
+			}
+		});
 		return true;
 	}
 
@@ -627,37 +639,95 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 
 	public void loadProject(String path)
 	{
-		if(path == null || path.isEmpty())
+		// Check path:
+		if(path == null || path.trim().isEmpty())
 			return;
-		//else:
-		String location = path.trim();
-		// Download Sapelli file if path is a URL
+		
+		final String location = path.trim();
 		if(Patterns.WEB_URL.matcher(location).matches())
-			// Location is a (remote) URL: download Sapelli file:
-			AsyncDownloader.Download(this, getFileStorageProvider().getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
-		else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
-			// Warn about bare XML file (no longer supported):
-			showErrorDialog(R.string.noBareXMLProjects);
-		else
-		{	// loading project from local file:
-			File localFile = new File(location);
-			if(ProjectLoader.HasSapelliFileExtension(localFile))
-				new AndroidProjectLoaderStorer(this, getFileStorageProvider(), projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
-			else
-				showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
+		{	// Location is a (remote) URL: download Sapelli file:
+			runFileStorageTask(new FileStorageTask()
+			{
+				@Override
+				public void run(FileStorageProvider fsp)
+				{
+					try
+					{	// loading & storing of the project will happen upon successful download (via callback)
+						AsyncDownloader.Download(ProjectManagerActivity.this, fsp.getSapelliDownloadsFolder() /*throws FileStorageException*/, location, ProjectManagerActivity.this);
+					}
+					catch(FileStorageException fse)
+					{
+						showErrorDialog(getString(R.string.storageError, fse.getMessage()));
+					}	
+				}
+			});
 		}
+		else
+			// Load project from local file:
+			loadProject(new File(location), null, true);
 	}
 	
 	@Override
 	public void downloadSuccess(String downloadUrl, File downloadedFile)
 	{
-		new AndroidProjectLoaderStorer(this, getFileStorageProvider(), projectStore).loadAndStore(downloadedFile, downloadUrl, this);
+		loadProject(downloadedFile, downloadUrl, false); // don't check extension for downloaded files
 	}
 
 	@Override
 	public void downloadFailure(String downloadUrl, Exception cause)
 	{
-		showErrorDialog(R.string.downloadError, false);
+		showErrorDialog(
+			cause != null ?
+				getString(R.string.downloadErrorWithCause, ExceptionHelpers.getMessage(cause)) :
+				getString(R.string.downloadError),
+			false);
+	}
+	
+	/**
+	 * @param localFile
+	 * @param sourceURI - may be null
+	 * @param checkExtension
+	 */
+	public void loadProject(final File localFile, final String sourceURI, boolean checkExtension)
+	{
+		if(!FileHelpers.isReadableFile(localFile))
+		{
+			showErrorDialog(R.string.invalidFile);
+		}
+		else if(checkExtension && XML_FILE_EXTENSION.equalsIgnoreCase(FileHelpers.getFileExtension(localFile)))
+		{
+			showErrorDialog(R.string.noBareXMLProjects);
+		}
+		else if(checkExtension && !ProjectLoader.HasSapelliFileExtension(localFile))
+		{	// Warn about extension:
+			showOKCancelDialog(
+				R.string.warning,
+				getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")),
+				false,
+				new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						loadProject(localFile, sourceURI, false); // try loading anyway
+					}
+				},
+				false);
+		}
+		else
+		{	// Actually load & store the project:
+			runFileStorageTask(new FileStorageTask()
+			{
+				@Override
+				public void run(FileStorageProvider fsp)
+				{
+					new AndroidProjectLoaderStorer(ProjectManagerActivity.this, fsp, projectStore).loadAndStore(
+						localFile,
+						sourceURI != null ? sourceURI : Uri.fromFile(localFile).toString(),
+						ProjectManagerActivity.this);
+				}
+			});
+		}
 	}
 	
 	@Override
@@ -717,31 +787,61 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		super.onActivityResult(requestCode, resultCode, intent);
 
 		if(resultCode != Activity.RESULT_OK)
+		{
+			//Log.d(TAG, "onActivityResult() called with non-OK resultCode (requestCode: " + requestCode + "; resultCode: " + resultCode + ")!");
 			return;
+		}
 		//else...
 		Uri uri = intent.getData();
+		boolean skipRefreshOnMainTabResume = false;
 		switch(requestCode)
 		{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
-			case RETURN_BROWSE_FOR_IMMEDIATE_PROJECT_LOAD:
+				skipRefreshOnMainTabResume = true; // see explanation below
 				// Get the File path from the Uri
 				loadProject(FileUtils.getPath(this, uri));
 				break;
 
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-				new RecordsTasks.XMLImportTask(this, this).execute(FileUtils.getFile(this, uri)); // run XMLImportTask ...
+				skipRefreshOnMainTabResume = true; // see explanation below
+				importFrom(FileUtils.getFile(this, uri));
 				break;
 				
 			// QR Reader
 			case IntentIntegrator.REQUEST_CODE:
 				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
-				if (scanResult != null) {
-					String fileUrl = intent.getStringExtra("SCAN_RESULT");
-					loadProject(fileUrl);
+				if(scanResult != null)
+				{
+					skipRefreshOnMainTabResume = true; // see explanation below
+					loadProject(scanResult.getContents());
 				}
 				break;
+		}
+		
+		/* Note: after onActivityResult() the activity's and each visible tab's onResume() method will
+		 * be called. In the case of the MainTabFragment this would normally trigger a refreshing of
+		 * the project data stats, which makes no sense if it happens before/during project loading or
+		 * data importing (or twice). Hence we tell the MainTabFragment no to refresh itself upon the
+		 * next onResume() call: */
+		if(skipRefreshOnMainTabResume)
+			try
+			{
+				pagerAdapter.getTab(MainTabFragment.class).setSkipRefreshOnNextResume(true);
+			}
+			catch(Exception ignore) {}
+	}
+
+	public void importFrom(File exportedDataFile)
+	{
+		try
+		{
+			new RecordsTasks.XMLImportTask(this, this).execute(exportedDataFile);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog(getString(R.string.importStartFailed, ExceptionHelpers.getMessageAndCause(e)), false);
 		}
 	}
 
@@ -756,16 +856,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		new RecordsTasks.StoreTask(this, new RecordsTasks.StoreCallback()
 		{
 			@Override
-			public void storeSuccess(List<Record> storedRecords)
+			public void storeSuccess(int newRecords, int updatedRecords, int skippedDuplicates)
 			{
-				showInfoDialog("Succesfully imported " + storedRecords.size() + " records."); // TODO report skipped duplicates
+				showInfoDialog(getString(R.string.importSuccess, newRecords, updatedRecords, skippedDuplicates));
 				onDataChanged();
 			}
 			
 			@Override
 			public void storeFailure(Exception reason)
 			{
-				showErrorDialog("Error upon storing imported records: " + reason.getMessage(), false);
+				showErrorDialog(getString(R.string.importStoreFailed, reason.getMessage()), false);
 				onDataChanged();
 			}
 		}).execute(records);
@@ -774,18 +874,21 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	@Override
 	public void importFailure(Exception reason)
 	{
-		try
+		if(reason instanceof UnknownModelException)
 		{
-			throw reason;
+			UnknownModelException ume = (UnknownModelException) reason;
+			showErrorDialog(
+				getString(
+					R.string.importFailed,
+					(ume.getSchemaName() != null ?
+						getString(
+							R.string.schemaFormNotFound,
+							ume.getSchemaName()) :
+						ume.getMessage())),
+				false);
 		}
-		catch(UnknownModelException ume)
-		{
-			showErrorDialog("Error upon importing records: " + (ume.getSchemaName() != null ? "could not find matching project/form (Project:Form = " + ume.getSchemaName() + ")" : ume.getMessage()));
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Error upon importing records: " + e.getMessage(), false);
-		}
+		else
+			showErrorDialog(getString(R.string.importFailed, reason.getMessage()), false);
 	}
 
 	/**

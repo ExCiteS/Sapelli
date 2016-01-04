@@ -28,6 +28,16 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
  */
 public abstract class ProjectManagerTabFragment extends ProjectManagerFragment
 {
+	
+	private boolean skipRefreshOnNextResume = false;
+
+	/**
+	 * @param skipRefreshOnNextResume the skipRefreshOnNextResume to set
+	 */
+	public void setSkipRefreshOnNextResume(boolean skipRefreshOnNextResume)
+	{
+		this.skipRefreshOnNextResume = skipRefreshOnNextResume;
+	}
 
 	public abstract String getTabTitle(Context context);
 	
@@ -45,12 +55,15 @@ public abstract class ProjectManagerTabFragment extends ProjectManagerFragment
 	{
 		super.onResume();
 		
-		refresh();
+		if(!skipRefreshOnNextResume)
+			refresh();
+		else
+			skipRefreshOnNextResume = false; // next time we will refresh
 	}
 	
-	public void refresh()
+	public final void refresh()
 	{
-		if(isUIReady())
+		if(getOwner() != null && isUIReady())
 			refresh(getProject(false));
 	}
 	

@@ -62,7 +62,7 @@ public final class ProjectTasks
 	 * @param project
 	 * @param callback
 	 */
-	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallaback callback)
+	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallback callback)
 	{
 		// Update records & media stats:
 		new RecordsTasks.QueryTask(owner, new RecordsTasks.QueryCallback()
@@ -97,7 +97,7 @@ public final class ProjectTasks
 		}).execute(new RecordsQuery(Source.From(project.getModel())));
 	}
 	
-	static public interface ProjectDataCallaback
+	static public interface ProjectDataCallback
 	{
 		
 		public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles);
@@ -147,7 +147,7 @@ public final class ProjectTasks
 
 		@Override
 		@SafeVarargs
-		protected final List<File> doInBackground(List<Record>... params)
+		protected final List<File> runInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			try
@@ -248,7 +248,7 @@ public final class ProjectTasks
 		}
 
 		@Override
-		protected Project doInBackground(ProjectDescriptor... params)
+		protected Project runInBackground(ProjectDescriptor... params)
 		{
 			return projectStore.retrieveProject(params[0]);
 		}
@@ -285,7 +285,7 @@ public final class ProjectTasks
 		}
 
 		@Override
-		protected Void doInBackground(ProjectDescriptor... params)
+		protected Void runInBackground(ProjectDescriptor... params)
 		{
 			ProjectDescriptor projDescr = params[0];
 			if(projDescr != null)

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.util;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -29,18 +30,22 @@ import java.net.URL;
 import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
+import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
 
 /**
  * Background Async Task to download files
  * 
  * Note:
- * 	This implementation cannot be safely used in combination with an activity that is restarted upon screen orientation changes!
+ * 	This implementation cannot be safely used in combination with an activity that is restarted upon screen orientation changes! TODO fix this!
+ * 
  * 	More info:	- http://stackoverflow.com/questions/18214293
  * 				- http://stackoverflow.com/questions/20279216/asynctaskloader-basic-example-android
  * 
@@ -85,7 +90,7 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 		// Download file in folder /Downloads/timestamp-filename
 		downloadedFile = new File(downloadFolder.getAbsolutePath() + File.separator + (System.currentTimeMillis() / 1000) + '.' + TEMP_FILE_EXTENSION);
 
-		// Set-up progess dialog:
+		// Set-up progress dialog:
 		progressDialog = new ProgressDialog(context);
 		progressDialog.setMessage(context.getString(R.string.downloading));
 		progressDialog.setIndeterminate(false);
@@ -107,10 +112,10 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 			{
 				AsyncDownloader.this.cancel(true);
 				// Delete the downloaded file
-				downloadedFile.delete();
+				FileUtils.deleteQuietly(downloadedFile);
 			}
 		});
-		progressDialog.show();
+		// Don't show dialog yet!
 	}
 
 	/**
@@ -122,7 +127,7 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	protected Boolean doInBackground(String... params)
 	{
 		downloadUrl = params[0];
-		Log.d(getClass().getSimpleName(), "Download URL: " + downloadUrl);
+		//Log.d(getClass().getSimpleName(), "Download URL: " + downloadUrl);
 		return download(downloadUrl);
 	}
 
@@ -130,6 +135,8 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	{
 		if(DeviceControl.isOnline(context))
 		{
+			InputStream input = null;
+			OutputStream output = null;
 			try
 			{
 				URL url = new URL(downloadUrl);
@@ -140,70 +147,109 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 
 				// Detect & follow redirects:
 				int status = conn.getResponseCode();
-				Log.d(getClass().getSimpleName(), "Response Code: " + status);
+				//Log.d(getClass().getSimpleName(), "Response Code: " + status);
 				if(status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)
 				{	// follow redirect url from "location" header field
 					String newUrl = conn.getHeaderField("Location");
-					Log.d(getClass().getSimpleName(), "Redirect to URL : " + newUrl);
+					//Log.d(getClass().getSimpleName(), "Redirect to URL : " + newUrl);
 					return download(newUrl);
 				}
 
-				// getting file length
-				int fileLength = conn.getContentLength();
-
-				// input stream to read file - with 8k buffer
-				InputStream input = new BufferedInputStream(url.openStream(), 8192);
+				// Getting file length
+				final int fileLength = conn.getContentLength();
+				publishProgress(fileLength < 0 ? // when fileLength = -1 this means the server hasn't specified the file length
+									-1 : // progressDialog will open and be set to indeterminate mode
+									0);  // progressDialog will open and be set to 0
+				
+				// Input stream to read file - with 8k buffer
+				input = new BufferedInputStream(url.openStream(), 8192);
 				// Output stream to write file
-				OutputStream output = new FileOutputStream(downloadedFile);
+				output = new BufferedOutputStream(new FileOutputStream(downloadedFile));
 
 				byte data[] = new byte[1024];
-				long total = 0;
-				int count;
-				while((count = input.read(data)) != -1)
+				int total = 0;
+				int percentage = 0;
+				int bytesRead;
+				while((bytesRead = input.read(data)) != -1)
 				{
-					total += count;
-					// Publish the progress....
-					publishProgress((int) (total * 100 / fileLength));
-
-					// writing data to file
-					output.write(data, 0, count);
+					// Complete % completion:
+					if(fileLength > 0) // don't divide by 0 and only update progress if we know the fileLength (i.e. != -1)
+					{
+						int newPercentage = (int) ((total += bytesRead) / ((float) fileLength) * 100f);
+						if(newPercentage != percentage)
+							publishProgress(percentage = newPercentage);
+					}
+					
+					// Write data to file...
+					output.write(data, 0, bytesRead);
 				}
 
-				// flushing output
+				// Flush output:
 				output.flush();
-
-				// closing streams
-				output.close();
-				input.close();
 			}
 			catch(Exception e)
 			{
 				failure = e;
 				return false;
 			}
+			finally
+			{	// Close streams:
+				StreamHelpers.SilentClose(input);
+				StreamHelpers.SilentClose(output);
+			}
+			//Log.d(getClass().getSimpleName(), "Download done");
 			return true;
 		}
-		failure = new Exception("The device is not online");
-		return false;
+		else
+		{
+			failure = new Exception("The device is not online");
+			return false;
+		}
 	}
 
+	/**
+	 * @param progress a percentage or -1 to signify progress is indeterminable
+	 * @see android.os.AsyncTask#onProgressUpdate(java.lang.Object[])
+	 */
+	@Override
 	protected void onProgressUpdate(Integer... progress)
 	{
-		progressDialog.setProgress(progress[0]); // update progress bar
+		try
+		{
+			// Open dialog if needed:
+			if(!progressDialog.isShowing())
+				progressDialog.show();
+			// Update progress:
+			if(progress == null || progress.length == 0 || progress[0] < 0)
+				progressDialog.setIndeterminate(true);
+			else
+				progressDialog.setProgress(progress[0]);
+		}
+		catch(Exception ignore) {} // may happen if activity is restarted
 	}
 
-	@Override
-	protected void onPostExecute(Boolean downloadFinished)
+	/**
+	 * @see http://stackoverflow.com/a/5102572/1084488
+	 * @see https://github.com/ExCiteS/Sapelli/issues/42
+	 */
+	protected void dismisDialog()
 	{
-		// Dismiss the dialog after the file was downloaded:
 		try
 		{
 			progressDialog.dismiss(); // Note: this fails if activity has been restarted in the meantime!
 		}
-		catch(Exception e)
+		catch(final Exception e)
 		{
 			Log.e(this.getClass().getSimpleName(), "Error upon dismissing progress dialog, likely due to Activity restart", e);
 		}
+	}
+	
+	@Override
+	protected void onPostExecute(Boolean downloadFinished)
+	{
+		// Dismiss the dialog after the file was downloaded:
+		dismisDialog();
+		
 		// Report success or failure:
 		if(downloadFinished)
 			callback.downloadSuccess(downloadUrl, downloadedFile);
@@ -215,6 +261,27 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 			Log.e(TAG, "Download problem", failure);
 			callback.downloadFailure(downloadUrl, failure);
 		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see android.os.AsyncTask#onCancelled(java.lang.Object)
+	 */
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	@Override
+	protected void onCancelled(Boolean result)
+	{
+		dismisDialog();
+		super.onCancelled(result);
+	}
+
+	/* (non-Javadoc)
+	 * @see android.os.AsyncTask#onCancelled()
+	 */
+	@Override
+	protected void onCancelled()
+	{
+		dismisDialog();
+		super.onCancelled();
 	}
 
 	/**
