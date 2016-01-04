@@ -79,7 +79,7 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected O doInBackground(@SuppressWarnings("unchecked") I... params)
+		protected final O runInBackground(@SuppressWarnings("unchecked") I... params)
 		{
 			try
 			{
@@ -269,7 +269,7 @@ public final class RecordsTasks
 
 		@Override
 		@SafeVarargs
-		protected final ExportResult doInBackground(List<Record>... params)
+		protected final ExportResult runInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			onProgressUpdate(getContext().getString(R.string.exportXRecords, records.size()));
@@ -327,7 +327,7 @@ public final class RecordsTasks
 		}
 
 		@Override
-		protected List<Record> doInBackground(File... files)
+		protected List<Record> runInBackground(File... files)
 		{
 			List<Record> result = new ArrayList<Record>();
 			try

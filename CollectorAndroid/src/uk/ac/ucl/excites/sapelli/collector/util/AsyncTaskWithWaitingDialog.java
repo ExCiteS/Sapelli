@@ -25,6 +25,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.util.Log;
 
 /**
  * @author mstevens
@@ -88,6 +89,67 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 		return isRunning() && dialog != null;
 	}
 	
+	@Override
+	protected void onPreExecute()
+	{
+		// Create dialog:
+		Context context = getContext();
+		if(context != null)
+		{
+			dialog = new ProgressDialog(context);
+			if(waitingMsg != null) // set waiting msg if one was given
+				dialog.setMessage(waitingMsg);
+			dialog.setCancelable(false);
+			// Do *not* show dialog yet! It will be shown upon first call to publishProgress()! (see doInBackground())
+		}
+		else
+			dialog = null;
+	}
+	
+	/* (non-Javadoc)
+	 * @see android.os.AsyncTask#doInBackground(java.lang.Object[])
+	 */
+	@Override
+	protected final Result doInBackground(@SuppressWarnings("unchecked") Params... params)
+	{
+		// Open waiting dialog:
+		publishProgress(); // no arguments --> will open the dialog without setting a new message
+		
+		// Do the actual work & return result:
+		return runInBackground(params);
+	}
+	
+	/**
+	 * @param params
+	 * @return
+	 * @see android.os.AsyncTask#doInBackground(java.lang.Object[])
+	 */
+	protected abstract Result runInBackground(@SuppressWarnings("unchecked") Params... params);
+
+	/* (non-Javadoc)
+	 * @see android.os.AsyncTask#onProgressUpdate(java.lang.Object[])
+	 */
+	@Override
+	protected void onProgressUpdate(String... msgs)
+	{
+		try
+		{
+			if(hasDialogAndIsRunning())
+			{
+				// Open dialog if needed:
+				if(!dialog.isShowing())
+					dialog.show();
+				// Set new message if there is one:
+				if(msgs != null && msgs.length > 0)
+					dialog.setMessage(msgs[0]);
+			}
+		}
+		catch(Exception e)
+		{
+			Log.e(getClass().getName(), "Error in onProgressUpdate()", e);
+		}
+	}
+	
 	/**
 	 * @see http://stackoverflow.com/a/5102572/1084488
 	 * @see https://github.com/ExCiteS/Sapelli/issues/42
@@ -101,39 +163,14 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 				dialog.dismiss(); // may throw IllegalArgumentException (e.g. when activity finishes prematurely)
 			}
 		}
-		catch(final Exception ignore) {}
+		catch(final Exception e)
+		{
+			Log.e(getClass().getName(), "Error in dismisDialog()", e);
+		}
 		finally
 		{
 			dialog = null;
-		}		
-	}
-	
-	@Override
-	protected void onPreExecute()
-	{
-		// Create & show dialog:
-		Context context = getContext();
-		if(context != null)
-		{
-			dialog = new ProgressDialog(context);
-			if(waitingMsg != null)
-				dialog.setMessage(waitingMsg);
-			dialog.setCancelable(false);
-			// Show:
-			dialog.show();
 		}
-		else
-			dialog = null;
-	}
-
-	/* (non-Javadoc)
-	 * @see android.os.AsyncTask#onProgressUpdate(java.lang.Object[])
-	 */
-	@Override
-	protected void onProgressUpdate(String... msgs)
-	{
-		if(hasDialogAndIsRunning() && msgs != null && msgs.length > 0)
-			dialog.setMessage(msgs[0]);
 	}
 	
 	@Override

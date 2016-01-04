@@ -323,7 +323,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		}
 
 		@Override
-		protected List<ProjectDescriptor> doInBackground(Void... params)
+		protected List<ProjectDescriptor> runInBackground(Void... params)
 		{
 			return projectStore.retrieveProjectsOrDescriptors();
 		}

@@ -147,7 +147,7 @@ public final class ProjectTasks
 
 		@Override
 		@SafeVarargs
-		protected final List<File> doInBackground(List<Record>... params)
+		protected final List<File> runInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			try
@@ -248,7 +248,7 @@ public final class ProjectTasks
 		}
 
 		@Override
-		protected Project doInBackground(ProjectDescriptor... params)
+		protected Project runInBackground(ProjectDescriptor... params)
 		{
 			return projectStore.retrieveProject(params[0]);
 		}
@@ -285,7 +285,7 @@ public final class ProjectTasks
 		}
 
 		@Override
-		protected Void doInBackground(ProjectDescriptor... params)
+		protected Void runInBackground(ProjectDescriptor... params)
 		{
 			ProjectDescriptor projDescr = params[0];
 			if(projDescr != null)

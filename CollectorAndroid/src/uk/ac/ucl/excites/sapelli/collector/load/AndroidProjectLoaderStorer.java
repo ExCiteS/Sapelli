@@ -106,7 +106,7 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 		}
 
 		@Override
-		protected Project doInBackground(Void... params)
+		protected Project runInBackground(Void... params)
 		{
 			if(failure != null || sapelliFileInputStream == null)
 				return null;
