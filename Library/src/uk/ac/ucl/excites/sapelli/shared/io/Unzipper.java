@@ -34,15 +34,26 @@ public final class Unzipper
 
 	private Unzipper() {}
 	
-	static public void unzip(InputStream zipFileStream, File extractionFolder) throws IOException
+	/**
+	 * Note that if the zipFileStream is not a ZIP file there will be no exception thrown,
+	 * but also no files extracted (i.e. method returns 0).
+	 * 
+	 * @param zipFileStream
+	 * @param extractionFolder
+	 * @return the number of extracted entries
+	 * @throws IOException - always wraps around a causing Exception
+	 */
+	static public int unzip(InputStream zipFileStream, File extractionFolder) throws IOException
 	{
-		String extractionPath = extractionFolder.getAbsolutePath() + File.separator;
 		try
 		{
+			String extractionPath = extractionFolder.getAbsolutePath() + File.separator;
 			ZipInputStream zin = new ZipInputStream(zipFileStream);
+			int entryCount = 0;
 			ZipEntry ze = null;
 			while((ze = zin.getNextEntry()) != null)
 			{
+				entryCount++;
 				if(ze.isDirectory())
 				{
 					if(!FileHelpers.createDirectory(extractionPath + ze.getName()))
@@ -62,6 +73,7 @@ public final class Unzipper
 				zin.closeEntry();
 			}
 			zin.close();
+			return entryCount;
 		}
 		catch(Exception e)
 		{

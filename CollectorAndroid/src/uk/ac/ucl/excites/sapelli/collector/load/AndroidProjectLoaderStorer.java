@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.load;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -51,9 +52,34 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 	 * @see uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer#loadAndStore(java.io.File, java.lang.String, uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer.Callback)
 	 */
 	@Override
-	public void loadAndStore(File sapelliFile, String sourceURI, FileSourceCallback callback)
+	public void loadAndStore(final File sapelliFile, final String sourceURI, final FileSourceCallback callback)
 	{
-		new AsyncProjectLoadStoreTask(context, sapelliFile, sourceURI, callback).execute();
+		// Try opening input stream from file:
+		InputStream in;
+		try
+		{
+			in = FileHelpers.openInputStream(sapelliFile, true);
+		}
+		catch(Exception e)
+		{
+			callback.projectLoadStoreFailure(sapelliFile, sourceURI, e);
+			return;
+		}
+		// Input stream successfully opened, try loading project:
+		new AsyncProjectLoadStoreTask(context, new StreamSourceCallback()
+		{
+			@Override
+			public void projectLoadStoreSuccess(Project project, List<String> warnings)
+			{
+				callback.projectLoadStoreSuccess(sapelliFile, sourceURI, project, warnings);
+			}
+			
+			@Override
+			public void projectLoadStoreFailure(Exception cause)
+			{
+				callback.projectLoadStoreFailure(sapelliFile, sourceURI, cause);
+			}
+		}).execute(in);
 	}
 
 	/**
@@ -64,54 +90,32 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 	@Override
 	public void loadAndStore(InputStream sapelliFileInputStream, StreamSourceCallback callback)
 	{
-		new AsyncProjectLoadStoreTask(context, sapelliFileInputStream, callback).execute();
+		new AsyncProjectLoadStoreTask(context, callback).execute(sapelliFileInputStream);
 	}
 	
 	/**
 	 * @author mstevens
 	 */
-	private class AsyncProjectLoadStoreTask extends AsyncTaskWithWaitingDialog<Context, Void, Project>
+	private class AsyncProjectLoadStoreTask extends AsyncTaskWithWaitingDialog<Context, InputStream, Project>
 	{
 
-		private File sapelliFile;
-		private String sourceURI;
-		private Callback callback;
-		private final InputStream sapelliFileInputStream;
-		
+		private final StreamSourceCallback callback;
 		private Exception failure;
 		
-		public AsyncProjectLoadStoreTask(Context context, File sapelliFile, String sourceURI, FileSourceCallback callback)
+		public AsyncProjectLoadStoreTask(Context context, StreamSourceCallback callback)
 		{
 			super(context, context.getString(R.string.projectLoading));
-			this.sapelliFile = sapelliFile;
-			this.sourceURI = sourceURI;
-			this.callback = callback;
-			InputStream in = null;
-			try
-			{
-				in = FileHelpers.openInputStream(sapelliFile, true);
-			}
-			catch(Exception e)
-			{
-				failure = e;
-			}
-			sapelliFileInputStream = in;
-		}
-		
-		public AsyncProjectLoadStoreTask(Context context, InputStream sapelliFileInputStream, StreamSourceCallback callback)
-		{
-			super(context, context.getString(R.string.projectLoading));
-			this.sapelliFileInputStream = sapelliFileInputStream;
 			this.callback = callback;
 		}
 
 		@Override
-		protected Project runInBackground(Void... params)
+		protected Project runInBackground(InputStream... params)
 		{
-			if(failure != null || sapelliFileInputStream == null)
-				return null;
 			try
 			{
+				InputStream sapelliFileInputStream;
+				if(params.length < 1 || (sapelliFileInputStream = params[0]) == null)
+					throw new NullPointerException("Provide a non-null InputStream.");
 				return AndroidProjectLoaderStorer.super.loadAndStore(sapelliFileInputStream);
 			}
 			catch(Exception e)
@@ -124,27 +128,15 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 		@Override
 		protected void onPostExecute(Project project)
 		{
+			// Hide dialog:
+			super.onPostExecute(project);
+			// Report back if needed:
 			if(callback == null)
 				return;
-			if(callback instanceof FileSourceCallback)
-			{
-				if(project == null || failure != null)
-					// Report failure:
-					((FileSourceCallback) callback).projectLoadStoreFailure(sapelliFile, sourceURI, failure);
-				else
-					// Report success:
-					((FileSourceCallback) callback).projectLoadStoreSuccess(sapelliFile, sourceURI, project, loader.getWarnings());
-			}
-			else if(callback instanceof StreamSourceCallback)
-			{
-				if(project == null || failure != null)
-					// Report failure:
-					((StreamSourceCallback) callback).projectLoadStoreFailure(failure);
-				else
-					// Report success:
-					((StreamSourceCallback) callback).projectLoadStoreSuccess(project, loader.getWarnings());
-			}
-			super.onPostExecute(project);
+			else if(project == null || failure != null)
+				callback.projectLoadStoreFailure(failure); // report failure
+			else
+				callback.projectLoadStoreSuccess(project, loader.getWarnings()); // report success
 		}
 
 	}

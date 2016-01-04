@@ -58,6 +58,8 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPa
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.AboutFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.EnterURLFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.MainTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
@@ -617,7 +619,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	 */
 	public boolean backupSapelli(MenuItem item)
 	{
-		Backup.Run(this, getFileStorageProvider());
+		runFileStorageTask(new FileStorageTask()
+		{
+			@Override
+			public void run(FileStorageProvider fsp)
+			{
+				Backup.Run(ProjectManagerActivity.this, fsp);
+			}
+		});
 		return true;
 	}
 
@@ -630,37 +639,95 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 
 	public void loadProject(String path)
 	{
-		if(path == null || path.isEmpty())
+		// Check path:
+		if(path == null || path.trim().isEmpty())
 			return;
-		//else:
-		String location = path.trim();
-		// Download Sapelli file if path is a URL
+		
+		final String location = path.trim();
 		if(Patterns.WEB_URL.matcher(location).matches())
-			// Location is a (remote) URL: download Sapelli file:
-			AsyncDownloader.Download(this, getFileStorageProvider().getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
-		else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
-			// Warn about bare XML file (no longer supported):
-			showErrorDialog(R.string.noBareXMLProjects);
-		else
-		{	// loading project from local file:
-			File localFile = new File(location);
-			if(ProjectLoader.HasSapelliFileExtension(localFile))
-				new AndroidProjectLoaderStorer(this, getFileStorageProvider(), projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
-			else
-				showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
+		{	// Location is a (remote) URL: download Sapelli file:
+			runFileStorageTask(new FileStorageTask()
+			{
+				@Override
+				public void run(FileStorageProvider fsp)
+				{
+					try
+					{	// loading & storing of the project will happen upon successful download (via callback)
+						AsyncDownloader.Download(ProjectManagerActivity.this, fsp.getSapelliDownloadsFolder() /*throws FileStorageException*/, location, ProjectManagerActivity.this);
+					}
+					catch(FileStorageException fse)
+					{
+						showErrorDialog(getString(R.string.storageError, fse.getMessage()));
+					}	
+				}
+			});
 		}
+		else
+			// Load project from local file:
+			loadProject(new File(location), null, true);
 	}
 	
 	@Override
 	public void downloadSuccess(String downloadUrl, File downloadedFile)
 	{
-		new AndroidProjectLoaderStorer(this, getFileStorageProvider(), projectStore).loadAndStore(downloadedFile, downloadUrl, this);
+		loadProject(downloadedFile, downloadUrl, false); // don't check extension for downloaded files
 	}
 
 	@Override
 	public void downloadFailure(String downloadUrl, Exception cause)
 	{
-		showErrorDialog(R.string.downloadError, false);
+		showErrorDialog(
+			cause != null ?
+				getString(R.string.downloadErrorWithCause, ExceptionHelpers.getMessage(cause)) :
+				getString(R.string.downloadError),
+			false);
+	}
+	
+	/**
+	 * @param localFile
+	 * @param sourceURI - may be null
+	 * @param checkExtension
+	 */
+	public void loadProject(final File localFile, final String sourceURI, boolean checkExtension)
+	{
+		if(!FileHelpers.isReadableFile(localFile))
+		{
+			showErrorDialog(R.string.invalidFile);
+		}
+		else if(checkExtension && XML_FILE_EXTENSION.equalsIgnoreCase(FileHelpers.getFileExtension(localFile)))
+		{
+			showErrorDialog(R.string.noBareXMLProjects);
+		}
+		else if(checkExtension && !ProjectLoader.HasSapelliFileExtension(localFile))
+		{	// Warn about extension:
+			showOKCancelDialog(
+				R.string.warning,
+				getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")),
+				false,
+				new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						loadProject(localFile, sourceURI, false); // try loading anyway
+					}
+				},
+				false);
+		}
+		else
+		{	// Actually load & store the project:
+			runFileStorageTask(new FileStorageTask()
+			{
+				@Override
+				public void run(FileStorageProvider fsp)
+				{
+					new AndroidProjectLoaderStorer(ProjectManagerActivity.this, fsp, projectStore).loadAndStore(
+						localFile,
+						sourceURI != null ? sourceURI : Uri.fromFile(localFile).toString(),
+						ProjectManagerActivity.this);
+				}
+			});
+		}
 	}
 	
 	@Override
