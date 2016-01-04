@@ -105,17 +105,20 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	@Override
 	protected void onPreExecute()
 	{
-		super.onPreExecute();
-		progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(android.R.string.cancel), new DialogInterface.OnClickListener()
+		try
 		{
-			public void onClick(DialogInterface dialog, int which)
+			progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(android.R.string.cancel), new DialogInterface.OnClickListener()
 			{
-				AsyncDownloader.this.cancel(true);
-				// Delete the downloaded file
-				FileUtils.deleteQuietly(downloadedFile);
-			}
-		});
-		// Don't show dialog yet!
+				public void onClick(DialogInterface dialog, int which)
+				{
+					AsyncDownloader.this.cancel(true);
+					// Delete the downloaded file
+					FileUtils.deleteQuietly(downloadedFile);
+				}
+			});
+			// Don't show dialog yet!
+		}
+		catch(Exception ignore) {} // may happen if activity is restarted
 	}
 
 	/**
@@ -126,13 +129,18 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	@Override
 	protected Boolean doInBackground(String... params)
 	{
-		downloadUrl = params[0];
-		//Log.d(getClass().getSimpleName(), "Download URL: " + downloadUrl);
-		return download(downloadUrl);
+		return download(params != null && params.length != 0 ? params[0] : null);
 	}
 
 	private boolean download(String downloadUrl)
 	{
+		if(downloadUrl == null || downloadUrl.isEmpty())
+		{
+			failure = new Exception("No URL given!");
+			return false;
+		}
+		
+		//Log.d(getClass().getSimpleName(), "Download URL: " + downloadUrl);
 		if(DeviceControl.isOnline(context))
 		{
 			InputStream input = null;
@@ -214,6 +222,9 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	@Override
 	protected void onProgressUpdate(Integer... progress)
 	{
+		if(progressDialog == null)
+			return;
+		//else:
 		try
 		{
 			// Open dialog if needed:
@@ -236,7 +247,8 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	{
 		try
 		{
-			progressDialog.dismiss(); // Note: this fails if activity has been restarted in the meantime!
+			if(progressDialog != null)
+				progressDialog.dismiss(); // Note: this fails if activity has been restarted in the meantime!
 		}
 		catch(final Exception e)
 		{
