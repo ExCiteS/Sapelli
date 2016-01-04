@@ -190,12 +190,4 @@
     <string name="share">Share …</string>
     <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
     <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
-    <string name="title_activity_dropbox">Dropbox Authentication</string>
-    <string name="title_activity_main">Sapelli Background Service</string>
-    <string name="service_name">excitesbackgroundservice</string>
-    <string name="start_service">Start Service</string>
-    <string name="stop_service">Stop Service</string>
-    <string name="notification">The Service is running.</string>
-    <string name="show_statistics">Show</string>
-    <string name="app_usage_statistics">Statistics on App usage</string>
 </resources>
