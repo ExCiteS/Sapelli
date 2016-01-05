@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 
@@ -57,7 +58,7 @@ public abstract class SimpleExporter extends SimpleSchemaTraverser implements Ex
 		this.forceExportUnexportable = forceExportUnexportable;
 	}
 	
-	protected abstract void openWriter(String description, DateTime timestamp) throws IOException;
+	protected abstract void openWriter(String description, DateTime timestamp) throws IOException, FileStorageException;
 	
 	protected abstract void closeWriter();
 	
