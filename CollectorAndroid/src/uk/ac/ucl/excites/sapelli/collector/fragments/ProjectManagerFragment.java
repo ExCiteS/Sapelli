@@ -218,6 +218,15 @@ public abstract class ProjectManagerFragment extends DialogFragment
 //	/**
 //	 * Call to avoid duplicate id exception before the fragment (or rather the <fragment> XML that loads it)
 //	 * is inflated a second time within the lifetime of an activity.
+//	 * 
+//	 * Note that this code is problematic...
+//	 * 	We initially used this here: https://github.com/ExCiteS/Sapelli/blob/5411155/CollectorAndroid/src/uk/ac/ucl/excites/sapelli/collector/fragments/ExportFormatFragment.java#L143
+//	 * 	But it caused crashes:
+//	 * 	 - https://github.com/ExCiteS/Sapelli/issues/44
+//	 * 	 - https://fabric.io/ucl-excites/android/apps/uk.ac.ucl.excites.sapelli.collector/issues/5591606ef505b5ccf04b458e
+//	 * 	We've also had this similar issue:
+//	 * 	 - https://github.com/ExCiteS/Sapelli/issues/38 (see {@link #addChild(int, Fragment)} above)
+//	 * 	We won't use this anymore but we leave the code here as it could be interesting for future reference.
 //	 */
 //	public void forget()
 //	{
