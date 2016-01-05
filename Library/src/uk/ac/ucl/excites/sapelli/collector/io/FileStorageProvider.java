@@ -94,19 +94,31 @@ public class FileStorageProvider
 	private final File sapelliFolder;
 	private final File downloadsFolder;
 	
-	public FileStorageProvider(File sapelliFolder, File downloadsFolder)
+	/**
+	 * @param sapelliFolder
+	 * @param downloadsFolder
+	 * @throws FileStorageException
+	 */
+	public FileStorageProvider(File sapelliFolder, File downloadsFolder) throws FileStorageException
 	{
-		if(sapelliFolder == null)
-			throw new NullPointerException("SapelliFolder cannot be null!");
-		if(!sapelliFolder.exists() || !sapelliFolder.isDirectory())
-			throw new FileStorageException("No an existing directory (" + sapelliFolder.getAbsolutePath() + ")");
-		this.sapelliFolder = sapelliFolder;
-
-		if(downloadsFolder == null)
-			throw new NullPointerException("DownloadsFolder cannot be null!");
-		if(!downloadsFolder.exists() || !downloadsFolder.isDirectory())
-			throw new FileStorageException("No an existing directory (" + downloadsFolder.getAbsolutePath() + ")");
-		this.downloadsFolder = downloadsFolder;
+		try
+		{
+			if(sapelliFolder == null)
+				throw new NullPointerException("SapelliFolder cannot be null!");
+			if(!sapelliFolder.exists() || !sapelliFolder.isDirectory())
+				throw new FileStorageException("No an existing directory (" + sapelliFolder.getAbsolutePath() + ")");
+			this.sapelliFolder = sapelliFolder;
+	
+			if(downloadsFolder == null)
+				throw new NullPointerException("DownloadsFolder cannot be null!");
+			if(!downloadsFolder.exists() || !downloadsFolder.isDirectory())
+				throw new FileStorageException("No an existing directory (" + downloadsFolder.getAbsolutePath() + ")");
+			this.downloadsFolder = downloadsFolder;
+		}
+		catch(SecurityException se) // may be thrown by File#exists() and File#isDirectory()
+		{
+			throw new FileStorageException("Security exception", se);
+		}
 	}
 	
 	/**
@@ -227,10 +239,17 @@ public class FileStorageProvider
 	 */
 	public File getSapelliDownloadsFolder() throws FileStorageException
 	{
-		if(downloadsFolder.exists() && downloadsFolder.canWrite())
-			return getSubFolder(downloadsFolder, DOWNLOADS_SAPELLI_FOLDER, true);
-		else
-			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
+		try
+		{
+			if(downloadsFolder.exists() && downloadsFolder.canWrite())
+				return getSubFolder(downloadsFolder, DOWNLOADS_SAPELLI_FOLDER, true);
+			else
+				throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
+		}
+		catch(SecurityException se)// may be thrown by File#exists() and File#canWrite()
+		{
+			throw new FileStorageException("Security exception", se);
+		}
 	}
 	
 	public File getDBFolder(boolean create) throws FileStorageException

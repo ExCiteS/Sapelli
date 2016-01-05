@@ -29,6 +29,7 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -109,30 +110,37 @@ public class XMLRecordsExporter extends SimpleExporter
 	static public CompositeMode DEFAULT_COMPOSITE_MODE = CompositeMode.Flat;
 	
 	// DYNAMICS------------------------------------------------------
-	private CompositeMode compositeMode;
-	private ColumnValueStringProvider valueStringProvider;
+	private final CompositeMode compositeMode;
+	private final ColumnValueStringProvider valueStringProvider = new ColumnValueStringProvider();
 	
 	private int tabs = 0;
+	private Record currentRecord = null;
 	
-	private Record currentRecord;
-	
+	/**
+	 * @param exportFolder
+	 */
 	public XMLRecordsExporter(File exportFolder)
 	{
 		this(exportFolder, DEFAULT_COMPOSITE_MODE);
 	}
 	
+	/**
+	 * @param exportFolder
+	 * @param compositeMode
+	 */
 	public XMLRecordsExporter(File exportFolder, CompositeMode compositeMode)
 	{
-		if(!FileHelpers.createDirectory(exportFolder))
-			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
+		if(exportFolder == null)
+			throw new NullPointerException("Provide a non-null export folder!");
 		this.exportFolder = exportFolder;
-		this.compositeMode = compositeMode;
-		this.currentRecord = null;
+		this.compositeMode = compositeMode != null ? compositeMode : DEFAULT_COMPOSITE_MODE;
 	}
 	
 	@Override
-	protected void openWriter(String description, DateTime timestamp) throws IOException
+	protected void openWriter(String description, DateTime timestamp) throws IOException, FileStorageException
 	{
+		if(!FileHelpers.createDirectory(exportFolder))
+			throw new FileStorageException("Export folder (" + exportFolder + ") does not exist and could not be created!");
 		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), Charsets.UTF_8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		writer.writeLine(XMLUtils.header(Charsets.UTF_8.name(), USES_XML_VERSION_11));
@@ -171,11 +179,12 @@ public class XMLRecordsExporter extends SimpleExporter
 		
 		// Export:
 		List<Record> exported = new ArrayList<Record>();
-		valueStringProvider = new ColumnValueStringProvider();
+		valueStringProvider.reset();
 		try
 		{
 			openWriter(description, DateTime.now());
 			tabs = 1;
+			currentRecord = null;
 			for(Record r : records)
 			{
 				// Skip unexportable records unless force not to:

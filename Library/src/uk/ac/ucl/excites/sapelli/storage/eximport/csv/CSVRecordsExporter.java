@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.commons.io.Charsets;
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
@@ -104,29 +105,35 @@ public class CSVRecordsExporter extends SimpleExporter
 	static public final Separator DEFAULT_SEPARATOR = Separator.COMMA;
 	
 	// DYNAMICS------------------------------------------------------
-	private Separator separator;
+	private final Separator separator;
+	private final List<ColumnPointer<?>> columnPointers = new ArrayList<ColumnPointer<?>>();
+	private final ColumnValueStringProvider valueStringProvider = new ColumnValueStringProvider();
 	
-	private List<ColumnPointer<?>> columnPointers;
-	
-	private ColumnValueStringProvider valueStringProvider;
-	
+	/**
+	 * @param exportFolder
+	 */
 	public CSVRecordsExporter(File exportFolder)
 	{
 		this(exportFolder, DEFAULT_SEPARATOR);
 	}
 	
+	/**
+	 * @param exportFolder
+	 * @param separator
+	 */
 	public CSVRecordsExporter(File exportFolder, Separator separator)
 	{
-		if(!FileHelpers.createDirectory(exportFolder))
-			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
+		if(exportFolder == null)
+			throw new NullPointerException("Provide a non-null export folder!");
 		this.exportFolder = exportFolder;
-		this.separator = separator;
-		this.columnPointers = new ArrayList<ColumnPointer<?>>();
+		this.separator = separator != null ? separator : DEFAULT_SEPARATOR;
 	}
 	
 	@Override
-	protected void openWriter(String description, DateTime timestamp) throws IOException
+	protected void openWriter(String description, DateTime timestamp) throws IOException, FileStorageException
 	{
+		if(!FileHelpers.createDirectory(exportFolder))
+			throw new FileStorageException("Export folder (" + exportFolder + ") does not exist and could not be created!");
 		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".csv"), Charsets.UTF_8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);	
 	}
@@ -184,8 +191,9 @@ public class CSVRecordsExporter extends SimpleExporter
 		
 		// Export each group to a separate CSV file:
 		List<Record> exported = new ArrayList<Record>();
+		List<Record> exportedForSchema = new ArrayList<Record>();
 		List<File> csvFiles = new ArrayList<File>();
-		valueStringProvider = new ColumnValueStringProvider();
+		valueStringProvider.reset();
 		for(Map.Entry<Schema, List<Record>> entry : recordsBySchema.entrySet())
 		{
 			try
@@ -241,8 +249,7 @@ public class CSVRecordsExporter extends SimpleExporter
 						throw e;
 					}
 					writer.commitTransaction(); // write out buffer
-					exported.add(r);
-					// TODO mark record as exported?
+					exportedForSchema.add(r);
 				}
 				csvFiles.add(writer.getFile());
 				closeWriter();
@@ -256,6 +263,11 @@ public class CSVRecordsExporter extends SimpleExporter
 				else
 					return ExportResult.Failure(exportFolder, e, records.size());
 			}
+			
+			// Move records exported for current schema to overall exported list:
+			exported.addAll(exportedForSchema);
+			exportedForSchema.clear();
+			// TODO mark record as exported?
 		}
 		// Result...
 		if(exported.size() == records.size())

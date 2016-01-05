@@ -83,18 +83,25 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	
 	protected abstract Integer getLayoutID();
 	
-	protected View getRootLayout()
+	protected final View getRootLayout()
 	{
 		return getRootLayout(getActivity().getLayoutInflater(), null);
 	}
 	
-	protected View getRootLayout(LayoutInflater inflater, ViewGroup container)
+	protected final View getRootLayout(LayoutInflater inflater, ViewGroup container)
 	{
 		View rootLayout = null;
 		try
 		{
+			// Inflate & check rootLayout:
 			rootLayout = inflater.inflate(getLayoutID(), container, false);
+			if(rootLayout == null)
+				throw new NullPointerException("rootLayout null");
+			
+			// Setup UI:
 			setupUI(rootLayout);
+			
+			// Done:
 			uiReady = true;
 		}
 		catch(Exception e)
@@ -105,7 +112,31 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		return rootLayout;
 	}
 	
-	protected void setupUI(View rootLayout)
+	/**
+	 * To be overridden by subclasses that don't need the owner activity to set-up the UI.
+	 * 
+	 * @param rootLayout - never null
+	 * @throws Exception
+	 */
+	protected void setupUI(final View rootLayout) throws Exception
+	{
+		// Make sure we know the owner:
+		final ProjectManagerActivity owner = getOwner();
+		if(owner == null) // just in case...
+			throw new NullPointerException("Cannot get owner activity");
+		
+		// Do actual UI set-up:
+		setupUI(owner, rootLayout);
+	}
+	
+	/**
+	 * To be overridden by subclasses that need the owner activity to set-up the UI.
+	 * 
+	 * @param owner - never null
+	 * @param rootLayout - never null
+	 * @throws Exception
+	 */
+	protected void setupUI(final ProjectManagerActivity owner, final View rootLayout) throws Exception
 	{
 		// does nothing by default
 	}
@@ -113,9 +144,9 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	/**
 	 * @return the uiReady
 	 */
-	public boolean isUIReady()
+	public final boolean isUIReady()
 	{
-		return uiReady;
+		return uiReady && activity != null;
 	}
 	
 	protected View setDialogView(AlertDialog dialog)
@@ -149,16 +180,28 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	}
 	
 	/**
-	 * Adds a child fragment to the given container view
+	 * Adds a child fragment to the given container view.
+	 * 
+	 * Note:
+	 * 	We use {@link android.support.v4.app.FragmentTransaction#commitAllowingStateLoss()}
+	 * 	instead of {@link android.support.v4.app.FragmentTransaction#commit()} to avoid the
+	 * 	"Can not perform this action after onSaveInstanceState" IllegalStateException, which
+	 * 	may occur if this method called while the activity is finishing (for example when it
+	 * 	is being called from the onPostExecute() method of an AsyncTask which was running
+	 * 	while the activity is stopped. We've seen a number of such crashes (links below).
+	 * 	It should be no problem to use commitAllowingStateLoss() because (for now) the
+	 * 	{@link ProjectManagerActivity} does need any state to be saved.
 	 * 
 	 * @param containerViewId
 	 * @param child the child Fragment to add
 	 * @return the child itself
+	 * @see http://www.androiddesignpatterns.com/2013/08/fragment-transaction-commit-state-loss.html
+	 * @see https://github.com/ExCiteS/Sapelli/issues/38
 	 */
 	protected <F extends Fragment> F addChild(int containerViewId, F child)
 	{
 		String tag = this.getClass().getSimpleName() + '|' + getTag() + '|' + child.getClass().getSimpleName();
-		getFragmentManager().beginTransaction().add(containerViewId, child, tag).commit();
+		getFragmentManager().beginTransaction().add(containerViewId, child, tag).commitAllowingStateLoss();
 		return child;
 	}
 	
@@ -175,6 +218,15 @@ public abstract class ProjectManagerFragment extends DialogFragment
 //	/**
 //	 * Call to avoid duplicate id exception before the fragment (or rather the <fragment> XML that loads it)
 //	 * is inflated a second time within the lifetime of an activity.
+//	 * 
+//	 * Note that this code is problematic...
+//	 * 	We initially used this here: https://github.com/ExCiteS/Sapelli/blob/5411155/CollectorAndroid/src/uk/ac/ucl/excites/sapelli/collector/fragments/ExportFormatFragment.java#L143
+//	 * 	But it caused crashes:
+//	 * 	 - https://github.com/ExCiteS/Sapelli/issues/44
+//	 * 	 - https://fabric.io/ucl-excites/android/apps/uk.ac.ucl.excites.sapelli.collector/issues/5591606ef505b5ccf04b458e
+//	 * 	We've also had this similar issue:
+//	 * 	 - https://github.com/ExCiteS/Sapelli/issues/38 (see {@link #addChild(int, Fragment)} above)
+//	 * 	We won't use this anymore but we leave the code here as it could be interesting for future reference.
 //	 */
 //	public void forget()
 //	{
