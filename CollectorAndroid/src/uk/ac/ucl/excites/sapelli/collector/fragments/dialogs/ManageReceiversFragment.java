@@ -33,6 +33,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -77,10 +78,10 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment#setupUI(android.view.View)
+	 * @see uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment#setupUI(uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity, android.view.View)
 	 */
 	@Override
-	protected void setupUI(View rootLayout)
+	protected void setupUI(final ProjectManagerActivity owner, final View rootLayout)
 	{
 		listReceivers = (ListView) rootLayout.findViewById(R.id.listReceivers);
 		updateReceivers();
@@ -91,7 +92,10 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	
 	private void updateReceivers()
 	{
-		listReceiversAdapter = new ReceiverAdapter(SendConfigurationHelpers.getReceivers(getOwner())); 
+		final ProjectManagerActivity owner = getOwner();
+		if(owner == null) // just in case...
+			return;
+		listReceiversAdapter = new ReceiverAdapter(SendConfigurationHelpers.getReceivers(owner)); 
 		listReceivers.setAdapter(listReceiversAdapter);
 	}
 	

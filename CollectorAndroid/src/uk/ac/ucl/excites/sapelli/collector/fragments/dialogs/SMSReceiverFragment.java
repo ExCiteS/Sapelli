@@ -32,6 +32,7 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
@@ -93,10 +94,10 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment#setupUI(android.view.View)
+	 * @see uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment#setupUI(uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity, android.view.View)
 	 */
 	@Override
-	protected void setupUI(View rootLayout)
+	protected void setupUI(final ProjectManagerActivity owner, final View rootLayout)
 	{
 		txtReceiverName = (EditText) rootLayout.findViewById(R.id.txtSMSReceiverName);
 		txtReceiverPhoneNumber = (EditText) rootLayout.findViewById(R.id.txtReceiverPhoneNumber);
@@ -108,12 +109,17 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 			txtReceiverPhoneNumber.setText(editReceiver.getPhoneNumberInternational());
 			chkBinarySMS.setChecked(editReceiver.getTransmissionType() == Type.BINARY_SMS);
 		}
-		else if(DeviceControl.getSimCountryISOCode(getOwner()) != null)
+		else
 		{
 			txtReceiverName.setText("");
-			String countyCode = "+" + SMSCorrespondent.findCountryCode(DeviceControl.getSimCountryISOCode(getOwner()));
-			txtReceiverPhoneNumber.setText(countyCode);
-			txtReceiverPhoneNumber.setSelection(countyCode.length());
+			if(DeviceControl.getSimCountryISOCode(owner) != null)
+			{
+				String countyCode = "+" + SMSCorrespondent.findCountryCode(DeviceControl.getSimCountryISOCode(owner));
+				txtReceiverPhoneNumber.setText(countyCode);
+				txtReceiverPhoneNumber.setSelection(countyCode.length());
+			}
+			else
+				txtReceiverPhoneNumber.setText("");
 			chkBinarySMS.setChecked(SMSCorrespondent.DEFAULT_BINARY_SMS);
 		}
 	}
