@@ -149,16 +149,28 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	}
 	
 	/**
-	 * Adds a child fragment to the given container view
+	 * Adds a child fragment to the given container view.
+	 * 
+	 * Note:
+	 * 	We use {@link android.support.v4.app.FragmentTransaction#commitAllowingStateLoss()}
+	 * 	instead of {@link android.support.v4.app.FragmentTransaction#commit()} to avoid the
+	 * 	"Can not perform this action after onSaveInstanceState" IllegalStateException, which
+	 * 	may occur if this method called while the activity is finishing (for example when it
+	 * 	is being called from the onPostExecute() method of an AsyncTask which was running
+	 * 	while the activity is stopped. We've seen a number of such crashes (links below).
+	 * 	It should be no problem to use commitAllowingStateLoss() because (for now) the
+	 * 	{@link ProjectManagerActivity} does need any state to be saved.
 	 * 
 	 * @param containerViewId
 	 * @param child the child Fragment to add
 	 * @return the child itself
+	 * @see http://www.androiddesignpatterns.com/2013/08/fragment-transaction-commit-state-loss.html
+	 * @see https://github.com/ExCiteS/Sapelli/issues/38
 	 */
 	protected <F extends Fragment> F addChild(int containerViewId, F child)
 	{
 		String tag = this.getClass().getSimpleName() + '|' + getTag() + '|' + child.getClass().getSimpleName();
-		getFragmentManager().beginTransaction().add(containerViewId, child, tag).commit();
+		getFragmentManager().beginTransaction().add(containerViewId, child, tag).commitAllowingStateLoss();
 		return child;
 	}
 	
