@@ -257,7 +257,7 @@ public final class ProjectTasks
 		protected void onPostExecute(Project project)
 		{
 			super.onPostExecute(project); // dismiss dialog
-			if(callback != null)
+			if(callback != null && project != null) // project may be null if task was cancelled
 				callback.projectReloaded(project);
 		}
 

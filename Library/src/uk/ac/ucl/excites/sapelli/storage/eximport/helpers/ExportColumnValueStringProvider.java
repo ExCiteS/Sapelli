@@ -45,6 +45,15 @@ public abstract class ExportColumnValueStringProvider extends ExImportColumnValu
 	private String valueString;
 	
 	/**
+	 * Resets the ExportColumnValueStringProvider.
+	 */
+	public final void reset()
+	{
+		this.value = null;
+		this.valueString = null;
+	}
+	
+	/**
 	 * Called by the exporter to get a single String representation for the value of the given column in the given valueSet.
 	 * 
 	 * @param column should not be null! This is not necessarily a "leaf" column (i.e. it may be an instance of a {@link ValueSetColumn} subclass) but it will be treated as such, meaning it will be inspected as a whole and not broken up.
