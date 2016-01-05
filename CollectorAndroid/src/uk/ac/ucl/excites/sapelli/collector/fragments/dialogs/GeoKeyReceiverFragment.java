@@ -32,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyTasks;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyTasks.VerificationCallback;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 
@@ -108,7 +107,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			txtUsername.setText(editReceiver.getUsername());
 			txtPassword.setText(editReceiver.getPassword()); // TODO "click to change"
 		}
-		else if(DeviceControl.getSimCountryISOCode(getOwner()) != null)
+		else
 		{
 			txtReceiverName.setText("");
 			txtGeoKeyServerURL.setText("");
