@@ -28,6 +28,7 @@ import android.view.View;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 
@@ -48,13 +49,13 @@ public class AboutFragment extends ProjectManagerFragment
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment#setupUI(android.view.View)
+	 * @see uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment#setupUI(uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity, android.view.View)
 	 */
 	@Override
-	protected void setupUI(View rootLayout)
+	protected void setupUI(final ProjectManagerActivity owner, final View rootLayout)
 	{
-		CollectorApp app = getOwner().getCollectorApp();
-		DeviceID deviceID = getOwner().getDeviceID();
+		CollectorApp app = owner.getCollectorApp();
+		DeviceID deviceID = owner.getDeviceID();
 		
 		TextView infoLbl = (TextView) rootLayout.findViewById(R.id.aboutInfo);
 		infoLbl.setClickable(true);

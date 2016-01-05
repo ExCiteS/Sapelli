@@ -63,7 +63,7 @@ public abstract class ProjectManagerTabFragment extends ProjectManagerFragment
 	
 	public final void refresh()
 	{
-		if(getOwner() != null && isUIReady())
+		if(isUIReady()) // also checks if owner is non-null
 			refresh(getProject(false));
 	}
 	

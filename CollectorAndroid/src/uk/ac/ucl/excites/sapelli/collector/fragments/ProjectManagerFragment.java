@@ -83,18 +83,25 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	
 	protected abstract Integer getLayoutID();
 	
-	protected View getRootLayout()
+	protected final View getRootLayout()
 	{
 		return getRootLayout(getActivity().getLayoutInflater(), null);
 	}
 	
-	protected View getRootLayout(LayoutInflater inflater, ViewGroup container)
+	protected final View getRootLayout(LayoutInflater inflater, ViewGroup container)
 	{
 		View rootLayout = null;
 		try
 		{
+			// Inflate & check rootLayout:
 			rootLayout = inflater.inflate(getLayoutID(), container, false);
+			if(rootLayout == null)
+				throw new NullPointerException("rootLayout null");
+			
+			// Setup UI:
 			setupUI(rootLayout);
+			
+			// Done:
 			uiReady = true;
 		}
 		catch(Exception e)
@@ -105,7 +112,31 @@ public abstract class ProjectManagerFragment extends DialogFragment
 		return rootLayout;
 	}
 	
-	protected void setupUI(View rootLayout)
+	/**
+	 * To be overridden by subclasses that don't need the owner activity to set-up the UI.
+	 * 
+	 * @param rootLayout - never null
+	 * @throws Exception
+	 */
+	protected void setupUI(final View rootLayout) throws Exception
+	{
+		// Make sure we know the owner:
+		final ProjectManagerActivity owner = getOwner();
+		if(owner == null) // just in case...
+			throw new NullPointerException("Cannot get owner activity");
+		
+		// Do actual UI set-up:
+		setupUI(owner, rootLayout);
+	}
+	
+	/**
+	 * To be overridden by subclasses that need the owner activity to set-up the UI.
+	 * 
+	 * @param owner - never null
+	 * @param rootLayout - never null
+	 * @throws Exception
+	 */
+	protected void setupUI(final ProjectManagerActivity owner, final View rootLayout) throws Exception
 	{
 		// does nothing by default
 	}
@@ -113,9 +144,9 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	/**
 	 * @return the uiReady
 	 */
-	public boolean isUIReady()
+	public final boolean isUIReady()
 	{
-		return uiReady;
+		return uiReady && activity != null;
 	}
 	
 	protected View setDialogView(AlertDialog dialog)

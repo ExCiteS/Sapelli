@@ -45,7 +45,6 @@ import android.widget.TimePicker;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
@@ -188,12 +187,8 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	
 	@SuppressWarnings("unused")
 	@Override
-	protected void setupUI(View rootLayout)
+	protected void setupUI(final ProjectManagerActivity owner, final View rootLayout) throws NullPointerException
 	{
-		ProjectManagerActivity owner = getOwner();
-		if(owner == null) // just in case...
-			return;
-		
 		// Time range:
 		if(isFormatChosingMode())
 			rootLayout.findViewById(R.id.groupExportDateRange).setVisibility(View.GONE);
@@ -208,8 +203,15 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		}
 		
 		// Output destination:
-		FileStorageProvider fsp = owner.getFileStorageProvider();
-		exportFolder = fsp != null ? fsp.getExportFolder(true) : null;
+		try
+		{
+			exportFolder = owner.getFileStorageProvider().getExportFolder(true);
+		}
+		catch(Exception e)
+		{
+			Log.e(getClass().getSimpleName(), "Could not obtain export folder", e);
+			exportFolder = null;
+		}
 		if(isFormatChosingMode() || true) // for now we always hide the output destination
 			rootLayout.findViewById(R.id.groupExportDestination).setVisibility(View.GONE);
 		else
