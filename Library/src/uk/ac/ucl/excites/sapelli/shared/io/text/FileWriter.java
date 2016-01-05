@@ -26,6 +26,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 
+import org.apache.commons.io.FileUtils;
+
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 
@@ -225,9 +227,9 @@ public class FileWriter
 	}
 
 	public void rename(String newName, int fileExistsStrategy) throws Exception
-	{ // TODO make sure the FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE is ok?
-		if(writer != null)
-			close();
+	{
+		// TODO make sure the FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE is ok?
+		close();
 		file.renameTo(new File(getContainingFolderPath() + newName));
 	}
 
@@ -237,9 +239,8 @@ public class FileWriter
 	 */
 	public void delete()
 	{
-		if(writer != null)
-			close();
-		file.delete();
+		close();
+		FileUtils.deleteQuietly(file);
 	}
 
 	public String getContainingFolderPath()
