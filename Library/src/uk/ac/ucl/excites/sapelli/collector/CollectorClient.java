@@ -287,13 +287,13 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getClientModel(long)
 	 */
 	@Override
-	protected Model getClientModel(long modelID) throws UnknownModelException
+	protected Model getClientModel(long modelID)
 	{
 		Project project = getProject(modelID);
 		if(project != null)
 			return project.getModel();
 		else
-			throw new UnknownModelException(modelID, null);
+			return null;
 	}
 	
 	/* (non-Javadoc)
