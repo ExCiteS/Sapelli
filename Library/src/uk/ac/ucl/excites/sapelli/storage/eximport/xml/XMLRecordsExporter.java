@@ -314,19 +314,19 @@ public class XMLRecordsExporter extends SimpleExporter
 	}
 	
 	@Override
-	public boolean allowLocationSelfTraversal()
+	public boolean splitLocationTraversal()
 	{
 		return compositeMode != CompositeMode.String;
 	}
 
 	@Override
-	public boolean allowOrientationSelfTraversal()
+	public boolean splitOrientationTraversal()
 	{
 		return compositeMode != CompositeMode.String;
 	}
 
 	@Override
-	public boolean allowForeignKeySelfTraversal()
+	public boolean splitForeignKeyTraversal()
 	{
 		return compositeMode != CompositeMode.String;
 	}

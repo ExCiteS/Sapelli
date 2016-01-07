@@ -112,7 +112,7 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.allowForeignKeySelfTraversal())
+		if(visitor.splitForeignKeyTraversal())
 			super.accept(visitor, true); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
 			visitor.visit(this); // visit as ForeignKeyColumn (as a single whole)

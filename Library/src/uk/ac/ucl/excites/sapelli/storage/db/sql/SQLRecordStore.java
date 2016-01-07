@@ -1754,19 +1754,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		@Override
-		public boolean allowOrientationSelfTraversal()
+		public boolean splitOrientationTraversal()
 		{
 			return true;
 		}
 		
 		@Override
-		public boolean allowLocationSelfTraversal()
+		public boolean splitLocationTraversal()
 		{
 			return true;
 		}
 		
 		@Override
-		public boolean allowForeignKeySelfTraversal()
+		public boolean splitForeignKeyTraversal()
 		{
 			return true;
 		}

@@ -300,22 +300,23 @@ public class CSVRecordsExporter extends SimpleExporter
 		columnPointers.add(leafColumnPointer);
 	}
 	
+
 	@Override
-	public boolean allowLocationSelfTraversal()
+	public boolean splitLocationTraversal()
 	{
-		return true;
+		return true; // split up location in subcolumns
 	}
 
 	@Override
-	public boolean allowOrientationSelfTraversal()
+	public boolean splitOrientationTraversal()
 	{
-		return true;
+		return true; // split up orientation in subcolumns
 	}
 
 	@Override
-	public boolean allowForeignKeySelfTraversal()
+	public boolean splitForeignKeyTraversal()
 	{
-		return true;
+		return true; // split up foreign keys in subcolumns
 	}
 	
 	/**

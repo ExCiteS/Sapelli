@@ -99,7 +99,7 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.allowOrientationSelfTraversal())
+		if(visitor.splitOrientationTraversal())
 			super.accept(visitor, !visitor.skipNonBinarySerialisedOrientationSubColumns()); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
 			visitor.visit(this); // visit as OrientationColumn (as a single whole)

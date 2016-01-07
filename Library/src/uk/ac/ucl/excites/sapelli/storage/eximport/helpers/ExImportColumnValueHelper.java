@@ -214,10 +214,10 @@ public abstract class ExImportColumnValueHelper
 		/**
 		 * Always visit as a whole, see {@link ExImportColumnValueHelper#inspect(Column)}.
 		 * 
-		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#allowLocationSelfTraversal()
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#splitLocationTraversal()
 		 */
 		@Override
-		public final boolean allowLocationSelfTraversal()
+		public final boolean splitLocationTraversal()
 		{
 			return false; // treat as a whole
 		}
@@ -225,10 +225,10 @@ public abstract class ExImportColumnValueHelper
 		/**
 		 * Always visit as a whole, see {@link ExImportColumnValueHelper#inspect(Column)}.
 		 * 
-		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#allowOrientationSelfTraversal()
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#splitOrientationTraversal()
 		 */
 		@Override
-		public final boolean allowOrientationSelfTraversal()
+		public final boolean splitOrientationTraversal()
 		{
 			return false; // treat as a whole
 		}
@@ -236,10 +236,10 @@ public abstract class ExImportColumnValueHelper
 		/**
 		 * Always visit as a whole, see {@link ExImportColumnValueHelper#inspect(Column)}.
 		 * 
-		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#allowForeignKeySelfTraversal()
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#splitForeignKeyTraversal()
 		 */
 		@Override
-		public final boolean allowForeignKeySelfTraversal()
+		public final boolean splitForeignKeyTraversal()
 		{
 			return false; // treat as a whole
 		}

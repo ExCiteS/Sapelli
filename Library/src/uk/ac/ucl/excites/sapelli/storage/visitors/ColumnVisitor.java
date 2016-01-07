@@ -89,11 +89,11 @@ public interface ColumnVisitor
 	
 	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol);
 	
-	public boolean allowLocationSelfTraversal();
+	public boolean splitLocationTraversal();
 	
-	public boolean allowOrientationSelfTraversal();
+	public boolean splitOrientationTraversal();
 	
-	public boolean allowForeignKeySelfTraversal();
+	public boolean splitForeignKeyTraversal();
 	
 	public boolean skipNonBinarySerialisedLocationSubColumns();
 	
