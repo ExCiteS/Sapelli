@@ -707,7 +707,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		if(!columnSet.canBeLossy())
 			return false;
 		for(Column<?> c : columnSet.getColumns(false))
-			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveAsLossy(this))) // do *not* call c.retrieveValue(this, true) instead of c.retrieveAsLossy(this) (it would cause an endless loop)
+			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveValueAsLossy(this))) // do *not* call c.retrieveValue(this, true) instead of c.retrieveAsLossy(this) (it would cause an endless loop)
 				return false; // at least 1 value is different from its lossy version --> this ValueSet is considered lossless
 		return true;
 	}

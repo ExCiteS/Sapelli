@@ -970,8 +970,8 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * If {@code asLossy} is {@code true}, {@link #canBeLossy()} returns {@code true}, *and* if the valueSet is not already in a lossy state, then
 	 * (and only then) the retrieved value is being returned as if retrieved from a lossy binary representation.</p>
 	 * <p>
-	 * The difference between calling {@code retrieveValue(valueSet, true)} and {@link #retrieveAsLossy(ValueSet)} is that the latter does not involves a
-	 * call to {@link ValueSet#isLossy()} (which may itself call {@link #retrieveAsLossy(ValueSet)}, hence we need both methods to avoid endless loops).</p>
+	 * The difference between calling {@code retrieveValue(valueSet, true)} and {@link #retrieveValueAsLossy(ValueSet)} is that the latter does not involves a
+	 * call to {@link ValueSet#isLossy()} (which may itself call {@link #retrieveValueAsLossy(ValueSet)}, hence we need both methods to avoid endless loops).</p>
 	 *
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @param asLossy whether or not to simulate the information loss sustained by converting the retrieved value to lossy binary encoding and back
@@ -983,7 +983,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		if(!asLossy || !canBeLossy() || valueSet.isLossy() /*whole ValueSet is already lossy*/)
 			return retrieveValue(valueSet);
 		else
-			return retrieveAsLossy(valueSet);
+			return retrieveValueAsLossy(valueSet);
 	}
 	
 	/**
@@ -994,7 +994,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet
 	 * @return value as retrieved from lossy binary representation
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveAsLossy(VS valueSet)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValueAsLossy(VS valueSet)
 	{
 		return toLossy(retrieveValue(valueSet));
 	}
