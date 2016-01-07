@@ -153,8 +153,8 @@ public final class StringUtils
 	 */
 	static public String escape(String str, char avoid, char replacement, char prefix)
 	{
-		if(str == null)
-			return null;
+		if(str == null || "".equals(str))
+			return str;
 		StringBuilder bldr = new StringBuilder();
 		for(char c : str.toCharArray())
 			if(c == avoid)
