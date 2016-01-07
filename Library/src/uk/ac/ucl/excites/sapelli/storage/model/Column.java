@@ -214,6 +214,21 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * Casts a given {@link Object} to type {@code <T>}.
+	 * 
+	 * @param valueObject as {@link Object}, or {@code null}
+	 * @return value of type {@code <T>}, or {@code null} if given valueObject was {@code null}
+	 * @throws ClassCastException
+	 */
+	@SuppressWarnings("unchecked")
+	public final T cast(Object valueObject) throws ClassCastException
+	{
+		return (T) valueObject;
+	}
+	
+	/**
+	 * Converts a given a given {@link Object} to an instance of type {@code <T>}.
+	 * 
 	 * Default implementation only performs an unchecked cast.
 	 * To be overridden by subclasses which need to perform additional conversion in order to accept a wider range of value types.
 	 * 
@@ -221,10 +236,9 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return converted value of type {@code <T>}, or {@code null} if given valueObject was {@code null}
 	 * @throws ClassCastException
 	 */
-	@SuppressWarnings("unchecked")
 	public T convert(Object valueObject) throws ClassCastException
 	{
-		return (T) valueObject;
+		return cast(valueObject);
 	}
 	
 	/**
@@ -264,7 +278,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Stores the given Object value in this column on the given ValueSet.
+	 * Stores the given Object value (converted to an instance of type {@code <T>}) in this column on the given ValueSet.
 	 *
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
@@ -276,7 +290,25 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public T storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
-		storeValue(valueSet, convert(valueObject));
+		return storeObject(valueSet, valueObject, true); // convert to T!
+	}
+	
+	/**
+	 * Stores the given Object value ({@code convert}ed or simply casted to an instance of type {@code <T>}) in this column on the given ValueSet.
+	 *
+	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
+	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
+	 * @return the stored value
+	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
+	 * @see #cast(Object)
+	 * @see #convert(Object)
+	 */
+	public T storeObject(ValueSet<?> valueSet, Object valueObject, boolean convert) throws IllegalArgumentException, NullPointerException, ClassCastException
+	{
+		return storeValue(valueSet, convert ? convert(valueObject) : cast(valueObject)); // convert or cast to T
 	}
 	
 	/**
@@ -663,19 +695,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Writes the given Object value to the given {@link BitOutputStream}.
 	 * The value will be casted to type {@code <T>}.
 	 *
-	 * @param value the value to write, given as an {@link Object}, may be {@code null} if column is optional
+	 * @param value the value to write, given as an {@link Object} (will be casted, not converted), may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws ClassCastException if the Object cannot be casted to type {@code <T>}
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null} 
 	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
-	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
-	 * @see #convert(Object)
+	 * @throws ClassCastException when the value cannot be casted to the column's type {@code <T>}
+	 * @see #cast(Object)
 	 */
 	public void writeObject(Object value, BitOutputStream bitStream, boolean lossless) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
 	{
-		writeValue(convert(value), bitStream, lossless);
+		writeValue(cast(value), bitStream, lossless);
 	}
 
 	/**
@@ -767,14 +799,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * {@code null} values will be accepted only if the column is optional.
 	 *
 	 * @param value
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return whether or not the value is valid
 	 * @see #convert(Object)
+	 * @see #cast(Object)
 	 */
-	public final boolean isValidValueObject(Object valueObject)
+	public final boolean isValidValueObject(Object valueObject, boolean convert)
 	{
 		try
 		{
-			return isValidValue(convert(valueObject));
+			return isValidValue(convert ? convert(valueObject) : cast(valueObject));
 		}
 		catch(Exception e)
 		{
@@ -853,14 +887,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * @param value
+	 * @param valueObject
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
+	 * @see #cast(Object)
 	 */
-	public T copyObject(Object value) throws ClassCastException
+	public T copyObject(Object valueObject, boolean convert) throws ClassCastException
 	{
-		return value != null ? copy(convert(value)) : null;
+		return valueObject != null ? copy(convert ? convert(valueObject) : cast(valueObject)) : null;
 	}
 
 	/**
@@ -1145,11 +1181,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
-	 * @param value (as object, may be null if column is optional)
+	 * @param value (as object, will be converted, may be null if column is optional)
 	 * @return comparison result
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
+	 * @see #convert(Object)
 	 */
 	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
 	{

@@ -147,7 +147,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		for(int c = 0; c < this.values.length; c++)
 		{
 			Column<?> col = columnSet.getColumn(c);
-			this.values[c] = col.copyObject(another.values[c]);
+			this.values[c] = col.copyObject(another.values[c], false); // cast, don't convert
 		}
 	}
 	
