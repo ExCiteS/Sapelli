@@ -389,11 +389,14 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @return stored value (may be {@code null})
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
 	@SuppressWarnings("unchecked")
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws NullPointerException, IllegalArgumentException
 	{
+		if(valueSet == null)
+			throw new NullPointerException("valueSet is null!");
 		return (T) valueSet.getValue(this);
 	}
 	
@@ -401,7 +404,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Retrieves previously stored value for this column from the given valueSet and converts it to a String representation.
 	 * 
 	 * @param valueSet should not be {@code null}
-	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column
+	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet does not contain a value for this Column
 	 * @see #valueToString(Object)
 	 */
 	public String retrieveValueAsString(ValueSet<?> valueSet)
@@ -542,7 +545,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Parses a string representation of a value to produce a instance of {@code <T>}.
 	 * Does *not* accept {@code null} or empty {@code String}s, if these are expected it may be better to use {@link #stringToValue(String)}.
 	 * 
-	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String}!
+	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String} (as those both represent a {@code null} value)
 	 * @return the parsed value as type {@code <T>}
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
