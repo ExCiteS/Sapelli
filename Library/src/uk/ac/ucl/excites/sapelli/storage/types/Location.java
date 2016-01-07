@@ -57,11 +57,15 @@ public class Location extends ValueSet<ColumnSet>
 	{
 		switch(provider)
 		{
-			case PROVIDER_UNKNOWN : return "Unkwown";
-			case PROVIDER_GPS : return "GPS";
-			case PROVIDER_NETWORK : return "Network";
-			case PROVIDER_MANUAL : return "Manual";
-			default : return "Unknown";
+			case PROVIDER_GPS :
+				return "GPS";
+			case PROVIDER_NETWORK :
+				return "Network";
+			case PROVIDER_MANUAL :
+				return "Manual";
+			case PROVIDER_UNKNOWN :
+			default :
+				return "Unknown";
 		}
 	}
 	
