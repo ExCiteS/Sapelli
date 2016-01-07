@@ -93,7 +93,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 	
 	@Override
-	public void storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public TT storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("VirtualColumns are read-only!");
 	}

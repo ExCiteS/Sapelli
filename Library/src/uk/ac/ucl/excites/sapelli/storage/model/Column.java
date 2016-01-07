@@ -232,10 +232,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} if column is optional
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the given value is invalid
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public void storeValue(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public T storeValue(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		// Check:
 		if(value == null)
@@ -245,19 +246,21 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		}
 		else
 			validate(value); // throws IllegalArgumentException if invalid
-		// Store:
-		storeValueUnchecked(valueSet, value);
+		// Store & return value:
+		return storeValueUnchecked(valueSet, value);
 	}
 	
 	/**
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} (which will wipe earlier non-{@code null} values)
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if the valueSet is {@code null}
 	 */
-	private final void storeValueUnchecked(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException
+	private final T storeValueUnchecked(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException
 	{
 		valueSet.setValue(this, value); // also store null (to overwrite earlier non-null value)
+		return value;
 	}
 	
 	/**
@@ -265,12 +268,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
+	 * @return the stored value
 	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
 	 */
-	public void storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
+	public T storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
 		storeValue(valueSet, convert(valueObject));
 	}
@@ -278,29 +282,31 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	/**
 	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
+	 * @return the stored value
 	 * @throws ParseException
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parsed value is invalid
 	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public void storeString(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public T storeString(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		storeValue(valueSet, stringToValue(valueString));
+		return storeValue(valueSet, stringToValue(valueString));
 	}
 	
 	/**
 	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
 	 * 
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
-	 * @param bytes binary representation of a column value, given as a {@code byte[]}
+	 * @param valueBytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
 	 * @throws NullPointerException if the given {@code byte[]} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws IOException if an I/O error happens
 	 * @see #fromBytes(byte[], boolean)
 	 */
-	public void storeBytes(ValueSet<?> valueSet, byte[] bytes, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	public T storeBytes(ValueSet<?> valueSet, byte[] valueBytes, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
 	{
-		storeValueUnchecked(valueSet, fromBytes(bytes, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBytes()) already performs all checks
+		return storeValueUnchecked(valueSet, fromBytes(valueBytes, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBytes()) already performs all checks
 	}
 	
 	/**
@@ -309,14 +315,15 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param bytes binary representation of a column value, given as a {@link BitArray}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
 	 * @throws NullPointerException if the given {@link BitArray} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws IOException if an I/O error happens
 	 * @see #fromBits(BitArray, boolean)
 	 */
-	public void storeBits(ValueSet<?> valueSet, BitArray bits, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	public T storeBits(ValueSet<?> valueSet, BitArray valueBits, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
 	{
-		storeValueUnchecked(valueSet, fromBits(bits, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBits()) already performs all checks
+		return storeValueUnchecked(valueSet, fromBits(valueBits, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBits()) already performs all checks
 	}
 	
 	/**
