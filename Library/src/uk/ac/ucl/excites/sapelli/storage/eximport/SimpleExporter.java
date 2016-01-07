@@ -77,7 +77,7 @@ public abstract class SimpleExporter extends SimpleSchemaTraverser implements Ex
 	@Override
 	public boolean includeVirtualColumns()
 	{
-		return true;
+		return true; // !!!
 	}
 
 }
