@@ -413,6 +413,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * Retrieves previously stored value for this column from the given valueSet and converts it to a String representation.
+	 * 
+	 * @param valueSet should not be {@code null}
+	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) if the valueSet does not contain a value for this Column
+	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column and {@code emptyForNull} was {@code false}
+	 * @see #valueToString(Object,boolean)
+	 */
+	public String retrieveValueAsString(ValueSet<?> valueSet, boolean emptyForNull)
+	{
+		return valueToString(retrieveValue(valueSet), emptyForNull);
+	}
+	
+	/**
 	 * Retrieves previously stored value for this column from the given valueSet, converts it to a binary representation and returns the result as a {@code byte[]}.
 	 * 
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
@@ -559,10 +572,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public String valueToString(T value)
 	{
+		return valueToString(value, false);
+	}
+	
+	/**
+	 * @param value may be {@code null}, in which case "" or {@code null} is returned depending on {@code emptyForNull}
+	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) in case of a {@code null} {@code value}
+	 * @return a {@link String} representation of the given {@code value}, or {@code null} if the value was {@code null} and {@code emptyForNull} was {@code false}
+	 */
+	public String valueToString(T value, boolean emptyForNull)
+	{
 		if(value != null)
 			return toString(value);
 		else
-			return null;
+			return emptyForNull ? "" : null;
 	}
 
 	/**
