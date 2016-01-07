@@ -137,7 +137,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 			case signedfloat :
 			case unsigneddouble :
 			case signeddouble :
-				field.getColumn().parseAndStoreValue(record, getValue()); break; // parse number & store it
+				field.getColumn().storeString(record, getValue()); break; // parse number & store it
 		}
 	}
 

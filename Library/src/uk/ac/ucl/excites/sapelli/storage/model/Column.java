@@ -282,7 +282,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parsed value is invalid
 	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public void parseAndStoreValue(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public void storeString(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		storeValue(valueSet, stringToValue(valueString));
 	}

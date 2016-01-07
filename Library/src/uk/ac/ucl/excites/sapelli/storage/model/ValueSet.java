@@ -457,7 +457,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		for(Column<?> col : columnSet.getColumns(includeVirtual))
 		{
 			if(!(col instanceof VirtualColumn) && !skipColumns.contains(col)) // skip virtual columns & skipColumns (but *do* increment the counter p!)
-				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX)); // validation will be performed
+				col.storeString(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX)); // validation will be performed
 			p++;
 		}
 		return this;
