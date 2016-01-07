@@ -302,9 +302,8 @@ public class ColumnSet implements Serializable
 					for(VirtualColumn<?, ?> vCol : nonVirtualCol.getVirtualVersions())
 						/* check if this vCol was added to the schema (when its "real" owner was added to the schema
 						 * through addColumn()), we must check this because the vCol might have been added to its owner
-						 * _after_ the latter had been added to the schema).
-						 * We use vCol == getColumn(...) instead of containsColumn(vCol) because we that would use equals() instead of ==. */
-						if(vCol == getColumn(vCol.getName(), true))
+						 * _after_ the latter had been added to the schema).*/
+						if(containsColumn(vCol))
 							allColumns.add(vCol);
 				}
 			}
@@ -319,7 +318,7 @@ public class ColumnSet implements Serializable
 	 * 
 	 * @param includeVirtual
 	 * @return an unmodifiable list of columns
-	 * @param skipColumns columns to keep out of the return list
+	 * @param skipColumns columns to keep out of the returned list
 	 */
 	public List<Column<?>> getColumns(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
