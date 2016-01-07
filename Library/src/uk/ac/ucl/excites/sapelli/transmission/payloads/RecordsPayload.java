@@ -387,7 +387,7 @@ public class RecordsPayload extends Payload
 								if(factoredOutValues.containsKey(c))
 								{	// Column is factored out:
 									out.write(true); // write factored-out flag = true
-									c.writeObject(factoredOutValues.get(c), out, false); // // Write factored out value
+									c.writeObject(factoredOutValues.get(c), out, false); // Write factored out value
 								}
 								else
 									// Column is *not* factored out:
