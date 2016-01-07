@@ -185,6 +185,30 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
+	 * (Re-)sets the values of all columns {@code null}, even if the column is non-optional or has a non-{@code null} {@link Column#defaultValue}.
+	 * Use with care!
+	 * 
+	 * @see Column#clearValue(ValueSet)
+	 */
+	public void clear()
+	{
+		for(Column<?> col : columnSet.getColumns(false))
+			col.clearValue(this);
+	}
+	
+	/**
+	 * Resets the values of all columns to the {@link Column#defaultValue} (usually {@code null}), even if the column is non-optional.
+	 * Use with care!
+	 * 
+	 * @see Column#resetValue(ValueSet)
+	 */
+	public void reset()
+	{
+		for(Column<?> col : columnSet.getColumns(false))
+			col.resetValue(this);
+	}
+	
+	/**
 	 * Returns the index (= position) at which the given column's value can be found in the values array.
 	 * 
 	 * @param column

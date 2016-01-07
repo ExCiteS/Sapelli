@@ -359,7 +359,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is non-optional(!).
+	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is non-optional or has a non-{@code null} {@link Column#defaultValue}.
 	 * Use with care!
 	 * 
 	 * @param valueSet the valueSet in which to clear the value, may not be {@code null}
@@ -372,7 +372,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Resets the value of this column in the given valueSet to the {@link #defaultValue} (usually {@code null}), even if the column is non-optional(!).
+	 * Resets the value of this column in the given valueSet to the {@link #defaultValue} (usually {@code null}), even if the column is non-optional.
 	 * Use with care!
 	 * 
 	 * @param valueSet
