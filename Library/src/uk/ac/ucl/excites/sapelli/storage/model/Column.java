@@ -564,13 +564,15 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 
 	/**
 	 * @param valueObject may be {@code null}, in which case {@code null} is returned
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return a String representation of the valueObject, or {@code null} if the valueObject was {@code null}
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
+	 * @see #cast(Object)
 	 */
-	public String objectToString(Object valueObject) throws ClassCastException
+	public String objectToString(Object valueObject, boolean convert) throws ClassCastException
 	{
-		return valueToString(convert(valueObject));
+		return valueToString(convert ? convert(valueObject) : cast(convert));
 	}
 
 	/**
