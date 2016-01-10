@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.shared.util;
 
 import java.util.Collection;
+import java.util.Stack;
 
 /**
  * @author mstevens
@@ -88,6 +89,23 @@ public final class CollectionUtils
 		if(delimit)
 			bldr.append(']');
 		return bldr.toString();
+	}
+	
+	/**
+	 * Combinations of {@link Stack#pop()} and {@link Stack#push(Object)}.
+	 * If the given stack is non-empty the current top item is removed (i.e. {@code pop}ped),
+	 * and then the given item is {@code push}ed on the stack, thus replacing the previous
+	 * top item if there was one. 
+	 * 
+	 * @param stack
+	 * @param item
+	 * @return
+	 */
+	public static <T> T poke(final Stack<T> stack, final T item)
+	{
+		if(!stack.isEmpty())
+			stack.pop(); // remove current top
+		return stack.push(item);
 	}
 	
 }
