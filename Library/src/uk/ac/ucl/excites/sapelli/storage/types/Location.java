@@ -258,10 +258,10 @@ public class Location extends ValueSet<ColumnSet>
 	 * Formats overview:
 	 * 	- Pre-2013-07-13 v1.x format:	LAT;LON;PROV;ALT;BEAR;SPD;ACC;TIME
 	 * 	- Post-2013-07-13 v1.x format:	PROV;LAT;LON;ALT;BEAR;SPD;ACC;TIME
-	 * 	- v2.x format:					LAT;LON;ALT;BEAR;SPD;ACC;TIME;PROV
+	 * 	- v2.x format:					LAT,LON,ALT,BEAR,SPD,ACC,TIME,PROV
 	 * 
-	 * @param valueString to parse
-	 * @return parsed Location object
+	 * @param valueString the {@link String} to parse, may be {@code null} or empty
+	 * @return parsed Location object, or {@code null} if valueString was {@code null} or empty
 	 * @throws ParseException
 	 */
 	public static Location parseV1X(String valueString) throws ParseException
@@ -269,11 +269,13 @@ public class Location extends ValueSet<ColumnSet>
 		// Null & empty check:
 		if(valueString == null || valueString.isEmpty())
 			return null;
+		else
+			valueString = valueString.trim();
 		
 		// Split up in parts:
-		String[] parts = valueString.trim().split("\\" + V1X_SEPARATOR, -1); // -1: allow empty Strings
+		String[] parts = valueString.split("\\" + V1X_SEPARATOR, -1); // -1: allow empty Strings
 		if(parts.length < 3)
-			throw new ParseException("Not a valid v1.x location: " + valueString, 0);
+			throw new ParseException("Not a valid v1.x Location value: " + valueString, 0);
 		
 		//Check for Pre-2013-07-13 old serialisation format:
 		boolean oldFormat = false;

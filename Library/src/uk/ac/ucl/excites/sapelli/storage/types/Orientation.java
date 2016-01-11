@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.types;
 
+import java.text.ParseException;
+
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -33,6 +35,8 @@ public class Orientation extends ValueSet<ColumnSet>
 	
 	//Statics----------------------------------------------
 	static private final long serialVersionUID = 2L;
+	
+	static final private char V1X_SEPARATOR = ';';
 	
 	// ColumnSet & Columns:
 	static final public ColumnSet COLUMN_SET = new ColumnSet(Orientation.class.getSimpleName(), false);
@@ -117,6 +121,34 @@ public class Orientation extends ValueSet<ColumnSet>
 	public boolean hasRoll()
 	{
 		return getValue(COLUMN_ROLL) != null;
+	}
+	
+	/**
+	 * This method supports parsing Orientations from Strings in the format used
+	 * in Sapelli v1.x, which used ';' instead of ',' as a separator.
+	 * 
+	 * @param valueString the {@link String} to parse, may be {@code null} or empty
+	 * @return parsed Orientation object, or {@code null} if valueString was {@code null} or empty
+	 * @throws ParseException
+	 */
+	public static Orientation parseV1X(String valueString) throws ParseException
+	{
+		// Null & empty check:
+		if(valueString == null || valueString.isEmpty())
+			return null;
+		else
+			valueString = valueString.trim();
+		
+		// Split up in parts:
+		String[] parts = valueString.split("\\" + V1X_SEPARATOR, -1); // -1: allow empty Strings
+		if(parts.length < 3)
+			throw new ParseException("Not a valid v1.x Orientation value: " + valueString, 0);
+		
+		// Construct new Orientation object:
+		return new Orientation(
+			(!parts[0].isEmpty() ? Float.valueOf(parts[0]) : null),
+			(!parts[1].isEmpty() ? Float.valueOf(parts[1]) : null),
+			(!parts[2].isEmpty() ? Float.valueOf(parts[2]) : null));
 	}
 	
 }
