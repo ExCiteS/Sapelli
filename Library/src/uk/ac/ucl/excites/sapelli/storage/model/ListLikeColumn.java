@@ -33,7 +33,7 @@ public interface ListLikeColumn<T>
 {
 
 	/**
-	 * @param valueString the {@link String} to parse, should not be {@code null} (as that would represent a {@code null} list}, an empty {@code String} is allowed if {@code undelimited} is {@code true} (the given empty String then represents a non-null but empty List/String)
+	 * @param valueString the {@link String} to parse, should not be {@code null} (as that would represent a {@code null} list), an empty {@code String} is allowed if {@code undelimited} is {@code true} (the given empty String then represents a non-null but empty List/String)
 	 * @param undelimited if {@code true} the given valueString is excepted to *not* have serialisation delimiters (and is thus allowed to be empty), if {code false} the given valueString is excepted to have serialisation delimiters (and thus cannot be empty)  
 	 * @return the parsed value as type {@code <T>}
 	 * @throws ParseException
