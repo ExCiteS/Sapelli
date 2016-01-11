@@ -248,6 +248,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * Stores the given {@code <T>} value in this column on the given valueSet. Performs optionality check and validation.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 *
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} if column is optional
@@ -284,6 +285,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * Stores the given Object value (converted to an instance of type {@code <T>}) in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 *
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
@@ -300,6 +302,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * Stores the given Object value ({@code convert}ed or simply casted to an instance of type {@code <T>}) in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 *
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
@@ -317,6 +320,9 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * Converts the given String representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
+	 * 
 	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
 	 * @return the stored value
@@ -331,6 +337,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 * 
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueBytes binary representation of a column value, given as a {@code byte[]}
@@ -348,6 +355,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 * 
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param bytes binary representation of a column value, given as a {@link BitArray}
