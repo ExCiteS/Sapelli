@@ -393,6 +393,20 @@ public class ColumnPointer<C extends Column<?>>
 	 */
 	public ValueSet<?> getValueSet(ValueSet<?> topLevelVS, boolean create) throws IllegalArgumentException
 	{
+		return getValueSet(topLevelVS, create, null);
+	}
+	
+	/**
+	 * Returns a (sub)valueSet of the given valueSet, or possibly itself, where the ColumnSet of the former contains the column this ColumnPointer points to.
+	 * 
+	 * @param topLevelVS
+	 * @param create whether or not to create a new subValueSet if there is none
+	 * @param initialiser {@link SubValueSetInitialiser} to initialise new subValueSet(s) with, or {@code null}
+	 * @return the (sub)record or null if there was none and creation was disabled
+	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 */
+	public ValueSet<?> getValueSet(ValueSet<?> topLevelVS, boolean create, SubValueSetInitialiser initialiser) throws IllegalArgumentException
+	{
 		// Get path:
 		Stack<Column<?>> path = getPathFrom(topLevelVS.getColumnSet());
 		
@@ -401,15 +415,19 @@ public class ColumnPointer<C extends Column<?>>
 		for(Column<?> col : path)
 			if(col instanceof ValueSetColumn && col != path.peek())
 			{
-				ValueSetColumn<?, ?> recCol = ((ValueSetColumn<?, ?>) col);
-				if(!recCol.isValuePresent(vs))
+				ValueSetColumn<?, ?> vsCol = ((ValueSetColumn<?, ?>) col);
+				if(!vsCol.isValuePresent(vs))
 				{
 					if(create)
-						recCol.storeObject(vs, recCol.getNewValueSet());
+					{
+						vsCol.storeNewValueSet(vs);
+						if(initialiser != null)
+							initialiser.initialise(vsCol.retrieveValue(vs));
+					}
 					else
 						return null;
 				}
-				vs = recCol.retrieveValue(vs);
+				vs = vsCol.retrieveValue(vs);
 			}
 		
 		// Return the (sub)record:
@@ -424,7 +442,19 @@ public class ColumnPointer<C extends Column<?>>
 	 */
 	public void createValueSet(ValueSet<?> topLevelVS)  throws IllegalArgumentException
 	{
-		getValueSet(topLevelVS, true);
+		createValueSet(topLevelVS, null);
+	}
+	
+	/**
+	 * Creates a (sub)valueSet in the given valueSet (if needed) corresponding to the column this ColumnPointer points to.
+	 * 
+	 * @param topLevelVS
+	 * @param initialiser
+	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 */
+	public void createValueSet(ValueSet<?> topLevelVS, SubValueSetInitialiser initialiser)  throws IllegalArgumentException
+	{
+		getValueSet(topLevelVS, true, initialiser);
 	}
 	
 	/**
@@ -599,6 +629,17 @@ public class ColumnPointer<C extends Column<?>>
 	public String toString()
 	{
 		return columnStack.toString();
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public interface SubValueSetInitialiser
+	{
+		
+		public <VS extends ValueSet<CS>, CS extends ColumnSet> VS initialise(VS newValueSet);
+		
 	}
 	
 }
