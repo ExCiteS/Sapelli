@@ -271,7 +271,7 @@ public class Location extends ValueSet<ColumnSet>
 			return null;
 		
 		// Split up in parts:
-		String[] parts = valueString.trim().split("\\" + V1X_SEPARATOR);
+		String[] parts = valueString.trim().split("\\" + V1X_SEPARATOR, -1); // -1: allow empty Strings
 		if(parts.length < 3)
 			throw new ParseException("Not a valid v1.x location: " + valueString, 0);
 		

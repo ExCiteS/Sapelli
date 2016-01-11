@@ -31,7 +31,7 @@ public class SMSAgent
 	
 	static public SMSAgent Parse(String str)
 	{
-		String[] parts = str.split("\\" + SEPARATOR);
+		String[] parts = str.split("\\" + SEPARATOR, -1); // -1: allow empty Strings
 		return new SMSAgent(parts[0]);
 	}
 	

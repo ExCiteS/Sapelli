@@ -77,7 +77,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	@Override
 	public byte[] parse(String valueStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		String[] parts = valueStr.split("\\" + SERIALISATION_SEPARATOR);
+		String[] parts = valueStr.split("\\" + SERIALISATION_SEPARATOR, -1); // -1: allow empty Strings (although they will fail to parse below)
 		byte[] bytes = new byte[parts.length];
 		for(int i=0, len=bytes.length; i<len; i++)
 			bytes[i] = Byte.parseByte(parts[i].trim());

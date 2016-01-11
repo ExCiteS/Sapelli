@@ -62,7 +62,7 @@ public class MultiListField extends Field
 	public MultiListField(Form form, String id, String captions)
 	{
 		super(form, id);
-		this.captions = captions.split(CAPTION_SEPARATOR);
+		this.captions = captions.split(CAPTION_SEPARATOR, -1); // -1: allow empty Strings
 		this.itemsRoot = new MultiListItem(this);
 		this.values = new Dictionary<MultiListItem>();
 	}

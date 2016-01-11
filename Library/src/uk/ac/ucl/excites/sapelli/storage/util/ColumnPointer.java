@@ -157,7 +157,7 @@ public class ColumnPointer<C extends Column<?>>
 		if(columnName == null || columnName.isEmpty())
 			throw new NullPointerException("columnName cannot be null or empty");
 		// Build up stack:
-		String[] colNameParts = columnName.split("\\" + ValueSetColumn.QUALIFIED_NAME_SEPARATOR);
+		String[] colNameParts = columnName.split("\\" + ValueSetColumn.QUALIFIED_NAME_SEPARATOR, -1); // -1: allow empty Strings
 		for(int c = 0; c < colNameParts.length; c++)
 		{
 			ExtendPathTo(columnStack, cs, colNameParts[c], deepSearch, trySanitising);

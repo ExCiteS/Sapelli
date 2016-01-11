@@ -399,7 +399,7 @@ public abstract class MediaField extends Field
 		}
 
 		// creationTimeOffset is the fourth part of the filename:
-		String[] parts = deobfuscatedName.split(Character.toString(FILENAME_ELEMENT_SEPARATOR));
+		String[] parts = deobfuscatedName.split(Character.toString(FILENAME_ELEMENT_SEPARATOR), -1); // -1: allow empty Strings
 		try
 		{
 			return Long.parseLong(parts[3]);
