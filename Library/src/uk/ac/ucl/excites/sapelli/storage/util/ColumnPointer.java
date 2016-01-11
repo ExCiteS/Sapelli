@@ -39,7 +39,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
  * 
  * @author mstevens
  *
- * @param <C> the Column type
+ * @param <C> the Column type (*not* the content type of the Column)  
  */
 public class ColumnPointer<C extends Column<?>>
 {
@@ -274,7 +274,7 @@ public class ColumnPointer<C extends Column<?>>
 		}
 		else if(deepSearch)
 		{	// Try to find the column as a subcolumn...
-			for(Column<?> c : columnSet.getColumns(false))
+			for(Column<?> c : columnSet.getColumns(true)) // we allow virtual columns
 				if(c instanceof ValueSetColumn)
 				{
 					path.push(c);
