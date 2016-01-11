@@ -37,13 +37,24 @@ public abstract class Parameters
 	
 	public abstract boolean contains(String param);
 	
-	public boolean containsOneOf(String... params)
+	public boolean containsAny(String... params)
 	{
-		if(params != null)
-			for(String param : params)
-				if(contains(param))
-					return true;
+		if(params == null)
+			return true;
+		for(String param : params)
+			if(contains(param))
+				return true;
 		return false;
+	}
+	
+	public boolean containsAll(String... params)
+	{
+		if(params == null)
+			return true;
+		for(String param : params)
+			if(!contains(param))
+				return false;
+		return true;
 	}
 	
 	/**

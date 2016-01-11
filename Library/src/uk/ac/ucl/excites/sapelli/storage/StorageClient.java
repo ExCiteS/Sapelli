@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturnNoException;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
@@ -280,25 +281,41 @@ public abstract class StorageClient implements StorageObserver
 	
 	/**
 	 * @param modelID
-	 * @return
-	 * @throws UnknownModelException
+	 * @return a {@link Model} instance with the given ID
+	 * @throws UnknownModelException if no matching Model was found
 	 */
-	public final Model getModel(long modelID) throws UnknownModelException
+	public final Model getModel(final long modelID) throws UnknownModelException
 	{
-		// First check reserved models:
-		Model reservedModel = GetReservedModel(modelID);
-		if(reservedModel != null)
-			return reservedModel;
+		Model model = null;
+		
+		// Check reserved models:
+		if((model = GetReservedModel(modelID)) != null)
+			return model;
+		
 		// Get client model:
-		return getClientModel(modelID);
+		if((model = getClientModel(modelID)) != null)
+			return model;
+		
+		// Check models of stored records:
+		if((model = recordStoreHandle.executeWithReturnNoDBEx(new StoreOperationWithReturnNoException<RecordStore, Model>()
+		{
+			@Override
+			public Model execute(RecordStore store)
+			{
+				return store.retrieveModel(modelID);
+			}
+		})) != null)
+			return model;
+		
+		// If we get here this means we really can't find a matching model:
+		throw new UnknownModelException(modelID, null);
 	}
 	
 	/**
 	 * @param modelID
-	 * @return
-	 * @throws UnknownModelException
+	 * @return a {@link Model} instance with the given ID, or {@code null} if no such model was found
 	 */
-	protected abstract Model getClientModel(long modelID) throws UnknownModelException;
+	protected abstract Model getClientModel(long modelID);
 	
 	/**
 	 * Converts {@link Model} instances into byte[] representations.

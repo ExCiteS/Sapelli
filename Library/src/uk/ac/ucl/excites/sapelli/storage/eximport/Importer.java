@@ -21,14 +21,16 @@ package uk.ac.ucl.excites.sapelli.storage.eximport;
 import java.io.File;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
 /**
  * @author mstevens
  *
  */
-public interface Importer
+public interface Importer extends WarningKeeper
 {
 
 	/**
@@ -40,6 +42,9 @@ public interface Importer
 	 */
 	public List<Record> importFrom(File file) throws UnknownModelException, IndexOutOfBoundsException, Exception;
 	
-	public List<String> getWarnings();
-
+	/**
+	 * @return the "exportedAt" time of the last file to be imported (may be null)
+	 */
+	public TimeStamp getLastImportExportedAtTime();
+	
 }

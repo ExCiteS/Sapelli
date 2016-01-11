@@ -936,7 +936,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				bldr.append("NOT NULL");
 			// TODO Reassess this: it could be a bad idea because it means we cannot persistently store incomplete records (which was no problem with DB4O).
 			
-			// TODO Default value?
+			// TODO Default value? Currently only handled at Java level.
 			
 			// foreign-key-clause?
 			/*if(sourceColum instanceof ForeignKeyColumn)

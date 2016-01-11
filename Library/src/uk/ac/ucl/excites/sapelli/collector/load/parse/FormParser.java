@@ -989,7 +989,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// Parse the attributes
 		String keys = attributes.getString(null, true, false, ATTRIBUTE_TRIGGER_KEY, ATTRIBUTE_TRIGGER_KEYS);
 		if(keys != null)
-			for(String k : keys.split(Trigger.KEY_SEPARATOR))
+			for(String k : keys.split(Trigger.KEY_SEPARATOR, -1)) // -1: allow empty Strings
 			{
 				try
 				{

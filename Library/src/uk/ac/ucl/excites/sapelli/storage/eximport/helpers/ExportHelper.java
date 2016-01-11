@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.helpers;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -27,18 +28,18 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 
 /**
- * Exporting helper class, based on a {@link ExImportColumnValueHelper}, which creates
+ * Exporting helper class, based on a {@link ExImportHelper}, which creates
  * String representations, escaped/quoted as necessary, of column values and has special
  * behaviour for dealing with {@link ListLikeColumn}s (i.e. {@link StringColumn}s and
  * {@link ListColumn}s) and {@link VirtualColumn}s.
  * 
  * The column being inspected is a {@link VirtualColumn} the visitor is rerouted to its target column.
  * 
- * @see {@link ExImportColumnValueHelper}
+ * @see {@link ExImportHelper}
  * 
  * @author mstevens
  */
-public abstract class ExportColumnValueStringProvider extends ExImportColumnValueHelper
+public abstract class ExportHelper extends ExImportHelper
 {
 
 	private Object value;
@@ -57,22 +58,27 @@ public abstract class ExportColumnValueStringProvider extends ExImportColumnValu
 	 * Called by the exporter to get a single String representation for the value of the given column in the given valueSet.
 	 * 
 	 * @param column should not be null! This is not necessarily a "leaf" column (i.e. it may be an instance of a {@link ValueSetColumn} subclass) but it will be treated as such, meaning it will be inspected as a whole and not broken up.
-	 * @param valueSet should not be {@code null} and contain a non-n{@code null} value for the given column
-	 * @return the String representation of the value
+	 * @param valueSet the valueSet to retrieve the column value from (may be {@code null} and may contain a {@code null} value for the column, in both cases the given {@code nullString} will be returned)
+	 * @param nullString value to return when either the valueSet itself is {@code null} or does not contain a non-{@code null} value for the given column
+	 * @return the String representation of the value (or the given {@code nullString})
 	 * 
 	 * @see {@link #inspect(Column)}
 	 */
-	public final String toString(Column<?> column, ValueSet<?> valueSet)
+	public final String getValueString(Column<?> column, ValueSet<?> valueSet, String nullString)
 	{
+		// Check if we have a valueSet and value:
+		if(valueSet == null || !column.isValuePresent(valueSet))
+			return nullString;
+		
 		// (Re)Initialise:
-		this.value = column.retrieveValue(valueSet);
+		this.value = column.retrieveValue(valueSet); // never null!
 		this.valueString = null;
 		
 		// Inspect column:
 		inspect(column);
 		
 		// Return String representation:
-		return this.valueString;
+		return this.valueString != null ? this.valueString : ""; // replace null (should never happen!) by empty string
 	}
 	
 	/**
@@ -83,12 +89,8 @@ public abstract class ExportColumnValueStringProvider extends ExImportColumnValu
 	 * @return
 	 */
 	protected abstract String escapeAndQuote(String valueString, boolean force);
-
-	/**
-	 * Used for all {@link Column}s except {@link ListLikeColumn}s.
-	 * 
-	 * @param column
-	 * 
+	
+	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visit(uk.ac.ucl.excites.sapelli.storage.model.Column)
 	 */
 	@SuppressWarnings("unchecked")
@@ -98,11 +100,30 @@ public abstract class ExportColumnValueStringProvider extends ExImportColumnValu
 		this.valueString = escapeAndQuote(column.toString((T) value), false); // escape and quote as needed (don't force)
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visit(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
+	@Override
+	protected final <VS extends ValueSet<CS>, CS extends ColumnSet> void visit(ValueSetColumn<VS, CS> valueSetCol)
+	{
+		this.valueString = getSubValueSetString(valueSetCol, valueSetCol.cast(value));
+	}
+	
 	/**
-	 * Used for all {@link ListLikeColumn}s. 
+	 * Default implementation treats ValueSetColumn as any other (non-ListLike)Column.
+	 * Subclasses may override this.
 	 * 
-	 * @param listLikeColumn
-	 * 
+	 * @param valueSetCol
+	 * @param subValueSet - never {@code null}!
+	 * @return
+	 */
+	protected  <VS extends ValueSet<CS>, CS extends ColumnSet> String getSubValueSetString(ValueSetColumn<VS, CS> valueSetCol, VS subValueSet)
+	{
+		visit((Column<?>) valueSetCol);
+		return this.valueString;
+	}
+
+	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visit(uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn)
 	 */
 	@SuppressWarnings("unchecked")
@@ -116,7 +137,7 @@ public abstract class ExportColumnValueStringProvider extends ExImportColumnValu
 	/**
 	 * We always export {@link VirtualColumn} values (formatted by the target column).
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visitVirtualColumnTargets()
+	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportHelper#visitVirtualColumnTargets()
 	 */
 	@Override
 	protected boolean visitVirtualColumnTargets()

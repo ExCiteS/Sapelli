@@ -26,6 +26,7 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -54,9 +55,8 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	// Statics-------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	static final private char SERIALISATION_SEPARATOR = ',';
-	static final private char SERIALISATION_SEPARATOR_ESCAPE = '.';
-	static final private char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
+	static final public char SERIALISATION_SEPARATOR = ',';
+	static final public char DEFAULT_SERIALISATION_DELIMITER = '`';
 	
 	// Dynamics------------------------------------------------------
 	protected /*final*/ CS columnSet; // not final (for now) for Record#setSchema() methods
@@ -147,7 +147,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		for(int c = 0; c < this.values.length; c++)
 		{
 			Column<?> col = columnSet.getColumn(c);
-			this.values[c] = col.copyObject(another.values[c]);
+			this.values[c] = col.copyObject(another.values[c], false); // cast, don't convert
 		}
 	}
 	
@@ -182,6 +182,30 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	protected final Object getValue(Column<?> column) throws IllegalArgumentException
 	{
 		return values[getPosition(column)]; // return value from array
+	}
+	
+	/**
+	 * (Re-)sets the values of all columns {@code null}, even if the column is non-optional or has a non-{@code null} {@link Column#defaultValue}.
+	 * Use with care!
+	 * 
+	 * @see Column#clearValue(ValueSet)
+	 */
+	public void clear()
+	{
+		for(Column<?> col : columnSet.getColumns(false))
+			col.clearValue(this);
+	}
+	
+	/**
+	 * Resets the values of all columns to the {@link Column#defaultValue} (usually {@code null}), even if the column is non-optional.
+	 * Use with care!
+	 * 
+	 * @see Column#resetValue(ValueSet)
+	 */
+	public void reset()
+	{
+		for(Column<?> col : columnSet.getColumns(false))
+			col.resetValue(this);
 	}
 	
 	/**
@@ -264,7 +288,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether all non-optional columns from the given schema have been assigned a non-{@code null} value in this ValueSet.
+	 * Checks whether all non-optional columns from the given columnSet have been assigned a non-{@code null} value in this ValueSet.
 	 * The given ColumnSet must be this ValueSet's ColumnSet or a subset of it.
 	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
 	 * 
@@ -280,7 +304,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks, optionally recursive, whether all non-optional columns from the given schema have been assigned a non-{@code null} value in this ValueSet.
+	 * Checks, optionally recursive, whether all non-optional columns from the given columnSet have been assigned a non-{@code null} value in this ValueSet.
 	 * The given ColumnSet must be this ValueSet's ColumnSet or a subset of it.
 	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
 	 * 
@@ -301,6 +325,150 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
+	 * Checks whether this ValueSet has a {@code null} value for each of the (non-virtual) columns in its ColumnSet.
+	 * 
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	public boolean isEmpty()
+	{
+		return isEmpty(false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks whether this ValueSet has a {@code null} value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	public boolean isEmpty(Set<? extends Column<?>> skipColumns)
+	{
+		return isEmpty(skipColumns, false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks, optionally recursive, whether this ValueSet has a {@code null} value for each of the (non-virtual) columns in its ColumnSet.
+	 * 
+	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have all {@code null} values
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	public boolean isEmpty(final boolean recurse)
+	{
+		return isEmpty(Collections.<Column<?>> emptySet(), recurse);
+	}
+	
+	/**
+	 * Checks, optionally recursive, whether this ValueSet has a {@code null} value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have all {@code null} values
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	protected boolean isEmpty(Set<? extends Column<?>> skipColumns, boolean recurse)
+	{
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			if(col.isValuePresent(this, recurse))
+				return false;
+		return true;
+	}
+	
+	/**
+	 * Check whether this ValueSet holds the default value for each of the (non-virtual) columns in its ColumnSet.
+	 * 
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValueDefault(ValueSet)}
+	 */
+	protected boolean isDefault()
+	{
+		return isDefault(Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Check whether this ValueSet holds the default value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValueDefault(ValueSet)}
+	 */
+	protected boolean isDefault(Set<? extends Column<?>> skipColumns)
+	{
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			if(!col.isValueDefault(this))
+				return false;
+		return true;
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual) columns which are currently empty (i.e. containing a {@code null} value)
+	 * to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 * 
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean)}
+	 */
+	public void resetEmptyColumns(final boolean onlyIfRequired)
+	{
+		resetEmptyColumns(onlyIfRequired, false); // don't recurse by default
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual and non-skipped) columns which are currently empty (i.e. containing a {@code null}
+	 * value) to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this operation
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean)}
+	 */
+	public void resetEmptyColumns(Set<? extends Column<?>> skipColumns, boolean onlyIfRequired)
+	{
+		resetEmptyColumns(skipColumns, onlyIfRequired, false); // don't recurse by default
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual) (sub)columns which are currently empty (i.e. containing a {@code null} value)
+	 * to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 *
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean, boolean)}
+	 */
+	public void resetEmptyColumns(boolean onlyIfRequired, boolean recurse)
+	{
+		resetEmptyColumns(Collections.<Column<?>> emptySet(), onlyIfRequired, recurse);
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual and non-skipped) (sub)columns which are currently empty (i.e. containing a {@code null}
+	 * value) to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this operation
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean, boolean)}
+	 */
+	public void resetEmptyColumns(Set<? extends Column<?>> skipColumns, boolean onlyIfRequired, boolean recurse)
+	{
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			col.resetIfEmpty(this, onlyIfRequired, recurse);
+	}
+	
+	/**
 	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
@@ -314,7 +482,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Checks whether this ValueSet has a valid value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
 	 * @param skipColumns a set of columns to ignore in this check
@@ -328,7 +496,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Checks, optionally recursive, whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
 	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have valid values
@@ -342,7 +510,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Checks, optionally recursive, whether this ValueSet has a valid value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
 	 * @param skipColumns a set of columns to ignore in this check
@@ -383,9 +551,10 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Serialise the ValueSet to a String, excluding virtual columns
+	 * Serialise the ValueSet to a String, excluding virtual columns.
 	 * 
 	 * @return
+	 * @see #serialise(boolean, Set)
 	 */
 	public String serialise()
 	{
@@ -393,7 +562,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Serialise the ValueSet to a String
+	 * Serialise the ValueSet to a String.
 	 * 
 	 * @param includeVirtual
 	 * @param skipColumns
@@ -403,63 +572,126 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	{
 		StringBuilder bldr = new StringBuilder();
 		boolean first = true;
-		for(Column<?> col : columnSet.getColumns(includeVirtual))
+		for(Column<?> col : columnSet.getColumns(includeVirtual, skipColumns))
 		{
 			// Separator:
 			if(first)
 				first = false;
 			else
-				bldr.append(SERIALISATION_SEPARATOR); // also when value is skipped below!
+				bldr.append(SERIALISATION_SEPARATOR);
 			// Value:
-			if(!skipColumns.contains(col))
-			{
-				String valueString = col.retrieveValueAsString(this);
-				bldr.append(valueString == null ? "" : StringUtils.escape(valueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
-			}
+			String valueString = col.retrieveValueAsString(this, true); // will return empty String for null values
+			// 	If the column does not apply it's own serialisation delimiting then
+			//	 we may have to wrap the valueString in the default serialisation delimiters:
+			if(!col.isApplyingSerialisationDelimiting())
+				valueString = StringUtils.escapeByDoublingAndWrapping(valueString, new char[] { SERIALISATION_SEPARATOR }, DEFAULT_SERIALISATION_DELIMITER, /*don't force:*/ false);
+			bldr.append(valueString == null ? "" /*just in case*/ : valueString);
 		}
 		return bldr.toString();
 	}
 	
 	/**
-	 * Deserialise the values of a ValueSet from a String, not expecting virtual columns
+	 * Deserialise the values of a ValueSet from a String (expected to be in the new format), not expecting virtual columns.
 	 * 
-	 * @param serialisedRecord
+	 * @param serialisedValueSet should not be {@code null}
 	 * @throws Exception
-	 * @return the Record itself
+	 * @return this ValueSet
+	 * @see #parse(String, boolean, Set)
 	 */
-	public ValueSet<CS> parse(String serialisedRecord) throws Exception
+	public ValueSet<CS> parse(String serialisedValueSet) throws Exception
 	{
-		return parse(serialisedRecord, false, Collections.<Column<?>> emptySet());
+		return parse(serialisedValueSet, false, Collections.<Column<?>> emptySet());
 	}
 	
 	/**
 	 * Deserialise the values of a ValueSet from a String.
 	 * 
-	 * Note:
-	 * 	Sealed ColumnSets always have at least 1 column, which means that a serialisedValueSet should always
-	 * 	contain at least one value. The separator is only used in between values and not at the end of the String
-	 *	(see {@link #serialise()}), and thus the number of values is equal to the number of separator occurrences + 1.
-	 * 
-	 * @param serialisedValueSet
-	 * @param includeVirtual
-	 * @param skipColumns
-	 * @return
+	 * @param serialisedValueSet should not be {@code null}
+	 * @param includeVirtual whether or not to expect values for the virtual columns
+	 * @param skipColumns a set of columns not to expect values for
+	 * @return this ValueSet
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
+	 * @see {@link #serialise(boolean, Set)}
 	 */
 	public ValueSet<CS> parse(String serialisedValueSet, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		String[] parts = serialisedValueSet.split("\\" + SERIALISATION_SEPARATOR);  
-		if(parts.length != columnSet.getNumberOfColumns(includeVirtual))
-			throw new IllegalArgumentException("Unexpected number of values (got: " + parts.length + "; expected: " + columnSet.getNumberOfColumns(includeVirtual) + ") in serialised record (" + serialisedValueSet +  ").");
-		int p = 0;
-		for(Column<?> col : columnSet.getColumns(includeVirtual))
+		if(serialisedValueSet == null)
+			throw new IllegalArgumentException("Cannot parse null String, it represents a null ValueSet object");
+
+		// Get columns included in serialisedValueSet:
+		List<Column<?>> expectedColumns = columnSet.getColumns(includeVirtual, skipColumns);
+
+		// Add trailing separator (this simplifies the code below):
+		serialisedValueSet += SERIALISATION_SEPARATOR;
+		
+		// Parse serialisedValueSet column by column (splitting the string by looking for separators outside of delimited values):
+		Iterator<Column<?>> colIter = expectedColumns.iterator();
+		int valueCount = 0;
+		Column<?> col = null;
+		char colDelimiter = DEFAULT_SERIALISATION_DELIMITER;
+		int colDelimiterCount = 0;
+		StringBuilder valueStringBldr = new StringBuilder();
+		for(char c : serialisedValueSet.toCharArray())
 		{
-			if(!(col instanceof VirtualColumn) && !skipColumns.contains(col)) // skip virtual columns & skipColumns (but *do* increment the counter p!)
-				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX)); // validation will be performed
-			p++;
+			// Get column:
+			if(col == null)
+			{
+				if(colIter.hasNext())
+				{
+					col = colIter.next();
+					colDelimiter = col.getSerialisationDelimiter() != null ? col.getSerialisationDelimiter() : DEFAULT_SERIALISATION_DELIMITER;
+					colDelimiterCount = 0; // !!!
+				}
+				else
+				{
+					valueCount++; // there is at least 1 more value to parse
+					break; // stop parsing...
+				}
+			}
+			// Treat character:
+			if(c == colDelimiter)
+			{	// count the number of colDelimiters we've passed
+				colDelimiterCount++;
+				// Append char:
+				valueStringBldr.append(c); // !!!
+			}
+			else if(c == SERIALISATION_SEPARATOR && colDelimiterCount % 2 == 0)
+			{	// if delimiterCount is even this means we are not *inside* a value and this is an actual serialisation separator
+				// Parse value, unless this is a virtual column:
+				if(	(!includeVirtual || !(col instanceof VirtualColumn)))	// ignore virtual column values as they never store their own value
+				{
+					String valueString = valueStringBldr.toString();
+					
+					// If the column does not apply it's own serialisation delimiting then
+					//	it could be that valueString is wrapped using the default serialisation delimiters:
+					if(!col.isApplyingSerialisationDelimiting())
+						valueString = StringUtils.deescapeByDoublingAndWrapping(valueString, DEFAULT_SERIALISATION_DELIMITER);
+					
+					// Parse & store:
+					col.storeString(this, valueString); // if the column applies it's own delimiters these will be removed/deescaped; validation will be performed
+				}
+				
+				// We are done with this column:
+				valueCount++;
+				col = null;
+				valueStringBldr.setLength(0); // reset valueString builder!
+			}
+			else
+			{	
+				// Append char:
+				valueStringBldr.append(c); // !!!
+			}
 		}
+		
+		// Check number of values:
+		if(valueCount > expectedColumns.size()) // more values than expected...
+			throw new IllegalArgumentException("Expecting values for " + expectedColumns.size() + " columns, given string contains at least " + valueCount + "!");
+		if(colIter.hasNext()) // less values than expected...
+			throw new IllegalArgumentException("Expecting values for " + expectedColumns.size() + " columns, given string contains only " + valueCount + "!");
+		
+		// Return self:
 		return this;
 	}
 	
@@ -683,7 +915,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		if(!columnSet.canBeLossy())
 			return false;
 		for(Column<?> c : columnSet.getColumns(false))
-			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveAsLossy(this))) // do *not* call c.retrieveValue(this, true) instead of c.retrieveAsLossy(this) (it would cause an endless loop)
+			if(!Objects.deepEquals(c.retrieveValue(this), c.retrieveValueAsLossy(this))) // do *not* call c.retrieveValue(this, true) instead of c.retrieveAsLossy(this) (it would cause an endless loop)
 				return false; // at least 1 value is different from its lossy version --> this ValueSet is considered lossless
 		return true;
 	}

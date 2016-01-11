@@ -202,6 +202,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		return isRequired(false); // don't recurse by default
 	}
 	
+	public final boolean hasDefautValue()
+	{
+		return defaultValue != null;
+	}
+	
 	/**
 	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
 	 * 
@@ -214,6 +219,21 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * Casts a given {@link Object} to type {@code <T>}.
+	 * 
+	 * @param valueObject as {@link Object}, or {@code null}
+	 * @return value of type {@code <T>}, or {@code null} if given valueObject was {@code null}
+	 * @throws ClassCastException
+	 */
+	@SuppressWarnings("unchecked")
+	public final T cast(Object valueObject) throws ClassCastException
+	{
+		return (T) valueObject;
+	}
+	
+	/**
+	 * Converts a given a given {@link Object} to an instance of type {@code <T>}.
+	 * 
 	 * Default implementation only performs an unchecked cast.
 	 * To be overridden by subclasses which need to perform additional conversion in order to accept a wider range of value types.
 	 * 
@@ -221,21 +241,22 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return converted value of type {@code <T>}, or {@code null} if given valueObject was {@code null}
 	 * @throws ClassCastException
 	 */
-	@SuppressWarnings("unchecked")
 	public T convert(Object valueObject) throws ClassCastException
 	{
-		return (T) valueObject;
+		return cast(valueObject);
 	}
 	
 	/**
 	 * Stores the given {@code <T>} value in this column on the given valueSet. Performs optionality check and validation.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 *
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} if column is optional
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the given value is invalid
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public void storeValue(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public T storeValue(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		// Check:
 		if(value == null)
@@ -245,82 +266,121 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		}
 		else
 			validate(value); // throws IllegalArgumentException if invalid
-		// Store:
-		storeValueUnchecked(valueSet, value);
+		// Store & return value:
+		return storeValueUnchecked(valueSet, value);
 	}
 	
 	/**
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} (which will wipe earlier non-{@code null} values)
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if the valueSet is {@code null}
 	 */
-	private final void storeValueUnchecked(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException
+	private final T storeValueUnchecked(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException
 	{
 		valueSet.setValue(this, value); // also store null (to overwrite earlier non-null value)
+		return value;
 	}
 	
 	/**
-	 * Stores the given Object value in this column on the given ValueSet.
+	 * Stores the given Object value (converted to an instance of type {@code <T>}) in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 *
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
+	 * @return the stored value
 	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
 	 */
-	public void storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
+	public T storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
-		storeValue(valueSet, convert(valueObject));
+		return storeObject(valueSet, valueObject, true); // convert to T!
 	}
 	
 	/**
+	 * Stores the given Object value ({@code convert}ed or simply casted to an instance of type {@code <T>}) in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
+	 *
+	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
+	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
+	 * @return the stored value
+	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
+	 * @see #cast(Object)
+	 * @see #convert(Object)
+	 */
+	public T storeObject(ValueSet<?> valueSet, Object valueObject, boolean convert) throws IllegalArgumentException, NullPointerException, ClassCastException
+	{
+		return storeValue(valueSet, convert ? convert(valueObject) : cast(valueObject)); // convert or cast to T
+	}
+	
+	/**
+	 * Converts the given String representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then the given {@code valueString}
+	 * is expected to be wrapped/escaped using serialisation delimiters (the char returned
+	 * by {@link #getSerialisationDelimiter()}).
+	 * 
 	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
+	 * @return the stored value
 	 * @throws ParseException
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parsed value is invalid
 	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
+	 * 
+	 * @see {@link #stringToValue(String)}
+	 * @see {@link #parse(String)}
 	 */
-	public void parseAndStoreValue(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public T storeString(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		storeValue(valueSet, stringToValue(valueString));
+		return storeValue(valueSet, stringToValue(valueString));
 	}
 	
 	/**
 	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 * 
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
-	 * @param bytes binary representation of a column value, given as a {@code byte[]}
+	 * @param valueBytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
 	 * @throws NullPointerException if the given {@code byte[]} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws IOException if an I/O error happens
 	 * @see #fromBytes(byte[], boolean)
 	 */
-	public void storeBytes(ValueSet<?> valueSet, byte[] bytes, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	public T storeBytes(ValueSet<?> valueSet, byte[] valueBytes, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
 	{
-		storeValueUnchecked(valueSet, fromBytes(bytes, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBytes()) already performs all checks
+		return storeValueUnchecked(valueSet, fromBytes(valueBytes, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBytes()) already performs all checks
 	}
 	
 	/**
 	 * Converts the given binary representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
+	 * Note that this obviously means the existing value in this column will be replaced.
 	 * 
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param bytes binary representation of a column value, given as a {@link BitArray}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
+	 * @return the stored value
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
 	 * @throws NullPointerException if the given {@link BitArray} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws IOException if an I/O error happens
 	 * @see #fromBits(BitArray, boolean)
 	 */
-	public void storeBits(ValueSet<?> valueSet, BitArray bits, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	public T storeBits(ValueSet<?> valueSet, BitArray valueBits, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
 	{
-		storeValueUnchecked(valueSet, fromBits(bits, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBits()) already performs all checks
+		return storeValueUnchecked(valueSet, fromBits(valueBits, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBits()) already performs all checks
 	}
 	
 	/**
-	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is non-optional(!).
+	 * (Re-)sets the value of this column in the given valueSet to {@code null}, even if the column is non-optional or has a non-{@code null} {@link Column#defaultValue}.
 	 * Use with care!
 	 * 
 	 * @param valueSet the valueSet in which to clear the value, may not be {@code null}
@@ -333,7 +393,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Resets the value of this column in the given valueSet to the {@link #defaultValue} (usually {@code null}), even if the column is non-optional(!).
+	 * Resets the value of this column in the given valueSet to the {@link #defaultValue} (usually {@code null}), even if the column is non-optional.
 	 * Use with care!
 	 * 
 	 * @param valueSet
@@ -344,17 +404,52 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	{
 		storeValueUnchecked(valueSet, defaultValue);
 	}
+	
+	/**
+	 * If the value of this column in the given valueSet is currently {@code null} (i.e. the column is "empty") then it will be
+	 * reset to the {@link #defaultValue} (assumed be be non-{@code null}), optionally only if the column is required (i.e. non-optional).
+	 * Use with care!
+	 * 
+	 * @param valueSet
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * 
+	 * @see #resetValue(ValueSet)
+	 */
+	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired)
+	{
+		resetIfEmpty(valueSet, onlyIfRequired, false); // don't recurse by default
+	}
+	
+	/**
+	 * If the value of this column in the given valueSet is currently {@code null} (i.e. the column is "empty") then it will be
+	 * reset to the {@link #defaultValue} (assumed be be non-{@code null}), optionally only if the column is required (i.e. non-optional)
+	 * Use with care!
+	 * 
+	 * @param valueSet
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * 
+	 * @see #resetValue(ValueSet)
+	 */
+	public void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse)
+	{
+		if(defaultValue != null && !isValuePresent(valueSet) && !(optional && onlyIfRequired))
+			resetValue(valueSet);
+	}
 
 	/**
 	 * Retrieves previously stored value for this column from the given valueSet and casts it to the relevant native type (T).
 	 *
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @return stored value (may be {@code null})
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
 	@SuppressWarnings("unchecked")
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws NullPointerException, IllegalArgumentException
 	{
+		if(valueSet == null)
+			throw new NullPointerException("valueSet is null!");
 		return (T) valueSet.getValue(this);
 	}
 	
@@ -362,12 +457,30 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Retrieves previously stored value for this column from the given valueSet and converts it to a String representation.
 	 * 
 	 * @param valueSet should not be {@code null}
-	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column
+	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet does not contain a value for this Column
 	 * @see #valueToString(Object)
 	 */
 	public String retrieveValueAsString(ValueSet<?> valueSet)
 	{
 		return valueToString(retrieveValue(valueSet));
+	}
+	
+	/**
+	 * Retrieves previously stored value for this column from the given valueSet and converts it to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
+	 * @param valueSet should not be {@code null}
+	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) if the valueSet does not contain a value for this Column
+	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column and {@code emptyForNull} was {@code false}
+	 * @see #valueToString(Object,boolean)
+	 */
+	public String retrieveValueAsString(ValueSet<?> valueSet, boolean emptyForNull)
+	{
+		return valueToString(retrieveValue(valueSet), emptyForNull);
 	}
 	
 	/**
@@ -401,7 +514,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Checks whether a non-{code null} value for this column is set in the given valueSet.
+	 * Checks whether a non-{@code null} value for this column is set in the given valueSet.
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @return whether or not a non-{@code null} value is set
@@ -413,7 +526,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks, possibly recursively, whether a non-{code null} value for this column is set in the given valueSet.
+	 * Checks, possibly recursively, whether a non-{@code null} value for this column is set in the given valueSet.
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value (only relevant if this is a composite Column)
@@ -426,7 +539,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks whether this column either has a non-{code null} value in the given valueSet or is optional.
+	 * Checks whether this column either has a non-{@code null} value in the given valueSet or is optional.
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @return whether a non-{@code null} value is set or the column is optional 
@@ -438,7 +551,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks, possibly recursively, whether this column either has a non-{code null} value in the given valueSet or is optional.
+	 * Checks, possibly recursively, whether this column either has a non-{@code null} value in the given valueSet or is optional.
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value or are optional (only relevant if this is a composite Column)
@@ -451,6 +564,18 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 			return true;
 		else
 			return optional;
+	}
+	
+	/**
+	 * Checks whether the value for this column in the given valueSet equals the column's {@link defaultValue}.
+	 *
+	 * @param valueSet should not be {@code null}
+	 * @return whether or not a non-{@code null} value is set
+	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 */
+	public boolean isValueDefault(ValueSet<?> valueSet) throws IllegalArgumentException
+	{
+		return Objects.deepEquals(retrieveValue(valueSet), defaultValue);
 	}
 	
 	/**
@@ -471,7 +596,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * A {@code null} value is valid only if it the column is optional. A non-{@code null} value is valid if it passes the {@link #validate(Object)} tests.
 	 * 
 	 * @param valueSet should not be {@code null}
-	 * @param recurse whether or not to check recursively if all subColumns also valid values (only relevant if this is a composite Column)
+	 * @param recurse whether or not to check recursively if all subColumns also have valid values (only relevant if this is a composite Column)
 	 * @return whether the value currently contained by the valueSet for this column is valid (note that a {@code null} value is valid if the column is optional)
 	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
 	 */
@@ -481,15 +606,23 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Parses a string representation of a value to produce a instance of {@code <T>}.
+	 * Parses a String representation of a value to produce a instance of {@code <T>}.
 	 * Accepts {@code null} or empty {@code String}s but treats them as representing a {@code null} value.
 	 * If no {@code null} or empty {@code String}s are expected it may be better to call {@link #parse(String)} instead.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then the given {@code valueString}
+	 * is expected to be wrapped/escaped using serialisation delimiters (the char returned
+	 * by {@link #getSerialisationDelimiter()}).
 	 * 
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
 	 * @return the corresponding value of type {@code <T>}, or {@code null} if the given valueString was {@code null} or empty {@code String}
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
+	 * 
+	 * @see {@link #stringToValue(String)}
+	 * @see {@link #toString(Object)}
 	 */
 	public T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
@@ -500,45 +633,114 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Parses a string representation of a value to produce a instance of {@code <T>}.
+	 * Parses a String representation of a value to produce a instance of {@code <T>}.
 	 * Does *not* accept {@code null} or empty {@code String}s, if these are expected it may be better to use {@link #stringToValue(String)}.
 	 * 
-	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String}!
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then the given {@code valueString}
+	 * is expected to be wrapped/escaped using serialisation delimiters (the char returned
+	 * by {@link #getSerialisationDelimiter()}).
+	 * 
+	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String} (as those both represent a {@code null} value)
 	 * @return the parsed value as type {@code <T>}
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
+	 * 
+	 * @see {@link #toString(Object)}
 	 */
 	public abstract T parse(String valueString) throws ParseException, IllegalArgumentException, NullPointerException;
 	
 	/**
+	 * Converts the given value to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
 	 * @param value may be {@code null}, in which case {@code null} is returned
 	 * @return a {@link String} representation of the value, or {@code null} if the value was {@code null}
+	 * @see #toString(Object)
 	 */
 	public String valueToString(T value)
+	{
+		return valueToString(value, false);
+	}
+	
+	/**
+	 * Converts the given value to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
+	 * @param value may be {@code null}, in which case "" or {@code null} is returned depending on {@code emptyForNull}
+	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) in case of a {@code null} {@code value}
+	 * @return a {@link String} representation of the given {@code value}, or {@code null} if the value was {@code null} and {@code emptyForNull} was {@code false}
+	 * @see #toString(Object)
+	 */
+	public String valueToString(T value, boolean emptyForNull)
 	{
 		if(value != null)
 			return toString(value);
 		else
-			return null;
+			return emptyForNull ? "" : null;
 	}
 
 	/**
+	 * Converts the given value to a String representation.
+	 * 
 	 * @param valueObject may be {@code null}, in which case {@code null} is returned
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return a String representation of the valueObject, or {@code null} if the valueObject was {@code null}
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
+	 * @see #cast(Object)
+	 * @see #valueToString(Object)
+	 * @see #toString(Object)
 	 */
-	public String objectToString(Object valueObject) throws ClassCastException
+	public String objectToString(Object valueObject, boolean convert) throws ClassCastException
 	{
-		return valueToString(convert(valueObject));
+		return valueToString(convert ? convert(valueObject) : cast(convert));
 	}
 
 	/**
+	 * Converts the given value to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
 	 * @param value should not be {@code null}!
-	 * @return
+	 * @return a String representation of the given value
+	 * @see #getSerialisationDelimiter()
 	 */
 	public abstract String toString(T value);
+	
+	/**
+	 * Returns the character used to wrap serialised values in (used by {@link #toString()}).
+	 * If {@code null} (default implementation) no wrapping happens.
+	 * 
+	 * Subclasses may override this.
+	 * 
+	 * @return the character used to wrap serialised values in, or {@null}
+	 */
+	public Character getSerialisationDelimiter()
+	{
+		return null; // default
+	}
+	
+	/**
+	 * @return whether or not serialised values returned by {@link #toString()} will be wrapped in delimiters.
+	 * @see #getSerialisationDelimiter()
+	 */
+	public final boolean isApplyingSerialisationDelimiting()
+	{
+		return getSerialisationDelimiter() != null;
+	}
 
 	/**
 	 * Converts the given {@code <T>} value to binary representation and returns the result as a {@code byte[]}.
@@ -656,19 +858,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Writes the given Object value to the given {@link BitOutputStream}.
 	 * The value will be casted to type {@code <T>}.
 	 *
-	 * @param value the value to write, given as an {@link Object}, may be {@code null} if column is optional
+	 * @param value the value to write, given as an {@link Object} (will be casted, not converted), may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws ClassCastException if the Object cannot be casted to type {@code <T>}
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null} 
 	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
-	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
-	 * @see #convert(Object)
+	 * @throws ClassCastException when the value cannot be casted to the column's type {@code <T>}
+	 * @see #cast(Object)
 	 */
 	public void writeObject(Object value, BitOutputStream bitStream, boolean lossless) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
 	{
-		writeValue(convert(value), bitStream, lossless);
+		writeValue(cast(value), bitStream, lossless);
 	}
 
 	/**
@@ -760,14 +962,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * {@code null} values will be accepted only if the column is optional.
 	 *
 	 * @param value
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return whether or not the value is valid
 	 * @see #convert(Object)
+	 * @see #cast(Object)
 	 */
-	public final boolean isValidValueObject(Object valueObject)
+	public final boolean isValidValueObject(Object valueObject, boolean convert)
 	{
 		try
 		{
-			return isValidValue(convert(valueObject));
+			return isValidValue(convert ? convert(valueObject) : cast(valueObject));
 		}
 		catch(Exception e)
 		{
@@ -846,14 +1050,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * @param value
+	 * @param valueObject
+	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
+	 * @see #cast(Object)
 	 */
-	public T copyObject(Object value) throws ClassCastException
+	public T copyObject(Object valueObject, boolean convert) throws ClassCastException
 	{
-		return value != null ? copy(convert(value)) : null;
+		return valueObject != null ? copy(convert ? convert(valueObject) : cast(valueObject)) : null;
 	}
 
 	/**
@@ -922,8 +1128,8 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * If {@code asLossy} is {@code true}, {@link #canBeLossy()} returns {@code true}, *and* if the valueSet is not already in a lossy state, then
 	 * (and only then) the retrieved value is being returned as if retrieved from a lossy binary representation.</p>
 	 * <p>
-	 * The difference between calling {@code retrieveValue(valueSet, true)} and {@link #retrieveAsLossy(ValueSet)} is that the latter does not involves a
-	 * call to {@link ValueSet#isLossy()} (which may itself call {@link #retrieveAsLossy(ValueSet)}, hence we need both methods to avoid endless loops).</p>
+	 * The difference between calling {@code retrieveValue(valueSet, true)} and {@link #retrieveValueAsLossy(ValueSet)} is that the latter does not involves a
+	 * call to {@link ValueSet#isLossy()} (which may itself call {@link #retrieveValueAsLossy(ValueSet)}, hence we need both methods to avoid endless loops).</p>
 	 *
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @param asLossy whether or not to simulate the information loss sustained by converting the retrieved value to lossy binary encoding and back
@@ -935,7 +1141,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		if(!asLossy || !canBeLossy() || valueSet.isLossy() /*whole ValueSet is already lossy*/)
 			return retrieveValue(valueSet);
 		else
-			return retrieveAsLossy(valueSet);
+			return retrieveValueAsLossy(valueSet);
 	}
 	
 	/**
@@ -946,7 +1152,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet
 	 * @return value as retrieved from lossy binary representation
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveAsLossy(VS valueSet)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValueAsLossy(VS valueSet)
 	{
 		return toLossy(retrieveValue(valueSet));
 	}
@@ -1138,11 +1344,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
-	 * @param value (as object, may be null if column is optional)
+	 * @param value (as object, will be converted, may be null if column is optional)
 	 * @return comparison result
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
+	 * @see #convert(Object)
 	 */
 	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
 	{

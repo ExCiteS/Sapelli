@@ -163,7 +163,7 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.allowLocationSelfTraversal())
+		if(visitor.splitLocationTraversal())
 			super.accept(visitor, !visitor.skipNonBinarySerialisedLocationSubColumns()); // visit as ValueSetColumn: enter event, visit or each subcolumn, leave event
 		else
 			visitor.visit(this); // visit as LocationColumn (as a single whole)

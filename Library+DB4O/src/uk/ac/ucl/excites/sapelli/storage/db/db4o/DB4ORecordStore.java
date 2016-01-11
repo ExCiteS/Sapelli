@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -321,6 +322,33 @@ public class DB4ORecordStore extends RecordStore
 		return db4o.query(Record.class); // also includes records of internal schemata
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveModel(long)
+	 */
+	@Override
+	public Model retrieveModel(final long modelID)
+	{
+		// Query for models:
+		ObjectSet<Model> resultSet = db4o.query(new Predicate<Model>()
+		{
+			private static final long serialVersionUID = 2L;
+
+			public boolean match(Model model)
+			{
+				return model.id == modelID;
+			}
+		});
+		
+		// Check for empty result:
+		if(!resultSet.hasNext())
+			return null;
+		
+		// Activate & return result:
+		Model model = resultSet.next();
+		db4o.activate(model, ACTIVATION_DEPTH);
+		return model;
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doDelete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */

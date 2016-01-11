@@ -448,6 +448,16 @@ public abstract class RecordStore extends Store
 	}
 	
 	/**
+	 * Retrieves a {@link Model} instance with given ID.
+	 * For a matching Model instance to be found the RecordStore must (usually) contain at least
+	 * one Record of a Schema that's part of that model. 
+	 * 
+	 * @param modelID
+	 * @return a {@link Model} instance or {@code null} if no matching model was found
+	 */
+	public abstract Model retrieveModel(long modelID);
+	
+	/**
 	 * Deletes a single record.
 	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
 	 * However, if an error occurs any open transaction will be rolled back!

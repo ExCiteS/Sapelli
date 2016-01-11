@@ -19,23 +19,25 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.helpers;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer.SubValueSetInitialiser;
 
 /**
- * Importing helper class, based on a {@link ExImportColumnValueHelper}, which parses
+ * Importing helper class, based on a {@link ExImportHelper}, which parses
  * String representations to column values and has special behaviour for dealing with
  * {@link ListLikeColumn}s (i.e. {@link StringColumn}s and {@link ListColumn}s).
  * 
- * @see {@link ExImportColumnValueHelper}
+ * @see {@link ExImportHelper}
  * 
  * @author mstevens
  */
-public class ImportColumnValueParser extends ExImportColumnValueHelper
+public class ImportHelper extends ExImportHelper implements SubValueSetInitialiser
 {
 
 	private String valueString;
@@ -46,16 +48,19 @@ public class ImportColumnValueParser extends ExImportColumnValueHelper
 	 * Called by the importer to parse the given String representation and to a Column value and store it in the given valueSet.
 	 * 
 	 * @param column should not be null! This is not necessarily a "leaf" column (i.e. it may be an instance of a {@link ValueSetColumn} subclass) but it will be treated as such, meaning it will be inspected as a whole and not broken up.
-	 * @param valueString the String representation to parse, should not be {@code null}
+	 * @param valueString the String representation to parse, should not be {@code null} but may be empty (usually, but not always, representing a {@code null} value)
 	 * @param valueSet valueSet to store the parse value in, should not be {@code null}
 	 * 
 	 * @see {@link #inspect(Column)}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <T> void parseAndStoreValue(Column<T> column, String valueString, ValueSet<?> valueSet) throws Exception
 	{
+		// Ensure the column doesn't already have a value:
+		if(column.isValuePresent(valueSet)) // this avoids replacing populated sub-ValueSet with empty one upon closing of outer tag
+			return;
+		
 		// (Re)Initialise:
-		this.valueString = valueString; // string to parse
+		this.valueString = valueString;
 		this.value = null;
 		this.error = null;
 		
@@ -67,13 +72,10 @@ public class ImportColumnValueParser extends ExImportColumnValueHelper
 			throw error;
 		
 		// Store value:
-		column.storeValue(valueSet, (T) value);
+		column.storeObject(valueSet, value, false /*only cast, don't convert*/);
 	}
 	
-	/**
-	 * Used for all {@link Column}s except {@link ListLikeColumn}s.
-	 * 
-	 * @param column
+	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visit(uk.ac.ucl.excites.sapelli.storage.model.Column)
 	 */
 	@Override
@@ -91,13 +93,41 @@ public class ImportColumnValueParser extends ExImportColumnValueHelper
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visit(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
+	@Override
+	protected final <VS extends ValueSet<CS>, CS extends ColumnSet> void visit(ValueSetColumn<VS, CS> valueSetCol)
+	{
+		try
+		{
+			this.value = getSubValueSet(valueSetCol, this.valueString);
+		}
+		catch(Exception e)
+		{
+			error = e;
+		}
+	}
+	
 	/**
-	 * Used for all {@link ListLikeColumn}s.
+	 * Default implementation treats ValueSetColumn like any other (non-ListLike)Column.
+	 * Subclasses may override this.
 	 * 
-	 * @param listLikeColumn
-	 * 
+	 * @param valueSetCol
+	 * @param subValueSetString the String representation to parse, never {@code null}
+	 * @return
+	 * @throws Exception
+	 */
+	protected <VS extends ValueSet<CS>, CS extends ColumnSet> VS getSubValueSet(ValueSetColumn<VS, CS> valueSetCol, String subValueSetString) throws Exception
+	{
+		visit((Column<VS>) valueSetCol);
+		return valueSetCol.cast(this.value);
+	}
+	
+	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visit(uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn)
 	 */
+	@Override
 	protected final <T> void visit(ListLikeColumn<T> listLikeColumn)
 	{
 		try
@@ -113,12 +143,33 @@ public class ImportColumnValueParser extends ExImportColumnValueHelper
 	/**
 	 * Always ignore {@link VirtualColumn}s during importing.
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportColumnValueHelper#visitVirtualColumnTargets()
+	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExImportHelper#visitVirtualColumnTargets()
 	 */
 	@Override
 	public final boolean visitVirtualColumnTargets()
 	{
 		return false;
+	}
+	
+	/**
+	 * TODO explain
+	 * Two reasons:
+	 * 	- CSV/XML: {@link #parseAndStoreValue(Column, String, ValueSet)} only if null!
+	 *  - XML: This is needed because if a column value is missing in the imported XML it means it was null (and not the default value)
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer.SubValueSetInitialiser#initialise(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
+	 */
+	@Override
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> VS initialise(VS newValueSet)
+	{
+		if(newValueSet == null)
+			return null;
+		
+		// Set all values to null, wiping any default values:
+		newValueSet.clear();
+		
+		// Return vs:
+		return newValueSet;
 	}
 	
 }

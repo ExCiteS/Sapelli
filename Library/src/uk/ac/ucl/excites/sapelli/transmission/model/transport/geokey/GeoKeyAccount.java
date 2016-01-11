@@ -67,7 +67,7 @@ public class GeoKeyAccount extends Correspondent
 	public GeoKeyAccount(String name, String address)
 	{
 		super(name, Type.GeoKey);
-		String[] parts = address.split("\\" + ADDRESS_SEPARATOR);
+		String[] parts = address.split("\\" + ADDRESS_SEPARATOR, -1); // -1: allow empty Strings
 		this.url = StringUtils.deescape(parts[0], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);
 		this.username = StringUtils.deescape(parts[1], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);
 		this.password = StringUtils.deescape(parts[2], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);

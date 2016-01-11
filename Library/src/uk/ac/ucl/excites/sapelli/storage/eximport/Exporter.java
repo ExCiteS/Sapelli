@@ -20,11 +20,18 @@ package uk.ac.ucl.excites.sapelli.storage.eximport;
 
 import java.util.List;
 
+import org.joda.time.format.DateTimeFormatter;
+
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 public interface Exporter
 {
 
+	static public final String ATTRIBUTE_EXPORTED_AT = "exportedAt";
+	
+	static public final DateTimeFormatter ExportedAtFormatter = TimeUtils.ISOWithMSFormatter;
+	
 	static public enum Format
 	{
 		XML,

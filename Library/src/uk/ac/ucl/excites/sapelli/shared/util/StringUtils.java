@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.io.Charsets;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * @author mstevens
@@ -153,8 +154,8 @@ public final class StringUtils
 	 */
 	static public String escape(String str, char avoid, char replacement, char prefix)
 	{
-		if(str == null)
-			return null;
+		if(str == null || "".equals(str))
+			return str;
 		StringBuilder bldr = new StringBuilder();
 		for(char c : str.toCharArray())
 			if(c == avoid)
@@ -205,6 +206,56 @@ public final class StringUtils
 			}				
 		}
 		return bldr.toString();
+	}
+	
+	/**
+	 * Escapes occurrences of the given {@code avoid} characters and the given {@code wrapDelimiter} in
+	 * the given {@code str}ing by wrapping the {@code str}ing in {@code wrapDelimiter} and doubling
+	 * existing occurrences of the {@code wrapDelimiter}.
+	 * 
+	 * @param str
+	 * @param avoid
+	 * @param wrapDelimiter
+	 * @return
+	 * 
+	 * @see #deescapeByDoublingAndWrapping(String, char)
+	 */
+	static public String escapeByDoublingAndWrapping(final String str, char[] avoid, final char wrapDelimiter, final boolean forceWrapping)
+	{
+		if(str == null)
+			return str;
+		if(avoid == null)
+			avoid = new char[0];
+		boolean needsWrapping = forceWrapping;
+		StringBuilder bldr = new StringBuilder(str.length());
+		for(char c : str.toCharArray())
+		{
+			if(c == wrapDelimiter)
+				bldr.append(wrapDelimiter); // escape wrapDelimiter occurrences by doubling them
+			if(c == wrapDelimiter || ArrayUtils.contains(avoid, c))
+				needsWrapping = true;
+			bldr.append(c);
+		}			
+		return (needsWrapping ? wrapDelimiter : "") + bldr.toString() + (needsWrapping ? wrapDelimiter : "");
+	}
+	
+	/**
+	 * If the given {@code str}ing starts and ends with the given {@code wrapDelimiter} then
+	 * these are removed and doubled occurrences in the wrapped contents are replaced by single ones.
+	 * 
+	 * @param str
+	 * @param wrapDelimiter
+	 * @return
+	 * 
+	 * @see #escapeByDoublingAndWrapping(String, char[], char, boolean)
+	 */
+	static public String deescapeByDoublingAndWrapping(final String str, final char wrapDelimiter)
+	{
+		if(str == null || str.length() < 2)
+			return str;
+		boolean wrapped = (str.charAt(0) == wrapDelimiter) && (str.charAt(str.length() - 1) == wrapDelimiter);
+		// Remove outer wrapDelimiters and replace inner doubled wrapDelimiters by single ones:
+		return str.substring(wrapped ? 1 : 0, str.length() - (wrapped ? 1 : 0)).replace("" + wrapDelimiter + wrapDelimiter, "" + wrapDelimiter); 
 	}
 	
 	static public int countOccurances(String haystack, char needle)

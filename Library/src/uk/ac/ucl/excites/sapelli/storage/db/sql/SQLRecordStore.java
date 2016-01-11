@@ -514,6 +514,27 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		return getKnownSchemata(filterSkipSchemata);
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveModel(long)
+	 */
+	@Override
+	public Model retrieveModel(long modelID)
+	{
+		try
+		{
+			Record modelRecord = modelsTable.select(Model.GetModelRecordReference(modelID).getRecordQuery());
+			if(modelRecord == null)
+				return null;
+			else
+				return Model.FromModelRecord(modelRecord, client); // model object obtained by deserialising model record
+		}
+		catch(Exception e)
+		{
+			client.logError("Error upon retrieving model with ID " + modelID, e);
+			return null;
+		}
+	}
+	
 	protected List<Schema> getKnownSchemata(Constraint constraint)
 	{
 		try
@@ -1733,19 +1754,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		@Override
-		public boolean allowOrientationSelfTraversal()
+		public boolean splitOrientationTraversal()
 		{
 			return true;
 		}
 		
 		@Override
-		public boolean allowLocationSelfTraversal()
+		public boolean splitLocationTraversal()
 		{
 			return true;
 		}
 		
 		@Override
-		public boolean allowForeignKeySelfTraversal()
+		public boolean splitForeignKeyTraversal()
 		{
 			return true;
 		}

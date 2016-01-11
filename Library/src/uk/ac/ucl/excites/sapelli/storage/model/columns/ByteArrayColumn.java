@@ -38,7 +38,7 @@ public class ByteArrayColumn extends Column<byte[]>
 
 	static private final long serialVersionUID = 2L;
 	
-	static public final char SERIALISATION_SEPARATOR = ',';
+	static public final char SERIALISATION_SEPARATOR = '_';
 	
 	private final IntegerRangeMapping sizeField;
 
@@ -77,7 +77,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	@Override
 	public byte[] parse(String valueStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		String[] parts = valueStr.split("\\" + SERIALISATION_SEPARATOR);
+		String[] parts = valueStr.split("\\" + SERIALISATION_SEPARATOR, -1); // -1: allow empty Strings (although they will fail to parse below)
 		byte[] bytes = new byte[parts.length];
 		for(int i=0, len=bytes.length; i<len; i++)
 			bytes[i] = Byte.parseByte(parts[i].trim());

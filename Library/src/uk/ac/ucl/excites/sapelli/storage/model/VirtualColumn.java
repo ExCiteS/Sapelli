@@ -54,9 +54,25 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	
 	private final ValueMapper<TT, ST> valueMapper;
 
+	/**
+	 * @param sourceColumn
+	 * @param targetColumn
+	 * @param valueMapper
+	 */
 	public VirtualColumn(Column<ST> sourceColumn, Column<TT> targetColumn, ValueMapper<TT, ST> valueMapper)
 	{
-		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional, sourceColumn.defaultValue == null ? null : valueMapper.mapValue(sourceColumn.defaultValue, null));
+		this(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, sourceColumn, targetColumn, valueMapper);
+	}
+	
+	/**
+	 * @param name
+	 * @param sourceColumn
+	 * @param targetColumn
+	 * @param valueMapper
+	 */
+	public VirtualColumn(String name, Column<ST> sourceColumn, Column<TT> targetColumn, ValueMapper<TT, ST> valueMapper)
+	{
+		super(name, targetColumn.optional, sourceColumn.defaultValue == null ? null : valueMapper.mapValue(sourceColumn.defaultValue, null));
 		if(sourceColumn == null || targetColumn == null || valueMapper == null)
 			throw new NullPointerException("sourceColumn, targetColumn & valueMapper cannot be null!");
 		if(sourceColumn instanceof VirtualColumn || targetColumn instanceof VirtualColumn)
@@ -77,7 +93,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 	
 	@Override
-	public void storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public TT storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("VirtualColumns are read-only!");
 	}
@@ -108,6 +124,15 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	public String toString(TT value)
 	{
 		return targetColumn.toString(value);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#getSerialisationDelimiter()
+	 */
+	@Override
+	public Character getSerialisationDelimiter()
+	{
+		return targetColumn.getSerialisationDelimiter();
 	}
 
 	@Override
