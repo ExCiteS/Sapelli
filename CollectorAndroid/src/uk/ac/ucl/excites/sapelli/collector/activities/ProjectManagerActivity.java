@@ -83,6 +83,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.MenuHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
+import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -622,7 +624,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		// Use the GET_CONTENT intent from the utility class
 		Intent target = FileUtils.createGetContentIntent();
 		// Create the chooser Intent
-		Intent intent = Intent.createChooser(target, "Choose an XML file");
+		Intent intent = Intent.createChooser(target, "Choose an XML or CSV file");
 		try
 		{
 			startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
@@ -859,7 +861,18 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	{
 		try
 		{
-			new RecordsTasks.XMLImportTask(this, this).execute(exportedDataFile);
+			String extension = FileHelpers.getFileExtension(exportedDataFile).toLowerCase();
+			switch(extension)
+			{
+				case XMLRecordsExporter.FILE_EXTENSION :
+					new RecordsTasks.XMLImportTask(this, this).execute(exportedDataFile);
+					break;
+				case CSVRecordsExporter.FILE_EXTENSION :
+					new RecordsTasks.CSVImportTask(this, this).execute(exportedDataFile);
+					break;
+				default :
+					showErrorDialog(getString(R.string.unknownExportExtension, extension), false);
+			}
 		}
 		catch(Exception e)
 		{

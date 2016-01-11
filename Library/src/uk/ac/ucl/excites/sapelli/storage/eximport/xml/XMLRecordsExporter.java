@@ -61,6 +61,8 @@ public class XMLRecordsExporter extends SimpleExporter
 {
 
 	// STATIC -------------------------------------------------------
+	static public final String FILE_EXTENSION = "xml";
+	
 	static public final String TAG_RECORDS_EXPORT = "RecordsExport";
 	
 	/**
@@ -147,7 +149,7 @@ public class XMLRecordsExporter extends SimpleExporter
 	{
 		if(!FileHelpers.createDirectory(exportFolder))
 			throw new FileStorageException("Export folder (" + exportFolder + ") does not exist and could not be created!");
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), Charsets.UTF_8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + "." + FILE_EXTENSION), Charsets.UTF_8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		writer.writeLine(XMLUtils.header(Charsets.UTF_8.name(), USES_XML_VERSION_11));
 		writer.writeLine("<" + TAG_RECORDS_EXPORT + " " + ATTRIBUTE_EXPORTED_AT + "=\"" + ExportedAtFormatter.print(timestamp) + "\">");

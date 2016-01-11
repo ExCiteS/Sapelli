@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
+import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
@@ -365,6 +366,16 @@ public final class RecordsTasks
 		public XMLImportTask(BaseActivity owner, ImportCallback callback)
 		{
 			super(owner, new XMLRecordsImporter(owner.getCollectorClient()), callback);
+		}
+		
+	}
+	
+	static public class CSVImportTask extends ImportTask
+	{
+		
+		public CSVImportTask(BaseActivity owner, ImportCallback callback)
+		{
+			super(owner, new CSVRecordsImporter(owner.getCollectorClient()), callback);
 		}
 		
 	}
