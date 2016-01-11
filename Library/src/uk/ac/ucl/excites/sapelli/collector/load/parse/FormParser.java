@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.JumpSource;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.BelongsToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
@@ -196,16 +197,17 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_MEDIA_MAX = "max";
 	static private final String ATTRIBUTE_MEDIA_REVIEW = "review";
 	static private final String ATTRIBUTE_MEDIA_NATIVE_APP = "useNativeApp";
+	static private final String ATTRIBUTE_MEDIA_FRONT_CAMERA = "useFrontCamera";
 	static private final String ATTRIBUTE_MEDIA_DISABLE_FIELD = "disableField"; // deprecated
 	static private final String ATTRIBUTE_MEDIA_DISCARD_IMG = "discardImg";
-	static private final String ATTRIBUTE_AUDIO_START_REC_IMG = "startRecImg";
-	static private final String ATTRIBUTE_AUDIO_STOP_REC_IMG = "stopRecImg";
+	static private final String ATTRIBUTE_AUDIO_RECORDING_IMG = "recordingImg";
+	static private final String ATTRIBUTE_AV_START_REC_IMG = "startRecImg";
+	static private final String ATTRIBUTE_AV_STOP_REC_IMG = "stopRecImg";
+	static private final String ATTRIBUTE_AV_START_PLAYBACK_IMG = "startPlaybackImg";
+	static private final String ATTRIBUTE_AV_PAUSE_PLAYBACK_IMG = "startPlaybackImg";
+	static private final String ATTRIBUTE_AV_STOP_PLAYBACK_IMG = "stopPlaybackImg";
 	static private final String ATTRIBUTE_PHOTO_FLASH = "flash";
-	static private final String ATTRIBUTE_PHOTO_FRONT_CAMERA = "useFrontCamera";
 	static private final String ATTRIBUTE_PHOTO_CAPTURE_IMG = "captureImg";
-	static private final String ATTRIBUTE_VIDEO_FRONT_CAMERA = "useFrontCamera";
-	static private final String ATTRIBUTE_VIDEO_START_REC_IMG = "startRecImg";
-	static private final String ATTRIBUTE_VIDEO_STOP_REC_IMG = "stopRecImg";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -392,7 +394,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				newMediaField(photoField, attributes);
 				// Camera options (only used when useNativeApp=false):
 				photoField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, PhotoField.DEFAULT_USE_NATIVE_APP));
-				photoField.setUseFrontFacingCamera(attributes.getBoolean(ATTRIBUTE_PHOTO_FRONT_CAMERA, PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				photoField.setUseFrontFacingCamera(attributes.getBoolean(ATTRIBUTE_MEDIA_FRONT_CAMERA, PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
 				String flashText = attributes.getValue(ATTRIBUTE_PHOTO_FLASH);
 				PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
 				if(flashText != null && !flashText.isEmpty())
@@ -416,19 +418,16 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				newMediaField(videoField, attributes);
 				videoField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, VideoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
-				videoField.setUseFrontFacingCamera(attributes.getBoolean(ATTRIBUTE_VIDEO_FRONT_CAMERA, VideoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				videoField.setUseFrontFacingCamera(attributes.getBoolean(ATTRIBUTE_MEDIA_FRONT_CAMERA, VideoField.DEFAULT_USE_FRONT_FACING_CAMERA));
 				// cannot have flash when capturing video
-				videoField.setStartRecImageRelativePath(attributes.getString(ATTRIBUTE_VIDEO_START_REC_IMG, null, false, false));
-				videoField.setStopRecImageRelativePath(attributes.getString(ATTRIBUTE_VIDEO_STOP_REC_IMG, null, false, false));
 			}
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
 			{
 				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
 				newMediaField(audioField, attributes);
+				audioField.setRecordingImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_RECORDING_IMG, null, false, false));
 				audioField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, AudioField.DEFAULT_USE_NATIVE_APP));
-				audioField.setStartRecImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_START_REC_IMG, null, false, false));
-				audioField.setStopRecImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_STOP_REC_IMG, null, false, false));
 			}
 			// <Orientation>
 			else if(qName.equals(TAG_ORIENTATION))
@@ -800,14 +799,23 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
 	}
 	
-	private void newMediaField(MediaField ma, XMLAttributes attributes) throws Exception
+	private void newMediaField(MediaField mf, XMLAttributes attributes) throws Exception
 	{
-		newField(ma, attributes);
-		ma.setMax(attributes.getInteger(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX));
-		ma.setShowReview(attributes.getBoolean(ATTRIBUTE_MEDIA_REVIEW, MediaField.DEFAULT_SHOW_REVIEW));
-		ma.setDiscardButtonImageRelativePath(attributes.getString(ATTRIBUTE_MEDIA_DISCARD_IMG, null, false, false));
+		newField(mf, attributes);
+		mf.setMax(attributes.getInteger(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX));
+		mf.setShowReview(attributes.getBoolean(ATTRIBUTE_MEDIA_REVIEW, MediaField.DEFAULT_SHOW_REVIEW));
+		mf.setDiscardButtonImageRelativePath(attributes.getString(ATTRIBUTE_MEDIA_DISCARD_IMG, null, false, false));
 		if(attributes.getValue(ATTRIBUTE_MEDIA_DISABLE_FIELD) != null)
 			addWarning("\"disableField\" attribute is no longer supported and will be ignored for media fields in this project.");
+		if(mf instanceof AVField)
+		{
+			AVField avf = (AVField) mf;
+			avf.setStartRecImageRelativePath(attributes.getString(ATTRIBUTE_AV_START_REC_IMG, null, false, false));
+			avf.setStopRecImageRelativePath(attributes.getString(ATTRIBUTE_AV_STOP_REC_IMG, null, false, false));
+			avf.setStartPlaybackImageRelativePath(attributes.getString(ATTRIBUTE_AV_START_PLAYBACK_IMG, null, false, false));
+			avf.setPausePlaybackImageRelativePath(attributes.getString(ATTRIBUTE_AV_PAUSE_PLAYBACK_IMG, null, false, false));
+			avf.setStopPlaybackImageRelativePath(attributes.getString(ATTRIBUTE_AV_STOP_PLAYBACK_IMG, null, false, false));
+		}
 	}
 	
 	/**

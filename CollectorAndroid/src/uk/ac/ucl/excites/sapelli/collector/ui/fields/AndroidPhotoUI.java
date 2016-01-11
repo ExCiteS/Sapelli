@@ -21,21 +21,21 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 import java.io.FileOutputStream;
 
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.hardware.Camera;
+import android.hardware.Camera.PictureCallback;
+import android.os.AsyncTask;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
-import android.app.ProgressDialog;
-import android.content.Context;
-import android.hardware.Camera;
-import android.hardware.Camera.PictureCallback;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
+import uk.ac.ucl.excites.sapelli.shared.util.android.BitmapUtils;
 
 /**
  * A subclass of AndroidMediaUI which allows for the capture and review of images from the device's camera.
@@ -80,7 +80,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 	{
 		try
 		{
-			cameraController.takePicture(this); // handling of imaghe is asynchronous !!!
+			cameraController.takePicture(this); // handling of image is asynchronous !!!
 		}
 		catch(Exception e)
 		{
@@ -96,7 +96,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
 		reviewView.setBackgroundColor(fieldBackgroundColor);
 		// set the ImageView to the provided photo file:
-		reviewView.setImageURI(Uri.fromFile(mediaFile));
+		reviewView.setImageBitmap(BitmapUtils.loadBitmap(context, mediaFile));
 		return reviewView;
 	}
 

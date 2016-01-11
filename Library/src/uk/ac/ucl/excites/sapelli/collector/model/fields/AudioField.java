@@ -18,21 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import java.io.File;
-import java.util.Set;
-
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
  * @author Michalis Vitos, mstevens
  * 
  */
-public class AudioField extends MediaField
+public class AudioField extends AVField
 {
 
 	// STATICS-------------------------------------------------------
@@ -40,79 +35,28 @@ public class AudioField extends MediaField
 	static private final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
 	static private final String EXTENSION_3GPP = "3gp";
 
-	// DYNAMICS------------------------------------------------------
-	private String startRecImageRelativePath;
-	private String stopRecImageRelativePath;
-	private String playAudioImageRelativePath;
-	private String stopAudioImageRelativePath;
+	// DYNAMICs------------------------------------------------------
+	private String recordingImageRelativePath;
 	
 	public AudioField(Form form, String id, String caption)
 	{
 		super(form, id, caption, DEFAULT_USE_NATIVE_APP);
 	}
-	
+
 	/**
-	 * @return the startRecImageRelativePath
+	 * @return the recordingImageRelativePath
 	 */
-	public String getStartRecImageRelativePath()
+	public String getRecordingImageRelativePath()
 	{
-		return startRecImageRelativePath;
+		return recordingImageRelativePath;
 	}
 
 	/**
-	 * @param startRecImageRelativePath the startRecImageRelativePath to set
+	 * @param recordingImageRelativePath the recordingImageRelativePath to set
 	 */
-	public void setStartRecImageRelativePath(String startRecImageRelativePath)
+	public void setRecordingImageRelativePath(String recordingImageRelativePath)
 	{
-		this.startRecImageRelativePath = startRecImageRelativePath;
-	}
-
-	/**
-	 * @return the stopRecImageRelativePath
-	 */
-	public String getStopRecImageRelativePath()
-	{
-		return stopRecImageRelativePath;
-	}
-
-	/**
-	 * @param stopRecImageRelativePath the stopRecImageRelativePath to set
-	 */
-	public void setStopRecImageRelativePath(String stopRecImageRelativePath)
-	{
-		this.stopRecImageRelativePath = stopRecImageRelativePath;
-	}
-	
-	/**
-	 * @return the playAudioImageRelativePath
-	 */
-	public String getPlayAudioImageRelativePath()
-	{
-		return playAudioImageRelativePath;
-	}
-
-	/**
-	 * @param playAudioImageRelativePath the playAudioImageRelativePath to set
-	 */
-	public void setPlayAudioImageRelativePath(String playAudioImageRelativePath)
-	{
-		this.playAudioImageRelativePath = playAudioImageRelativePath;
-	}
-	
-	/**
-	 * @return the stopAudioImageRelativePath
-	 */
-	public String getStopAudioImageRelativePath()
-	{
-		return stopAudioImageRelativePath;
-	}
-
-	/**
-	 * @param stopAudioImageRelativePath the stopAudioImageRelativePath to set
-	 */
-	public void setStopAudioImageRelativePath(String stopAudioImageRelativePath)
-	{
-		this.stopAudioImageRelativePath = stopAudioImageRelativePath;
+		this.recordingImageRelativePath = recordingImageRelativePath;
 	}
 
 	@Override
@@ -130,20 +74,6 @@ public class AudioField extends MediaField
 		else
 			return EXTENSION_3GPP; //or the default
 	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
-	 */
-	@Override
-	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
-	{
-		super.addFiles(filesSet, fileStorageProvider); // !!!
-		
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, playAudioImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopAudioImageRelativePath));
-	}
 
 	@Override
 	public <V, UI extends CollectorUI<V, UI>> MediaUI<AudioField,V, UI> createUI(UI collectorUI)
@@ -159,11 +89,8 @@ public class AudioField extends MediaField
 		if(obj instanceof AudioField)
 		{
 			AudioField that = (AudioField) obj;
-			return	super.equals(that) && // MediaField#equals(Object)
-					Objects.equals(this.startRecImageRelativePath,	that.startRecImageRelativePath) &&
-					Objects.equals(this.stopRecImageRelativePath,	that.stopRecImageRelativePath) &&
-					Objects.equals(this.playAudioImageRelativePath,	that.playAudioImageRelativePath) &&
-					Objects.equals(this.stopAudioImageRelativePath,	that.stopAudioImageRelativePath);
+			return	super.equals(that) && // AVField#equals(Object)
+					Objects.equals(this.recordingImageRelativePath, that.recordingImageRelativePath);
 		}
 		else
 			return false;
@@ -172,11 +99,8 @@ public class AudioField extends MediaField
 	@Override
 	public int hashCode()
 	{
-		int hash = super.hashCode(); // MediaField#hashCode()
-		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
-		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
-		hash = 31 * hash + (playAudioImageRelativePath == null ? 0 : playAudioImageRelativePath.hashCode());
-		hash = 31 * hash + (stopAudioImageRelativePath == null ? 0 : stopAudioImageRelativePath.hashCode());
+		int hash = super.hashCode(); // AVField#hashCode()
+		hash = 31 * hash + Objects.hashCode(recordingImageRelativePath);
 		return hash;
 	}
 
