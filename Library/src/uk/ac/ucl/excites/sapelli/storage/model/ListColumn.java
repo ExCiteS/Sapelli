@@ -286,10 +286,58 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		this.serialisationDelimiter = serialisationDelimiter;
 		this.serialisationSeparator = serialisationSeparator;
 	}
+
+	/**
+	 * Creates a new empty List of type {@code <L>}.
+	 * 
+	 * @return
+	 */
+	public abstract L getNewList();
 	
-	protected abstract L getNewList(int minimumCapacity);
+	/**
+	 * Creates a new empty List of type {@code <L>} and the given {@code minimumCapacity}.
+	 * 
+	 * @param minimumCapacity
+	 * @return
+	 */
+	public final L getNewList(int minimumCapacity)
+	{
+		if(minimumCapacity < 0 || minimumCapacity > getMaximumLength())
+			throw new IllegalArgumentException("Invalid minimumCapacity (max: " + getMaximumLength() + ")!");
+		return _getNewList(minimumCapacity);
+	}
 	
-	protected abstract L getNewList(Collection<T> elements);
+	/**
+	 * Creates a new empty List of type {@code <L>} and the given {@code minimumCapacity}.
+	 * 
+	 * @param minimumCapacity - can be assumed to be <= {@link #getMaximumLength()}
+	 * @return
+	 */
+	protected abstract L _getNewList(int minimumCapacity);
+	
+	/**
+	 * Creates a new List of type {@code <L>} initialised with the given {@code elements}.
+	 * 
+	 * @param elements
+	 * @return
+	 */
+	protected final L getNewList(Collection<T> elements)
+	{
+		if(elements == null)
+			return getNewList();
+		else if(elements.size() > getMaximumLength())
+			throw new IllegalArgumentException("Too many elements given (max: " + getMaximumLength() + ")!");
+		else
+			return _getNewList(elements);
+	}
+	
+	/**
+	 * Creates a new List of type {@code <L>} initialised with the given {@code elements}.
+	 * 
+	 * @param elements - can be assumed to be non-{@code null} and with size <= {@link #getMaximumLength()}
+	 * @return
+	 */
+	protected abstract L _getNewList(Collection<T> elements);
 	
 	/**
 	 * @return the singleColumn
@@ -389,8 +437,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 			throw new IllegalArgumentException("Found more values than allowed (got: " + parsedValues.size() + "; max: " + getMaximumLength() + ")!");
 		
 		// Make list:
-		L values = getNewList(parsedValues.size());
-		values.addAll(parsedValues);
+		L values = getNewList(parsedValues);
 		
 		// Done!:
 		return values;
@@ -793,13 +840,19 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		}
 
 		@Override
-		protected List<T> getNewList(int minimumCapacity)
+		public List<T> getNewList()
+		{
+			return new ArrayList<T>();
+		}
+		
+		@Override
+		protected List<T> _getNewList(int minimumCapacity)
 		{
 			return new ArrayList<T>(minimumCapacity);
 		}
 		
 		@Override
-		protected List<T> getNewList(Collection<T> elements)
+		protected List<T> _getNewList(Collection<T> elements)
 		{
 			return new ArrayList<T>(elements);
 		}

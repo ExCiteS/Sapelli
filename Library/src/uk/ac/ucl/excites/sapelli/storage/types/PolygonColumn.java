@@ -56,15 +56,21 @@ public class PolygonColumn extends ListColumn<Polygon, Location>
 	{
 		return new PolygonColumn(name, singleColumn.copy(), optional, defaultValue);
 	}
-
+	
 	@Override
-	protected Polygon getNewList(int minimumCapacity)
+	public Polygon getNewList()
+	{
+		return new Polygon();
+	}
+	
+	@Override
+	protected Polygon _getNewList(int minimumCapacity)
 	{
 		return new Polygon(minimumCapacity);
 	}
 	
 	@Override
-	protected Polygon getNewList(Collection<Location> points)
+	protected Polygon _getNewList(Collection<Location> points)
 	{
 		return new Polygon(points);
 	}
