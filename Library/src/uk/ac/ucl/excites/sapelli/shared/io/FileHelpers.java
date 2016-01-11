@@ -398,7 +398,7 @@ public final class FileHelpers
 		if(file.isFile())
 			return getFileExtension(file.getName());
 		else
-			return "";
+			return "" + File.separatorChar;
 	}
 
 	/**
