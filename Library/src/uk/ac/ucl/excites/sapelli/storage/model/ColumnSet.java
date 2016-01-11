@@ -45,6 +45,8 @@ public class ColumnSet implements Serializable
 	private static final long serialVersionUID = 2L;
 	
 	static protected final int UNKNOWN_COLUMN_POSITION = -1;
+	
+	static public final Set<Column<?>> NO_SKIPPED_COLUMNS = Collections.<Column<?>> emptySet();
 
 	// Dynamics-----------------------------------------------------------
 	protected final String name;
@@ -432,7 +434,7 @@ public class ColumnSet implements Serializable
 	 */
 	public boolean isVariableSize(boolean lossless)
 	{
-		return isVariableSize(false, Collections.<Column<?>> emptySet(), lossless);
+		return isVariableSize(false, NO_SKIPPED_COLUMNS, lossless);
 	}
 	
 	/**
@@ -472,7 +474,7 @@ public class ColumnSet implements Serializable
 	 */
 	public int getMinimumSize(boolean lossless)
 	{
-		return getMinimumSize(false, Collections.<Column<?>> emptySet(), lossless);
+		return getMinimumSize(false, NO_SKIPPED_COLUMNS, lossless);
 	}
 	
 	/**

@@ -38,7 +38,7 @@ public class ByteArrayColumn extends Column<byte[]>
 
 	static private final long serialVersionUID = 2L;
 	
-	static public final char SERIALISATION_SEPARATOR = ',';
+	static public final char SERIALISATION_SEPARATOR = '_';
 	
 	private final IntegerRangeMapping sizeField;
 

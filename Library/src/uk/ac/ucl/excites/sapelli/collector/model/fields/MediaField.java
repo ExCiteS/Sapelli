@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -80,7 +81,7 @@ public abstract class MediaField extends Field
 	
 	static private final StringListColumn GetVirtualFileNamesColumn(boolean optional, int max)
 	{
-		return new StringListColumn("Files", StringColumn.ForCharacterCount("File", false, MAX_FILENAME_LENGTH), optional, 0, max, '[', ']', '|', null, null);
+		return new StringListColumn("Files", StringColumn.ForCharacterCount("File", false, MAX_FILENAME_LENGTH), optional, 0, max, ListColumn.DEFAULT_SERIALISATION_DELIMITER, ':');
 	}
 	
 	static public final int MAX_FILENAME_LENGTH = 128;

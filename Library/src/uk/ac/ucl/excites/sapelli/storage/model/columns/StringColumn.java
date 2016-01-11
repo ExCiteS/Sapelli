@@ -328,14 +328,17 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	/**
 	 * @return the serialisationDelimiter
 	 */
-	public char getSerialisationDelimiter()
+	@Override
+	public Character getSerialisationDelimiter()
 	{
 		return serialisationDelimiter;
 	}
 
 	/**
-	 * @param value the String to parse, expected to be neither null nor empty and delimited by {@link #serialisationDelimiter} (meaning that the resulting value is meant to be the empty String, and the serialisationDelimiter is "'", then the given valueString must be "''")
+	 * @param valueString the String to parse, expected to be neither null nor empty and delimited by {@link #serialisationDelimiter} (meaning that the resulting value is meant to be the empty String, and the serialisationDelimiter is "'", then the given valueString must be "''")
 	 * @return the parsed value
+	 * 
+	 * @see #toString(String)
 	 */
 	@Override
 	public String parse(String valueString) throws ParseException
@@ -343,6 +346,12 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 		return parse(valueString, false); // delimited!
 	}
 
+	/**
+	 * If {@code undelimited} is {@code false} the given {@code valueString} is expected to be wrapped/escaped using {@link #serialisationDelimiter}s.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn#parse(java.lang.String, boolean)
+	 * @see #toString(String, boolean)
+	 */
 	@Override
 	public String parse(String valueString, boolean undelimited) throws ParseException, IllegalArgumentException, NullPointerException
 	{
@@ -363,8 +372,8 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 	
 	/**
-	 * We wrap all Strings between serialisationDelimiters to preserve the difference between a null String and an empty String value (because empty Strings are treated as null in {@link Column})
-	 * Warning: no escaping takes place at this level! So occurrences of serialisationDelimiter within the value will be left unchanged.
+	 * The given value will be wrapped/escaped using {@link #serialisationDelimiter}s to preserve the difference between a null String and an empty String value (because empty Strings are treated as null in {@link Column})
+	 * Occurrences of the delimiter *inside* the value will be doubled. 
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
@@ -374,13 +383,16 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 		return toString(value, false); // delimited!
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * If {@code undelimited} is {@code false} given value will be wrapped/escaped using {@link #serialisationDelimiter}s to preserve the difference between a null String and an empty String value (because empty Strings are treated as null in {@link Column}).
+	 * Occurrences of the delimiter *inside* the value will then be doubled.
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn#toString(java.lang.Object, boolean)
 	 */
 	@Override
 	public String toString(String value, boolean undelimited)
 	{
-		return (undelimited ? "" : serialisationDelimiter) + value + (undelimited ? "" : serialisationDelimiter); // surround with serialisationDelimiter unless undelimited
+		return undelimited ? value : StringUtils.escapeByDoublingAndWrapping(value, null, serialisationDelimiter, /*force:*/ true);
 	}
 	
 	public boolean fits(String value)

@@ -29,19 +29,22 @@ import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleColumnVisitor;
 
 /**
- * Abstract super class for {@link ExportColumnValueStringProvider} and {@link ImportColumnValueParser} which
+ * Abstract super class for {@link ExportHelper} and {@link ImportHelper} which
  * are helper classes intended for respectively export or importing {@link Record}s to or from export formats
  * which have their own way of differentiating between {@code null} and empty List/String values.
- * The {@link ExportColumnValueStringProvider} converts Column values into String representation (for exporting),
- * and the {@link ImportColumnValueParser} converts String representation to Column values (for importing).
+ * The {@link ExportHelper} converts Column values into String representation (for exporting),
+ * and the {@link ImportHelper} converts String representation to Column values (for importing).
  * 
  * The process works by calling a {@link #inspect(Column)} with a column to be inspected. This is not necessarily
  * a "leaf" column (i.e. it may be an instance of a {@link ValueSetColumn} subclass) but it will be treated as such,
@@ -56,12 +59,12 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleColumnVisitor;
  * 
  * All {@link ListColumn} subclasses are treated the same, namely as {@link ListLikeColumn}s.
  * 
- * @see ExportColumnValueStringProvider
- * @see ImportColumnValueParser
+ * @see ExportHelper
+ * @see ImportHelper
  * 
  * @author mstevens
  */
-public abstract class ExImportColumnValueHelper
+public abstract class ExImportHelper
 {
 	
 	private final ColumnInspector inspector = new ColumnInspector();
@@ -75,14 +78,21 @@ public abstract class ExImportColumnValueHelper
 	}
 	
 	/**
-	 * Used for all {@link Column}s except {@link ListLikeColumn}s.
+	 * Used for all {@link Column}s except {@link ValueSetColumn}s and {@link ListLikeColumn}s.
 	 * 
 	 * @param column
 	 */
 	protected abstract <T> void visit(Column<T> column);
 	
 	/**
-	 * Used for all {@link ListLikeColumn}s. 
+	 * Used for all {@link ValueSetColumn}s.
+	 * 
+	 * @param valueSetCol
+	 */
+	protected abstract <VS extends ValueSet<CS>, CS extends ColumnSet> void visit(ValueSetColumn<VS, CS> valueSetCol);
+	
+	/**
+	 * Used for all {@link ListLikeColumn}s.
 	 * 
 	 * @param listLikeColumn
 	 */
@@ -108,7 +118,7 @@ public abstract class ExImportColumnValueHelper
 		@Override
 		protected final <T> void visit(Column<T> column)
 		{
-			ExImportColumnValueHelper.this.visit(column);
+			ExImportHelper.this.visit(column);
 		}
 		
 		/* (non-Javadoc)
@@ -117,17 +127,27 @@ public abstract class ExImportColumnValueHelper
 		@Override
 		public final void visit(StringColumn stringCol)
 		{
-			ExImportColumnValueHelper.this.visit((ListLikeColumn<String>) stringCol); // treat as a ListLikeColumn!
+			ExImportHelper.this.visit((ListLikeColumn<String>) stringCol); // treat as a ListLikeColumn!
 		}
-	
+		
 		/**
-		 * Visit method used for all ListColumns.
+		 * Visit method used for all {@link ListColumn}s.
 		 * 
 		 * @param listCol
 		 */
 		public final <L extends List<T>, T> void visitListColumn(ListColumn<L, T> listCol)
 		{
-			ExImportColumnValueHelper.this.visit((ListLikeColumn<L>) listCol); // treat as a ListLikeColumn!
+			ExImportHelper.this.visit((ListLikeColumn<L>) listCol); // treat as a ListLikeColumn!
+		}
+	
+		/**
+		 * Visit method used for all {@link ValueSetColumn}s.
+		 * 
+		 * @param valueSetCol
+		 */
+		public final <VS extends ValueSet<CS>, CS extends ColumnSet> void visitValueSetColumn(ValueSetColumn<VS, CS> valueSetCol)
+		{
+			ExImportHelper.this.visit(valueSetCol);
 		}
 		
 		/**
@@ -144,9 +164,27 @@ public abstract class ExImportColumnValueHelper
 		@Override
 		public final boolean includeVirtualColumns()
 		{
-			return ExImportColumnValueHelper.this.visitVirtualColumnTargets();
+			return ExImportHelper.this.visitVirtualColumnTargets();
 		}
 	
+		@Override
+		public final void visit(ForeignKeyColumn foreignKeyCol)
+		{
+			visitValueSetColumn(foreignKeyCol);
+		}
+
+		@Override
+		public final void visit(LocationColumn locCol)
+		{
+			visitValueSetColumn(locCol);
+		}
+
+		@Override
+		public final void visit(OrientationColumn orCol)
+		{
+			visitValueSetColumn(orCol);
+		}
+
 		@Override
 		public final <T> void visit(ListColumn.Simple<T> simpleListCol)
 		{
@@ -190,29 +228,29 @@ public abstract class ExImportColumnValueHelper
 		}
 		
 		/**
-		 * Not applicable, see {@link ExImportColumnValueHelper#inspect(Column)}.
+		 * Not applicable, see {@link ExImportHelper#inspect(Column)}.
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 		 */
 		@Override
 		public final <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(ValueSetColumn<VS, CS> valueSetCol)
 		{
-			// do nothing
+			// do nothing (is never called)
 		}
 	
 		/**
-		 * Not applicable, see {@link ExImportColumnValueHelper#inspect(Column)}.
+		 * Not applicable, see {@link ExImportHelper#inspect(Column)}.
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#leave(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 		 */
 		@Override
 		public final <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 		{
-			// do nothing 
+			// do nothing (is never called)
 		}
 	
 		/**
-		 * Always visit as a whole, see {@link ExImportColumnValueHelper#inspect(Column)}.
+		 * Always visit as a whole, see {@link ExImportHelper#inspect(Column)}.
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#splitLocationTraversal()
 		 */
@@ -223,7 +261,7 @@ public abstract class ExImportColumnValueHelper
 		}
 	
 		/**
-		 * Always visit as a whole, see {@link ExImportColumnValueHelper#inspect(Column)}.
+		 * Always visit as a whole, see {@link ExImportHelper#inspect(Column)}.
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#splitOrientationTraversal()
 		 */
@@ -234,7 +272,7 @@ public abstract class ExImportColumnValueHelper
 		}
 	
 		/**
-		 * Always visit as a whole, see {@link ExImportColumnValueHelper#inspect(Column)}.
+		 * Always visit as a whole, see {@link ExImportHelper#inspect(Column)}.
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#splitForeignKeyTraversal()
 		 */

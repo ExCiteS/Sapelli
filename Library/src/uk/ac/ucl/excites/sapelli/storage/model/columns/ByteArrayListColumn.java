@@ -69,34 +69,28 @@ public class ByteArrayListColumn extends ListColumn.Simple<byte[]>
 	 * 
 	 * @param name
 	 * @param optional
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, char, char)
 	 */
-	public ByteArrayListColumn(String name, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ByteArrayListColumn(String name, boolean optional, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, GetSingleColumn(), optional, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, GetSingleColumn(), optional, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
 	 * @param name
 	 * @param optional
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, List, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, List, char, char)
 	 */
-	public ByteArrayListColumn(String name, boolean optional, List<byte[]> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ByteArrayListColumn(String name, boolean optional, List<byte[]> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, GetSingleColumn(), optional, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, GetSingleColumn(), optional, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -132,17 +126,14 @@ public class ByteArrayListColumn extends ListColumn.Simple<byte[]>
 	 * @param name
 	 * @param optional
 	 * @param maxLength
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, char, char)
 	 */
-	public ByteArrayListColumn(String name, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ByteArrayListColumn(String name, boolean optional, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, GetSingleColumn(), optional, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, GetSingleColumn(), optional, maxLength, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -150,17 +141,14 @@ public class ByteArrayListColumn extends ListColumn.Simple<byte[]>
 	 * @param optional
 	 * @param maxLength
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, List, char, char)
 	 */
-	public ByteArrayListColumn(String name, boolean optional, int maxLength, List<byte[]> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ByteArrayListColumn(String name, boolean optional, int maxLength, List<byte[]> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, GetSingleColumn(), optional, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, GetSingleColumn(), optional, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -197,17 +185,14 @@ public class ByteArrayListColumn extends ListColumn.Simple<byte[]>
 	 * @param optional
 	 * @param minLength
 	 * @param maxLength
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, int, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, int, char, char)
 	 */
-	public ByteArrayListColumn(String name, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ByteArrayListColumn(String name, boolean optional, int minLength, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, GetSingleColumn(), optional, minLength, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, GetSingleColumn(), optional, minLength, maxLength, serialisationDelimiter, serialisationSeparator);
 	}
 
 	/**
@@ -216,17 +201,14 @@ public class ByteArrayListColumn extends ListColumn.Simple<byte[]>
 	 * @param minLength
 	 * @param maxLength
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, int, List, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, int, List, char, char)
 	 */
-	public ByteArrayListColumn(String name, boolean optional, int minLength, int maxLength, List<byte[]> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ByteArrayListColumn(String name, boolean optional, int minLength, int maxLength, List<byte[]> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, GetSingleColumn(), optional, minLength, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, GetSingleColumn(), optional, minLength, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 
 	@Override

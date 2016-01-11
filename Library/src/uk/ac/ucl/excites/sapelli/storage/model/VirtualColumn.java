@@ -126,6 +126,15 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		return targetColumn.toString(value);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#getSerialisationDelimiter()
+	 */
+	@Override
+	public Character getSerialisationDelimiter()
+	{
+		return targetColumn.getSerialisationDelimiter();
+	}
+
 	@Override
 	protected void write(TT value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{

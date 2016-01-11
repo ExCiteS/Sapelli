@@ -66,17 +66,14 @@ public class StringListColumn extends ListColumn.Simple<String>
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, char, char)
 	 */
-	public StringListColumn(String name, StringColumn singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, singleColumn, optional, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, singleColumn, optional, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -84,17 +81,14 @@ public class StringListColumn extends ListColumn.Simple<String>
 	 * @param singleColumn
 	 * @param optional
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, List, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, List, char, char)
 	 */
-	public StringListColumn(String name, StringColumn singleColumn, boolean optional, List<String> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, List<String> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, singleColumn, optional, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, singleColumn, optional, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -133,17 +127,14 @@ public class StringListColumn extends ListColumn.Simple<String>
 	 * @param singleColumn
 	 * @param optional
 	 * @param maxLength
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, char, char)
 	 */
-	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, singleColumn, optional, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, singleColumn, optional, maxLength, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -152,17 +143,14 @@ public class StringListColumn extends ListColumn.Simple<String>
 	 * @param optional
 	 * @param maxLength
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, List, char, char)
 	 */
-	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, List<String> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int maxLength, List<String> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, singleColumn, optional, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, singleColumn, optional, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -202,17 +190,14 @@ public class StringListColumn extends ListColumn.Simple<String>
 	 * @param optional
 	 * @param minLength
 	 * @param maxLength
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, int, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, int, char, char)
 	 */
-	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiter, serialisationSeparator);
 	}
 
 	/**
@@ -222,17 +207,14 @@ public class StringListColumn extends ListColumn.Simple<String>
 	 * @param minLength
 	 * @param maxLength
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
-	 * @see #ListColumn(String, Column, boolean, int, int, List, char, char, char, Character, Character)
+	 * @see #ListColumn(String, Column, boolean, int, int, List, char, char)
 	 */
-	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, List<String> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public StringListColumn(String name, StringColumn singleColumn, boolean optional, int minLength, int maxLength, List<String> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		super(name, singleColumn, optional, minLength, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		super(name, singleColumn, optional, minLength, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 
 	@Override

@@ -32,18 +32,21 @@ import org.joda.time.DateTime;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
-import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportColumnValueStringProvider;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportHelper;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
@@ -55,8 +58,20 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnexportableRecordsException;
  * Follows the CSV specification outlined in RFC 4180 (i.e. with regards to escaping/quoting),
  * except for the choice between different separators (tab & semicolon in addition to comma).
  * 
- * The CSV will get a header line with the column names separated by the separator, with this postfix:
- * 	separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
+ * Note 1:
+ * 	The CSV will get a header line with the column names separated by the separator,
+ * 	followed by this postfix (assuming separator is <code>,</code>):
+ * 		<code>,modelID=XXXXXXXXXXXXXXXX,modelSchemaNumber=YY,schemaName="abcdef",exportedAt=TTTTTTTTTTTTTTT,</code>
+ * 	The trailing separator allows parsing code to detect the separator by simply reading
+ * 	the last char of the first line.
+ * 
+ * Note 2:
+ *	We want to maintain the difference between a ValueSetColumn set to {@code null} and one
+ *	which contains a sub-ValueSet with all {@code null} values. Because ValueSetColumns are
+ *	split up in the CSV we need a trick to do this. The solution is to insert a Boolean-like
+ *	column with the name of the ValueSetColumn before its subcolumns. When the ValueSetColumn
+ *	contains a non-{@code null} value this inserted column will be set to {@code true}, if not
+ *	it will remain empty (i.e. representing a {@code null} value).
  * 
  * @author mstevens
  * 
@@ -67,12 +82,28 @@ public class CSVRecordsExporter extends SimpleExporter
 
 	// STATICS------------------------------------------------------- 
 	static private final char DOUBLE_QUOTE = '"';
+	static public final char LINE_ENDING = '\n';
 	
 	static public enum Separator
 	{
 		COMMA,
 		SEMICOLON,
 		TAB;
+		
+		static public Separator getSeparator(char separatorChar)
+		{
+			switch(separatorChar)
+			{
+				case ',':
+					return COMMA;
+				case ';':
+					return SEMICOLON;
+				case '\t':
+					return TAB;
+				default:
+					throw new IllegalStateException("Invalid CSV sepator: " + separatorChar);
+			}
+		}
 		
 		/**
 		 * TODO use i18n/StringProvide
@@ -102,12 +133,20 @@ public class CSVRecordsExporter extends SimpleExporter
 		
 	}
 	
+	static /*package*/ List<ColumnPointer<?>> GetColumnPointers(Schema schema)
+	{
+		return new CSVRecordsExporter(null, DEFAULT_SEPARATOR, false).getColumnPointers(schema);
+	}
+	
 	static public final Separator DEFAULT_SEPARATOR = Separator.COMMA;
+	
+	static /*package*/ final String NON_NULL_SUB_VALUESET = Boolean.TRUE.toString();
 	
 	// DYNAMICS------------------------------------------------------
 	private final Separator separator;
+	private final char[] avoidChars;
 	private final List<ColumnPointer<?>> columnPointers = new ArrayList<ColumnPointer<?>>();
-	private final ColumnValueStringProvider valueStringProvider = new ColumnValueStringProvider();
+	private final CSVExportHelper valueStringProvider = new CSVExportHelper();
 	
 	/**
 	 * @param exportFolder
@@ -123,10 +162,21 @@ public class CSVRecordsExporter extends SimpleExporter
 	 */
 	public CSVRecordsExporter(File exportFolder, Separator separator)
 	{
-		if(exportFolder == null)
+		this(exportFolder, separator, true);
+	}
+	
+	/**
+	 * @param exportFolder
+	 * @param separator
+	 * @param checkFolder
+	 */
+	private CSVRecordsExporter(File exportFolder, Separator separator, boolean checkFolder)
+	{
+		if(checkFolder && exportFolder == null)
 			throw new NullPointerException("Provide a non-null export folder!");
 		this.exportFolder = exportFolder;
 		this.separator = separator != null ? separator : DEFAULT_SEPARATOR;
+		this.avoidChars = new char[] { separator.getSeparatorChar(), '\n', '\r' }; // !!! 
 	}
 	
 	@Override
@@ -202,8 +252,7 @@ public class CSVRecordsExporter extends SimpleExporter
 				openWriter(description + "_" + schema.getName(), timestamp);
 
 				// Construct column list:
-				columnPointers.clear();
-				traverse(schema);
+				getColumnPointers(schema);
 				
 				// Write header:
 				writer.openTransaction(); // output will be buffered
@@ -212,12 +261,13 @@ public class CSVRecordsExporter extends SimpleExporter
 					// Column names (separated by the separator):
 					for(ColumnPointer<?> cp : columnPointers)
 						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorChar() : "") + cp.getQualifiedColumnName());
-					// Postfix: separator+modelID=+...+separator+modelSchemaNumber=+...+separator+schemaName="+...+"separator
+					// Postfix (assuming separator is ,): ,modelID=XXXXXXXXXXXXXXXX,modelSchemaNumber=YY,schemaName="abcdef",
 					writer.write(	separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_ID + "=" + schema.getModelID() +
 									separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=" + schema.getModelSchemaNumber() +
 									separator.getSeparatorChar() + Schema.ATTRIBUTE_SCHEMA_NAME + "=" + escapeAndQuote(schema.getName(), true) +
+									separator.getSeparatorChar() + ATTRIBUTE_EXPORTED_AT + "=" + ExportedAtFormatter.print(timestamp) +
 									separator.getSeparatorChar());
-					writer.write('\n');
+					writer.write(LINE_ENDING);
 				}
 				catch(Exception e)
 				{
@@ -231,17 +281,18 @@ public class CSVRecordsExporter extends SimpleExporter
 				{
 					writer.openTransaction(); // output will be buffered
 					try
-					{	
+					{
+						boolean first = true;
 						for(ColumnPointer<?> cp : columnPointers)
 						{
-							if(!writer.isTransactionBufferEmpty())
+							if(!first)
 								writer.write(separator.getSeparatorChar());
-							Column<?> col = cp.getColumn();
-							ValueSet<?> valueSet = cp.getValueSet(r, false);
-							if(valueSet != null && col.isValuePresent(valueSet)) // write nothing when the value is not set (i.e. null value is represented by an empty String)
-								writer.write(valueStringProvider.toString(col, valueSet));
+							else
+								first = false;							
+							writer.write(valueStringProvider.getValueString(cp.getColumn(), cp.getValueSet(r, false), ""));
+							// will write nothing (i.e. "") when the value is not set (i.e. null value is represented by an empty String)
 						}
-						writer.write('\n');
+						writer.write(LINE_ENDING);
 					}
 					catch(Exception e)
 					{
@@ -279,19 +330,16 @@ public class CSVRecordsExporter extends SimpleExporter
 		}
 	}
 	
-	private String escapeAndQuote(String valueString, boolean forceQuotes)
+	protected List<ColumnPointer<?>> getColumnPointers(Schema schema)
 	{
-		boolean needsQuotes = forceQuotes;
-		StringBuilder bldr = new StringBuilder(valueString.length());
-		for(char c : valueString.toCharArray())
-		{
-			if(c == DOUBLE_QUOTE)
-				bldr.append(DOUBLE_QUOTE); // escape double quote occurrences by doubling them
-			if(c == DOUBLE_QUOTE || c == '\r' || c == '\n' || c == separator.getSeparatorChar())
-				needsQuotes = true;
-			bldr.append(c);
-		}			
-		return (needsQuotes ? DOUBLE_QUOTE : "") + bldr.toString() + (needsQuotes ? DOUBLE_QUOTE : "");
+		columnPointers.clear();
+		traverse(schema);
+		return columnPointers;
+	}
+	
+	/*package*/ String escapeAndQuote(String valueString, boolean forceQuotes)
+	{
+		return StringUtils.escapeByDoublingAndWrapping(valueString, avoidChars, DOUBLE_QUOTE, forceQuotes);
 	}
 	
 	@Override
@@ -300,7 +348,22 @@ public class CSVRecordsExporter extends SimpleExporter
 		columnPointers.add(leafColumnPointer);
 	}
 	
-
+	/**
+	 * This relates to Note 2 in {@link CSVRecordsExporter} javadoc.
+	 * 
+	 * @see CSVExportHelper#getValueSetString(ValueSetColumn)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
+	 */
+	@Override
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> void enter(final ValueSetColumn<VS, CS> valueSetCol)
+	{
+		super.enter(valueSetCol); // !!!
+		
+		// Add CSV column for the ValueSetColumn itself:
+		//	(for differentiating null sub-ValueSet from non-null sub-ValueSets with all null values)
+		columnPointers.add(new ColumnPointer<Column<?>>(valueSetCol)); // column will be treated in ColumnValueStringProvider#getValueSetString(ValueSetColumn)
+	}
+	
 	@Override
 	public boolean splitLocationTraversal()
 	{
@@ -328,17 +391,32 @@ public class CSVRecordsExporter extends SimpleExporter
 	 * 	- SEPARATOR+SEPARATOR --> null value
 	 *  - SEPARATOR+"+"+SEPARATOR --> empty value
 	 *  
-	 * @see ExportColumnValueStringProvider
+	 * The class also provides the String ({@link CSVRecordsExporter#NON_NULL_SUB_VALUESET}) representing non-null sub-ValueSets.
+	 * 
+	 * @see CSVRecordsExporter
+	 * @see ExportHelper
 	 * 
 	 * @author mstevens
 	 */
-	private class ColumnValueStringProvider extends ExportColumnValueStringProvider
+	/*package*/ class CSVExportHelper extends ExportHelper
 	{
 
 		@Override
 		protected String escapeAndQuote(String valueString, boolean force)
 		{
 			return CSVRecordsExporter.this.escapeAndQuote(valueString, force);
+		}
+
+		/**
+		 * This relates to Note 2 in {@link CSVRecordsExporter} javadoc.
+		 * 
+		 * @see CSVRecordsExporter#enter(ValueSetColumn)
+		 * @see uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ExportHelper#getSubValueSetString(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn, uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
+		 */
+		@Override
+		protected <VS extends ValueSet<CS>, CS extends ColumnSet> String getSubValueSetString(ValueSetColumn<VS, CS> valueSetCol, VS subValueSet)
+		{
+			return NON_NULL_SUB_VALUESET;
 		}
 		
 	}

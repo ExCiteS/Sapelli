@@ -27,7 +27,6 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -47,11 +46,9 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	
 	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
 	static public final int DEFAULT_MAXIMUM_LENGTH = Integer.MAX_VALUE; // like any List or other Collection (Collection#size() returns an int)
-	static public final char DEFAULT_SERIALISATION_DELIMITER_OPEN = '(';
-	static public final char DEFAULT_SERIALISATION_DELIMITER_CLOSE = ')';
+	static public final char DEFAULT_SERIALISATION_DELIMITER = '|';
 	static public final char DEFAULT_SERIALISATION_SEPARATOR = ';';
-	static public final char DEFAULT_SERIALISATION_SEPARATOR_ESCAPE = ':';
-	static public final char DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
+	static public final char DEFAULT_VALUE_SERIALISATION_DELIMITER = ValueSet.DEFAULT_SERIALISATION_DELIMITER;
 	
 	static protected int GetMaxLengthForSizeFieldSize(int minLength, int sizeBits)
 	{
@@ -61,11 +58,8 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	// DYNAMICS ---------------------------------------------------------------
 	private final IntegerRangeMapping sizeField;
 	protected final Column<T> singleColumn;
-	protected final char serialisationDelimiterOpen;
-	protected final char serialisationDelimiterClose;
-	protected final char separator;
-	protected final Character separatorEscape;
-	protected final Character separatorEscapePrefix;
+	protected final char serialisationDelimiter;
+	protected final char serialisationSeparator;
 
 	/**
 	 * Creates a {@link ListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
@@ -89,46 +83,52 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, L defaultValue)
 	{
-		this(name, singleColumn, optional, defaultValue, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
+		this(name, singleColumn, optional, defaultValue, DEFAULT_SERIALISATION_DELIMITER, DEFAULT_SERIALISATION_SEPARATOR);
 	}
 	
 	/**
 	 * Creates a {@link ListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * The {@code serialisationSeparator} char is used to separate individual list values in String serialisation.
+	 * The {@code serialisationDelimiter} is used to wrap the entire serialised List value.
+	 * Occurrences of the {@code serialisationSeparator} char inside String representations of individual list
+	 * elements will be escaped by wrapping the value in the serialisation delimiter of the {@code singleColumn}
+	 * (if {@link Column#isApplyingSerialisationDelimiting()} returns {@code true}) or in the {@link #DEFAULT_VALUE_SERIALISATION_DELIMITER}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
 	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiter, char serialisationSeparator)
 	{
-		this(name, singleColumn, optional, null, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		this(name, singleColumn, optional, null, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
 	 * Creates a {@link ListColumn} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and maximum length of {@value #DEFAULT_MAXIMUM_LENGTH}.
+	 * 
+	 * The {@code serialisationSeparator} char is used to separate individual list values in String serialisation.
+	 * The {@code serialisationDelimiter} is used to wrap the entire serialised List value.
+	 * Occurrences of the {@code serialisationSeparator} char inside String representations of individual list
+	 * elements will be escaped by wrapping the value in the serialisation delimiter of the {@code singleColumn}
+	 * (if {@link Column#isApplyingSerialisationDelimiting()} returns {@code true}) or in the {@link #DEFAULT_VALUE_SERIALISATION_DELIMITER}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
 	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, L defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, L defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		this(name, singleColumn, optional, DEFAULT_MAXIMUM_LENGTH, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		this(name, singleColumn, optional, DEFAULT_MAXIMUM_LENGTH, serialisationDelimiter, serialisationSeparator);
 	}
 
 	/**
@@ -155,48 +155,54 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, L defaultValue)
 	{
-		this(name, singleColumn, optional, maxLength, defaultValue, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
+		this(name, singleColumn, optional, maxLength, defaultValue, DEFAULT_SERIALISATION_DELIMITER, DEFAULT_SERIALISATION_SEPARATOR);
 	}
 	
 	/**
 	 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * The {@code serialisationSeparator} char is used to separate individual list values in String serialisation.
+	 * The {@code serialisationDelimiter} is used to wrap the entire serialised List value.
+	 * Occurrences of the {@code serialisationSeparator} char inside String representations of individual list
+	 * elements will be escaped by wrapping the value in the serialisation delimiter of the {@code singleColumn}
+	 * (if {@link Column#isApplyingSerialisationDelimiting()} returns {@code true}) or in the {@link #DEFAULT_VALUE_SERIALISATION_DELIMITER}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 * @param maxLength
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
 	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 	{
-		this(name, singleColumn, optional, maxLength, null, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		this(name, singleColumn, optional, maxLength, null, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
 	 * Creates a {@link ListColumn.Simple} with minimum length of {@value #DEFAULT_MINIMUM_LENGTH} and the given maximum length.
+	 * 
+	 * The {@code serialisationSeparator} char is used to separate individual list values in String serialisation.
+	 * The {@code serialisationDelimiter} is used to wrap the entire serialised List value.
+	 * Occurrences of the {@code serialisationSeparator} char inside String representations of individual list
+	 * elements will be escaped by wrapping the value in the serialisation delimiter of the {@code singleColumn}
+	 * (if {@link Column#isApplyingSerialisationDelimiting()} returns {@code true}) or in the {@link #DEFAULT_VALUE_SERIALISATION_DELIMITER}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 * @param maxLength
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 * 
 	 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, L defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength, L defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
-		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
@@ -225,54 +231,39 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, L defaultValue)
 	{
-		this(name, singleColumn, optional, minLength, maxLength, defaultValue, DEFAULT_SERIALISATION_DELIMITER_OPEN, DEFAULT_SERIALISATION_DELIMITER_CLOSE, DEFAULT_SERIALISATION_SEPARATOR, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE, DEFAULT_SERIALISATION_SEPARATOR_ESCAPE_PREFIX);
+		this(name, singleColumn, optional, minLength, maxLength, defaultValue, DEFAULT_SERIALISATION_DELIMITER, DEFAULT_SERIALISATION_SEPARATOR);
 	}
 
 	/**
 	 * Creates a {@link ListColumn} with the given minimum and maximum lengths.
 	 * 
-	 * The {@code separator} char is used to separate individual list values in String serialisation.
-	 * If neither {@code separatorEscape} and {@code separatorEscapePrefix} are {@code null} occurrences
-	 * of the {@code separator} char inside String representations of individual list elements will be
-	 * escaped during serialisation of the list: occurrences of the {@code separator} char will be replaced
-	 * by {@code separatorEscapePrefix}+{@code separatorEscape}, and occurrences of {@code separatorEscapePrefix}
-	 * will be replaced by {@code separatorEscapePrefix}+{@code separatorEscapePrefix}. In this case the
-	 * {@code separator}, {@code separatorEscape} and {@code separatorEscapePrefix} chars must be all different.
-	 * When {@code separatorEscape} and {@code separatorEscapePrefix} are both {@code null} no escaping
-	 * of {@code separator} chars occurring inside String representations of individual list elements is
-	 * possible, and values (i.e. lists) containing elements whose String representation do contain the
-	 * {@code separator} char will be rejected.
+	 * The {@code serialisationSeparator} char is used to separate individual list values in String serialisation.
+	 * The {@code serialisationDelimiter} is used to wrap the entire serialised List value.
+	 * Occurrences of the {@code serialisationSeparator} char inside String representations of individual list
+	 * elements will be escaped by wrapping the value in the serialisation delimiter of the {@code singleColumn}
+	 * (if {@link Column#isApplyingSerialisationDelimiting()} returns {@code true}) or in the {@link #DEFAULT_VALUE_SERIALISATION_DELIMITER}.
 	 * 
 	 * @param name
 	 * @param singleColumn
 	 * @param optional
 	 * @param minLength
 	 * @param maxLength
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 	{
-		this(name, singleColumn, optional, minLength, maxLength, null, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+		this(name, singleColumn, optional, minLength, maxLength, null, serialisationDelimiter, serialisationSeparator);
 	}
 	
 	/**
 	 * Creates a {@link ListColumn} with the given minimum and maximum lengths.
 	 * 
-	 * The {@code separator} char is used to separate individual list values in String serialisation.
-	 * If neither {@code separatorEscape} and {@code separatorEscapePrefix} are {@code null} occurrences
-	 * of the {@code separator} char inside String representations of individual list elements will be
-	 * escaped during serialisation of the list: occurrences of the {@code separator} char will be replaced
-	 * by {@code separatorEscapePrefix}+{@code separatorEscape}, and occurrences of {@code separatorEscapePrefix}
-	 * will be replaced by {@code separatorEscapePrefix}+{@code separatorEscapePrefix}. In this case the
-	 * {@code separator}, {@code separatorEscape} and {@code separatorEscapePrefix} chars must be all different.
-	 * When {@code separatorEscape} and {@code separatorEscapePrefix} are both {@code null} no escaping
-	 * of {@code separator} chars occurring inside String representations of individual list elements is
-	 * possible, and values (i.e. lists) containing elements whose String representation do contain the
-	 * {@code separator} char will be rejected.
+	 * The {@code serialisationSeparator} char is used to separate individual list values in String serialisation.
+	 * The {@code serialisationDelimiter} is used to wrap the entire serialised List value.
+	 * Occurrences of the {@code serialisationSeparator} char inside String representations of individual list
+	 * elements will be escaped by wrapping the value in the serialisation delimiter of the {@code singleColumn}
+	 * (if {@link Column#isApplyingSerialisationDelimiting()} returns {@code true}) or in the {@link #DEFAULT_VALUE_SERIALISATION_DELIMITER}.
 	 * 
 	 * @param name
 	 * @param singleColumn
@@ -280,26 +271,20 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 * @param minLength
 	 * @param maxLength
 	 * @param defaultValue
-	 * @param serialisationDelimiterOpen
-	 * @param serialisationDelimiterClose
-	 * @param separator
-	 * @param separatorEscape
-	 * @param separatorEscapePrefix
+	 * @param serialisationDelimiter
+	 * @param serialisationSeparator
 	 */
-	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, L defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, L defaultValue, char serialisationDelimiter, char serialisationSeparator)
 	{
 		super(name, optional, defaultValue);
 		if(singleColumn instanceof ListColumn)
-			throw new IllegalArgumentException("Cannot nest " + getClass().getSimpleName() + "s!");
+			throw new IllegalArgumentException("Cannot nest ListColumns!");
+		if(singleColumn instanceof VirtualColumn)
+			throw new IllegalArgumentException("SingleColumn of ListColumn cannot be virtual!");
 		this.singleColumn = singleColumn;
 		this.sizeField = new IntegerRangeMapping(minLength, maxLength, true); // allow "empty" (0-sized) in case the list must always have exactly one element (no fewer, no more)
-		this.serialisationDelimiterOpen = serialisationDelimiterOpen;
-		this.serialisationDelimiterClose = serialisationDelimiterClose;
-		this.separator = separator;
-		this.separatorEscape = separatorEscape;
-		this.separatorEscapePrefix = separatorEscapePrefix;
-		if(isSeparatorEscapingEnabled() && (separator == separatorEscape || separator == separatorEscapePrefix || separatorEscape == separatorEscapePrefix))
-			throw new IllegalArgumentException("The code separator, separatorEscape and separatorEscapePrefix chars must be all different.");
+		this.serialisationDelimiter = serialisationDelimiter;
+		this.serialisationSeparator = serialisationSeparator;
 	}
 	
 	protected abstract L getNewList(int minimumCapacity);
@@ -315,75 +300,25 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	}
 
 	/**
-	 * @return the serialisationDelimiterOpen
+	 * @return the serialisationDelimiter
 	 */
-	public char getSerialisationDelimiterOpen()
+	@Override
+	public Character getSerialisationDelimiter()
 	{
-		return serialisationDelimiterOpen;
+		return serialisationDelimiter;
 	}
 
 	/**
-	 * @return the serialisationDelimiterClose
+	 * @return the serialisationSeparator
 	 */
-	public char getSerialisationDelimiterClose()
+	public char getSerialisationSeparator()
 	{
-		return serialisationDelimiterClose;
-	}
-
-	/**
-	 * @return the separator
-	 */
-	public char getSeparator()
-	{
-		return separator;
-	}
-
-	/**
-	 * @return the separatorEscape
-	 */
-	public Character getSeparatorEscape()
-	{
-		return separatorEscape;
-	}
-
-	/**
-	 * @return the separatorEscapePrefix
-	 */
-	public Character getSeparatorEscapePrefix()
-	{
-		return separatorEscapePrefix;
-	}
-
-	public boolean isSeparatorEscapingEnabled()
-	{
-		return separatorEscape != null && separatorEscapePrefix != null;
+		return serialisationSeparator;
 	}
 	
 	/**
-	 * @param str
-	 * @return
-	 * @throws IllegalArgumentException if the String needs escaping (i.e. the separator char occurs in it) but escaping is disabled
-	 */
-	protected String escapeSeparator(String str) throws IllegalArgumentException
-	{
-		if(str != null && str.indexOf(separator) > -1) // check if escaping is needed for the given String
-		{
-			if(isSeparatorEscapingEnabled())
-				return StringUtils.escape(str, separator, separatorEscape, separatorEscapePrefix);
-			else
-				throw new IllegalArgumentException("Given string (" + str + ") needs escaping but escaping is disabled!");
-		}
-		return str;
-	}
-	
-	protected String deescapeSeparator(String str)
-	{
-		if(str != null && isSeparatorEscapingEnabled())
-			return StringUtils.deescape(str, separator, separatorEscape, separatorEscapePrefix);
-		return str;
-	}
-	
-	/* (non-Javadoc)
+	 * The given String is be expected to be wrapped/escaped using {@link #serialisationDelimiter}s.
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
@@ -392,7 +327,9 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		return parse(listString, false); // delimited!
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * If {@code undelimited} is {@code false} the given {@code valueString} is expected to be wrapped/escaped using {@link #serialisationDelimiter}s.
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn#parse(java.lang.String, boolean)
 	 */
 	@Override
@@ -402,31 +339,65 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		{
 			// Perform delimiter checks:
 			if(listString.length() < 2)
-				throw new ParseException("String is not delimited by " + serialisationDelimiterOpen + " and " + serialisationDelimiterClose, 0);
-			if(listString.charAt(0) != serialisationDelimiterOpen)
-				throw new ParseException("String does not begin with " + serialisationDelimiterOpen, 0);
-			if(listString.charAt(listString.length() - 1) != serialisationDelimiterClose)
-				throw new ParseException("String does not end with " + serialisationDelimiterClose, listString.length() - 1);
+				throw new ParseException("String is not delimited by " + serialisationDelimiter, 0);
+			if(listString.charAt(0) != serialisationDelimiter)
+				throw new ParseException("String does not begin with " + serialisationDelimiter, 0);
+			if(listString.charAt(listString.length() - 1) != serialisationDelimiter)
+				throw new ParseException("String does not end with " + serialisationDelimiter, listString.length() - 1);
 			// Remove serialisation delimiters:
 			listString =  listString.substring(1, listString.length() - 1);
 		}
+		
 		// Parse:
-		int size = StringUtils.countOccurances(listString, separator);
-		L values = getNewList(size);
-		int startPointer = 0;
-		int sepPointer = 0;
-		while((sepPointer = listString.indexOf(separator, startPointer)) > -1)
+		List<T> parsedValues = new ArrayList<>(StringUtils.countOccurances(listString, serialisationSeparator));
+		final char valueDelimiter = singleColumn.getSerialisationDelimiter() != null ? singleColumn.getSerialisationDelimiter() : DEFAULT_VALUE_SERIALISATION_DELIMITER;
+		int valueDelimiterCount = 0;
+		StringBuilder valueStringBldr = new StringBuilder();
+		for(char c : listString.toCharArray())
 		{
-			values.add(singleColumn.stringToValue(deescapeSeparator(listString.substring(startPointer, sepPointer))));
-			startPointer = sepPointer + 1;
+			if(c == valueDelimiter)
+			{	// count the number of valueDelimiters we've passed
+				valueDelimiterCount++;
+				// Append char:
+				valueStringBldr.append(c); // !!!
+			}
+			else if(c == serialisationSeparator && valueDelimiterCount % 2 == 0)
+			{	// if delimiterCount is even this means we are not *inside* a value and this is an actual serialisation separator
+				String valueString = valueStringBldr.toString();
+				
+				// If the column does not apply it's own serialisation delimiting then
+				//	it could be that valueString is wrapped using the default value serialisation delimiters:
+				if(!singleColumn.isApplyingSerialisationDelimiting())
+					valueString = StringUtils.deescapeByDoublingAndWrapping(valueString, DEFAULT_VALUE_SERIALISATION_DELIMITER);
+				
+				// Parse value:
+				parsedValues.add(singleColumn.stringToValue(valueString)); // if the column applies it's own delimiters these will be removed/deescaped; validation will be performed
+				
+				// We are done with this column:
+				valueDelimiterCount = 0; // !!!
+				valueStringBldr.setLength(0); // reset valueString builder!
+			}
+			else
+			{	
+				// Append char:
+				valueStringBldr.append(c); // !!!
+			}
 		}
+		
+		// Check if we didn't get too many values:
+		if(parsedValues.size() > getMaximumLength())
+			throw new IllegalArgumentException("Found more values than allowed (got: " + parsedValues.size() + "; max: " + getMaximumLength() + ")!");
+		
+		// Make list:
+		L values = getNewList(parsedValues.size());
+		values.addAll(parsedValues);
+		
+		// Done!:
 		return values;
 	}
 
 	/**
-	 * The returned String is delimited by serialisation delimiters in order to preserve the difference between a null list and an empty list.
-	 * If separator escaping is enabled ({@link #isSeparatorEscapingEnabled()}) separators occurring within the Strings representing individual list elements will escaped.
-	 * Warning: no escaping of serialisation delimiters takes place at this level! So occurrences of serialisation delimiters within the Strings representing individual list elements will be left unchanged. 
+	 * The returned String will be wrapped/escaped using {@link #serialisationDelimiter}s in order to preserve the difference between a null list and an empty list.
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
@@ -436,8 +407,11 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		return toString(values, false); // delimited!
 	}
 	
-	/* (non-Javadoc)
+	/**
+	 * If {@code undelimited} is {@code false} the returned String will be wrapped/escaped using {@link #serialisationDelimiter}s in order to preserve the difference between a null list and an empty list.
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn#toString(java.lang.Object, boolean)
+	 * @see ValueSet#serialise(boolean, java.util.Set)
 	 */
 	@Override
 	public String toString(L values, boolean undelimited)
@@ -445,11 +419,18 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		StringBuilder bldr = new StringBuilder();
 		for(T value : values)
 		{
-			String valueString = escapeSeparator(singleColumn.valueToString(value));
-			bldr.append(valueString != null ? valueString : ""); // null values are represented by empty String
-			bldr.append(separator); // there are as many separators as elements (this allows us to preserve the difference between an empty list and a list with 1 null element)
+			String valueString = singleColumn.valueToString(value); // will return empty String for null values
+			
+			// 	If the column does not apply it's own serialisation delimiting then
+			//	 we may have to wrap the valueString in the default value serialisation delimiters:
+			if(!singleColumn.isApplyingSerialisationDelimiting())
+				valueString = StringUtils.escapeByDoublingAndWrapping(valueString, new char[] { serialisationSeparator },  DEFAULT_VALUE_SERIALISATION_DELIMITER, /*don't force:*/ false);
+			
+			bldr.append(valueString == null ? "" /*just in case*/ : valueString);
+			bldr.append(serialisationSeparator); // there are as many separators as elements (this allows us to preserve the difference between an empty list and a list with 1 null element)
 		}
-		return (undelimited ? "" : serialisationDelimiterOpen) + bldr.toString() + (undelimited ? "" : serialisationDelimiterClose); // unless undelimited: wrap in serialisation open/close chars (this allows us to preserve the difference between a null list and an empty list)
+		 // unless undelimited, wrap in serialisationDelimiters (this allows us to preserve the difference between a null list and an empty list):
+		return undelimited ? bldr.toString() : StringUtils.escapeByDoublingAndWrapping(bldr.toString(), null, serialisationDelimiter, /*force:*/ true);
 	}
 	
 	/* (non-Javadoc)
@@ -490,17 +471,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		int v = 0;
 		for(T value : values)
 		{
-			boolean valid = singleColumn.isValidValue(value);
-			if(valid)
-				try
-				{
-					escapeSeparator(singleColumn.valueToString(value));
-				}
-				catch(Exception e)
-				{
-					valid = false;
-				}
-			if(!valid)
+			if(!singleColumn.isValidValue(value))
 			{
 				String valueString = value.toString();
 				try
@@ -579,11 +550,8 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 				@SuppressWarnings("unchecked")
 				ListColumn<L, T> that = (ListColumn<L, T>) otherColumn;
 				return	this.sizeField.equals(that.sizeField) &&
-						this.serialisationDelimiterOpen == that.serialisationDelimiterOpen &&
-						this.serialisationDelimiterClose == that.serialisationDelimiterClose &&
-						this.separator == that.separator &&
-						Objects.deepEquals(this.separatorEscape, that.separatorEscape) &&
-						Objects.deepEquals(this.separatorEscapePrefix, that.separatorEscapePrefix) &&
+						this.serialisationDelimiter == that.serialisationDelimiter &&
+						this.serialisationSeparator == that.serialisationSeparator &&
 						this.singleColumn.equals(that.singleColumn); 
 			}
 			catch(ClassCastException cce)
@@ -600,11 +568,8 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + sizeField.hashCode();
-		hash = 31 * hash + serialisationDelimiterOpen;
-		hash = 31 * hash + serialisationDelimiterClose;
-		hash = 31 * hash + separator;
-		hash = 31 * hash + (separatorEscape != null ? separatorEscape.hashCode() : 0);
-		hash = 31 * hash + (separatorEscapePrefix != null ? separatorEscapePrefix.hashCode() : 0);
+		hash = 31 * hash + serialisationDelimiter;
+		hash = 31 * hash + serialisationSeparator;
 		hash = 31 * hash + singleColumn.hashCode();
 		return hash;
 	}
@@ -662,17 +627,16 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param name
 		 * @param singleColumn
 		 * @param optional
-		 * @param serialisationDelimiterOpen
-		 * @param serialisationDelimiterClose
-		 * @param separator
+		 * @param serialisationDelimiter
+		 * @param serialisationSeparator
 		 * @param separatorEscape
 		 * @param separatorEscapePrefix
 		 * 
-		 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+		 * @see #ListColumn(String, Column, boolean, int, char, char)
 		 */
-		public Simple(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		public Simple(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiter, char serialisationSeparator)
 		{
-			super(name, singleColumn, optional, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+			super(name, singleColumn, optional, serialisationDelimiter, serialisationSeparator);
 		}
 		
 		/**
@@ -682,17 +646,14 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param singleColumn
 		 * @param optional
 		 * @param defaultValue
-		 * @param serialisationDelimiterOpen
-		 * @param serialisationDelimiterClose
-		 * @param separator
-		 * @param separatorEscape
-		 * @param separatorEscapePrefix
+		 * @param serialisationDelimiter
+		 * @param serialisationSeparator
 		 * 
-		 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+		 * @see #ListColumn(String, Column, boolean, int, List, char, char)
 		 */
-		public Simple(String name, Column<T> singleColumn, boolean optional, List<T> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		public Simple(String name, Column<T> singleColumn, boolean optional, List<T> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 		{
-			super(name, singleColumn, optional, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+			super(name, singleColumn, optional, defaultValue, serialisationDelimiter, serialisationSeparator);
 		}
 		
 		/**
@@ -733,17 +694,14 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param singleColumn
 		 * @param optional
 		 * @param maxLength
-		 * @param serialisationDelimiterOpen
-		 * @param serialisationDelimiterClose
-		 * @param separator
-		 * @param separatorEscape
-		 * @param separatorEscapePrefix
+		 * @param serialisationDelimiter
+		 * @param serialisationSeparator
 		 * 
-		 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+		 * @see #ListColumn(String, Column, boolean, int, char, char)
 		 */
-		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 		{
-			super(name, singleColumn, optional, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+			super(name, singleColumn, optional, maxLength, serialisationDelimiter, serialisationSeparator);
 		}
 		
 		/**
@@ -754,17 +712,14 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param optional
 		 * @param maxLength
 		 * @param defaultValue
-		 * @param serialisationDelimiterOpen
-		 * @param serialisationDelimiterClose
-		 * @param separator
-		 * @param separatorEscape
-		 * @param separatorEscapePrefix
+		 * @param serialisationDelimiter
+		 * @param serialisationSeparator
 		 * 
-		 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+		 * @see #ListColumn(String, Column, boolean, int, List, char, char)
 		 */
-		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength, List<T> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		public Simple(String name, Column<T> singleColumn, boolean optional, int maxLength, List<T> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 		{
-			super(name, singleColumn, optional, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+			super(name, singleColumn, optional, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 		}
 		
 		/**
@@ -808,17 +763,14 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param optional
 		 * @param minLength
 		 * @param maxLength
-		 * @param serialisationDelimiterOpen
-		 * @param serialisationDelimiterClose
-		 * @param separator
-		 * @param separatorEscape
-		 * @param separatorEscapePrefix
+		 * @param serialisationDelimiter
+		 * @param serialisationSeparator
 		 * 
-		 * @see #ListColumn(String, Column, boolean, int, char, char, char, Character, Character)
+		 * @see #ListColumn(String, Column, boolean, int, char, char)
 		 */
-		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, char serialisationDelimiter, char serialisationSeparator)
 		{
-			super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+			super(name, singleColumn, optional, minLength, maxLength, serialisationDelimiter, serialisationSeparator);
 		}
 
 		/**
@@ -830,17 +782,14 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param minLength
 		 * @param maxLength
 		 * @param defaultValue
-		 * @param serialisationDelimiterOpen
-		 * @param serialisationDelimiterClose
-		 * @param separator
-		 * @param separatorEscape
-		 * @param separatorEscapePrefix
+		 * @param serialisationDelimiter
+		 * @param serialisationSeparator
 		 * 
-		 * @see #ListColumn(String, Column, boolean, int, List, char, char, char, Character, Character)
+		 * @see #ListColumn(String, Column, boolean, int, List, char, char)
 		 */
-		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, List<T> defaultValue, char serialisationDelimiterOpen, char serialisationDelimiterClose, char separator, Character separatorEscape, Character separatorEscapePrefix)
+		public Simple(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength, List<T> defaultValue, char serialisationDelimiter, char serialisationSeparator)
 		{
-			super(name, singleColumn, optional, minLength, maxLength, defaultValue, serialisationDelimiterOpen, serialisationDelimiterClose, separator, separatorEscape, separatorEscapePrefix);
+			super(name, singleColumn, optional, minLength, maxLength, defaultValue, serialisationDelimiter, serialisationSeparator);
 		}
 
 		@Override

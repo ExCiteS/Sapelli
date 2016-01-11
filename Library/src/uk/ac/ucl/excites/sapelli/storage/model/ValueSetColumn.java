@@ -29,6 +29,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -246,30 +247,55 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
-	public VS parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
+	public VS parse(String valueSetString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		return parse(recordStr, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
+		return parse(valueSetString, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
 	}
 	
-	public VS parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	/**
+	 * @param valueSetString the {@link String} to parse, should be neither {@code null} nor empty {@code String} (as those both represent a {@code null} value)
+	 * @param includeVirtual
+	 * @param skipColumns
+	 * @return the parsed ValueSet
+	 * @throws ParseException
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 * @see #parse(String)
+	 * @see {@link ValueSet#serialise(boolean, Set)}
+	 */
+	public VS parse(String valueSetString, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		VS record = getNewValueSet();
-		record.parse(recordStr, includeVirtual, skipColumns);
-		return record;
+		if(isApplyingSerialisationDelimiting())
+			valueSetString = StringUtils.deescapeByDoublingAndWrapping(valueSetString, getSerialisationDelimiter());
+		VS valueSet = getNewValueSet();
+		valueSet.parse(valueSetString, includeVirtual, skipColumns); // throws an IllegalArgumentException if the valueSetString is null or ""
+		return valueSet;
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
-	public String toString(VS record)
+	public String toString(VS valueSet)
 	{
-		return toString(record, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
+		return toString(valueSet, includeVirtualColsInStringSerialisation, getSkipColumns(includeSkipColsInStringSerialisation));
 	}
 	
-	public String toString(VS record, boolean includeVirtual, Set<Column<?>> skipColumns)
+	/**
+	 * @param valueSet
+	 * @param includeVirtual
+	 * @param skipColumns
+	 * @return
+	 * 
+	 * @see #toString(ValueSet)
+	 * @see {@link ValueSet#serialise(boolean, Set)}
+	 */
+	public String toString(VS valueSet, boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
-		return record.serialise(includeVirtual, skipColumns);
+		String serialisedValueSet = valueSet.serialise(includeVirtual, skipColumns);
+		return isApplyingSerialisationDelimiting() ?
+			StringUtils.escapeByDoublingAndWrapping(serialisedValueSet, null, getSerialisationDelimiter(), /*force:*/ true) :
+			serialisedValueSet;
 	}
 
 	@Override

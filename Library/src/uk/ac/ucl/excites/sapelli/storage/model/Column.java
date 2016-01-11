@@ -323,12 +323,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Converts the given String representation to a value of type {@code <T>} and stores it in this column on the given ValueSet.
 	 * Note that this obviously means the existing value in this column will be replaced.
 	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then the given {@code valueString}
+	 * is expected to be wrapped/escaped using serialisation delimiters (the char returned
+	 * by {@link #getSerialisationDelimiter()}).
+	 * 
 	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
 	 * @return the stored value
 	 * @throws ParseException
 	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parsed value is invalid
 	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
+	 * 
+	 * @see {@link #stringToValue(String)}
+	 * @see {@link #parse(String)}
 	 */
 	public T storeString(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
@@ -459,6 +467,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	
 	/**
 	 * Retrieves previously stored value for this column from the given valueSet and converts it to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) if the valueSet does not contain a value for this Column
@@ -593,15 +606,23 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Parses a string representation of a value to produce a instance of {@code <T>}.
+	 * Parses a String representation of a value to produce a instance of {@code <T>}.
 	 * Accepts {@code null} or empty {@code String}s but treats them as representing a {@code null} value.
 	 * If no {@code null} or empty {@code String}s are expected it may be better to call {@link #parse(String)} instead.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then the given {@code valueString}
+	 * is expected to be wrapped/escaped using serialisation delimiters (the char returned
+	 * by {@link #getSerialisationDelimiter()}).
 	 * 
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
 	 * @return the corresponding value of type {@code <T>}, or {@code null} if the given valueString was {@code null} or empty {@code String}
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
+	 * 
+	 * @see {@link #stringToValue(String)}
+	 * @see {@link #toString(Object)}
 	 */
 	public T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
@@ -612,20 +633,35 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Parses a string representation of a value to produce a instance of {@code <T>}.
+	 * Parses a String representation of a value to produce a instance of {@code <T>}.
 	 * Does *not* accept {@code null} or empty {@code String}s, if these are expected it may be better to use {@link #stringToValue(String)}.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then the given {@code valueString}
+	 * is expected to be wrapped/escaped using serialisation delimiters (the char returned
+	 * by {@link #getSerialisationDelimiter()}).
 	 * 
 	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String} (as those both represent a {@code null} value)
 	 * @return the parsed value as type {@code <T>}
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
+	 * 
+	 * @see {@link #toString(Object)}
 	 */
 	public abstract T parse(String valueString) throws ParseException, IllegalArgumentException, NullPointerException;
 	
 	/**
+	 * Converts the given value to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
 	 * @param value may be {@code null}, in which case {@code null} is returned
 	 * @return a {@link String} representation of the value, or {@code null} if the value was {@code null}
+	 * @see #toString(Object)
 	 */
 	public String valueToString(T value)
 	{
@@ -633,9 +669,17 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * Converts the given value to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
 	 * @param value may be {@code null}, in which case "" or {@code null} is returned depending on {@code emptyForNull}
 	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) in case of a {@code null} {@code value}
 	 * @return a {@link String} representation of the given {@code value}, or {@code null} if the value was {@code null} and {@code emptyForNull} was {@code false}
+	 * @see #toString(Object)
 	 */
 	public String valueToString(T value, boolean emptyForNull)
 	{
@@ -646,12 +690,16 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
+	 * Converts the given value to a String representation.
+	 * 
 	 * @param valueObject may be {@code null}, in which case {@code null} is returned
 	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return a String representation of the valueObject, or {@code null} if the valueObject was {@code null}
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
 	 * @see #cast(Object)
+	 * @see #valueToString(Object)
+	 * @see #toString(Object)
 	 */
 	public String objectToString(Object valueObject, boolean convert) throws ClassCastException
 	{
@@ -659,10 +707,40 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
+	 * Converts the given value to a String representation.
+	 * 
+	 * If the Column applies its own delimiting of serialised values, as indicated by
+	 * {@link #isApplyingSerialisationDelimiting()}, then returned String will be wrapped
+	 * in serialisation delimiters (the char returned by {@link #getSerialisationDelimiter()})
+	 * and any occurrences of that character *inside* the serialised value will be doubled.
+	 * 
 	 * @param value should not be {@code null}!
-	 * @return
+	 * @return a String representation of the given value
+	 * @see #getSerialisationDelimiter()
 	 */
 	public abstract String toString(T value);
+	
+	/**
+	 * Returns the character used to wrap serialised values in (used by {@link #toString()}).
+	 * If {@code null} (default implementation) no wrapping happens.
+	 * 
+	 * Subclasses may override this.
+	 * 
+	 * @return the character used to wrap serialised values in, or {@null}
+	 */
+	public Character getSerialisationDelimiter()
+	{
+		return null; // default
+	}
+	
+	/**
+	 * @return whether or not serialised values returned by {@link #toString()} will be wrapped in delimiters.
+	 * @see #getSerialisationDelimiter()
+	 */
+	public final boolean isApplyingSerialisationDelimiting()
+	{
+		return getSerialisationDelimiter() != null;
+	}
 
 	/**
 	 * Converts the given {@code <T>} value to binary representation and returns the result as a {@code byte[]}.
