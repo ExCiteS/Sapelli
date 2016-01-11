@@ -161,6 +161,7 @@
     <string name="exportDeleteFailureMsg">Failed to delete (some of) the records, due to: %s.</string>
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exporting_data">Exporting data …</string>
+    <string name="unknownExportExtension">Invalid or unknown export file extension: %s</string>
     <string name="importFromX">Importing records from %s …</string>
     <string name="storingXRecords">Storing %d records …</string>
     <string name="deletingXRecords">Deleting %d records …</string>
