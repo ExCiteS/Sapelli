@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
@@ -77,11 +78,11 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @param name
 	 * @param columnSet
 	 * @param optional
-	 * @param defaultValue
+	 * @param defaultValueSet
 	 */
-	public ValueSetColumn(String name, CS columnSet, boolean optional, VS defaultValue)
+	public ValueSetColumn(String name, CS columnSet, boolean optional, VS defaultValueSet)
 	{
-		this(name, columnSet, optional, defaultValue, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
+		this(name, columnSet, optional, defaultValueSet, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
 	}
 	
 	/**
@@ -100,24 +101,50 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @param name
 	 * @param columnSet
 	 * @param optional
-	 * @param defaultValue
+	 * @param defaultValueSet
 	 * @param includeSkipColsInStringSerialisation whether serialisation/deserialisation to/from String should include the subcolumns in skipColumns
 	 * @param includeVirtualColsInStringSerialisation whether serialisation/deserialisation to/from String should include virtual subcolumns
 	 */
-	public ValueSetColumn(String name, CS columnSet, boolean optional, VS defaultValue, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
+	public ValueSetColumn(String name, CS columnSet, boolean optional, VS defaultValueSet, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
-		super(name, optional, defaultValue);
+		super(name, optional, defaultValueSet);
 		if(columnSet == null || !columnSet.isSealed())
-			throw new IllegalArgumentException("RecordColumn needs a non-null, sealed columnSet to specify its subcolumns.");
+			throw new IllegalArgumentException("ValueSetColumn needs a non-null, sealed columnSet to specify its subcolumns.");
+		
+		// Deal with defaultValueSet:
+		if(defaultValueSet != null)
+		{
+			// Check columnSet:
+			if(defaultValueSet.columnSet == columnSet)
+				throw new IllegalArgumentException("DefaultValueSet must be of the same columnSet.");
+			// Check consistency of defaultValue wrt defaultValues of subcolumns:
+			for(Column<?> subCol : columnSet.getColumns(false))
+				if(subCol.defaultValue != null && !Objects.deepEquals(subCol.retrieveValue(defaultValueSet), subCol.defaultValue))
+					throw new IllegalArgumentException("Default value of subcolumn must be either null or equal to the corresponding value in the defaultValue of the ValueSetColumn");
+		}
+		
 		this.columnSet = columnSet;
 		this.includeSkipColsInStringSerialisation = includeSkipColsInStringSerialisation;
 		this.includeVirtualColsInStringSerialisation = includeVirtualColsInStringSerialisation;
 	}
 	
 	/**
-	 * @return new "sub-ValueSet" instance
+	 * @return new "sub-ValueSet" instance, in which each value should be set to the {@link #defaultValue} of the corresponding sub-{@link Column}
 	 */
 	public abstract VS getNewValueSet();
+	
+	/**
+	 * Creates a new "sub-ValueSet" instance and stores it in this column on the given valueSet.
+	 * Note that this obviously means the existing sub-ValueSet (i.e. value) in this column will be replaced.
+	 * 
+	 * @param valueSet
+	 * @return the new "sub-ValueSet" instance
+	 * @see #getNewValueSet()
+	 */
+	public VS storeNewValueSet(ValueSet<?> valueSet)
+	{
+		return storeValue(valueSet, getNewValueSet());
+	}
 	
 	/**
 	 * Register a column that needs to be skipped upon reading/writing to binary representations and
@@ -322,11 +349,58 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 	
 	/**
+	 * If the value of this column in the given valueSet is currently {@code null} (i.e. the column is "empty") then it will be
+	 * reset to the {@link #defaultValue} (assumed be be non-{@code null}), optionally only if the column is required (i.e. non-optional)
+	 * Use with care!
+	 * 
+	 * @param valueSet
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns
+	 *
+	 * @see #resetValue(ValueSet)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#resetIfEmpty(uk.ac.ucl.excites.sapelli.storage.model.ValueSet, boolean)
+	 */
+	@Override
+	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse) throws IllegalArgumentException
+	{
+		// At this level:
+		super.resetIfEmpty(valueSet, onlyIfRequired, false);
+		// Level(s) below:
+		VS subValueSet = null;
+		if(recurse && (subValueSet = retrieveValue(valueSet)) != null && !subValueSet.hasEqualValues(defaultValue))
+			for(Column<?> subCol : columnSet.getColumns(false))
+				subCol.resetIfEmpty(subValueSet, onlyIfRequired, true);
+	}
+	
+	/**
+	 * Checks, possibly recursively, whether the (sub)value(s) for this column in the given valueSet equals the (sub)column's/s' {@link defaultValue}.
+	 *
+	 * @param valueSet should not be {@code null}
+	 * @return whether or not a non-{@code null} value is set
+	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 */
+	@Override
+	public final boolean isValueDefault(ValueSet<?> valueSet) throws IllegalArgumentException
+	{
+		VS subValueSet = retrieveValue(valueSet);
+		if(defaultValue != null)
+			return defaultValue.hasEqualValues(subValueSet); // returns false if subValueSet is null
+		// defaultValue is null...
+		else if(subValueSet == null)
+			return true; // subValueSet is too...
+		//else: recursive...
+		for(Column<?> subCol : columnSet.getColumns(false))
+			if(!subCol.isValueDefault(subValueSet))
+				return false;
+		return true;
+	}
+
+	/**
 	 * Checks, possibly recursively, whether this column has a valid value in the given valueSet.
 	 * A {@code null} value is valid only if it the column is optional. A non-{@code null} value is valid if it passes the {@link #validate(Object)} tests.
 	 * 
 	 * @param valueSet should not be {@code null}
-	 * @param recurse whether or not to check recursively if all subColumns also valid values
+	 * @param recurse whether or not to check recursively if all subColumns also have valid values
 	 * @return whether the value currently contained by the valueSet for this column is valid (if recursive is {@code false}), and whether the same applies for all its sub[...]columns (if recurse if {@code true})
 	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
 	 */

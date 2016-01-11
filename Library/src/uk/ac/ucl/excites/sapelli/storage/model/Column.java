@@ -202,6 +202,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		return isRequired(false); // don't recurse by default
 	}
 	
+	public final boolean hasDefautValue()
+	{
+		return defaultValue != null;
+	}
+	
 	/**
 	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
 	 * 
@@ -383,6 +388,38 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	{
 		storeValueUnchecked(valueSet, defaultValue);
 	}
+	
+	/**
+	 * If the value of this column in the given valueSet is currently {@code null} (i.e. the column is "empty") then it will be
+	 * reset to the {@link #defaultValue} (assumed be be non-{@code null}), optionally only if the column is required (i.e. non-optional).
+	 * Use with care!
+	 * 
+	 * @param valueSet
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * 
+	 * @see #resetValue(ValueSet)
+	 */
+	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired)
+	{
+		resetIfEmpty(valueSet, onlyIfRequired, false); // don't recurse by default
+	}
+	
+	/**
+	 * If the value of this column in the given valueSet is currently {@code null} (i.e. the column is "empty") then it will be
+	 * reset to the {@link #defaultValue} (assumed be be non-{@code null}), optionally only if the column is required (i.e. non-optional)
+	 * Use with care!
+	 * 
+	 * @param valueSet
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * 
+	 * @see #resetValue(ValueSet)
+	 */
+	public void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse)
+	{
+		if(defaultValue != null && !isValuePresent(valueSet) && !(optional && onlyIfRequired))
+			resetValue(valueSet);
+	}
 
 	/**
 	 * Retrieves previously stored value for this column from the given valueSet and casts it to the relevant native type (T).
@@ -456,7 +493,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Checks whether a non-{code null} value for this column is set in the given valueSet.
+	 * Checks whether a non-{@code null} value for this column is set in the given valueSet.
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @return whether or not a non-{@code null} value is set
@@ -468,7 +505,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks, possibly recursively, whether a non-{code null} value for this column is set in the given valueSet.
+	 * Checks, possibly recursively, whether a non-{@code null} value for this column is set in the given valueSet.
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value (only relevant if this is a composite Column)
@@ -481,7 +518,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks whether this column either has a non-{code null} value in the given valueSet or is optional.
+	 * Checks whether this column either has a non-{@code null} value in the given valueSet or is optional.
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @return whether a non-{@code null} value is set or the column is optional 
@@ -493,7 +530,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks, possibly recursively, whether this column either has a non-{code null} value in the given valueSet or is optional.
+	 * Checks, possibly recursively, whether this column either has a non-{@code null} value in the given valueSet or is optional.
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value or are optional (only relevant if this is a composite Column)
@@ -506,6 +543,18 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 			return true;
 		else
 			return optional;
+	}
+	
+	/**
+	 * Checks whether the value for this column in the given valueSet equals the column's {@link defaultValue}.
+	 *
+	 * @param valueSet should not be {@code null}
+	 * @return whether or not a non-{@code null} value is set
+	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 */
+	public boolean isValueDefault(ValueSet<?> valueSet) throws IllegalArgumentException
+	{
+		return Objects.deepEquals(retrieveValue(valueSet), defaultValue);
 	}
 	
 	/**
@@ -526,7 +575,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * A {@code null} value is valid only if it the column is optional. A non-{@code null} value is valid if it passes the {@link #validate(Object)} tests.
 	 * 
 	 * @param valueSet should not be {@code null}
-	 * @param recurse whether or not to check recursively if all subColumns also valid values (only relevant if this is a composite Column)
+	 * @param recurse whether or not to check recursively if all subColumns also have valid values (only relevant if this is a composite Column)
 	 * @return whether the value currently contained by the valueSet for this column is valid (note that a {@code null} value is valid if the column is optional)
 	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
 	 */

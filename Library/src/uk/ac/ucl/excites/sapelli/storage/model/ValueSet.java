@@ -288,7 +288,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether all non-optional columns from the given schema have been assigned a non-{@code null} value in this ValueSet.
+	 * Checks whether all non-optional columns from the given columnSet have been assigned a non-{@code null} value in this ValueSet.
 	 * The given ColumnSet must be this ValueSet's ColumnSet or a subset of it.
 	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
 	 * 
@@ -304,7 +304,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks, optionally recursive, whether all non-optional columns from the given schema have been assigned a non-{@code null} value in this ValueSet.
+	 * Checks, optionally recursive, whether all non-optional columns from the given columnSet have been assigned a non-{@code null} value in this ValueSet.
 	 * The given ColumnSet must be this ValueSet's ColumnSet or a subset of it.
 	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
 	 * 
@@ -325,6 +325,150 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
+	 * Checks whether this ValueSet has a {@code null} value for each of the (non-virtual) columns in its ColumnSet.
+	 * 
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	public boolean isEmpty()
+	{
+		return isEmpty(false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks whether this ValueSet has a {@code null} value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	public boolean isEmpty(Set<? extends Column<?>> skipColumns)
+	{
+		return isEmpty(skipColumns, false); // don't recurse by default
+	}
+	
+	/**
+	 * Checks, optionally recursive, whether this ValueSet has a {@code null} value for each of the (non-virtual) columns in its ColumnSet.
+	 * 
+	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have all {@code null} values
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	public boolean isEmpty(final boolean recurse)
+	{
+		return isEmpty(Collections.<Column<?>> emptySet(), recurse);
+	}
+	
+	/**
+	 * Checks, optionally recursive, whether this ValueSet has a {@code null} value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have all {@code null} values
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValuePresent(ValueSet, boolean)}
+	 */
+	protected boolean isEmpty(Set<? extends Column<?>> skipColumns, boolean recurse)
+	{
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			if(col.isValuePresent(this, recurse))
+				return false;
+		return true;
+	}
+	
+	/**
+	 * Check whether this ValueSet holds the default value for each of the (non-virtual) columns in its ColumnSet.
+	 * 
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValueDefault(ValueSet)}
+	 */
+	protected boolean isDefault()
+	{
+		return isDefault(Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Check whether this ValueSet holds the default value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this check
+	 * @return whether there is a {@code null} value in each column
+	 * 
+	 * @see {@link Column#isValueDefault(ValueSet)}
+	 */
+	protected boolean isDefault(Set<? extends Column<?>> skipColumns)
+	{
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			if(!col.isValueDefault(this))
+				return false;
+		return true;
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual) columns which are currently empty (i.e. containing a {@code null} value)
+	 * to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 * 
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean)}
+	 */
+	public void resetEmptyColumns(final boolean onlyIfRequired)
+	{
+		resetEmptyColumns(onlyIfRequired, false); // don't recurse by default
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual and non-skipped) columns which are currently empty (i.e. containing a {@code null}
+	 * value) to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this operation
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean)}
+	 */
+	public void resetEmptyColumns(Set<? extends Column<?>> skipColumns, boolean onlyIfRequired)
+	{
+		resetEmptyColumns(skipColumns, onlyIfRequired, false); // don't recurse by default
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual) (sub)columns which are currently empty (i.e. containing a {@code null} value)
+	 * to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 *
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean, boolean)}
+	 */
+	public void resetEmptyColumns(boolean onlyIfRequired, boolean recurse)
+	{
+		resetEmptyColumns(Collections.<Column<?>> emptySet(), onlyIfRequired, recurse);
+	}
+	
+	/**
+	 * Method which resets the values of (non-virtual and non-skipped) (sub)columns which are currently empty (i.e. containing a {@code null}
+	 * value) to their {@link #defaultValue} (assumed be be non-{@code null}), optionally only for required (i.e. non-optional) columns.
+	 * 
+	 * @param skipColumns a set of columns to ignore in this operation
+	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
+	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * 
+	 * @see {@link Column#resetValue(ValueSet)}
+	 * @see {@link Column#resetIfEmpty(ValueSet, boolean, boolean)}
+	 */
+	public void resetEmptyColumns(Set<? extends Column<?>> skipColumns, boolean onlyIfRequired, boolean recurse)
+	{
+		for(Column<?> col : columnSet.getColumns(false, skipColumns))
+			col.resetIfEmpty(this, onlyIfRequired, recurse);
+	}
+	
+	/**
 	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
@@ -338,7 +482,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Checks whether this ValueSet has a valid value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
 	 * @param skipColumns a set of columns to ignore in this check
@@ -352,7 +496,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Checks, optionally recursive, whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
 	 * @param recurse whether or not to recursively check whether the subcolumns of composite columns also have valid values
@@ -366,7 +510,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	}
 	
 	/**
-	 * Checks whether this ValueSet has a valid value for each of the (non-virtual) columns in its ColumnSet.
+	 * Checks, optionally recursive, whether this ValueSet has a valid value for each of the (non-virtual and non-skipped) columns in its ColumnSet.
 	 * Note that is it should not actually be possible to have stored invalid values in the ValueSet.
 	 * 
 	 * @param skipColumns a set of columns to ignore in this check
