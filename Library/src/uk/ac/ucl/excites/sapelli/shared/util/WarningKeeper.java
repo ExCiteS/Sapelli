@@ -18,7 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.shared.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,5 +37,43 @@ public interface WarningKeeper
 	public List<String> getWarnings();
 
 	public void clearWarnings();
+	
+	/**
+	 * @author mstevens
+	 */
+	public class WarningKeeperImpl implements WarningKeeper
+	{
+		
+		private List<String> warnings;
+
+		@Override
+		public void addWarning(String warning)
+		{
+			if(warnings == null)
+				warnings = new ArrayList<String>();
+			warnings.add(warning);
+		}
+
+		@Override
+		public void addWarnings(Collection<String> warnings)
+		{
+			if(this.warnings == null)
+				this.warnings = new ArrayList<String>();
+			this.warnings.addAll(warnings);
+		}
+
+		@Override
+		public List<String> getWarnings()
+		{
+			return warnings != null ? warnings : Collections.<String> emptyList();
+		}
+		
+		@Override
+		public void clearWarnings()
+		{
+			warnings = null;
+		}
+		
+	}
 	
 }
