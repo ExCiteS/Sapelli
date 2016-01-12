@@ -365,7 +365,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 			if(valueString.charAt(valueString.length() - 1) != serialisationDelimiter)
 				throw new ParseException("String does not end with " + serialisationDelimiter, valueString.length() - 1);
 			// Remove serialisationDelimiters:
-			return valueString.substring(1, valueString.length() - 1);
+			return StringUtils.deescapeByDoublingAndWrapping(valueString, serialisationDelimiter);
 		}
 		else
 			return valueString;

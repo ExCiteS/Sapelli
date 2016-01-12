@@ -393,7 +393,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 			if(listString.charAt(listString.length() - 1) != serialisationDelimiter)
 				throw new ParseException("String does not end with " + serialisationDelimiter, listString.length() - 1);
 			// Remove serialisation delimiters:
-			listString =  listString.substring(1, listString.length() - 1);
+			listString =  StringUtils.deescapeByDoublingAndWrapping(listString, serialisationDelimiter);
 		}
 		
 		// Parse:
