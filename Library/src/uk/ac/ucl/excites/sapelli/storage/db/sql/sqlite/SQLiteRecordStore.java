@@ -189,6 +189,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	/**
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#sanitiseIdentifier(java.lang.String)
+	 * @see https://www.sqlite.org/lang_keywords.html
 	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
 	 */
 	@Override
@@ -197,18 +198,18 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		if(identifierPattern.matcher(identifier).matches())
 			return identifier;
 		else
-			return '[' + identifier + ']';
+			return '"' + identifier + '"';
 	}
 
 	@Override
-	protected boolean doesTableExist(String tableName)
+	protected boolean doesTableExist(String unsanitisedTableName)
 	{
 		SQLiteCursor cursor = null;
 		try
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
 									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null)),
-									Collections.<String> singletonList(tableName));
+									Collections.<String> singletonList(unsanitisedTableName));
 			return cursor != null && cursor.hasRow();
 		}
 		catch(DBException e)
@@ -830,45 +831,80 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		
 		/**
-		 * For now (until we implement a solution based on normalisation) we store the values of ListColumns as Blobs.
+		 * We store the values of ListColumns as either String or BLOBs, based on the {@code useStringBasedColumn} parameter.
+		 * (Later we may change this by solution based on normalisation.)
 		 * 
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#visitListColumn(uk.ac.ucl.excites.sapelli.storage.model.ListColumn)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#visitListColumn(uk.ac.ucl.excites.sapelli.storage.model.ListColumn, boolean)
 		 */
 		@Override
-		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol)
+		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol, boolean useStringBasedColumn)
 		{
-			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, getColumnPointer(listCol), new TypeMapping<byte[], L>()
-			{
-
-				@Override
-				public byte[] toSQLType(L value)
+			if(useStringBasedColumn)
+			{	// use SQLiteStringColumn
+				table.addColumn(new SQLiteStringColumn<L>(SQLiteRecordStore.this, getColumnPointer(listCol), new TypeMapping<String, L>()
 				{
-					try
+					@Override
+					public String toSQLType(L value)
 					{
-						return listCol.toBytes(value, true);
+						try
+						{
+							return listCol.toString(value, true);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace(System.err);
+							return null;
+						}
 					}
-					catch(Exception e)
+	
+					@Override
+					public L toSapelliType(String value)
 					{
-						e.printStackTrace(System.err);
-						return null;
+						try
+						{
+							return listCol.parse(value, true);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace(System.err);
+							return null;
+						}
 					}
-				}
-
-				@Override
-				public L toSapelliType(byte[] value)
+				}));
+			}
+			else
+			{	// use SQLiteBlobColumn:
+				table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, getColumnPointer(listCol), new TypeMapping<byte[], L>()
 				{
-					try
+					@Override
+					public byte[] toSQLType(L value)
 					{
-						return listCol.fromBytes(value, true);
+						try
+						{
+							return listCol.toBytes(value, true);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace(System.err);
+							return null;
+						}
 					}
-					catch(Exception e)
+	
+					@Override
+					public L toSapelliType(byte[] value)
 					{
-						e.printStackTrace(System.err);
-						return null;
+						try
+						{
+							return listCol.fromBytes(value, true);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace(System.err);
+							return null;
+						}
 					}
-				}
-				
-			}));
+				}));
+			}
 		}
 
 	}
@@ -974,7 +1010,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				for(Column<?> idxCol : idx.getColumns(false))
 					// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SQLiteColumn that represents part of it:
 					for(SQLiteColumn<?, ?> idxSCol : table.getSQLColumns(idxCol))
-						bldr.append(idxSCol.name);
+						bldr.append(idxSCol.sanitisedName);
 				bldr.commitTransaction(false);
 				bldr.append(")", false);
 				// conflict-clause?

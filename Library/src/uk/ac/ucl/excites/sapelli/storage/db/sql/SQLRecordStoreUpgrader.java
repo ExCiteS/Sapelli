@@ -165,11 +165,12 @@ public abstract class SQLRecordStoreUpgrader
 	{
 		
 		/**
+		 * @param unsanitisedTableName
 		 * @see SQLRecordStore#doesTableExist(String)
 		 */
-		public boolean doesTableExist(SQLRecordStore<?, ?, ?> recordStore, String tableName)
+		public boolean doesTableExist(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName)
 		{
-			return recordStore.doesTableExist(tableName) || recordStore.doesTableExist(recordStore.sanitiseIdentifier(tableName));
+			return recordStore.doesTableExist(unsanitisedTableName);
 		}
 		
 		/**
@@ -183,12 +184,14 @@ public abstract class SQLRecordStoreUpgrader
 		/**
 		 * @see SQLRecordStore#dropTable(String, boolean)
 		 */
-		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String tableName, boolean force) throws DBException
+		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName, boolean force) throws DBException
 		{
-			recordStore.dropTable(tableName, force);
+			recordStore.dropTable(unsanitisedTableName, force);
 		}
 		
 		/**
+		 * @param oldTableName - unsanitised!
+		 * @param newTableName - unsanitised!
 		 * @see SQLRecordStore#renameTable(String, String)
 		 */
 		public void renameTable(SQLRecordStore<?, ?, ?> recordStore, String oldTableName, String newTableName) throws DBException
@@ -197,6 +200,7 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
+		 * @return a {@link List} of the (unsanitised!) names of all tables in the database
 		 * @see SQLRecordStore#getAllTableNames()
 		 */
 		public List<String> getAllTableNames(SQLRecordStore<?, ?, ?> recordStore)

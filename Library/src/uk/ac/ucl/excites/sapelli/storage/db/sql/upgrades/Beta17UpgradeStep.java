@@ -33,11 +33,13 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader.UpgradeSt
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -111,8 +113,8 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			}
 		
 		// Drop existing Models & Schemata tables (will be recreated below):
-		upgradeOps.dropTable(recordStore, getOldTableName(Model.MODEL_SCHEMA), true);
-		upgradeOps.dropTable(recordStore, getOldTableName(Model.SCHEMA_SCHEMA), true);
+		upgradeOps.dropTable(recordStore, getOldTableName(Model.MODEL_SCHEMA), /*force:*/ true);
+		upgradeOps.dropTable(recordStore, getOldTableName(Model.SCHEMA_SCHEMA), /*force:*/ true);
 		
 		// Create new Models table and insert new records:
 		recordStore.store(newModelRecs); // this also achieves renaming the "compressedSerialisedObject" column to "serialisation"
@@ -130,7 +132,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			// Remember (new) table so we don't delete the table below:
 			keepTables.add(schema.tableName); // !!!
 			
-			//	Store new schemata record:
+			//	Store new schemata (for new tablename) record:
 			recordStore.store(schema.getMetaRecord()); // this also achieves adding new "flags" and "tableName" columns
 			
 			//	Rename table if necessary:
@@ -149,15 +151,17 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			
 			// Check if schema has at least one (non-virtual) ValueSetColumn with all-optional subcolumns:
 			boolean hasValueSetColWithAllOptionalSubCols = false;
-			for(Column<?> col : schema.getColumns(false))
+			boolean hasListColumnThatNeedsConversion = false;
+			for(Column<?> col : tableConverter.getOldSchema().getColumns(false))
+			{
 				if(col instanceof ValueSetColumn<?, ?> && ((ValueSetColumn<?, ?>) col).hasAllOptionalSubColumns())
-				{
 					hasValueSetColWithAllOptionalSubCols = true;
-					break;
-				}
+				else if(col instanceof ListColumn && !(col instanceof ByteArrayListColumn))
+					hasListColumnThatNeedsConversion = true;
+			}
 			
 			// Check if we need to do anything:
-			if(tableConverter.isTransparent() && !hasValueSetColWithAllOptionalSubCols)
+			if(tableConverter.isTransparent() && !hasValueSetColWithAllOptionalSubCols && !hasListColumnThatNeedsConversion)
 				// this schema/table does not need conversion.
 				continue;
 			
@@ -169,6 +173,11 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 				 * this behaviour. Disabling the behaviour ensures we get a SQLTable that is compatible with
 				 * the table as it exists in the db, enabling us to ... */
 			
+			if(hasListColumnThatNeedsConversion)
+				// Temporarily switch to using BLOB-base SQLColumns for all ListColumns,
+				//	so we can read from the existing BLOB-backed ListColumns:
+				upgradeOps.getTableFactory(recordStore).setUseBLOBsForAllListColumns(true);
+			
 			// ... get all current records by querying the db with the oldSchema:
 			List<Record> oldRecords = recordStore.retrieveRecords(tableConverter.getOldSchema());
 
@@ -178,14 +187,18 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 			if(hasValueSetColWithAllOptionalSubCols)
 				// Re-enable the use of boolean columns to represent optional ValueSetColumns:
 				upgradeOps.getTableFactory(recordStore).setInsertBoolColsForAllOptionalValueSetCols(true);
-				
+			
+			if(hasListColumnThatNeedsConversion)
+				// Switch off use of BLOB-based SQLColumn for all ListColumns:
+				upgradeOps.getTableFactory(recordStore).setUseBLOBsForAllListColumns(false);
+			
 			// Re-insert all converted records in new table (which will have the boolean column representing the ValueSetColumn):
 			recordStore.store(tableConverter.convertRecords(oldRecords));
 		}
 		
 		// Delete unknown/unupgradable tables:
 		for(String tableName : upgradeOps.getAllTableNames(recordStore))
-			if(!keepTables.contains(tableName) && !keepTables.contains(upgradeOps.sanitiseIdentifier(recordStore, tableName)))
+			if(!keepTables.contains(tableName))
 			{
 				upgradeOps.addWarning("Deleting unknown table \'" + tableName + "\'");
 				upgradeOps.dropTable(recordStore, tableName, false);
@@ -198,7 +211,7 @@ public abstract class Beta17UpgradeStep<C extends StorageClient> extends Upgrade
 	
 	/**
 	 * @param schema
-	 * @return the name the table for the given Schema would have had prior to the upgrade
+	 * @return the (unsanitised!) name the table for the given Schema would have had prior to the upgrade
 	 */
 	protected abstract String getOldTableName(Schema schema);
 	

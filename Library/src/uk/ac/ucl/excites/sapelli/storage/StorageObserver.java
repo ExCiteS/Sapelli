@@ -32,6 +32,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 public interface StorageObserver
 {
 	
-	public void storageEvent(RecordOperation operation, RecordReference recordRef);
+	/**
+	 * @param operation
+	 * @param recordRef
+	 * @param recordStore
+	 */
+	public void storageEvent(RecordOperation operation, RecordReference recordRef, RecordStore recordStore);
 	
 }
