@@ -56,7 +56,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static int MaximumCharsIn(int allowedBytes, Charset charset)
 	{
-		return (int) Math.floor(allowedBytes / charset.newEncoder().maxBytesPerChar()); 
+		return (int) Math.floor(allowedBytes / (double) CharsetHelpers.GetMaxBytesPerChar(charset)); 
 	}
 	
 	/**
