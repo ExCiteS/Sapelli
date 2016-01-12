@@ -44,12 +44,23 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		CAPTURE,
 		CAPTURE_FROM_GALLERY,
 		GALLERY,
-		SINGLE_ITEM_REVIEW, // alternative to gallery mode when field.max = 1
-		SINGLE_ITEM_REVIEW_FROM_GALLERY // showing a single item from gallery
+		/**
+		 * Review a single item after its capture
+		 */
+		REVIEW_ITEM_POST_CAPTURE,
+		/**
+		 * Showing a single item from gallery
+		 */
+		REVIEW_ITEM_FROM_GALLERY,
+		/**
+		 * Alternative to gallery mode when field.max = 1
+		 */
+		REVIEW_ITEM_PSEUDO_GALLERY
 	}
 	
 	// Keys to use when obtaining values from field arguments:
-	protected static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
+	protected static final String REVIEW_FROM_GALLERY_FILE_PATH_KEY = "REVIEW_FROM_GALLERY_FILE_PATH_KEY";
+	protected static final String GO_TO_POST_CAPTURE_REVIEW = "GO_TO_POST_CAPTURE_REVIEW";
 	protected static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 	
 	// DYNAMIC ----------------------------------------------------------------
@@ -71,28 +82,42 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		if(!isFieldShownAlone())
 			return;
 		
-		if(fieldArgs.getBoolean(GO_TO_CAPTURE_KEY, false))
+		if(!field.hasAttachements(record))
+		{	// we have no attachments yet --> go to capture
+			mode = Mode.CAPTURE;
+		}
+		// Changing mode without leaving the MediaField:
+		else if(fieldArgs.getBoolean(GO_TO_CAPTURE_KEY, false))
 		{	// we have been explicitly told to go to capture (by means of the "add more" button in the gallery):
 			mode = Mode.CAPTURE_FROM_GALLERY;
 			fieldArgs.remove(GO_TO_CAPTURE_KEY); // avoid re-entry
 		}
-		else if(!field.hasAttachements(record))
-		{	// we have no attachments yet --> go to capture
-			mode = Mode.CAPTURE;
+		else if(fieldArgs.getBoolean(GO_TO_POST_CAPTURE_REVIEW, false))
+		{
+			if(field.getMax() == 1)
+			{
+				// Review last item:
+				mode = Mode.REVIEW_ITEM_POST_CAPTURE;
+				fileToReview = field.getLastAttachment(controller.getFileStorageProvider(), record);
+			}
+			else
+				// Review using gallery
+				mode = Mode.GALLERY;
+			fieldArgs.remove(GO_TO_POST_CAPTURE_REVIEW); // avoid re-entry
 		}
+		else if(fieldArgs.getValue(REVIEW_FROM_GALLERY_FILE_PATH_KEY) != null)
+		{	// Review specific item:
+			mode = Mode.REVIEW_ITEM_FROM_GALLERY;
+			fileToReview = new File(fieldArgs.remove(REVIEW_FROM_GALLERY_FILE_PATH_KEY)); // use & remove (to avoid re-entry) path argument
+		}
+		// When re-entering MediaField after having left it (e.g. after back press from next field):
 		else if(field.getMax() == 1)
-		{	// we not going to capture, we have at least 1 attachment, and can have max. 1 --> go to single item review
-			mode = Mode.SINGLE_ITEM_REVIEW;
+		{	// max is 1 and we have at least 1 attachment --> go to single item review (instead of gallery)
+			mode = Mode.REVIEW_ITEM_PSEUDO_GALLERY;
 			fileToReview = field.getLastAttachment(controller.getFileStorageProvider(), record);
 		}
-		else if(fieldArgs.getValue(REVIEW_FILE_PATH_KEY) != null)
-		{
-			// we not going to capture, we have at least 1 attachment, the max is > 1, and we have a filepath to review --> go to single item review (from gallery)
-			mode = Mode.SINGLE_ITEM_REVIEW_FROM_GALLERY;
-			fileToReview = new File(fieldArgs.remove(REVIEW_FILE_PATH_KEY)); // use & remove (to avoid re-entry) path argument
-		}
 		else
-		{	// we not going to capture, we have at least 1 attachment, the max is > 1, and no filepath to review --> go to gallery
+		{	// we have at least 1 attachment, the max is > 1 --> go to gallery
 			mode = Mode.GALLERY;
 		}
 	}
@@ -110,9 +135,12 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		return mode == Mode.CAPTURE || mode == Mode.CAPTURE_FROM_GALLERY;
 	}
 	
-	protected boolean isInSingleItemReviewMode()
+	protected boolean isInReviewItemMode(boolean exceptPseudoGallery)
 	{
-		return mode == Mode.SINGLE_ITEM_REVIEW || mode == Mode.SINGLE_ITEM_REVIEW_FROM_GALLERY;
+		return
+			mode == Mode.REVIEW_ITEM_POST_CAPTURE ||
+			mode == Mode.REVIEW_ITEM_FROM_GALLERY ||
+			(!exceptPseudoGallery && mode == Mode.REVIEW_ITEM_PSEUDO_GALLERY);
 	}
 	
 	/**

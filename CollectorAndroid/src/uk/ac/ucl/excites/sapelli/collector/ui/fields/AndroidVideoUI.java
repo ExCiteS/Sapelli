@@ -145,7 +145,7 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 	protected void cancel()
 	{
 		super.cancel();		
-		if(isInSingleItemReviewMode() && reviewView != null)
+		if(isInReviewItemMode(false) && reviewView != null)
 			reviewView.playbackView.stopPlayback();
 	}
 	
