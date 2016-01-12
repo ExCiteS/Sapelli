@@ -91,12 +91,14 @@ public class StoreHandle<S extends Store>
 				storeCreator.createAndSetStore(new StoreSetter<S>() // throws DBException if creation fails
 				{
 					@Override
-					public void setAndInitialise(S store) throws DBException
+					public S setAndInitialise(S store) throws DBException
 					{
 						// First set a strong reference to the store (to be able to respond to secondary calls to getStore() *during* initialisation):
 						storeStrongRef = store;
 						// Initialise (& possibly upgrade) the store:
 						store.initialise(); // may throw DBException
+						// Return store:
+						return store;
 					}
 				});
 			}
@@ -247,7 +249,7 @@ public class StoreHandle<S extends Store>
 	public interface StoreSetter<S extends Store>
 	{
 		
-		public void setAndInitialise(S store) throws DBException;
+		public S setAndInitialise(S store) throws DBException;
 		
 	}
 	
