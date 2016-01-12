@@ -593,7 +593,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err);
+			client.logError("Error in getKnownSchemata()", e);
 			return Collections.<Schema> emptyList();
 		}
 	}
@@ -702,7 +702,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error in delete(RecordsQuery)", dbE);
 			}
 		}
 	}
@@ -758,7 +758,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error in retrieveRecordValueSets()", dbE);
 			}
 		}
 		return resultAcc != null ? resultAcc : Collections.<R> emptyList();
@@ -790,7 +790,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error in retrieveRecord(SingleRecordQuery)", dbE);
 			}
 		}
 		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)

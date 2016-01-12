@@ -214,7 +214,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
+			client.logError("Error in doesTableExist()", e);
 			return false;
 		}
 		finally
@@ -245,7 +245,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
+			client.logError("Error in getAllTableNames()", e);
 			return Collections.<String> emptyList();
 		}
 		finally
@@ -852,7 +852,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 						}
 						catch(Exception e)
 						{
-							e.printStackTrace(System.err);
+							client.logError("Error upon converting from List to String", e);
 							return null;
 						}
 					}
@@ -866,7 +866,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 						}
 						catch(Exception e)
 						{
-							e.printStackTrace(System.err);
+							client.logError("Error upon converting from String to List", e);
 							return null;
 						}
 					}
@@ -885,7 +885,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 						}
 						catch(Exception e)
 						{
-							e.printStackTrace(System.err);
+							client.logError("Error upon converting from List to byte[]", e);
 							return null;
 						}
 					}
@@ -899,7 +899,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 						}
 						catch(Exception e)
 						{
-							e.printStackTrace(System.err);
+							client.logError("Error upon converting from byte[] to List", e);
 							return null;
 						}
 					}
