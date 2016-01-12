@@ -624,7 +624,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @see {@link #stringToValue(String)}
 	 * @see {@link #toString(Object)}
 	 */
-	public T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public final T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		if(valueString == null || valueString.isEmpty()) // empty String is treated as null!
 			return null;
@@ -663,7 +663,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return a {@link String} representation of the value, or {@code null} if the value was {@code null}
 	 * @see #toString(Object)
 	 */
-	public String valueToString(T value)
+	public final String valueToString(T value)
 	{
 		return valueToString(value, false);
 	}
@@ -681,7 +681,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return a {@link String} representation of the given {@code value}, or {@code null} if the value was {@code null} and {@code emptyForNull} was {@code false}
 	 * @see #toString(Object)
 	 */
-	public String valueToString(T value, boolean emptyForNull)
+	public final String valueToString(T value, boolean emptyForNull)
 	{
 		if(value != null)
 			return toString(value);
@@ -701,7 +701,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @see #valueToString(Object)
 	 * @see #toString(Object)
 	 */
-	public String objectToString(Object valueObject, boolean convert) throws ClassCastException
+	public final String objectToString(Object valueObject, boolean convert) throws ClassCastException
 	{
 		return valueToString(convert ? convert(valueObject) : cast(convert));
 	}
