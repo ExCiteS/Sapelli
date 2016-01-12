@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.Stack;
 
@@ -43,7 +42,7 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	
 	protected final void traverse(Schema schema)
 	{
-		traverse(schema, Collections.<Column<?>> emptySet());
+		traverse(schema, ColumnSet.SKIP_NONE);
 	}
 	
 	protected final void traverse(Schema schema, Set<? extends Column<?>> skipColumns)

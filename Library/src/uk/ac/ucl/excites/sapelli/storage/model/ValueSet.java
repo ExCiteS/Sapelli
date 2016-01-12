@@ -25,7 +25,6 @@ import java.io.Serializable;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -270,7 +269,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean isFilled(final boolean recurse)
 	{
-		return isFilled(this.columnSet, Collections.<Column<?>> emptySet(), recurse);
+		return isFilled(this.columnSet, ColumnSet.SKIP_NONE, recurse);
 	}
 	
 	/**
@@ -300,7 +299,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	protected boolean isFilled(ColumnSet columnSet) throws IllegalStateException
 	{
-		return isFilled(columnSet, Collections.<Column<?>> emptySet(), false); // don't recurse by default
+		return isFilled(columnSet, ColumnSet.SKIP_NONE, false); // don't recurse by default
 	}
 	
 	/**
@@ -359,7 +358,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean isEmpty(final boolean recurse)
 	{
-		return isEmpty(Collections.<Column<?>> emptySet(), recurse);
+		return isEmpty(ColumnSet.SKIP_NONE, recurse);
 	}
 	
 	/**
@@ -388,7 +387,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	protected boolean isDefault()
 	{
-		return isDefault(Collections.<Column<?>> emptySet());
+		return isDefault(ColumnSet.SKIP_NONE);
 	}
 	
 	/**
@@ -448,7 +447,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void resetEmptyColumns(boolean onlyIfRequired, boolean recurse)
 	{
-		resetEmptyColumns(Collections.<Column<?>> emptySet(), onlyIfRequired, recurse);
+		resetEmptyColumns(ColumnSet.SKIP_NONE, onlyIfRequired, recurse);
 	}
 	
 	/**
@@ -506,7 +505,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean isValid(final boolean recurse)
 	{
-		return isValid(Collections.<Column<?>> emptySet(), recurse);
+		return isValid(ColumnSet.SKIP_NONE, recurse);
 	}
 	
 	/**
@@ -558,7 +557,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public String serialise()
 	{
-		return serialise(false, Collections.<Column<?>> emptySet());
+		return serialise(false, ColumnSet.SKIP_NONE);
 	}
 	
 	/**
@@ -600,7 +599,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public ValueSet<CS> parse(String serialisedValueSet) throws Exception
 	{
-		return parse(serialisedValueSet, false, Collections.<Column<?>> emptySet());
+		return parse(serialisedValueSet, false, ColumnSet.SKIP_NONE);
 	}
 	
 	/**
@@ -738,7 +737,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void writeToBitStream(BitOutputStream bitStream, boolean lossless) throws IOException
 	{
-		writeToBitStream(bitStream, false, Collections.<Column<?>> emptySet(), lossless);
+		writeToBitStream(bitStream, false, ColumnSet.SKIP_NONE, lossless);
 	}
 	
 	/**
@@ -816,7 +815,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public void readFromBitStream(BitInputStream bitStream, boolean lossless) throws IOException
 	{
-		readFromBitStream(bitStream, false, Collections.<Column<?>> emptySet(), lossless);
+		readFromBitStream(bitStream, false, ColumnSet.SKIP_NONE, lossless);
 	}
 	
 	/**
@@ -984,7 +983,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean hasEqualValues(ValueSet<CS> other)
 	{
-		return hasEqualValues(other, Collections.<Column<?>> emptySet());
+		return hasEqualValues(other, ColumnSet.SKIP_NONE);
 	}
 	
 	/**
@@ -997,7 +996,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 */
 	public boolean hasEqualValues(ValueSet<?> other, boolean asLossyEncoded)
 	{
-		return hasEqualValues(other, Collections.<Column<?>> emptySet(), asLossyEncoded);
+		return hasEqualValues(other, ColumnSet.SKIP_NONE, asLossyEncoded);
 	}
 
 	/**

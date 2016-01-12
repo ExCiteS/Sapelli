@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -243,7 +244,7 @@ public abstract class RecordStore extends Store
 			return false;
 		//	Check if the record has non-null values in each non-optional (sub)column, except the auto-incrementing PK column if there is one:
 		IntegerColumn autoKeyCol = record.getSchema().getAutoIncrementingPrimaryKeyColumn();
-		if(!record.isFilled(autoKeyCol != null ? Collections.<Column<?>> singleton(autoKeyCol) : Collections.<Column<?>> emptySet(), true))
+		if(!record.isFilled(autoKeyCol != null ? Collections.<Column<?>> singleton(autoKeyCol) : ColumnSet.SKIP_NONE, true))
 			return false;
 		//	(Add additional checks here)
 		// All OK:

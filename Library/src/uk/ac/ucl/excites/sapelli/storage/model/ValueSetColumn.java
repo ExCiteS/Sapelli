@@ -169,7 +169,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	protected Set<Column<?>> getSkipColumns(boolean forceNone)
 	{
 		if(skipColumnPositions == null || forceNone)
-			return Collections.<Column<?>> emptySet();
+			return ColumnSet.SKIP_NONE;
 		if(skipColumns == null)
 		{
 			Set<Column<?>> mutableSkipColumns = new HashSet<Column<?>>();
