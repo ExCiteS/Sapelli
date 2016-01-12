@@ -208,6 +208,14 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
+	 * @return the defaultValue
+	 */
+	public T getDefaultValue()
+	{
+		return defaultValue;
+	}
+
+	/**
 	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
 	 * 
 	 * @param recurse whether or not to check recursively if all subColumns are also a non-optional
