@@ -874,9 +874,9 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		}
 		
 		@Override
-		public Simple<T> copy()
+		protected Simple<T> createCopy()
 		{
-			return new Simple<T>(name, singleColumn.copy(), optional, getMinimumLength(), getMaximumLength());
+			return new Simple<T>(name, singleColumn.copy(), optional, getMinimumLength(), getMaximumLength(), defaultValue, serialisationDelimiter, serialisationSeparator);
 		}
 
 		@Override

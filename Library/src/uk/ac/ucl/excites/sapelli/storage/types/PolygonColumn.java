@@ -52,7 +52,7 @@ public class PolygonColumn extends ListColumn<Polygon, Location>
 	}
 	
 	@Override
-	public PolygonColumn copy()
+	protected PolygonColumn createCopy()
 	{
 		return new PolygonColumn(name, singleColumn.copy(), optional, defaultValue);
 	}

@@ -54,9 +54,9 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	}
 	
 	@Override
-	public BooleanColumn copy()
+	protected BooleanColumn createCopy()
 	{
-		return new BooleanColumn(name, optional);
+		return new BooleanColumn(name, optional, defaultValue);
 	}
 	
 	/**

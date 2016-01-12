@@ -94,7 +94,7 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 	}
 
 	@Override
-	public LocationColumn copy()
+	protected LocationColumn createCopy()
 	{
 		return new LocationColumn(	name,
 									optional,
@@ -104,7 +104,8 @@ public class LocationColumn extends ValueSetColumn<Location, ColumnSet>
 									isStoreSpeed(),
 									isStoreAccuracy(),
 									isStoreTime(),
-									isStoreProvider());
+									isStoreProvider(),
+									defaultValue);
 	}
 	
 	@Override

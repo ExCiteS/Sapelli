@@ -320,9 +320,9 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 	
 	@Override
-	public StringColumn copy()
+	protected StringColumn createCopy()
 	{
-		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), null);
+		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), defaultValue);
 	}
 	
 	/**

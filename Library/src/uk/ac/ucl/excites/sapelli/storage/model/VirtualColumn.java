@@ -87,13 +87,13 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 	
 	@Override
-	public VirtualColumn<TT, ST> copy()
+	protected VirtualColumn<TT, ST> createCopy()
 	{
 		return new VirtualColumn<TT, ST>(sourceColumn, targetColumn.copy(), valueMapper);
 	}
 	
 	@Override
-	public TT storeValue(ValueSet<?> valueSet, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public TT storeValue(ValueSet<?> valueSet, TT value) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("VirtualColumns are read-only!");
 	}
@@ -220,6 +220,15 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 		return targetColumn;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#addVirtualVersion(uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn)
+	 */
+	@Override
+	protected <VT> void addVirtualVersion(VirtualColumn<VT, TT> virtualVersion) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("VirtualColumns cannot have VirtualColumns of their own!");
+	}
+
 	/**
 	 * Mapping of source to target types
 	 *

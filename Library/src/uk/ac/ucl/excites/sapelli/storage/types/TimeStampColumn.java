@@ -369,12 +369,9 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	}
 	
 	@Override
-	public TimeStampColumn copy()
+	protected TimeStampColumn createCopy()
 	{
-		TimeStampColumn cpy = new TimeStampColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional, defaultValue, false);
-		for(VirtualColumn<?, TimeStamp> v : getVirtualVersions())
-			cpy.addVirtualVersion(v.copy());
-		return cpy;
+		return new TimeStampColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional, defaultValue, false);
 	}
 	
 	@Override

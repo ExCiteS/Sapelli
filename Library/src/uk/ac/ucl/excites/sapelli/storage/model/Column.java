@@ -179,8 +179,22 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	/**
 	 * @return a copy of this Column
 	 */
-	public abstract Column<T> copy();
+	public final Column<T> copy()
+	{
+		// Get copy of the column itself:
+		Column<T> clone = createCopy();
+		
+		// Add copies of virtual versions:
+		for(VirtualColumn<?, T> v : getVirtualVersions())
+			clone.addVirtualVersion(v.createCopy());
+		return clone;
+	}
 	
+	/**
+	 * @return a copy of this Column (without added VirtualColumns)
+	 */
+	protected abstract Column<T> createCopy();
+
 	/**
 	 * @return the name
 	 */
@@ -1274,7 +1288,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param targetColumn
 	 * @param valueMapper
 	 */
-	public <VT> void addVirtualVersion(Column<VT> targetColumn, VirtualColumn.ValueMapper<VT, T> valueMapper)
+	public final <VT> void addVirtualVersion(Column<VT> targetColumn, VirtualColumn.ValueMapper<VT, T> valueMapper)
 	{
 		addVirtualVersion(new VirtualColumn<VT, T>(this, targetColumn, valueMapper));
 	}

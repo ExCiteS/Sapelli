@@ -52,7 +52,7 @@ public class LineColumn extends ListColumn<Line, Location>
 	}
 	
 	@Override
-	public LineColumn copy()
+	protected LineColumn createCopy()
 	{
 		return new LineColumn(name, singleColumn.copy(), optional, defaultValue);
 	}

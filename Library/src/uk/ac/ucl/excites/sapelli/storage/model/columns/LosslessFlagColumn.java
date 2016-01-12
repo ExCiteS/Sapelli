@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 
 /**
  * Special column to keep track of the lossless/lossy-ness of {@link ValueSet}s/{@link Record}s.
@@ -53,6 +54,15 @@ public final class LosslessFlagColumn extends BooleanColumn
 		super(	NAME,
 				false,				// never optional
 				VALUE_LOSSLESS);	// default value: we always start out losslessly
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn#copy()
+	 */
+	@Override
+	protected BooleanColumn createCopy()
+	{
+		return INSTANCE;
 	}
 
 	/* (non-Javadoc)
@@ -97,6 +107,15 @@ public final class LosslessFlagColumn extends BooleanColumn
 	public <VS extends ValueSet<CS>, CS extends ColumnSet> boolean isLossy(VS valueSet) throws IllegalArgumentException
 	{
 		return this.retrieveValue(valueSet) == VALUE_LOSSY;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#addVirtualVersion(uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn)
+	 */
+	@Override
+	protected <VT> void addVirtualVersion(VirtualColumn<VT, Boolean> virtualVersion) throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("LosslessFlagColumn cannot have VirtualColumns!");
 	}
 
 	/* (non-Javadoc)
