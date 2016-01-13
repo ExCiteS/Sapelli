@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -88,6 +89,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 		return baseName + DATABASE_NAME_SUFFIX + "." + DATABASE_FILE_EXTENSION;
 	}
+	
+	static private final boolean LOG_QUALIFIED_QUERIES = false;
 	
 	/**
 	 * Test method
@@ -290,6 +293,32 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @throws DBException
 	 */
 	protected abstract SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException;
+	
+	@SuppressWarnings("unused")
+	protected String getQueryLogMessage(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
+	{
+		String[] quotedArgStrings = new String[paramCols.size()];
+		for(int p = 0; p < quotedArgStrings.length; p++)
+			quotedArgStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), true);
+		
+		if(LOG_QUALIFIED_QUERIES && sql.indexOf(PARAM_PLACEHOLDER) != -1)
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n - ");
+			bldr.append("Executing query...");
+			bldr.append("Generic:   " + sql);
+			try
+			{
+				bldr.append("Qualified: " + StringUtils.replaceWithValues(sql, PARAM_PLACEHOLDER, quotedArgStrings));
+			}
+			catch(Exception e)
+			{
+				bldr.append("Failed to generate qualified query with arguments: " + StringUtils.join(quotedArgStrings, ", "));
+			}
+			return bldr.toString();
+		}
+		else
+			return "Executing query: " + sql + (sapArguments.isEmpty() ? "" : " [Arguments: " + StringUtils.join(quotedArgStrings, ", ") + "]");
+	}
 
 	@Override
 	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
