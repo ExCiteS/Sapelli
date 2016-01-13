@@ -77,13 +77,14 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	
 	protected void buttonPressed()
 	{
-		Record record = controller.getCurrentRecord();
+		// Log event:
+		controller.addLogLine("CLICK_BUTTON", this.field.id, this.field.getCaption());
 		
 		// Store boolean or datetime:
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
-			((BooleanColumn) field.getColumn()).storeValue(record, true);
+			((BooleanColumn) field.getColumn()).storeValue(controller.getCurrentRecord(), true);
 		else if(field.getColumnType() == ButtonColumnType.DATETIME)
-			((TimeStampColumn) field.getColumn()).storeValue(record, TimeStamp.now());
+			((TimeStampColumn) field.getColumn()).storeValue(controller.getCurrentRecord(), TimeStamp.now());
 		
 		// Continue to jump or next:
 		if(field.getJump() != null)

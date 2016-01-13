@@ -110,6 +110,26 @@ public final class ViewHelpers
 		return Gravity.START;
 	}
 	
+	static public int getEndGravity()
+	{
+		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH /* = 14 */)
+			return getEndGravityICS();
+		else
+			return getEndGravityPreICS();
+	}
+	
+	@SuppressLint("RtlHardcoded")
+	static private int getEndGravityPreICS()
+	{
+		return Gravity.RIGHT;
+	}
+	
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+	static private int getEndGravityICS()
+	{
+		return Gravity.END;
+	}
+	
 	static public void setCompoundDrawablesRelativeWithIntrinsicBounds(TextView textView, int start, int top, int end, int bottom)
 	{
 		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 /* = 17 */)

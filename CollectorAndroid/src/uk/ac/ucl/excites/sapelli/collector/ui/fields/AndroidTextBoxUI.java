@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.DelKeyEventEditText;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.DiagonalCross;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
@@ -198,7 +199,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		// Variables to hold on to some of editText's default attributes while in nullMode: 
 		private Drawable editTextBackground = null;
 		private ColorStateList editTextColors = null;
-		private int editTextGravity = Gravity.LEFT;
+		private int editTextGravity = ViewHelpers.getStartGravity();
 		
 		/**
 		 * @param context
@@ -221,7 +222,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			}
 			
 			// Textbox:
-			editText = new EditText(context);
+			editText = new DelKeyEventEditText(context);
 			editText.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			setInputConstraints(field);
 			// Add the textbox:
@@ -231,7 +232,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			errorMsg = new TextView(context);
 			errorMsg.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			errorMsg.setTextColor(Color.RED);
-			errorMsg.setGravity(Gravity.RIGHT);
+			errorMsg.setGravity(ViewHelpers.getEndGravity());
 			errorMsg.setTextSize(TypedValue.COMPLEX_UNIT_PX, errorMsg.getTextSize() * 0.9f);
 			errorMsg.setVisibility(GONE);
 			addView(errorMsg);
@@ -266,7 +267,11 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			return editText.getText().toString();
 		}
 		
-		private void setNullMode(boolean enable)
+		/**
+		 * @param enable
+		 * @return whether null mode was actually enabled/disabled
+		 */
+		private boolean setNullMode(boolean enable)
 		{
 			// Enable nullMode:
 			if(enable && !nullMode)
@@ -289,13 +294,15 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 					editTextColors = editText.getTextColors();
 					editText.setTextColor(NULL_MODE_TEXT_COLOR);
 					// Set "Touch to set/edit" String:
-					editText.setText(controller.getCurrentMode() == Mode.CREATE ? R.string.txtNullModeCreate : R.string.txtNullModeEdit);					
+					editText.setText(controller.getCurrentMode() == Mode.CREATE ? R.string.txtNullModeCreate : R.string.txtNullModeEdit);
 				}
 				else
 					// Set "(no value set)" String:
 					editText.setText(R.string.txtNullModeDisabled);
 				// Lose focus:
 				editText.clearFocus();
+				// Null mode enabled:
+				return true;
 			}
 			// Disable nullMode:
 			else if(!enable && nullMode && isEnabled())
@@ -312,7 +319,11 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 				editText.setText("");
 				// change mode:
 				nullMode = false;
+				// Null mode disabled:
+				return true;
 			}
+			// No change:
+			return false;
 		}
 		
 		/**
@@ -361,9 +372,20 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 					public void run()
 					{
 						// disable nullMode on touch:
-						setNullMode(false);	
+						setNullMode(false);
 					}
 				});
+		}
+		
+		@Override
+		public void setEnabled(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			editText.setEnabled(enabled);
+			// Event handlers:
+			editText.setOnFocusChangeListener(enabled ? this : null);
+			editText.addTextChangedListener(enabled ? this : null);
+			editText.setOnKeyListener(enabled && field.isOptional() ? this : null); // only used on optional fields!!
 		}
 		
 		/**
@@ -373,15 +395,12 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		 * @see android.view.View.OnKeyListener#onKey(android.view.View, int, android.view.KeyEvent)
 		 */
 		@Override
-        public boolean onKey(View v, int keyCode, KeyEvent event)
-        {
-			if(keyCode == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_DOWN && !nullMode && getValue().isEmpty())
-			{
-				setNullMode(true);
-				return true;
-			}
+		public boolean onKey(View v, int keyCode, KeyEvent event)
+		{
+			if(keyCode == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_DOWN && getValue().isEmpty())
+				return setNullMode(true);
 			return false;
-        }
+		}
 
 		@Override
 		final public void beforeTextChanged(CharSequence s, int start, int count, int after)
@@ -403,17 +422,6 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		final public void afterTextChanged(Editable s)
 		{
 			/* Don't care */
-		}
-		
-		@Override
-		public void setEnabled(boolean enabled)
-		{
-			super.setEnabled(enabled);
-			editText.setEnabled(enabled);
-			// Event handlers:
-			editText.setOnFocusChangeListener(enabled ? this : null);
-			editText.addTextChangedListener(enabled ? this : null);
-			editText.setOnKeyListener(enabled && field.isOptional() ? this : null); // only used on optional fields
 		}
 		
 		public void setError(String error)

@@ -268,10 +268,10 @@ public abstract class Field extends JumpSource
 	}
 	
 	/**
-	 * By default fields that are contained within a Page cannot jump away from the page
-	 * Some subclasses (i.e. ButtonField) will override this. 
+	 * By default fields that are contained within a Page cannot jump away from the page.
+	 * Some subclasses (i.e. ButtonField) will override this.
 	 * 
-	 * @return
+	 * @return whether or not this field can be jumped from when it appears on a page.
 	 */
 	public boolean canJumpFromPage()
 	{
