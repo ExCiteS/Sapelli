@@ -91,9 +91,9 @@ public class OrientationColumn extends ValueSetColumn<Orientation, ColumnSet>
 	}
 	
 	@Override
-	public OrientationColumn copy()
+	protected OrientationColumn createCopy()
 	{
-		return new OrientationColumn(name, optional, isStoreAzimuth(), isStorePitch(), isStoreRoll());
+		return new OrientationColumn(name, optional, isStoreAzimuth(), isStorePitch(), isStoreRoll(), defaultValue);
 	}
 	
 	@Override

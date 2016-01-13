@@ -52,19 +52,25 @@ public class LineColumn extends ListColumn<Line, Location>
 	}
 	
 	@Override
-	public LineColumn copy()
+	protected LineColumn createCopy()
 	{
 		return new LineColumn(name, singleColumn.copy(), optional, defaultValue);
 	}
 
 	@Override
-	protected Line getNewList(int minimumCapacity)
+	public Line getNewList()
+	{
+		return new Line();
+	}
+	
+	@Override
+	protected Line _getNewList(int minimumCapacity)
 	{
 		return new Line(minimumCapacity);
 	}
 	
 	@Override
-	protected Line getNewList(Collection<Location> points)
+	protected Line _getNewList(Collection<Location> points)
 	{
 		return new Line(points);
 	}

@@ -279,12 +279,12 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 	
 	@Override
-	public IntegerColumn copy()
+	protected IntegerColumn createCopy()
 	{
 		if(rangeMapping == null)
-			return new IntegerColumn(name, optional, signed, size);
+			return new IntegerColumn(name, optional, signed, size, defaultValue);
 		else
-			return new IntegerColumn(name, optional, new IntegerRangeMapping(rangeMapping));
+			return new IntegerColumn(name, optional, new IntegerRangeMapping(rangeMapping), defaultValue);
 	}
 	
 	/**

@@ -20,7 +20,9 @@ package uk.ac.ucl.excites.sapelli.storage.eximport.xml;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 import org.xml.sax.SAXException;
@@ -37,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -91,7 +94,8 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 {
 	
 	protected final StorageClient client;
-
+	protected final Map<Long, Model> modelCache;
+	
 	protected final Stack<Integer> tagColumnDepths;
 	protected final Stack<String> ignoreTags;
 	protected final StringBuilder cdataStringBldr;
@@ -110,6 +114,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 	{
 		super();
 		this.client = client;
+		this.modelCache = new HashMap<Long, Model>();
 		this.tagColumnDepths = new Stack<Integer>();
 		this.ignoreTags = new Stack<String>();
 		this.cdataStringBldr = new StringBuilder();
@@ -186,6 +191,7 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 					int schemaID = attributes.getRequiredInteger(Record.TAG_RECORD, Schema.V1X_ATTRIBUTE_SCHEMA_ID, "because this is a v1.x record");
 					int schemaVersion = attributes.getInteger(Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION);
 					schema = client.getSchemaV1(schemaID, schemaVersion);
+					// we don't use a cache here because all calls to getSchemaV1() are effectively handled by ProjectRecordStore, which has its own caching mechanism  
 				}
 				else
 				{	// This records was exported by Sapelli v2.x 
@@ -193,8 +199,18 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 					//	Get schema:
 					long modelID = attributes.getRequiredLong(Record.TAG_RECORD, Schema.ATTRIBUTE_MODEL_ID);
 					int modelSchemaNo = attributes.getRequiredInteger(Record.TAG_RECORD, Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER);
-					String schemaName = attributes.getString(Schema.ATTRIBUTE_SCHEMA_NAME, null, false, false);
-					schema = client.getSchema(modelID, modelSchemaNo, schemaName);
+					// 	Try to find model in cache first:
+					if(modelCache.containsKey(modelID))
+					{	// Found it...
+						schema = modelCache.get(modelID).getSchema(modelSchemaNo);
+					}
+					else
+					{	// Not found, query via client:
+						String schemaName = attributes.getString(Schema.ATTRIBUTE_SCHEMA_NAME, null, false, false);
+						schema = client.getSchema(modelID, modelSchemaNo, schemaName);
+						// Cache the model:
+						modelCache.put(modelID, schema.model);
+					}
 				}
 				
 				// This is valid <Record> tag, try to get a new, initialised record instance:

@@ -20,17 +20,10 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -45,7 +38,17 @@ import android.view.View.OnTouchListener;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.VideoView;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 
 /**
  * A subclass of AndroidMediaUI which allows for the capture and review of videos from the device's camera.
@@ -142,19 +145,25 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 	protected void cancel()
 	{
 		super.cancel();		
-		if(isInSingleItemReviewMode() && reviewView != null)
+		if(isInReviewItemMode(false) && reviewView != null)
 			reviewView.playbackView.stopPlayback();
 	}
 	
 	/**
-	 * TODO display a "Play triangle" over the thumbnail
+	 * TODO stop button ({@link AVField#getStopPlaybackImageRelativePath()})
+	 * TODO pause button ({@link AVField#getPausePlaybackImageRelativePath()})
 	 * 
 	 * @author benelliott, mstevens
 	 */
 	private class ReviewView extends LinearLayout implements OnCompletionListener, OnTouchListener, OnClickListener
 	{
 		
-		final ImageView thumbnailView;
+		private final View playButton;
+		//private final View pauseButton;
+		//private final View stopButton;
+		
+		final RelativeLayout thumbnailView;
+		final ImageView imgThumbnail;
 		final VideoView playbackView;
 		
 		public ReviewView(Context context)
@@ -167,8 +176,14 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
 			
 			// ImageView that displays a thumbnail of the video before playback is started:
-			thumbnailView = new ImageView(context);
-			thumbnailView.setScaleType(ScaleType.FIT_CENTER);
+			RelativeLayout.LayoutParams thumbnailParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+			thumbnailView = new RelativeLayout(context);
+			imgThumbnail = new ImageView(context);
+			imgThumbnail.setScaleType(ScaleType.FIT_CENTER);
+			thumbnailView.addView(imgThumbnail, thumbnailParams);
+			playButton = addButtonView(field.getStartPlaybackImageRelativePath(), R.drawable.button_media_play);
+			playButton.setBackgroundColor(Color.TRANSPARENT);
+			thumbnailView.addView(playButton, thumbnailParams);
 			thumbnailView.setOnClickListener(this);
 			addView(thumbnailView, params);
 			
@@ -179,10 +194,18 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 			addView(playbackView, params);
 		}
 		
+		private View addButtonView(String imgPath, int drawableID)
+		{
+			ImageItem item = collectorUI.getImageItemFromProjectFileOrResource(imgPath, drawableID).setBackgroundColor(fieldBackgroundColor);
+			if(item.isUsingResource())
+				item.setPaddingDip(PLAYBACK_BUTTON_PADDING_DIP); // the built-in play/stop SVGs don't look right with the default padding
+			return item.getView(getContext());
+		}
+		
 		public void update(File videoFile)
 		{
 			// create thumbnail from video file:
-			thumbnailView.setImageBitmap(ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.FULL_SCREEN_KIND));
+			imgThumbnail.setImageBitmap(ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.FULL_SCREEN_KIND));
 			thumbnailView.setVisibility(View.VISIBLE);
 			
 			playbackView.setVideoURI(Uri.fromFile(videoFile));
@@ -236,7 +259,8 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 		@Override
 		public void onCompletion(MediaPlayer mp)
 		{
-			//playbackPosition = 0; // playback has finished so go back to start
+			thumbnailView.setVisibility(View.VISIBLE);
+			playbackView.setVisibility(View.GONE);
 		}
 		
 	}

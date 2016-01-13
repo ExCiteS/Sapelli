@@ -140,7 +140,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	private final String valuePlaceHolder;
 	
 	/**
-	 * The names of tables that are protected.
+	 * The (unsanitised!) names of tables that are protected.
 	 */
 	private final Set<String> protectedTables = new HashSet<String>();
 	
@@ -153,11 +153,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		super(client, true); // make use of roll-back tasks
 		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
-		
-		// Protected tables:
-		this.protectedTables.add(sanitiseIdentifier(Model.MODEL_SCHEMA.tableName));
-		this.protectedTables.add(sanitiseIdentifier(Model.SCHEMA_SCHEMA.tableName));
-		// subclasses can add additional protected tables during initialisation
 	}
 	
 	/**
@@ -168,13 +163,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		this.initArgs = new InitArguments(newDB, targetVersion, upgrader);
 	}
 
-	protected final void addProtectedTable(String tableName) throws DBException
+	/**
+	 * @param unsanitisedTableName
+	 * @throws DBException
+	 */
+	protected final void addProtectedTable(String unsanitisedTableName) throws DBException
 	{
 		if(!isInitialising())
 			throw new DBException("Protected tables can only be added during initialisation");
 		//else:
-		if(tableName != null && !tableName.isEmpty())
-			protectedTables.add(tableName);
+		if(unsanitisedTableName != null && !unsanitisedTableName.isEmpty())
+			protectedTables.add(unsanitisedTableName);
 		else
 			throw new DBException("Protected table name cannot be null or empty!");
 	}
@@ -207,6 +206,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Subclasses may override this but *must* call super implementation.
 	 * TODO somehow force the super call using annotations?
 	 * 
+	 * Subclasses can add additional protected tables.
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#doInitialise()
 	 */
 	protected void doInitialise() throws DBException
@@ -216,10 +217,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		try
 		{
 			// Create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database):
+			//	Open transaction if needed:
 			if(initArgs.newDB)
 				startTransaction();
 			this.modelsTable = getTable(Model.MODEL_SCHEMA, initArgs.newDB);
 			this.schemataTable = getTable(Model.SCHEMA_SCHEMA, initArgs.newDB);
+			// 	Protect both tables:
+			addProtectedTable(modelsTable.getUnsanitisedName());
+			addProtectedTable(schemataTable.getUnsanitisedName());
+			//	Close transaction:
 			if(initArgs.newDB)
 				commitTransaction();
 			
@@ -287,16 +293,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected final boolean doesTableExist(Schema schema)
 	{
-		return doesTableExist(sanitiseIdentifier(schema.tableName));
+		return doesTableExist(schema.tableName); // don't sanitise!
 	}
 	
 	/**
-	 * Checks whether a table with the given name exists in the database.
+	 * Checks whether a table with the given (unsanitised!) name exists in the database.
 	 * 
-	 * @param tableName
+	 * @param unsanitisedTableName
 	 * @return
 	 */
-	protected abstract boolean doesTableExist(String tableName);
+	protected abstract boolean doesTableExist(String unsanitisedTableName);
 
 	/**
 	 * @param schema
@@ -587,7 +593,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err);
+			client.logError("Error in getKnownSchemata()", e);
 			return Collections.<Schema> emptyList();
 		}
 	}
@@ -664,7 +670,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		STable table = getTable(recordRef.getReferencedSchema(), false); // no need to create the table in the db if it isn't there!
 		if(table.isInDB() && table.delete(recordRef))
-			client.storageEvent(RecordOperation.Deleted, recordRef); // inform client
+			client.storageEvent(RecordOperation.Deleted, recordRef, this); // inform client
 	}
 	
 	/**
@@ -691,12 +697,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				{	// Less efficient, but allows to inform client:
 					for(RecordReference recordRef : retrieveRecordReferences(new RecordsQuery(schema, query.getConstraints())))
 						if(table.delete(recordRef))
-							client.storageEvent(RecordOperation.Deleted, recordRef); // inform client
+							client.storageEvent(RecordOperation.Deleted, recordRef, this); // inform client
 				}
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error in delete(RecordsQuery)", dbE);
 			}
 		}
 	}
@@ -752,7 +758,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error in retrieveRecordValueSets()", dbE);
 			}
 		}
 		return resultAcc != null ? resultAcc : Collections.<R> emptyList();
@@ -784,7 +790,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			catch(DBException dbE)
 			{
-				dbE.printStackTrace(System.err);
+				client.logError("Error in retrieveRecord(SingleRecordQuery)", dbE);
 			}
 		}
 		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)
@@ -817,9 +823,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * To be overridden by subclasses.
-	 * 
-	 * @return
+	 * @return a {@link List} of the (unsanitised!) names of tables that are protected
 	 */
 	public final Set<String> getProtectedTableNames()
 	{
@@ -827,7 +831,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * @return a {@link List} of the names of all tables in the database
+	 * @return a {@link List} of the (unsanitised!) names of all tables in the database
 	 */
 	protected abstract List<String> getAllTableNames();
 	
@@ -835,101 +839,121 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Drops the table with the given name. Use with care!
 	 * Will fail, with {@link DBException} thrown, if the table is protected and unless {@code force} is {@code true}.
 	 * 
-	 * @param tableName
+	 * For upgrade purposes only.
+	 * 
+	 * @param unsanitisedName
 	 * @param force
 	 * @throws DBException
 	 */
-	protected void dropTable(String tableName, boolean force) throws DBException
+	protected void dropTable(String unsanitisedTableName, boolean force) throws DBException
 	{
-		if(!doesTableExist(tableName))
-		{	// Try sanitising:
-			tableName = sanitiseIdentifier(tableName);
-			if(!doesTableExist(tableName))
-				return; // there is no such table
-		}
+		if(!doesTableExist(unsanitisedTableName))
+			return; // there is no such table
 		//else:
-		if(!protectedTables.contains(tableName) || force)
+		if(!protectedTables.contains(unsanitisedTableName) || force)
 		{
 			// Get table instance:
-			STable table = null;
-			if(modelsTable.tableName.equals(tableName))
-				table = modelsTable;
-			else if(schemataTable.tableName.equals(tableName))
-				table = schemataTable;
+			STable tableToDrop = null;
+			if(modelsTable.getUnsanitisedName().equals(unsanitisedTableName))
+				tableToDrop = modelsTable;
+			else if(schemataTable.getUnsanitisedName().equals(unsanitisedTableName))
+				tableToDrop = schemataTable;
 			else
 			{
 				// Delete schemata entry:
 				if(schemataTable.isInDB())
-					schemataTable.delete(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, tableName)));
+					schemataTable.delete(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, unsanitisedTableName)));
 				
 				// Look for table in tables map:
-				RecordReference schemaRecRef = null;
-				for(Map.Entry<RecordReference, STable> entry : tables.entrySet())
-					if(entry.getValue().tableName.equals(tableName))
-					{
-						schemaRecRef = entry.getKey();
-						table = entry.getValue();
-						break;
-					}
-				
-				// Delete from tables map:
-				if(schemaRecRef != null)
-					tables.remove(schemaRecRef);
+				tableToDrop = forgetTable(unsanitisedTableName);
 			}
 			
 			// Release resources so we can drop:
 			release();
 			
 			// DROP table:
-			if(table != null)
-				table.drop();
+			if(tableToDrop != null)
+				tableToDrop.drop();
 			else
-				executeSQL(generateDropTableStatement(tableName));
+				executeSQL(generateDropTableStatement(unsanitisedTableName));
 		}
 		else
-			throw new DBException("Cannot delete protected table '" + tableName + "'!");
+			throw new DBException("Cannot delete protected table '" + unsanitisedTableName + "'!");
 	}
 	
-	protected String generateDropTableStatement(String tableName)
+	/**
+	 * Wipes the SQLTable with the given (unsanitised!) name from the tables map.
+	 * This is useful to ensure a new SQLTable instance is constructed the next time
+	 * records of the associated Schema are inserted/updated/deleted/queried for.
+	 *   
+	 * For upgrade purposes only.
+	 * 
+	 * @param unsanitisedTableName
+	 * @return
+	 * @throws DBException
+	 */
+	protected STable forgetTable(String unsanitisedTableName) throws DBException
 	{
-		return String.format("DROP TABLE %s;", tableName);
+		// Look for table in tables map:
+		Iterator<Map.Entry<RecordReference, STable>> tableIt = tables.entrySet().iterator();
+		while(tableIt.hasNext())
+		{
+			STable table = tableIt.next().getValue();
+			if(table.getUnsanitisedName().equals(unsanitisedTableName))
+			{
+				tableIt.remove(); // delete from tables map
+				return table;
+			}
+		}
+		return null;
+	}
+	
+	protected String generateDropTableStatement(String unsanitisedTableName)
+	{
+		return String.format("DROP TABLE %s;", sanitiseIdentifier(unsanitisedTableName));
 	}
 	
 	/**
 	 * Renames the table with the given old name to the given new name. Use with care!
 	 * Will fail, with {@link DBException} thrown, if the table is protected.
 	 * 
-	 * @param oldTableName
-	 * @param newTableName
+	 * For upgrade purposes only.
+	 * 
+	 * @param oldTableName - unsanitised!
+	 * @param newTableName - unsanitised!
 	 * @throws DBException
 	 */
 	protected void renameTable(String oldTableName, String newTableName) throws DBException
 	{
 		if(!doesTableExist(oldTableName))
-		{	// Try sanitising:
-			oldTableName = sanitiseIdentifier(oldTableName);
-			if(!doesTableExist(oldTableName))
-				return; // there is no such table
-		}
+			return; // there is no such table
 		//else:
 		if(!protectedTables.contains(oldTableName))
 		{
-			// Sanitise:
-			newTableName = sanitiseIdentifier(newTableName);
-			
 			// Rename database table:
-			executeSQL(String.format("ALTER TABLE %1$s RENAME TO %2$s;", oldTableName, newTableName));
+			executeSQL(String.format("ALTER TABLE %1$s RENAME TO %2$s;", sanitiseIdentifier(oldTableName), sanitiseIdentifier(newTableName)));
 			
 			// Query schemata table:
-			Record schemaMetaRecord = schemataTable.select(new FirstRecordQuery(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, oldTableName))));
-			if(schemaMetaRecord != null)
+			Record oldSchemaMetaRecord = schemataTable.select(new FirstRecordQuery(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, oldTableName))));
+			if(oldSchemaMetaRecord != null)
 			{
-				// Update schemata entry:
-				Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(schemaMetaRecord, newTableName);
-				schemataTable.update(schemaMetaRecord);
-			
+				// Update schemata table entry:
+				Model.SCHEMA_TABLE_NAME_COLUMN.storeValue(oldSchemaMetaRecord, newTableName);
+				schemataTable.update(oldSchemaMetaRecord);
+				
 				// Delete table from tables map:
-				tables.remove(schemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed
+				tables.remove(oldSchemaMetaRecord.getReference()); // new STable will be constructed & added to the tables map when the renamed table is first accessed				
+			}
+			
+			// Update tables map entries:
+			Iterator<Map.Entry<RecordReference, STable>> tableIt = tables.entrySet().iterator();
+			while(tableIt.hasNext())
+			{
+				STable table = tableIt.next().getValue();
+				if(table.getUnsanitisedName().equals(oldTableName)) // in case this didn't happen above
+					tableIt.remove();
+				else if(table.getUnsanitisedName().equals(newTableName))
+					table.isInDB(true); // force checking if table exists!
 			}
 		}
 		else
@@ -969,9 +993,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 
 		/**
-		 * Sanitised version of schema.tableName.
+		 * Sanitised version of {@link Schema#tableName}.
 		 */
-		public final String tableName;
+		public final String sanitisedName;
 		
 		public final Schema schema;
 		
@@ -1008,13 +1032,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public SQLTable(Schema schema)
 		{
-			this.tableName = sanitiseIdentifier(schema.tableName);
 			this.schema = schema;
+			this.sanitisedName = sanitiseIdentifier(getUnsanitisedName());
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // to preserve column order we use a LinkedHashMap (i.e. a collection that is iterated in insertion-order)!
 			composite2SqlColumns = new HashMap<ValueSetColumn<?, ?>, List<SColumn>>();
 			// Deal with auto-increment key:
 			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
+		}
+		
+		public final String getUnsanitisedName()
+		{
+			return schema.tableName;
 		}
 		
 		/**
@@ -1064,7 +1093,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isInDB(boolean forceCheck)
 		{
 			if(existsInDB == null || forceCheck)
-				existsInDB = doesTableExist(tableName);
+				existsInDB = doesTableExist(getUnsanitisedName());
 			return existsInDB;
 		}
 		
@@ -1382,7 +1411,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			
 			// Perform the DROP operation:
-			executeSQL(generateDropTableStatement(tableName));
+			executeSQL(generateDropTableStatement(getUnsanitisedName()));
 			// Note: if there is an exception the line below will not be executed but the roll-back task above will...
 			
 			// Now the table is gone...
@@ -1407,7 +1436,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public String toString()
 		{
-			return "database table '" + tableName + "'";
+			return "Database table '" + getUnsanitisedName() + "'";
 		}
 		
 	}
@@ -1423,7 +1452,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		static public final char QUALIFIED_COLUMN_NAME_SEPARATOR = '_';
 		
-		public final String name;
+		public final String sanitisedName;
 		public final String type;
 		public final ColumnPointer<? extends Column<SapType>> sourceColumnPointer;
 		protected final TypeMapping<SQLType, SapType> mapping;
@@ -1438,7 +1467,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public SQLColumn(String name, String type, ColumnPointer<? extends Column<SapType>> sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
 		{
 			this.sourceColumnPointer = sourceColumnPointer;
-			this.name = sanitiseIdentifier(name != null ? name : (sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR)));
+			this.sanitisedName = sanitiseIdentifier(name != null ? name : (sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR)));
 			this.type = type;
 			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
 		}
@@ -1607,10 +1636,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public STable generateTable(Schema schema) throws DBException;
 		
 		/**
+		 * For upgrade purposes only.
+		 * 
 		 * @param enable if {@code true} the TableFactory will insert a top-level Boolean column to represent a ValueSetColumn with all-optional subcolumns
-		 * @throws DBException 
+		 * @throws DBException when called outside of initialisation phase
 		 */
 		public void setInsertBoolColsForAllOptionalValueSetCols(boolean enable) throws DBException;
+		
+		/**
+		 * For upgrade purposes only.
+		 * 
+		 * @param enable whether or not the TableFactory will use BLOB-based SQLColumns to represent all {@link ListColumn}s (instead of the current use of String-based SQLColumns for all ListColumns except ByteArrayListColumn, introduced in Beta 17)
+		 * @throws DBException when called outside of initialisation phase
+		 */
+		public void setUseBLOBsForAllListColumns(boolean enable) throws DBException;
 		
 	}
 	
@@ -1632,6 +1671,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected STable table;
 		
 		private boolean insertBoolColsForAllOptionalValueSetCols = true; // !!!
+		private boolean useBLOBsForAllListColumns = false; // !!!
 		
 		@Override
 		public STable generateTable(Schema schema) throws DBException
@@ -1660,6 +1700,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			insertBoolColsForAllOptionalValueSetCols = enable;
 		}
 		
+		@Override
+		public void setUseBLOBsForAllListColumns(boolean enable) throws DBException
+		{
+			if(!isInitialising())
+				throw new DBException("Changing 'useBLOBsForAllListColumns' is only allowed during initialisation/upgrade!");
+			useBLOBsForAllListColumns = enable;
+		}
+
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser#enter(uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn)
 		 */
@@ -1701,56 +1749,56 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected abstract <VS extends ValueSet<CS>, CS extends ColumnSet> void addBoolColForAllOptionalValueSetCol(ColumnPointer<? extends Column<VS>> sourceColumnPointer, TypeMapping<Boolean, VS> mapping);
 		
 		/**
-		 * TODO implement ListColumns using normalisation:
+		 * TODO implement ListColumns using normalisation(?):
 		 * 		generate Schema for a "subtable" with FK to this one --> generate table for it ... etc.
 		 * 		Table will then how a ListCol -> Table map ...
 		 * 		This will require additional creates/inserts/updates/deletes to be executed...
 		 * 		Difficult but not impossible!
 		 * 
-		 * @param listCol
+		 * @param useStringBasedColumn whether to use a String-based ({@code true}) or a BLOB-based ({@code false}) SQLColumn
 		 */
-		public abstract <L extends List<T>, T> void visitListColumn(ListColumn<L, T> listCol);
+		public abstract <L extends List<T>, T> void visitListColumn(ListColumn<L, T> listCol, boolean useStringBasedColumn);
 
 		@Override
 		public <T> void visit(ListColumn.Simple<T> simpleListCol)
 		{
-			visitListColumn(simpleListCol);
+			visitListColumn(simpleListCol, !useBLOBsForAllListColumns);
 		}
 		
 		@Override
 		public void visit(IntegerListColumn intListCol)
 		{
-			visitListColumn(intListCol);
+			visitListColumn(intListCol, !useBLOBsForAllListColumns);
 		}
 		
 		@Override
 		public void visit(BooleanListColumn boolListCol)
 		{
-			visitListColumn(boolListCol);
+			visitListColumn(boolListCol, !useBLOBsForAllListColumns);
 		}
 		
 		@Override
 		public void visit(StringListColumn stringListCol)
 		{
-			visitListColumn(stringListCol);
+			visitListColumn(stringListCol, !useBLOBsForAllListColumns);
 		}
 		
 		@Override
 		public void visit(ByteArrayListColumn byteArrayListCol)
 		{
-			visitListColumn(byteArrayListCol);
+			visitListColumn(byteArrayListCol, false); // always use BLOB-based column! (this hasn't changed in Beta 17)
 		}
 		
 		@Override
 		public void visit(PolygonColumn polyCol)
 		{
-			visitListColumn(polyCol);
+			visitListColumn(polyCol, !useBLOBsForAllListColumns);
 		}
 		
 		@Override
 		public void visit(LineColumn lineCol)
 		{
-			visitListColumn(lineCol);
+			visitListColumn(lineCol, !useBLOBsForAllListColumns);
 		}
 		
 		@Override
@@ -1899,14 +1947,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			bldr.append("CREATE TABLE");
 			// "IF NOT EXISTS"? (probably SQLite specific)
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// Columns:
 			for(SColumn sqlCol : table.sqlColumns.values())
 			{
 				bldr.openTransaction(SPACE);
-				bldr.append(sqlCol.name);
+				bldr.append(sqlCol.sanitisedName);
 				bldr.append(sqlCol.type);
 				bldr.append(colConstraints.get(sqlCol));
 				bldr.commitTransaction();
@@ -1934,16 +1982,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append("UNIQUE");
 			bldr.append("INDEX");
 			// "IF NOT EXISTS"? (probably SQLite specific)
-			bldr.append(sanitiseIdentifier(table.tableName + "_" + idx.getName()));
+			bldr.append(sanitiseIdentifier(table.getUnsanitisedName() + "_" + idx.getName()));
 			bldr.append("ON");
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// List indexed columns:
 			for(Column<?> idxCol : idx.getColumns(false))
 				// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
 				for(SColumn idxSCol : table.getSQLColumns(idxCol))
-					bldr.append(idxSCol.name);
+					bldr.append(idxSCol.sanitisedName);
 			bldr.commitTransaction(false);
 			bldr.append(");", false);
 			return bldr.toString();
@@ -2046,13 +2094,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			
 			// Build statement:
 			bldr.append("INSERT INTO");
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			bldr.append("(");
 			// Columns names:
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
 				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
-					bldr.append(sqlCol.name);
+					bldr.append(sqlCol.sanitisedName);
 			bldr.commitTransaction(false);
 			// Values:
 			bldr.append(") VALUES (", false);
@@ -2103,7 +2151,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			
 			// Build statement:			
 			bldr.append("UPDATE");
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			bldr.append("SET");
 			// Columns names & values (except primary key parts):
 			bldr.openTransaction(", ");
@@ -2111,7 +2159,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				if(!table.getKeyPartSQLColumns().contains(sqlCol))
 				{
 					bldr.openTransaction(SPACE);
-					bldr.append(sqlCol.name);
+					bldr.append(sqlCol.sanitisedName);
 					bldr.append("=");
 					if(isParameterised())
 					{
@@ -2158,7 +2206,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			
 			// Build statement:			
 			bldr.append("DELETE FROM");
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			// WHERE clause:
 			appendWhereClause(recordOrReference);
 		}
@@ -2304,7 +2352,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				}
 				else
 				{	// Equality constraint on non-composite (leaf) column (general case), or null comparison on a composite column represented by a boolean SColumn:
-					bldr.append(sqlCol.name);
+					bldr.append(sqlCol.sanitisedName);
 					if(sapValue != null || (table.getKeyPartSQLColumns().contains(sqlCol) && isParameterised()))
 					{	// Value is not null, or null but part of the PK and this is a parameterised statement
 						bldr.append(getComparisonOperator(equalityConstr.isEqual() ? Comparison.EQUAL : Comparison.NOT_EQUAL));
@@ -2354,10 +2402,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			// All other cases:
 			SColumn lhsSCol = table.getSQLColumn(ruleConstr.getLHSColumnPointer());
-			bldr.append(lhsSCol.name);
+			bldr.append(lhsSCol.sanitisedName);
 			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
 			if(ruleConstr.isRHSColumn())
-				bldr.append(table.getSQLColumn(ruleConstr.getRHSColumnPointer()).name);
+				bldr.append(table.getSQLColumn(ruleConstr.getRHSColumnPointer()).sanitisedName);
 			else
 			{
 				Object sapValue = ruleConstr.getRHSValue();
@@ -2381,7 +2429,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			SColumn sqlCol = table.getSQLColumn(bitFlagConstr.getFlagsColumnPointer());
 			bldr.append("(");
-			bldr.append(sqlCol.name, false);
+			bldr.append(sqlCol.sanitisedName, false);
 			bldr.append("&"); // bit-wise AND
 			if(isParameterised())
 			{
@@ -2498,7 +2546,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("SELECT");
 			bldr.append(projection.getProjectionString());
 			bldr.append("FROM");
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			// if there is no recordsQuery we are done here, unless forceWhereClause() returns true:
 			if(query == null && !forceWhereClause())
 				return;
@@ -2551,7 +2599,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		private void addOrderBy(SColumn sqlCol, boolean asc)
 		{
 			bldr.openTransaction();
-			bldr.append(sqlCol.name);
+			bldr.append(sqlCol.sanitisedName);
 			bldr.append(asc ? "ASC" : "DESC");
 			bldr.commitTransaction();
 		}
@@ -2600,7 +2648,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// List all columns returned by getProjectionColumns():
 			TransactionalStringBuilder projectionBldr = new TransactionalStringBuilder(", ");
 			for(SColumn sqlCol : getProjectionColumns())
-				projectionBldr.append(sqlCol.name);
+				projectionBldr.append(sqlCol.sanitisedName);
 			return projectionBldr.toString();
 		}
 
@@ -2759,7 +2807,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public String getProjectionString()
 		{
-			return (max ? "MAX" : "MIN") + "(" + extremeValueSqlCol.name + ")";
+			return (max ? "MAX" : "MIN") + "(" + extremeValueSqlCol.sanitisedName + ")";
 		}
 		
 	}
@@ -2812,7 +2860,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(exception != null && innerQueryHelper != null)
 				return;
 			bldr.append("WHERE");
-			bldr.append(extremeValueSqlCol.name);
+			bldr.append(extremeValueSqlCol.sanitisedName);
 			bldr.append(getComparisonOperator(Comparison.EQUAL));
 			bldr.append("(");
 			bldr.openTransaction("");
@@ -2885,7 +2933,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			
 			// Build statement:			
 			bldr.append("DELETE FROM");
-			bldr.append(table.tableName);
+			bldr.append(table.sanitisedName);
 			// WHERE clause:
 			appendWhereClause(recordsQuery.getConstraints());
 		}

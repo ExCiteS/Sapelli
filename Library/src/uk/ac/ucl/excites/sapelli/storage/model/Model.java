@@ -94,6 +94,9 @@ public class Model implements Serializable
 	static public final IntegerColumn SCHEMA_SCHEMA_NUMBER_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("schemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD));
 	static public final StringColumn SCHEMA_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("name", true, Schema.MAX_SCHEMA_NAME_LENGTH));
 	static public final IntegerColumn SCHEMA_FLAGS_COLUMN = SCHEMA_SCHEMA.addColumn(new IntegerColumn("flags", false, Integer.SIZE));
+	/**
+	 * Stores the (unsanitised!) name of a database table corresponding to the Schema.
+	 */
 	static public final StringColumn SCHEMA_TABLE_NAME_COLUMN = SCHEMA_SCHEMA.addColumn(StringColumn.ForCharacterCount("tableName", true, Schema.MAX_SCHEMA_NAME_LENGTH * 2));
 	static
 	{

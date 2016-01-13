@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageObserver;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -222,7 +223,7 @@ public abstract class TransmissionClient extends StorageClient
 		}
 		
 		@Override
-		public void storageEvent(RecordOperation operation, RecordReference recordRef)
+		public void storageEvent(RecordOperation operation, RecordReference recordRef, RecordStore recordStore)
 		{
 			if(init() /*make sure we have tStore*/ && recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRANSMITTABLE))
 				receiverLoop : for(Correspondent receiver : getReceiversFor(recordRef.getReferencedSchema()))

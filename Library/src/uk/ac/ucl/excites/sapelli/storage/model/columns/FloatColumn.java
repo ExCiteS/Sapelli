@@ -73,9 +73,9 @@ public class FloatColumn extends NumberColumn<Double>
 	}
 
 	@Override
-	public FloatColumn copy()
+	protected FloatColumn createCopy()
 	{
-		return new FloatColumn(name, optional, signed, doublePrecision);
+		return new FloatColumn(name, optional, signed, doublePrecision, defaultValue);
 	}
 	
 	/**

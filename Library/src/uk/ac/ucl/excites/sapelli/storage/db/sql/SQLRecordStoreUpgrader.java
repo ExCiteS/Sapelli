@@ -165,11 +165,12 @@ public abstract class SQLRecordStoreUpgrader
 	{
 		
 		/**
+		 * @param unsanitisedTableName
 		 * @see SQLRecordStore#doesTableExist(String)
 		 */
-		public boolean doesTableExist(SQLRecordStore<?, ?, ?> recordStore, String tableName)
+		public boolean doesTableExist(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName)
 		{
-			return recordStore.doesTableExist(tableName) || recordStore.doesTableExist(recordStore.sanitiseIdentifier(tableName));
+			return recordStore.doesTableExist(unsanitisedTableName);
 		}
 		
 		/**
@@ -181,14 +182,24 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
-		 * @see SQLRecordStore#dropTable(String, boolean)
+		 * @see SQLRecordStore#forgetTable(String)
 		 */
-		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String tableName, boolean force) throws DBException
+		public void forgetTable(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName) throws DBException
 		{
-			recordStore.dropTable(tableName, force);
+			recordStore.forgetTable(unsanitisedTableName);
 		}
 		
 		/**
+		 * @see SQLRecordStore#dropTable(String, boolean)
+		 */
+		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName, boolean force) throws DBException
+		{
+			recordStore.dropTable(unsanitisedTableName, force);
+		}
+		
+		/**
+		 * @param oldTableName - unsanitised!
+		 * @param newTableName - unsanitised!
 		 * @see SQLRecordStore#renameTable(String, String)
 		 */
 		public void renameTable(SQLRecordStore<?, ?, ?> recordStore, String oldTableName, String newTableName) throws DBException
@@ -197,6 +208,7 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
+		 * @return a {@link List} of the (unsanitised!) names of all tables in the database
 		 * @see SQLRecordStore#getAllTableNames()
 		 */
 		public List<String> getAllTableNames(SQLRecordStore<?, ?, ?> recordStore)
@@ -389,7 +401,7 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
-		 * @param newColumn
+		 * @param newColumn - must be a real (non-virtual) and top-level column! We don't yet support direct replacing of subcolumns of ValueSetColumns or singleColumn of ListColumns
 		 * @return a {@link ColumnReplacer} instance matching the given new column, or {@code null} if the given column is unchanged from the old schema
 		 */
 		public ColumnReplacer getColumnReplacer(Column<?> newColumn)
@@ -408,6 +420,9 @@ public abstract class SQLRecordStoreUpgrader
 	static public abstract class ColumnReplacer
 	{
 		
+		/**
+		 * @param newColumn - must be a real (non-virtual) and top-level column! We don't yet support direct replacing of subcolumns of ValueSetColumns or singleColumn of ListColumns
+		 */
 		public abstract boolean matches(Column<?> newColumn);
 		
 		/**
@@ -415,7 +430,18 @@ public abstract class SQLRecordStoreUpgrader
 		 */
 		protected abstract Column<?> getOldColumn(Column<?> newColumn);
 		
-		protected abstract Object convertValue(Column<?> newColumn, Record oldRecord);
+		/**
+		 * By default values are not converted, just copied over.
+		 * Subclasses must override this to convert values.
+		 * 
+		 * @param newColumn
+		 * @param oldRecord
+		 * @return
+		 */
+		protected Object convertValue(Column<?> newColumn, Record oldRecord)
+		{
+			return getOldColumn(newColumn).retrieveValue(oldRecord);
+		}
 		
 	}
 	

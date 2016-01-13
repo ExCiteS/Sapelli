@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.Objects;
  * @author Michalis Vitos, mstevens
  *
  */
-public class PhotoField extends CameraField
+public class PhotoField extends MediaField
 {
 
 	// STATICS-------------------------------------------------------
@@ -51,13 +51,30 @@ public class PhotoField extends CameraField
 	static public final FlashMode DEFAULT_FLASH_MODE = FlashMode.AUTO;
 	
 	// DYNAMICS------------------------------------------------------
+	private boolean useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
 	private FlashMode flashMode;
 	private String captureButtonImageRelativePath;
 	
 	public PhotoField(Form form, String id, String caption)
 	{
-		super(form, id, caption, DEFAULT_USE_NATIVE_APP, DEFAULT_USE_FRONT_FACING_CAMERA);
+		super(form, id, caption, DEFAULT_USE_NATIVE_APP);
 		flashMode = DEFAULT_FLASH_MODE;
+	}
+	
+	/**
+	 * @return the useFrontFacingCamera
+	 */
+	public boolean isUseFrontFacingCamera()
+	{
+		return useFrontFacingCamera;
+	}
+
+	/**
+	 * @param useFrontFacingCamera the useFrontFacingCamera to set
+	 */
+	public void setUseFrontFacingCamera(boolean useFrontFacingCamera)
+	{
+		this.useFrontFacingCamera = useFrontFacingCamera;
 	}
 
 	/**
@@ -129,7 +146,8 @@ public class PhotoField extends CameraField
 		if(obj instanceof PhotoField)
 		{
 			PhotoField that = (PhotoField) obj;
-			return	super.equals(that) && // CameraField#equals(Object)
+			return	super.equals(that) && // MediaField#equals(Object)
+					this.useFrontFacingCamera == that.useFrontFacingCamera &&
 					this.flashMode.ordinal() == that.flashMode.ordinal() &&
 					Objects.equals(this.captureButtonImageRelativePath, that.captureButtonImageRelativePath);
 		}
@@ -140,7 +158,8 @@ public class PhotoField extends CameraField
 	@Override
 	public int hashCode()
 	{
-		int hash = super.hashCode(); // CameraField#hashCode()
+		int hash = super.hashCode(); // MediaField#hashCode()
+		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
 		hash = 31 * hash + flashMode.ordinal();
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
 		return hash;

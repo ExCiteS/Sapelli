@@ -56,7 +56,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 */
 	public static int MaximumCharsIn(int allowedBytes, Charset charset)
 	{
-		return (int) Math.floor(allowedBytes / charset.newEncoder().maxBytesPerChar()); 
+		return (int) Math.floor(allowedBytes / (double) CharsetHelpers.GetMaxBytesPerChar(charset)); 
 	}
 	
 	/**
@@ -171,6 +171,21 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 		if(maxLengthChars <= 0)
 			throw new IllegalArgumentException("maxLenghthChars needs to be at least 1 character to make sense, given " + maxLengthChars + " characters");
 		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset, defaultValue, serialisationDelimiter);
+	}
+	
+	/**
+	 * For upgrade purposes only.
+	 * 
+	 * @param stringColumn
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep
+	 * @return
+	 */
+	public static StringColumn Get3BytesPerCharUTF8Version(StringColumn stringColumn)
+	{
+		if(stringColumn == null || !Charsets.UTF_8.equals(stringColumn.getCharset()))
+			return stringColumn;
+		// else:
+		return new StringColumn(stringColumn.name, stringColumn.optional, stringColumn.getMaximumChars() * 3, Charsets.UTF_8, stringColumn.defaultValue);
 	}
 	
 	//DYNAMIC--------------------------------------------------------
@@ -320,9 +335,9 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 	
 	@Override
-	public StringColumn copy()
+	public StringColumn createCopy()
 	{
-		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), null);
+		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), defaultValue);
 	}
 	
 	/**
@@ -365,7 +380,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 			if(valueString.charAt(valueString.length() - 1) != serialisationDelimiter)
 				throw new ParseException("String does not end with " + serialisationDelimiter, valueString.length() - 1);
 			// Remove serialisationDelimiters:
-			return valueString.substring(1, valueString.length() - 1);
+			return StringUtils.deescapeByDoublingAndWrapping(valueString, serialisationDelimiter);
 		}
 		else
 			return valueString;
