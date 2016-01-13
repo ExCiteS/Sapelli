@@ -25,17 +25,15 @@ import java.util.Comparator;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * Class to represent the desired ordering of RecordsQuery results 
  * 
- * TODO ordering by schema
- * 
  * @author mstevens
  */
-public class Order implements Comparator<ValueSet<?>>
+public class Order implements Comparator<Record>
 {
 	
 	// STATICS ------------------------------------------------------
@@ -52,49 +50,49 @@ public class Order implements Comparator<ValueSet<?>>
 
 	static public <C extends Column<?>> Order By(C by)
 	{
-		return By(new Ordering(by, DEFAULT_DIRECTION));
+		return By(new ColumnOrdering(by, DEFAULT_DIRECTION));
 	}
 	
 	static public Order By(ColumnPointer<?> by)
 	{
-		return By(new Ordering(by, DEFAULT_DIRECTION));
+		return By(new ColumnOrdering(by, DEFAULT_DIRECTION));
 	}
 	
 	static public <C extends Column<?>> Order AscendingBy(C by)
 	{
-		return By(new Ordering(by, ASCENDING_DIRECTION));
+		return By(new ColumnOrdering(by, ASCENDING_DIRECTION));
 	}
 	
 	static public Order AscendingBy(ColumnPointer<?> by)
 	{
-		return By(new Ordering(by, ASCENDING_DIRECTION));
+		return By(new ColumnOrdering(by, ASCENDING_DIRECTION));
 	}
 	
 	static public <C extends Column<?>> Order DescendingBy(C by)
 	{
-		return By(new Ordering(by, DESCENDING_DIRECTION));
+		return By(new ColumnOrdering(by, DESCENDING_DIRECTION));
 	}
 	
 	static public Order DescendingBy(ColumnPointer<?> by)
 	{
-		return By(new Ordering(by, DESCENDING_DIRECTION));
+		return By(new ColumnOrdering(by, DESCENDING_DIRECTION));
 	}
 	
 	static public Order By(Column<?>... columns)
 	{
-		Ordering[] orderings = columns == null ? null : new Ordering[columns.length];
+		ColumnOrdering[] orderings = columns == null ? null : new ColumnOrdering[columns.length];
 		if(columns != null)
 			for(int c = 0; c < columns.length; c++)
-				orderings[c] = new Ordering(columns[c], DEFAULT_DIRECTION);
+				orderings[c] = new ColumnOrdering(columns[c], DEFAULT_DIRECTION);
 		return By(orderings);
 	}
 	
 	static public Order By(ColumnPointer<?>... columnPointers)
 	{
-		Ordering[] orderings = columnPointers == null ? null : new Ordering[columnPointers.length];
+		ColumnOrdering[] orderings = columnPointers == null ? null : new ColumnOrdering[columnPointers.length];
 		if(columnPointers != null)
 			for(int c = 0; c < columnPointers.length; c++)
-				orderings[c] = new Ordering(columnPointers[c], DEFAULT_DIRECTION);
+				orderings[c] = new ColumnOrdering(columnPointers[c], DEFAULT_DIRECTION);
 		return By(orderings);
 	}
 	
@@ -102,6 +100,12 @@ public class Order implements Comparator<ValueSet<?>>
 	{
 		return new Order(orderings == null || orderings.length == 0 ? Collections.<Ordering> emptyList() : Arrays.asList(orderings));
 	}
+	
+	static public final Ordering BY_MODEL_SCHEMA_ASC = new ModelSchemaOrdering(ASCENDING_DIRECTION);
+	
+	static public final Ordering BY_MODEL_SCHEMA_DESC = new ModelSchemaOrdering(DESCENDING_DIRECTION);
+
+	static public final Ordering BY_MODEL_SCHEMA = BY_MODEL_SCHEMA_ASC;
 	
 	// DYNAMICS -----------------------------------------------------
 	public final List<Ordering> orderings;
@@ -113,10 +117,10 @@ public class Order implements Comparator<ValueSet<?>>
 	
 	public Order invert()
 	{
-		List<Ordering> byReversedColumns = new ArrayList<Ordering>(orderings.size());
-		for(Ordering by : orderings)
-			byReversedColumns.add(new Ordering(by.by, !by.direction));
-		return new Order(byReversedColumns);
+		List<Ordering> invertedOrderings = new ArrayList<Ordering>(orderings.size());
+		for(Ordering ordering : orderings)
+			invertedOrderings.add(ordering.invert());
+		return new Order(invertedOrderings);
 	}
 	
 	/**
@@ -148,11 +152,11 @@ public class Order implements Comparator<ValueSet<?>>
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
 	 */
 	@Override
-	public int compare(ValueSet<?> vs1, ValueSet<?> vs2)
+	public int compare(Record r1, Record r2)
 	{
 		for(Ordering ordering : orderings)
 		{
-			int result = ordering.compare(vs1, vs2);
+			int result = ordering.compare(r1, r2);
 			if(result != 0)
 				return result;
 		}
@@ -160,79 +164,28 @@ public class Order implements Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * @param records
+	 * @param records - should not be null!
 	 */
-	public <VS extends ValueSet<?>> void sort(List<VS> valueSets)
+	public void sort(List<Record> records)
 	{
-		Collections.sort(valueSets, this);
+		Collections.sort(records, this);
 	}
 	
 	/**
 	 * @author mstevens
 	 *
 	 */
-	static public class Ordering implements Comparator<ValueSet<?>>
+	static public abstract class Ordering implements Comparator<Record>
 	{
-		
-		static public <C extends Column<?>> Ordering By(C by)
-		{
-			return new Ordering(new ColumnPointer<C>(by), DEFAULT_DIRECTION);
-		}
-		
-		static public Ordering By(ColumnPointer<?> by)
-		{
-			return new Ordering(by, DEFAULT_DIRECTION);
-		}
-		
-		static public <C extends Column<?>> Ordering AscendingBy(C by)
-		{
-			return new Ordering(new ColumnPointer<C>(by), ASCENDING_DIRECTION);
-		}
-		
-		static public Ordering AscendingBy(ColumnPointer<?> by)
-		{
-			return new Ordering(by, ASCENDING_DIRECTION);
-		}
-		
-		static public <C extends Column<?>> Ordering DescendingBy(C by)
-		{
-			return new Ordering(new ColumnPointer<C>(by), DESCENDING_DIRECTION);
-		}
-		
-		static public Ordering DescendingBy(ColumnPointer<?> by)
-		{
-			return new Ordering(by, DESCENDING_DIRECTION);
-		}
-		
-		private final ColumnPointer<?> by;
 		
 		public final boolean direction;
 
 		/**
-		 * @param by
 		 * @param direction
 		 */
-		public Ordering(Column<?> by, boolean direction)
+		public Ordering(boolean direction)
 		{
-			this(new ColumnPointer<>(by), direction);
-		}
-		
-		/**
-		 * @param by
-		 * @param direction
-		 */
-		public Ordering(ColumnPointer<?> by, boolean direction)
-		{
-			this.by = by;
 			this.direction = direction;
-		}
-
-		/**
-		 * @return the by
-		 */
-		public ColumnPointer<?> getBy()
-		{
-			return by;
 		}
 		
 		/**
@@ -250,11 +203,139 @@ public class Order implements Comparator<ValueSet<?>>
 		{
 			return direction == DESCENDING_DIRECTION;
 		}
+		
+		/**
+		 * @return inverted version of this Ordering
+		 */
+		public abstract Ordering invert();
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	static public class ColumnOrdering extends Ordering
+	{
+		
+		static public <C extends Column<?>> ColumnOrdering By(C by)
+		{
+			return new ColumnOrdering(new ColumnPointer<C>(by), DEFAULT_DIRECTION);
+		}
+		
+		static public ColumnOrdering By(ColumnPointer<?> by)
+		{
+			return new ColumnOrdering(by, DEFAULT_DIRECTION);
+		}
+		
+		static public <C extends Column<?>> ColumnOrdering AscendingBy(C by)
+		{
+			return new ColumnOrdering(new ColumnPointer<C>(by), ASCENDING_DIRECTION);
+		}
+		
+		static public ColumnOrdering AscendingBy(ColumnPointer<?> by)
+		{
+			return new ColumnOrdering(by, ASCENDING_DIRECTION);
+		}
+		
+		static public <C extends Column<?>> ColumnOrdering DescendingBy(C by)
+		{
+			return new ColumnOrdering(new ColumnPointer<C>(by), DESCENDING_DIRECTION);
+		}
+		
+		static public ColumnOrdering DescendingBy(ColumnPointer<?> by)
+		{
+			return new ColumnOrdering(by, DESCENDING_DIRECTION);
+		}
+		
+		private final ColumnPointer<?> by;
+
+		/**
+		 * @param by
+		 * @param direction
+		 */
+		public ColumnOrdering(Column<?> by, boolean direction)
+		{
+			this(new ColumnPointer<>(by), direction);
+		}
+		
+		/**
+		 * @param by
+		 * @param direction
+		 */
+		public ColumnOrdering(ColumnPointer<?> by, boolean direction)
+		{
+			super(direction);
+			this.by = by;
+		}
+
+		/**
+		 * @return the by
+		 */
+		public ColumnPointer<?> getBy()
+		{
+			return by;
+		}
 
 		@Override
-		public int compare(ValueSet<?> vs1, ValueSet<?> vs2)
+		public int compare(Record r1, Record r2)
 		{
-			return (isAsc() ? by.getComparator() : Collections.reverseOrder(by.getComparator())).compare(vs1, vs2);
+			return (isAsc() ? by.getComparator() : Collections.reverseOrder(by.getComparator())).compare(r1, r2);
+		}
+
+		@Override
+		public ColumnOrdering invert()
+		{
+			return new ColumnOrdering(by, !direction);
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	private static class ModelSchemaOrdering extends Ordering
+	{
+		
+		static private final Comparator<Record> COMPARATOR = new Comparator<Record>()
+		{
+			@Override
+			public int compare(Record r1, Record r2)
+			{
+				if(r1 == null)
+					return r2 == null ? 0 : Integer.MIN_VALUE;
+				if(r2 == null)
+					return Integer.MAX_VALUE;
+				else
+				{
+					int modelComp = Long.compare(r1.getSchema().model.id, r2.getSchema().model.id);
+					if(modelComp != 0)
+						return modelComp;
+					else
+						return Integer.compare(r1.getSchema().modelSchemaNumber, r2.getSchema().modelSchemaNumber); 
+				}
+			}
+		};
+
+		/**
+		 * @param direction
+		 */
+		public ModelSchemaOrdering(boolean direction)
+		{
+			super(direction);
+		}
+		
+		@Override
+		public int compare(Record r1, Record r2)
+		{
+			return (isAsc() ? COMPARATOR : Collections.reverseOrder(COMPARATOR)).compare(r1, r2);
+		}
+
+		@Override
+		public Ordering invert()
+		{
+			return this == BY_MODEL_SCHEMA_ASC ? BY_MODEL_SCHEMA_DESC : BY_MODEL_SCHEMA_ASC;
 		}
 		
 	}

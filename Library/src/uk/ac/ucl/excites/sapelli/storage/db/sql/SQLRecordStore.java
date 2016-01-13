@@ -2568,7 +2568,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				// Loop over orderings:
 				for(Order.Ordering ordering : order.getOrderings())
 				{
-					ColumnPointer<?> byCP = ordering.getBy();
+					if(!(ordering instanceof Order.ColumnOrdering))
+						continue; // skip ModelSchemaOrderings
+					ColumnPointer<?> byCP = ((Order.ColumnOrdering) ordering).getBy();
 					SColumn sqlCol = table.getSQLColumn(byCP);
 					if(sqlCol != null)
 					{
