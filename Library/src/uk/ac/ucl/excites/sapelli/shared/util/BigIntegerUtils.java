@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.shared.util;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 /**
  * @author mstevens
@@ -74,6 +75,28 @@ public final class BigIntegerUtils
 		if(numberOfBits < 0)
 			throw new IllegalArgumentException("Number of bits cannot be negative!");
 		return TWO.pow(numberOfBits);
+	}
+	
+	/**
+	 * Computes a hash code for the given BigInteger.
+	 * 
+	 * This method provides an platform-independent and saver alternative to
+	 * {@link BigInteger#hashCode()}.
+	 * Android's implementation of that method is different (i.e. producing different
+	 * hash codes for the same values!) compared to the Oracle JRE/JDK implementation.
+	 * On top of that the is a known (and only very recently fixed) race condition in
+	 * Android's implementation: https://code.google.com/p/android/issues/detail?id=193959
+	 * 
+	 * Note that this method conforms to neither the Oracle nor the Android implementation
+	 * of {@link BigInteger#hashCode()}.
+	 *
+	 * @return hash code for this BigInteger.
+	 */
+	static public int hashCode(BigInteger bigInteger)
+	{
+		if(bigInteger == null)
+			return 0;
+		return Arrays.hashCode(bigInteger.toByteArray());
 	}
 	
 	private BigIntegerUtils()

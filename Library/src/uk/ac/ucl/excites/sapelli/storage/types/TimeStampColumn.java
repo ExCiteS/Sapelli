@@ -28,6 +28,7 @@ import org.joda.time.format.DateTimeFormatter;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
@@ -503,7 +504,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	public int hashCode()
 	{
 		int hash = super.hashCode();
-		hash = 31 * hash + (timeMapping == null ? 0 : timeMapping.hashCode());
+		hash = 31 * hash + Objects.hashCode(timeMapping);
 		hash = 31 * hash + (keepMS ? 0 : 1);
 		hash = 31 * hash + (keepLocalTimezone ? 0 : 1);
 		hash = 31 * hash + (strict ? 0 : 1);
