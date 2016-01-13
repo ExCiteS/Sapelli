@@ -21,14 +21,6 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 import java.io.File;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
-import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -43,6 +35,11 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQuery;
 import android.os.Build;
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 
 /**
  * A RecordStore class which uses Android's SQLite facilities to store records.
@@ -54,7 +51,6 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 
 	// STATIC----------------------------------------------
 	static private final String TAG = "SQLite";
-	static private final boolean LOG_QUALIFIED_QUERIES = false;
 	
 	// DYNAMIC---------------------------------------------
 	private final SQLiteDatabase db;
@@ -182,7 +178,6 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#executeQuery(java.lang.String, java.util.List, java.util.List)
 	 */
-	@SuppressWarnings("unused")
 	@Override
 	protected SQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<? extends Object> sapArguments) throws DBException
 	{
@@ -190,35 +185,12 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		{
 			// Build selection arguments array:
 			String[] argStrings = new String[paramCols.size()];
-			String[] quotedArgStrings = BuildConfig.DEBUG ? new String[paramCols.size()] : null; // quoted version is only for debugging
 			for(int p = 0; p < argStrings.length; p++)
-			{
 				argStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), false);
-				if(BuildConfig.DEBUG)
-					quotedArgStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), true);
-			}
 			
 			// Log query & arguments:
-			if(BuildConfig.DEBUG && isLoggingEnabled())
-			{
-				if(LOG_QUALIFIED_QUERIES && sql.indexOf(PARAM_PLACEHOLDER) != -1)
-				{
-					TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n - ");
-					bldr.append("Executing query...");
-					bldr.append("Generic:   " + sql);
-					try
-					{
-						bldr.append("Qualified: " + StringUtils.replaceWithValues(sql, PARAM_PLACEHOLDER, quotedArgStrings));
-					}
-					catch(Exception e)
-					{
-						bldr.append("Failed to generate qualified query with arguments: " + StringUtils.join(quotedArgStrings, ", "));
-					}
-					Log.d(TAG, bldr.toString());
-				}
-				else
-					Log.d(TAG, "Executing query: " + sql + (sapArguments.isEmpty() ? "" : " [Arguments: " + StringUtils.join(quotedArgStrings, ", ") + "]"));
-			}
+			if(isLoggingEnabled())
+				Log.d(TAG, getQueryLogMessage(sql, paramCols, sapArguments));
 			
 			// Execute:
 			return (AndroidSQLiteCursor) db.rawQuery(sql, argStrings);
@@ -448,8 +420,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		@Override
 		public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 		{
-			if(loggingEnabled)
-				Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));			
+			// This is already logged in executeQuery():
+			/*if(loggingEnabled)
+				Log.d(TAG, "Executing query: " + query.toString().substring("SQLiteQuery: ".length()));*/			
 			return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 		}
 	}

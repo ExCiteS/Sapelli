@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
  * @author mstevens
  *
  */
-public class SourceBySet extends Source
+public class SourceBySchemata extends Source
 {
 
 	// STATICS ------------------------------------------------------
@@ -46,7 +46,7 @@ public class SourceBySet extends Source
 	 * @param schemata
 	 * @param inclusion
 	 */
-	/*package*/ SourceBySet(Collection<Schema> schemata, boolean inclusion)
+	SourceBySchemata(Collection<Schema> schemata, boolean inclusion)
 	{
 		this.schemata = new HashSet<Schema>();
 		CollectionUtils.addAllIgnoreNull(this.schemata, schemata);
@@ -89,7 +89,7 @@ public class SourceBySet extends Source
 	@Override
 	public Constraint negate()
 	{
-		return new SourceBySet(schemata, !inclusion).reduce();
+		return new SourceBySchemata(schemata, !inclusion).reduce();
 	}
 	
 	/**
@@ -154,9 +154,9 @@ public class SourceBySet extends Source
 	{
 		if(this == obj)
 			return true;
-		if(obj instanceof SourceBySet)
+		if(obj instanceof SourceBySchemata)
 		{
-			SourceBySet other = (SourceBySet) obj;
+			SourceBySchemata other = (SourceBySchemata) obj;
 			return this.schemata.equals(other.schemata) && this.inclusion == other.inclusion;
 		}
 		return false;

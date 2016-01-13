@@ -76,7 +76,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceByFlags;
-import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySchemata;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceResolver;
 import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
@@ -487,7 +487,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return source.getSchemata(new SourceResolver()
 			{
 				@Override
-				public Collection<Schema> resolve(SourceBySet sourceBySet)
+				public Collection<Schema> resolve(SourceBySchemata sourceBySet)
 				{
 					return	sourceBySet.isByInclusion() ?
 								sourceBySet.getSchemata() :
@@ -713,7 +713,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public List<Record> retrieveRecords(RecordsQuery query)
 	{
-		return retrieveRecordValueSets(query, recordSelectRunner);
+		// Get schemata:
+		Collection<Schema> schemata = getSchemata(query.getSource());
+		
+		// Retrieve records:
+		List<Record> records = retrieveRecordValueSets(query, schemata, recordSelectRunner);
+		
+		// Apply cross-schema sorting if needed:
+		if(query.isOrdered() && schemata.size() > 1)
+			query.getOrder().sort(records);
+		
+		// Return result:
+		return records;
 	}
 	
 	/* (non-Javadoc)
@@ -722,7 +733,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public List<RecordReference> retrieveRecordReferences(RecordsQuery query)
 	{
-		return retrieveRecordValueSets(query, recordReferenceSelectRunner);
+		// Get schemata:
+		Collection<Schema> schemata = getSchemata(query.getSource());
+		
+		// Check if cross-schema sorting is needed:
+		if(query.isOrdered() && schemata.size() > 1)
+		{	// if we need cross-schema ordering we need to query for records first because the ordering may apply to non-PK columns
+			List<Record> records = retrieveRecordValueSets(query, schemata, recordSelectRunner);
+			// Apply cross-schema sorting:
+			query.getOrder().sort(records);
+			// Get & return references:
+			List<RecordReference> recordRefs = new ArrayList<RecordReference>(records.size());
+			for(Record r : records)
+				recordRefs.add(r.getReference());
+			return recordRefs;
+		}
+		else
+			return retrieveRecordValueSets(query, schemata, recordReferenceSelectRunner);
 	}
 	
 	/**
@@ -737,11 +764,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 	}
 	
-	private <R extends RecordValueSet<?>> List<R> retrieveRecordValueSets(RecordsQuery query, SelectRunner<R, STable> selectRunner)
+	private <R extends RecordValueSet<?>> List<R> retrieveRecordValueSets(RecordsQuery query, Collection<Schema> schemata, SelectRunner<R, STable> selectRunner)
 	{
 		List<R> resultAcc = null;
 		// Run subqueries for each schema in the query, or all known schemata (if the query is for "any" schema):
-		for(Schema s : getSchemata(query.getSource()))
+		for(Schema s : schemata)
 		{
 			try
 			{
@@ -2420,7 +2447,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 
 		/**
-		 * Produces: "(flagsColumn & flagsPatter) = flagsPattern"
+		 * Produces: "(flagsColumn & flagsPatter) = CAST(flagsPattern AS [type])"
+		 * 
+		 * Note about CAST():
+		 * 	Android's SQLite implementation binds are argument values as Strings, and because in SQLite
+		 * 	numbers and strings never compare equal the flag comparison would fail.
+		 * 	The use of CAST ensures that "=" compares 2 integers, not an integer with a string.
+		 * 	CAST() is standard ANSI SQL-92 so we can use it here.
+		 * 
+		 * @see http://stackoverflow.com/questions/13211365/android-sqlite-bit-operation-on-where-clause
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor#visit(uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint)
 		 */
@@ -2440,13 +2475,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
 			bldr.append(")", false);
 			bldr.append(getComparisonOperator(Comparison.EQUAL));
+			bldr.append("CAST(");
 			if(isParameterised())
 			{
-				bldr.append(valuePlaceHolder);
+				bldr.append(valuePlaceHolder, false);
 				addParameterColumnAndValue(sqlCol, bitFlagConstr.getFlagsPattern());
 			}
 			else
-				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
+				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true), false);
+			bldr.append("AS");
+			bldr.append(sqlCol.type);
+			bldr.append(")", false);
 		}
 
 		/* (non-Javadoc)
@@ -2568,7 +2607,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				// Loop over orderings:
 				for(Order.Ordering ordering : order.getOrderings())
 				{
-					ColumnPointer<?> byCP = ordering.getBy();
+					if(!(ordering instanceof Order.ColumnOrdering))
+						continue; // skip ModelSchemaOrderings
+					ColumnPointer<?> byCP = ((Order.ColumnOrdering) ordering).getBy();
 					SColumn sqlCol = table.getSQLColumn(byCP);
 					if(sqlCol != null)
 					{

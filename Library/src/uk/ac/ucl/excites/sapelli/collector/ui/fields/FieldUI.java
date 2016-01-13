@@ -179,9 +179,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	public boolean leaveField(Record record, Controller.LeaveRule rule)
 	{
 		if(	// when the request is unconditional AND no storage is allowed we don't call leave() so no validation/storage happens:
-				(rule == LeaveRule.UNCONDITIONAL_NO_STORAGE)
-				// otherwise we allow validation/storage to happen but it only affects the leave permission if the request is conditional:
-				||	(rule == LeaveRule.UNCONDITIONAL_WITH_STORAGE | leave(record, false)))	// "|" (instead of "||") ensures leave() is called even when rule==UNCONDITIONAL_WITH_STORAGE
+			(rule == LeaveRule.UNCONDITIONAL_NO_STORAGE) ||
+			// otherwise we allow validation/storage to happen but it only affects the leave permission if the request is conditional:
+			(rule == LeaveRule.UNCONDITIONAL_WITH_STORAGE | leave(record, false)))	// "|" (instead of "||") ensures leave() is called even when rule==UNCONDITIONAL_WITH_STORAGE
 		{
 			hideField(); // the field will be left, so hide it
 			return true;

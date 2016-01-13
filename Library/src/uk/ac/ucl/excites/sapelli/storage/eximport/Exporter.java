@@ -38,6 +38,11 @@ public interface Exporter
 		CSV
 	}
 	
+	/**
+	 * @param records
+	 * @param description - may be null or empty
+	 * @return
+	 */
 	public ExportResult export(List<Record> records, String description);
 	
 }

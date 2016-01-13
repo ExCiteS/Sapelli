@@ -274,7 +274,7 @@ public final class RecordsTasks
 		protected final ExportResult runInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
-			onProgressUpdate(getContext().getString(R.string.exportXRecords, records.size()));
+			publishProgress(getContext().getString(R.string.exportXRecords, records.size()));
 			return exporter.export(records, selectionDescr);
 		}
 		
@@ -336,7 +336,7 @@ public final class RecordsTasks
 			{
 				for(File file : files)
 				{
-					onProgressUpdate(getContext().getString(R.string.importFromX, file.getAbsolutePath()));
+					publishProgress(getContext().getString(R.string.importFromX, file.getAbsolutePath()));
 					CollectionUtils.addAllIgnoreNull(result, importer.importFrom(file));
 				}
 			}

@@ -44,8 +44,6 @@ public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements On
 	@Override
 	public void onClick(View v)
 	{
-		controller.addLogLine("CLICK_BUTTON", this.field.id, this.field.getCaption());
-
 		buttonPressed();
 	}
 

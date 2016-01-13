@@ -41,20 +41,20 @@ public abstract class Source extends Constraint
 	/**
 	 * A Source which matches any Schema.
 	 */
-	static public final SourceBySet ANY = new SourceBySet(Collections.<Schema> emptySet(), SourceBySet.BY_EXCLUSION);
+	static public final SourceBySchemata ANY = new SourceBySchemata(Collections.<Schema> emptySet(), SourceBySchemata.BY_EXCLUSION);
 	
 	/**
 	 * A Source which does *not* match any Schema. Only for testing purposes.
 	 */
-	static public final SourceBySet NONE = new SourceBySet(Collections.<Schema> emptySet(), SourceBySet.BY_INCLUSION);
+	static public final SourceBySchemata NONE = new SourceBySchemata(Collections.<Schema> emptySet(), SourceBySchemata.BY_INCLUSION);
 	
 	/**
 	 * Returns a {@link Source} that allows to define queries that will only return records of the given {@link Schema}
 	 * 
 	 * @param schema the {@link Schema} to include in the Source
-	 * @return a {@link SourceBySet} that only includes the given {@link Schema}
+	 * @return a {@link SourceBySchemata} that only includes the given {@link Schema}
 	 */
-	static public SourceBySet From(Schema schema)
+	static public SourceBySchemata From(Schema schema)
 	{
 		if(schema == null)
 			throw new NullPointerException("Provide a non-null schema");
@@ -65,9 +65,9 @@ public abstract class Source extends Constraint
 	 * Returns a {@link Source} that allows to define queries that will only return records of the given {@link Schema}ta
 	 * 
 	 * @param schemata the {@link Schema}ta to include in the Source
-	 * @return a {@link SourceBySet} that only includes the given {@link Schema}ta
+	 * @return a {@link SourceBySchemata} that only includes the given {@link Schema}ta
 	 */
-	static public SourceBySet From(Schema... schemata)
+	static public SourceBySchemata From(Schema... schemata)
 	{
 		if(schemata == null || schemata.length == 0)
 			throw new NullPointerException("Provide at least 1 non-null schema");
@@ -78,9 +78,9 @@ public abstract class Source extends Constraint
 	 * Returns a {@link Source} that allows to define queries that will only return records of the {@link Schema}ta of the given {@link Model} 
 	 * 
 	 * @param model the {@link Model}ta whose {@link Schema}ta to include in the Source
-	 * @return a {@link SourceBySet} that only includes the {@link Schema}ta of the given {@link Model}
+	 * @return a {@link SourceBySchemata} that only includes the {@link Schema}ta of the given {@link Model}
 	 */
-	static public SourceBySet From(Model model)
+	static public SourceBySchemata From(Model model)
 	{
 		if(model == null)
 			throw new NullPointerException("Provide a non-null model");
@@ -88,14 +88,30 @@ public abstract class Source extends Constraint
 	}
 	
 	/**
+	 * Returns a {@link Source} that allows to define queries that will only return records of {@link Schema}ta of  the given {@link Model}s
+	 * 
+	 * @param models the {@link Model}s to include {@link Schema}ta from in the Source
+	 * @return a {@link SourceBySchemata} that only includes the {@link Schema}ta of the given {@link Model}s
+	 */
+	static public SourceBySchemata From(Model... models)
+	{
+		if(models == null || models.length == 0)
+			throw new NullPointerException("Provide at least 1 non-null model");
+		List<Schema> schemata = new ArrayList<Schema>();
+		for(Model m : models)
+			schemata.addAll(m.getSchemata());
+		return From(schemata);
+	}
+	
+	/**
 	 * Returns a {@link Source} that allows to define queries that will only return records of the given {@link Schema}ta
 	 * 
 	 * @param schemata the {@link Schema}ta to include in the Source
-	 * @return a {@link SourceBySet} that only includes the given {@link Schema}ta
+	 * @return a {@link SourceBySchemata} that only includes the given {@link Schema}ta
 	 */
-	static public SourceBySet From(Collection<Schema> schemata)
+	static public SourceBySchemata From(Collection<Schema> schemata)
 	{
-		SourceBySet source = new SourceBySet(schemata != null ? schemata : Collections.<Schema> emptyList(), SourceBySet.BY_INCLUSION);
+		SourceBySchemata source = new SourceBySchemata(schemata != null ? schemata : Collections.<Schema> emptyList(), SourceBySchemata.BY_INCLUSION);
 		// Check if this source makes sense:
 		if(source.isNone())
 			throw new NullPointerException("Provide at least 1 non-null schema");
@@ -106,9 +122,9 @@ public abstract class Source extends Constraint
 	 * Returns a {@link Source} that allows to define queries that will return records of any {@link Schema} *except* the given one
 	 * 
 	 * @param schema the {@link Schema} to include in the Source
-	 * @return a {@link SourceBySet} that only includes the given {@link Schema}
+	 * @return a {@link SourceBySchemata} that only includes the given {@link Schema}
 	 */
-	static public SourceBySet NotFrom(Schema schema)
+	static public SourceBySchemata NotFrom(Schema schema)
 	{
 		if(schema == null)
 			return ANY;
@@ -119,9 +135,9 @@ public abstract class Source extends Constraint
 	 * Returns a {@link Source} that allows to define queries that will return records of any {@link Schema} *except* the given ones
 	 * 
 	 * @param schemata the {@link Schema}ta to exclude in the Source
-	 * @return a {@link SourceBySet} that excludes all given {@link Schema}ta
+	 * @return a {@link SourceBySchemata} that excludes all given {@link Schema}ta
 	 */
-	static public SourceBySet NotFrom(Schema... schemata)
+	static public SourceBySchemata NotFrom(Schema... schemata)
 	{
 		if(schemata == null || schemata.length == 0)
 			return ANY;
@@ -132,9 +148,9 @@ public abstract class Source extends Constraint
 	 * Returns a {@link Source} that allows to define queries that will return records of any {@link Schema} *except* the ones of the given {@link Model}
 	 * 
 	 * @param model the {@link Model}ta whose {@link Schema}ta to exclude in the Source
-	 * @return a {@link SourceBySet} that excludes all {@link Schema}ta of the given {@link Model}
+	 * @return a {@link SourceBySchemata} that excludes all {@link Schema}ta of the given {@link Model}
 	 */
-	static public SourceBySet NotFrom(Model model)
+	static public SourceBySchemata NotFrom(Model model)
 	{
 		if(model == null)
 			return ANY;
@@ -145,13 +161,13 @@ public abstract class Source extends Constraint
 	 * Returns a {@link Source} that allows to define queries that will return records of any {@link Schema} *except* the given ones
 	 * 
 	 * @param schemata the {@link Schema}ta to exclude in the Source
-	 * @return a {@link SourceBySet} that excludes all given {@link Schema}ta
+	 * @return a {@link SourceBySchemata} that excludes all given {@link Schema}ta
 	 */
-	static public SourceBySet NotFrom(Collection<Schema> schemata)
+	static public SourceBySchemata NotFrom(Collection<Schema> schemata)
 	{
 		if(schemata == null || schemata.isEmpty())
 			return ANY;
-		return new SourceBySet(schemata, SourceBySet.BY_EXCLUSION);
+		return new SourceBySchemata(schemata, SourceBySchemata.BY_EXCLUSION);
 	}
 	
 	/**

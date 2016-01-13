@@ -379,7 +379,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
-		goTo(nextFieldAndArguments, LeaveRule.CONDITIONAL); // only leave upon successful validation (& value storage)
+		goTo(nextFieldAndArguments,
+			nextFieldAndArguments != null && nextFieldAndArguments.field != null &&
+			nextFieldAndArguments.field instanceof EndField &&
+			!((EndField) nextFieldAndArguments.field).isSave() ?
+				// If the destination is an EndField without saving we should leave the current field unconditionally...
+				LeaveRule.UNCONDITIONAL_NO_STORAGE :
+				// In all other cases the current field can only be left upon successful validation (& value storage)...
+				LeaveRule.CONDITIONAL);
 	}
 	
 	/**
