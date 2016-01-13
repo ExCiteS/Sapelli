@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 public interface SourceResolver
 {
 	
-	public Collection<Schema> resolve(SourceBySet sourceBySet);
+	public Collection<Schema> resolve(SourceBySchemata sourceBySet);
 	
 	public Collection<Schema> resolve(SourceByFlags sourceByFlags);
 

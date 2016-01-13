@@ -42,7 +42,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
-import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySchemata;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -256,8 +256,8 @@ public class DB4ORecordStore extends RecordStore
 			public boolean match(Record record)
 			{
 				return	// Schema check, but without full comparison, because that is expensive AND requires the record(/schema) object to be activated to a deeper level than it is at this stage:
-						source instanceof SourceBySet ?
-							((SourceBySet) source).isValid(record, false) :
+						source instanceof SourceBySchemata ?
+							((SourceBySchemata) source).isValid(record, false) :
 							source.isValid(record);
 			}
 		});

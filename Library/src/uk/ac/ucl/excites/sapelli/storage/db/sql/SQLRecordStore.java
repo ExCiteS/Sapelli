@@ -76,7 +76,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceByFlags;
-import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySet;
+import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceBySchemata;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.SourceResolver;
 import uk.ac.ucl.excites.sapelli.storage.types.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
@@ -487,7 +487,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return source.getSchemata(new SourceResolver()
 			{
 				@Override
-				public Collection<Schema> resolve(SourceBySet sourceBySet)
+				public Collection<Schema> resolve(SourceBySchemata sourceBySet)
 				{
 					return	sourceBySet.isByInclusion() ?
 								sourceBySet.getSchemata() :
@@ -713,7 +713,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public List<Record> retrieveRecords(RecordsQuery query)
 	{
-		return retrieveRecordValueSets(query, recordSelectRunner);
+		// Get schemata:
+		Collection<Schema> schemata = getSchemata(query.getSource());
+		
+		// Retrieve records:
+		List<Record> records = retrieveRecordValueSets(query, schemata, recordSelectRunner);
+		
+		// Apply cross-schema sorting if needed:
+		if(query.isOrdered() && schemata.size() > 1)
+			query.getOrder().sort(records);
+		
+		// Return result:
+		return records;
 	}
 	
 	/* (non-Javadoc)
@@ -722,7 +733,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public List<RecordReference> retrieveRecordReferences(RecordsQuery query)
 	{
-		return retrieveRecordValueSets(query, recordReferenceSelectRunner);
+		// Get schemata:
+		Collection<Schema> schemata = getSchemata(query.getSource());
+		
+		// Check if cross-schema sorting is needed:
+		if(query.isOrdered() && schemata.size() > 1)
+		{	// if we need cross-schema ordering we need to query for records first because the ordering may apply to non-PK columns
+			List<Record> records = retrieveRecordValueSets(query, schemata, recordSelectRunner);
+			// Apply cross-schema sorting:
+			query.getOrder().sort(records);
+			// Get & return references:
+			List<RecordReference> recordRefs = new ArrayList<RecordReference>(records.size());
+			for(Record r : records)
+				recordRefs.add(r.getReference());
+			return recordRefs;
+		}
+		else
+			return retrieveRecordValueSets(query, schemata, recordReferenceSelectRunner);
 	}
 	
 	/**
@@ -737,11 +764,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 	}
 	
-	private <R extends RecordValueSet<?>> List<R> retrieveRecordValueSets(RecordsQuery query, SelectRunner<R, STable> selectRunner)
+	private <R extends RecordValueSet<?>> List<R> retrieveRecordValueSets(RecordsQuery query, Collection<Schema> schemata, SelectRunner<R, STable> selectRunner)
 	{
 		List<R> resultAcc = null;
 		// Run subqueries for each schema in the query, or all known schemata (if the query is for "any" schema):
-		for(Schema s : getSchemata(query.getSource()))
+		for(Schema s : schemata)
 		{
 			try
 			{
