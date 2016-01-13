@@ -119,7 +119,6 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 	private FormatDialogCallback formatDialogCallback;
 	
 	private final DateTime[] dateRange = new DateTime[2];
-	private String selectionDesc;
 	private File exportFolder;
 	
 	// UI Elements
@@ -467,8 +466,10 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			//	TODO Exclude previously exported
 			
 			// Retrieve by query:
-			new RecordsTasks.QueryTask(activity, this).execute(new RecordsQuery(source, Order.UNDEFINED, constraints));
-			// TODO order by form, deviceid, timestamp
+			new RecordsTasks.QueryTask(activity, this).execute(
+				new RecordsQuery(	source,
+									Order.By(Order.BY_MODEL_SCHEMA, Order.ColumnOrdering.By(Form.COLUMN_DEVICE_ID), Order.ColumnOrdering.By(Form.COLUMN_TIMESTAMP_START)),
+									constraints));
 			// TODO let ExportFragment & Backup share this code somehow
 		}
 		
@@ -490,7 +491,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 			else
 			{
 				// TODO Generate selection description String:
-				String selectionDesc = "TODO";
+				String selectionDesc = null;
 				
 				// Check if we have a destination folder:
 				if(exportFolder == null)
