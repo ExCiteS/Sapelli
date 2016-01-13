@@ -173,6 +173,21 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset, defaultValue, serialisationDelimiter);
 	}
 	
+	/**
+	 * For upgrade purposes only.
+	 * 
+	 * @param stringColumn
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep
+	 * @return
+	 */
+	public static StringColumn Get3BytesPerCharUTF8Version(StringColumn stringColumn)
+	{
+		if(stringColumn == null || !Charsets.UTF_8.equals(stringColumn.getCharset()))
+			return stringColumn;
+		// else:
+		return new StringColumn(stringColumn.name, stringColumn.optional, stringColumn.getMaximumChars() * 3, Charsets.UTF_8, stringColumn.defaultValue);
+	}
+	
 	//DYNAMIC--------------------------------------------------------
 	private final String charsetName;
 	private transient Charset charset;
@@ -320,7 +335,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	}
 	
 	@Override
-	protected StringColumn createCopy()
+	public StringColumn createCopy()
 	{
 		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName), defaultValue);
 	}

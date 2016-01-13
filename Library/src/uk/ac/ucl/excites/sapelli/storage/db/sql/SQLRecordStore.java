@@ -839,6 +839,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Drops the table with the given name. Use with care!
 	 * Will fail, with {@link DBException} thrown, if the table is protected and unless {@code force} is {@code true}.
 	 * 
+	 * For upgrade purposes only.
+	 * 
 	 * @param unsanitisedName
 	 * @param force
 	 * @throws DBException
@@ -863,17 +865,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 					schemataTable.delete(new RecordsQuery(Model.SCHEMA_SCHEMA, new EqualityConstraint(Model.SCHEMA_TABLE_NAME_COLUMN, unsanitisedTableName)));
 				
 				// Look for table in tables map:
-				Iterator<Map.Entry<RecordReference, STable>> tableIt = tables.entrySet().iterator();
-				while(tableIt.hasNext())
-				{
-					STable table = tableIt.next().getValue();
-					if(table.getUnsanitisedName().equals(unsanitisedTableName))
-					{
-						tableToDrop = table;
-						tableIt.remove(); // delete from tables map
-						break;
-					}
-				}
+				tableToDrop = forgetTable(unsanitisedTableName);
 			}
 			
 			// Release resources so we can drop:
@@ -889,6 +881,33 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			throw new DBException("Cannot delete protected table '" + unsanitisedTableName + "'!");
 	}
 	
+	/**
+	 * Wipes the SQLTable with the given (unsanitised!) name from the tables map.
+	 * This is useful to ensure a new SQLTable instance is constructed the next time
+	 * records of the associated Schema are inserted/updated/deleted/queried for.
+	 *   
+	 * For upgrade purposes only.
+	 * 
+	 * @param unsanitisedTableName
+	 * @return
+	 * @throws DBException
+	 */
+	protected STable forgetTable(String unsanitisedTableName) throws DBException
+	{
+		// Look for table in tables map:
+		Iterator<Map.Entry<RecordReference, STable>> tableIt = tables.entrySet().iterator();
+		while(tableIt.hasNext())
+		{
+			STable table = tableIt.next().getValue();
+			if(table.getUnsanitisedName().equals(unsanitisedTableName))
+			{
+				tableIt.remove(); // delete from tables map
+				return table;
+			}
+		}
+		return null;
+	}
+	
 	protected String generateDropTableStatement(String unsanitisedTableName)
 	{
 		return String.format("DROP TABLE %s;", sanitiseIdentifier(unsanitisedTableName));
@@ -897,6 +916,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * Renames the table with the given old name to the given new name. Use with care!
 	 * Will fail, with {@link DBException} thrown, if the table is protected.
+	 * 
+	 * For upgrade purposes only.
 	 * 
 	 * @param oldTableName - unsanitised!
 	 * @param newTableName - unsanitised!

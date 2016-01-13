@@ -182,6 +182,14 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
+		 * @see SQLRecordStore#forgetTable(String)
+		 */
+		public void forgetTable(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName) throws DBException
+		{
+			recordStore.forgetTable(unsanitisedTableName);
+		}
+		
+		/**
 		 * @see SQLRecordStore#dropTable(String, boolean)
 		 */
 		public void dropTable(SQLRecordStore<?, ?, ?> recordStore, String unsanitisedTableName, boolean force) throws DBException
@@ -393,7 +401,7 @@ public abstract class SQLRecordStoreUpgrader
 		}
 		
 		/**
-		 * @param newColumn
+		 * @param newColumn - must be a real (non-virtual) and top-level column! We don't yet support direct replacing of subcolumns of ValueSetColumns or singleColumn of ListColumns
 		 * @return a {@link ColumnReplacer} instance matching the given new column, or {@code null} if the given column is unchanged from the old schema
 		 */
 		public ColumnReplacer getColumnReplacer(Column<?> newColumn)
@@ -412,6 +420,9 @@ public abstract class SQLRecordStoreUpgrader
 	static public abstract class ColumnReplacer
 	{
 		
+		/**
+		 * @param newColumn - must be a real (non-virtual) and top-level column! We don't yet support direct replacing of subcolumns of ValueSetColumns or singleColumn of ListColumns
+		 */
 		public abstract boolean matches(Column<?> newColumn);
 		
 		/**
@@ -419,7 +430,18 @@ public abstract class SQLRecordStoreUpgrader
 		 */
 		protected abstract Column<?> getOldColumn(Column<?> newColumn);
 		
-		protected abstract Object convertValue(Column<?> newColumn, Record oldRecord);
+		/**
+		 * By default values are not converted, just copied over.
+		 * Subclasses must override this to convert values.
+		 * 
+		 * @param newColumn
+		 * @param oldRecord
+		 * @return
+		 */
+		protected Object convertValue(Column<?> newColumn, Record oldRecord)
+		{
+			return getOldColumn(newColumn).retrieveValue(oldRecord);
+		}
 		
 	}
 	
