@@ -11,12 +11,14 @@ It supports the creation of surveys (called "projects"), composed of 1 or more f
 Sapelli is being developed by the [Extreme Citizen Science (ExCiteS) research group](http://ucl.ac.uk/excites) at [University College London (UCL)](http://ucl.ac.uk), with help from outside partners & contributors.
 
 Currently the core Sapelli team consists of:
-  * [Matthias Stevens](https://github.com/mstevens83), [UCL](http://iris.ucl.ac.uk/iris/browse/profile?upi=MLLST21): lead architect/developer
+  * [Dr Matthias Stevens](https://github.com/mstevens83), [UCL](http://iris.ucl.ac.uk/iris/browse/profile?upi=MLLST21): lead architect/developer
   * [Michalis Vitos](https://github.com/michalis-vitos), UCL: developer
   * [Julia Altenbuchner](https://github.com/julia-altenbuchner), UCL: developer
   * [Ben Elliott](http://benjaminelliott.co.uk), intern: developer
-  * [Gillian Conquest](http://gillconquest.co.uk), UCL: anthropologist
-  * [Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: anthropologist
+  * [Gillian Conquest](http://gillconquest.co.uk), UCL: anthropologist, field tester
+  * Carolina Comandulli, UCL: anthropologist, field tester
+  * [Dr Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: co-director of UCL ExCiteS
+  * [Prof Muki Haklay](http://www.ucl.ac.uk/excites/people/academic-staff/muki-haklay), UCL: co-director of UCL ExCiteS
 
 ### Legal disclaimer ###
 Copyright 2012-2016 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
