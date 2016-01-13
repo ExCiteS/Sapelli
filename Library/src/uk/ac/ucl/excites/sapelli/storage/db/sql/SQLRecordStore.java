@@ -2447,7 +2447,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 
 		/**
-		 * Produces: "(flagsColumn & flagsPatter) = flagsPattern"
+		 * Produces: "(flagsColumn & flagsPatter) = CAST(flagsPattern AS [type])"
+		 * 
+		 * Note about CAST():
+		 * 	Android's SQLite implementation binds are argument values as Strings, and because in SQLite
+		 * 	numbers and strings never compare equal the flag comparison would fail.
+		 * 	The use of CAST ensures that "=" compares 2 integers, not an integer with a string.
+		 * 	CAST() is standard ANSI SQL-92 so we can use it here.
+		 * 
+		 * @see http://stackoverflow.com/questions/13211365/android-sqlite-bit-operation-on-where-clause
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor#visit(uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint)
 		 */
@@ -2467,13 +2475,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
 			bldr.append(")", false);
 			bldr.append(getComparisonOperator(Comparison.EQUAL));
+			bldr.append("CAST(");
 			if(isParameterised())
 			{
-				bldr.append(valuePlaceHolder);
+				bldr.append(valuePlaceHolder, false);
 				addParameterColumnAndValue(sqlCol, bitFlagConstr.getFlagsPattern());
 			}
 			else
-				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true));
+				bldr.append(sqlCol.sapelliObjectToLiteral(bitFlagConstr.getFlagsPattern(), true), false);
+			bldr.append("AS");
+			bldr.append(sqlCol.type);
+			bldr.append(")", false);
 		}
 
 		/* (non-Javadoc)
