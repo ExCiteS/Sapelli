@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
@@ -490,7 +491,7 @@ public class IntegerColumn extends NumberColumn<Long>
 		int hash = super.hashCode();
 		hash = 31 * hash + size;
 		hash = 31 * hash + (signed ? 0 : 1);
-		hash = 31 * hash + (rangeMapping == null ? 0 : rangeMapping.hashCode());
+		hash = 31 * hash + Objects.hashCode(rangeMapping);
 		return hash;
 	}
 

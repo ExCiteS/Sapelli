@@ -1528,8 +1528,8 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		hash = 31 * hash + getTypeString().hashCode();
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (optional ? 0 : 1);
-		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());
-		hash = 31 * hash + (defaultValue == null ? 0 : defaultValue.hashCode());
+		hash = 31 * hash + Objects.hashCode(virtualVersions);
+		hash = 31 * hash + Objects.hashCode(defaultValue);
 		return hash;
 	}
 

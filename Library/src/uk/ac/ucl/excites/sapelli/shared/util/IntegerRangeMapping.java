@@ -485,7 +485,7 @@ public class IntegerRangeMapping implements Serializable
 	public String toString()
 	{
 		BigInteger rawMax = hiBound.subtract(loBound);
-		return "IntegerRangeMapping of logical range " + getStrictRangeString() +
+		return	"IntegerRangeMapping of logical range " + getStrictRangeString() +
 				" to raw range " + GetRangeString(BigIntegerUtils.ZERO, rawMax) + " (shift: " + loBound + "; size: " + size + " bits" +
 				(highBound(true) != highBound(false) ? "; effective logical range: " + getEffectiveRangeString() : "") + ")";
 	}
@@ -509,8 +509,11 @@ public class IntegerRangeMapping implements Serializable
     public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + loBound.hashCode();
-		hash = 31 * hash + hiBound.hashCode();
+		/* Note:
+		 * 	We don't use {@link BigInteger#hashCode()} here because the Android
+		 * 	implementation produces different results from the JDK/JRE version. */
+		hash = 31 * hash + BigIntegerUtils.hashCode(loBound);
+		hash = 31 * hash + BigIntegerUtils.hashCode(hiBound);
 		// no need to check size as it depends only on loBound & hiBound
 		return hash;
 	}
