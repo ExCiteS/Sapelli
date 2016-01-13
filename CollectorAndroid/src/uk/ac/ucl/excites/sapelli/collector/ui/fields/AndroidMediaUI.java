@@ -156,8 +156,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					captureView.refresh();
 				return captureView;
 	
-			case SINGLE_ITEM_REVIEW:
-			case SINGLE_ITEM_REVIEW_FROM_GALLERY:
+			case REVIEW_ITEM_POST_CAPTURE:
+			case REVIEW_ITEM_FROM_GALLERY:
+			case REVIEW_ITEM_PSEUDO_GALLERY:
 				if(reviewView == null)
 					reviewView = new ReviewView(context);
 				// Set file to review:
@@ -186,8 +187,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	@Override
 	protected boolean isShowBack()
 	{
-		// Always hide the forward button when reviewing a single item: 
-		if(isInSingleItemReviewMode())
+		// Always hide the forward button when reviewing a single item, unless we are in pseudo gallery mode: 
+		if(isInReviewItemMode(/*exceptPseudoGallery:*/ true))
 			return false;
 		// Always show back button if in capture UI and coming from gallery such that the user can always go back to the gallery (regardless of field history on the stack):
 		if(getMode() == Mode.CAPTURE_FROM_GALLERY)
@@ -204,8 +205,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	@Override
 	protected boolean isShowCancel()
 	{
-		// Always hide the cancel button when reviewing a single item: 
-		if(isInSingleItemReviewMode())
+		// Always hide the cancel button when reviewing a single item, unless we are in pseudo gallery mode: 
+		if(isInReviewItemMode(/*exceptPseudoGallery:*/ true))
 			return false;
 		// Default behaviour:
 		return super.isShowCancel();
@@ -219,8 +220,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	@Override
 	public boolean isShowForward()
 	{
-		// Always hide the forward button when reviewing a single item: 
-		if(isInSingleItemReviewMode())
+		// Always hide the forward button when reviewing a single item, unless we are in pseudo gallery mode:
+		if(isInReviewItemMode(/*exceptPseudoGallery:*/ true))
 			return false;
 		// Show forward when record is valid (i.e. at least 1 attachment when field is non-optional):
 		return isValid(controller.getCurrentRecord());
@@ -274,8 +275,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		captureFile = null; // !!!
 		
 		// Where to go next?:
-		if(field.isShowReview() || !isValid(controller.getCurrentRecord()))
-			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); // stay at field if review is enabled, or if the record is somehow not valid (e.g. due to non-existing mediaAttachement)
+		if(!isValid(controller.getCurrentRecord()))
+			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); // if the record is somehow not valid (e.g. due to non-existing mediaAttachement)
+		else if(field.isShowReview())
+		{
+			// add the "go to post capture review" argument to the field:
+			controller.getCurrentFieldArguments().put(GO_TO_POST_CAPTURE_REVIEW, "true");
+			// re-enter current field:
+			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+		}
 		else
 			controller.goForward(true); // Continue...
 	}
@@ -528,6 +536,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			collectorUI.clickView(view, position == 0 ? approveAction : discardAction);
 		}
 		
+		/**
+		 * @param discarding whether the item was discarded ({@code true}) or approved ({@code false})
+		 * @return
+		 */
 		private Runnable makeButtonAction(final boolean discarding)
 		{
 			return new Runnable()
@@ -549,10 +561,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						// An item has been deleted, so we want the gallery to be refreshed:
 						mediaItemsChanged = true;
 					}
+					//else: not discarding means we're approving
 					
 					// Determine what to do next...
-					if(discarding || getMode() == Mode.SINGLE_ITEM_REVIEW_FROM_GALLERY)
-						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); // will go back to capture (when the 1 and only item was deleted), or back to gallery
+					if(discarding || getMode() == Mode.REVIEW_ITEM_FROM_GALLERY)
+						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); // will go back to gallery or to capture (when the 1 and only item was deleted) 
 					else // single item approval:
 						controller.goForward(true);
 				}
@@ -691,7 +704,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				@Override
 				public void run()
 				{
-					controller.getCurrentFieldArguments().put(	REVIEW_FILE_PATH_KEY,
+					controller.getCurrentFieldArguments().put(	REVIEW_FROM_GALLERY_FILE_PATH_KEY,
 																field.getAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord(), position).getAbsolutePath());
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 				}

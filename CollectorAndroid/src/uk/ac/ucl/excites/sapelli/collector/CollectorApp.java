@@ -307,8 +307,14 @@ public class CollectorApp extends Application
 		@Override
 		protected void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException
 		{
-			setter.setAndInitialise(new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorSQLRecordStoreUpgrader(this, this, getFileStorageProvider())));
-			//setter.setAndInitialise(new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME));
+			@SuppressWarnings("resource")
+			RecordStore recordStore = new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorSQLRecordStoreUpgrader(this, this, getFileStorageProvider()));
+			//RecordStore recordStore = new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			setter.setAndInitialise(recordStore);
+			
+			// Enable logging if in debug mode (will display SQL statements being executed):
+			if(BuildConfig.DEBUG)
+				recordStore.setLoggingEnabled(true);
 		}
 
 		@Override

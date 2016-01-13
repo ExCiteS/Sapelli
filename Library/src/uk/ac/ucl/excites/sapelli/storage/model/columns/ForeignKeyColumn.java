@@ -82,9 +82,9 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 	}
 	
 	@Override
-	public ForeignKeyColumn copy()
+	protected ForeignKeyColumn createCopy()
 	{
-		return new ForeignKeyColumn(name, foreignSchema, optional);
+		return new ForeignKeyColumn(name, foreignSchema, optional, defaultValue);
 	}
 
 	@Override

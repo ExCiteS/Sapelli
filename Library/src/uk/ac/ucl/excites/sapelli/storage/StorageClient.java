@@ -524,13 +524,15 @@ public abstract class StorageClient implements StorageObserver
 	}
 	
 	@Override
-	public final void storageEvent(RecordOperation operation, RecordReference recordRef)
+	public final void storageEvent(RecordOperation operation, RecordReference recordRef, RecordStore recordStore)
 	{
-		// Forward to all observers (if any):
-		for(StorageObserver observer : observers)
-			// Only report events about records whose Schema has track changes enabled:
-			if(recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRACK_CHANGES))
-				observer.storageEvent(operation, recordRef);
+		if(	// Any events coming from an initialised RecordStore (this avoids forwarding events during db upgrades) and ...
+			recordStore.isInitialised() &&
+			// 	about records whose Schema has track changes enabled ...
+			recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRACK_CHANGES))
+			// must be forwarded to all observers (if any):
+			for(StorageObserver observer : observers)
+				observer.storageEvent(operation, recordRef, recordStore);
 	}
 	
 	public final void logError(String msg)

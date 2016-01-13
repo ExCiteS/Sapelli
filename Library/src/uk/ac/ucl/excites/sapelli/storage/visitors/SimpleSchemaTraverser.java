@@ -18,15 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
-import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -44,7 +43,7 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	
 	protected final void traverse(Schema schema)
 	{
-		traverse(schema, Collections.<Column<?>> emptySet());
+		traverse(schema, ColumnSet.SKIP_NONE);
 	}
 	
 	protected final void traverse(Schema schema, Set<? extends Column<?>> skipColumns)

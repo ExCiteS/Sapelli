@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -243,7 +244,7 @@ public abstract class RecordStore extends Store
 			return false;
 		//	Check if the record has non-null values in each non-optional (sub)column, except the auto-incrementing PK column if there is one:
 		IntegerColumn autoKeyCol = record.getSchema().getAutoIncrementingPrimaryKeyColumn();
-		if(!record.isFilled(autoKeyCol != null ? Collections.<Column<?>> singleton(autoKeyCol) : Collections.<Column<?>> emptySet(), true))
+		if(!record.isFilled(autoKeyCol != null ? Collections.<Column<?>> singleton(autoKeyCol) : ColumnSet.SKIP_NONE, true))
 			return false;
 		//	(Add additional checks here)
 		// All OK:
@@ -279,9 +280,9 @@ public abstract class RecordStore extends Store
 		if(insert == null)
 			return; // record was unchanged
 		else if(insert)
-			client.storageEvent(RecordOperation.Inserted, record.getReference());
+			client.storageEvent(RecordOperation.Inserted, record.getReference(), this);
 		else
-			client.storageEvent(RecordOperation.Updated, record.getReference());
+			client.storageEvent(RecordOperation.Updated, record.getReference(), this);
 	}
 	
 	/**
@@ -312,7 +313,7 @@ public abstract class RecordStore extends Store
 		}
 		// Inform client if a real insert happened:
 		if(inserted)
-			client.storageEvent(RecordOperation.Inserted, record.getReference());
+			client.storageEvent(RecordOperation.Inserted, record.getReference(), this);
 	}
 	
 	/**
@@ -351,9 +352,9 @@ public abstract class RecordStore extends Store
 			if(inserted == null)
 				continue; // record was unchanged
 			else if(inserted)
-				client.storageEvent(RecordOperation.Inserted, record.getReference());
+				client.storageEvent(RecordOperation.Inserted, record.getReference(), this);
 			else
-				client.storageEvent(RecordOperation.Updated, record.getReference());
+				client.storageEvent(RecordOperation.Updated, record.getReference(), this);
 		}
 	}
 	
@@ -479,7 +480,7 @@ public abstract class RecordStore extends Store
 			throw e;
 		}
 		// Inform client:
-		client.storageEvent(RecordOperation.Deleted, record.getReference());
+		client.storageEvent(RecordOperation.Deleted, record.getReference(), this);
 	}
 	
 	/**
@@ -550,7 +551,7 @@ public abstract class RecordStore extends Store
 		commitTransaction();
 		// Inform client:
 		for(Record record : deleted)
-			client.storageEvent(RecordOperation.Deleted, record.getReference());
+			client.storageEvent(RecordOperation.Deleted, record.getReference(), this);
 	}
 	
 	/**

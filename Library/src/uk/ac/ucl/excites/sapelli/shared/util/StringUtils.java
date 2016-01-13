@@ -214,7 +214,7 @@ public final class StringUtils
 	 * existing occurrences of the {@code wrapDelimiter}.
 	 * 
 	 * @param str
-	 * @param avoid
+	 * @param avoid - may be null or empty, in which case only occurences of wrapDelimiter itself will cause unforced wrapping
 	 * @param wrapDelimiter
 	 * @return
 	 * 

@@ -66,7 +66,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#copy()
 	 */
 	@Override
-	public Column<byte[]> copy()
+	protected Column<byte[]> createCopy()
 	{
 		return new ByteArrayColumn(name, optional, defaultValue);
 	}

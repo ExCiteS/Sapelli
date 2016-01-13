@@ -36,6 +36,7 @@ import android.widget.LinearLayout;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
@@ -67,7 +68,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	private final AudioRecorder audioRecorder;
 	
 	private VolumeView volumeView;
-	private AudioReviewView audioReviewView;
+	private ReviewView audioReviewView;
 
 	public AndroidAudioUI(AudioField field, CollectorController controller, CollectorView collectorUI)
 	{
@@ -120,13 +121,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		try
 		{
 			audioRecorder.start(getNewCaptureFile());
+			volumeView.start();
 		}
 		catch(Exception e)
 		{
 			handleCaptureError(e);
 			return; // !!!
 		}
-		volumeView.start();
 	}
 
 	/**
@@ -134,9 +135,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	 */
 	private void stopRecording()
 	{
-		volumeView.stop();
 		try
 		{
+			volumeView.stop();
 			audioRecorder.stop();
 		}
 		catch(Exception e)
@@ -151,15 +152,14 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	@Override
 	protected Item<?> getGalleryItem(int index, File attachement)
 	{
-		// TODO allow for custom icon
-		return new ImageItem(index, collectorUI.getResources(), R.drawable.audio_item);
+		return collectorUI.getImageItemFromProjectFileOrResource(field.getRecordingImageRelativePath(), R.drawable.audio_item);
 	}
 
 	@Override
 	protected View getReviewContent(Context context, File mediaFile)
 	{
 		if(audioReviewView == null)
-			audioReviewView = new AudioReviewView(context);
+			audioReviewView = new ReviewView(context);
 		audioReviewView.setAudioFile(mediaFile);
 		return audioReviewView;
 	}
@@ -189,7 +189,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		private final Handler handler;
 	    private final Paint paint;
 	    
-		private float levelWidth;
 		private float levelHeight;
 		private float levelLeft;
 		private float levelRight;		
@@ -199,7 +198,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		public VolumeView(Context context)
 		{
 			super(context);
-			handler = new Handler(Looper.getMainLooper());			
+			handler = new Handler(Looper.getMainLooper());
 			paint = new Paint();
 		}
 
@@ -208,7 +207,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		{
 			// (re)calculate level dimensions:
 			levelHeight = ((float) height / NUM_LEVELS) - LEVEL_PADDING;
-			levelWidth = VOLUME_WIDTH_FRACTION * width;
+			float levelWidth = VOLUME_WIDTH_FRACTION * width;
 			levelLeft = (width - levelWidth) / 2;
 			levelRight = (width + levelWidth) / 2;
 
@@ -231,7 +230,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 				if(i == levelsToIlluminate)
 					paint.setColor(COLOR_INACTIVE_LEVEL);
 				float levelBottom = getHeight() - i * (levelHeight + LEVEL_PADDING); // remember top-left is (0,0)
-				canvas.drawRect(levelLeft, levelBottom + levelHeight, levelRight, levelBottom, paint);
+				canvas.drawRect(levelLeft, levelBottom, levelRight, levelBottom + levelHeight, paint);
 			}
 		}
 
@@ -253,8 +252,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		{
 			if(!audioRecorder.isRecording())
 				return;
-			float relativeAmplitude = ((float) audioRecorder.getMaxAmplitude()) / AudioRecorder.MAX_AMPLITUDE;
-			levelsToIlluminate = Math.min(Math.round(relativeAmplitude * NUM_LEVELS), NUM_LEVELS);
+			float relativeAmplitude = ((float) audioRecorder.getMaxAmplitude()) / (float) AudioRecorder.MAX_AMPLITUDE;
+			levelsToIlluminate = Math.min(Math.round(relativeAmplitude * (float) NUM_LEVELS), NUM_LEVELS);
 			invalidate(); // ask view to be redrawn
 			schedule(); // reschedule for next volume update
 		}
@@ -273,27 +272,30 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	/**
 	 * A subclass of ImageView that provides play/stop functionality when a recording is being reviewed.
 	 * 
+	 * TODO pause button ({@link AVField#getPausePlaybackImageRelativePath()})
+	 * 
 	 * @author benelliott, mstevens
 	 * @see http://developer.android.com/reference/android/media/MediaPlayer.html#StateDiagram
 	 */
-	private class AudioReviewView extends LinearLayout implements MediaPlayer.OnCompletionListener, OnClickListener
+	private class ReviewView extends LinearLayout implements MediaPlayer.OnCompletionListener, OnClickListener
 	{
 
 		private final View playButton;
+		//private final View pauseButton;
 		private final View stopButton;
 
 		private MediaPlayer mediaPlayer;
 		private boolean paused = false;
 		
-		public AudioReviewView(Context context)
+		public ReviewView(Context context)
 		{
 			super(context);
 						
 			// Buttons:
 			LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-			playButton = addButtonView(field.getPlayAudioImageRelativePath(), R.drawable.button_media_play);
+			playButton = addButtonView(field.getStartPlaybackImageRelativePath(), R.drawable.button_media_play);
 			this.addView(playButton, buttonParams);
-			stopButton = addButtonView(field.getStopAudioImageRelativePath(), R.drawable.button_media_stop);
+			stopButton = addButtonView(field.getStopPlaybackImageRelativePath(), R.drawable.button_media_stop);
 			this.addView(stopButton, buttonParams);
 			
 			// Listen for clicks:

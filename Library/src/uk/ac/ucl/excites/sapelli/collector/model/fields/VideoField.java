@@ -18,21 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import java.io.File;
-import java.util.Set;
-
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 
 /**
  * @author Michalis Vitos, mstevens, benelliott
  *
  */
-public class VideoField extends CameraField
+public class VideoField extends AVField
 {
 
 	// STATICS-------------------------------------------------------
@@ -43,12 +37,11 @@ public class VideoField extends CameraField
 	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
 
 	// DYNAMICS------------------------------------------------------
-	private String startRecImageRelativePath;
-	private String stopRecImageRelativePath;
+	private boolean useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
 
 	public VideoField(Form form, String id, String caption)
 	{
-		super(form, id, caption, DEFAULT_USE_NATIVE_APP, DEFAULT_USE_FRONT_FACING_CAMERA);
+		super(form, id, caption, DEFAULT_USE_NATIVE_APP);
 	}
 
 	@Override
@@ -64,44 +57,19 @@ public class VideoField extends CameraField
 	}
 
 	/**
-	 * @return the startRecImageRelativePath
+	 * @return the useFrontFacingCamera
 	 */
-	public String getStartRecImageRelativePath()
+	public boolean isUseFrontFacingCamera()
 	{
-		return startRecImageRelativePath;
+		return useFrontFacingCamera;
 	}
 
 	/**
-	 * @param startRecImageRelativePath the startRecImageRelativePath to set
+	 * @param useFrontFacingCamera the useFrontFacingCamera to set
 	 */
-	public void setStartRecImageRelativePath(String startRecImageRelativePath)
+	public void setUseFrontFacingCamera(boolean useFrontFacingCamera)
 	{
-		this.startRecImageRelativePath = startRecImageRelativePath;
-	}
-
-	/**
-	 * @return the stopVideoImageRelativePath
-	 */
-	public String getStopRecImageRelativePath()
-	{
-		return stopRecImageRelativePath;
-	}
-
-	/**
-	 * @param stopVideoImageRelativePath the stopVideoImageRelativePath to set
-	 */
-	public void setStopRecImageRelativePath(String stopRecImageRelativePath)
-	{
-		this.stopRecImageRelativePath = stopRecImageRelativePath;
-	}
-
-	@Override
-	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
-	{
-		super.addFiles(filesSet, fileStorageProvider); // !!!
-		
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
+		this.useFrontFacingCamera = useFrontFacingCamera;
 	}
 
 	@Override
@@ -118,9 +86,8 @@ public class VideoField extends CameraField
 		if(obj instanceof VideoField)
 		{
 			VideoField that = (VideoField) obj;
-			return	super.equals(that) && // CameraField#equals(Object)
-					Objects.equals(this.startRecImageRelativePath, that.startRecImageRelativePath) &&
-					Objects.equals(this.stopRecImageRelativePath, that.stopRecImageRelativePath);
+			return	super.equals(that) && // AVField#equals(Object)
+					this.useFrontFacingCamera == that.useFrontFacingCamera;
 		}
 		else
 			return false;
@@ -129,9 +96,9 @@ public class VideoField extends CameraField
 	@Override
 	public int hashCode()
 	{
-		int hash = super.hashCode(); // CameraField#hashCode()
-		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
-		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
+		int hash = super.hashCode(); // AVField#hashCode()
+		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
+		hash = 31 * hash + getClass().getSimpleName().hashCode();
 		return hash;
 	}
 	

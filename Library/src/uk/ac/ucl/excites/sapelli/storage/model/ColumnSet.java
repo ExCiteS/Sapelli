@@ -46,7 +46,7 @@ public class ColumnSet implements Serializable
 	
 	static protected final int UNKNOWN_COLUMN_POSITION = -1;
 	
-	static public final Set<Column<?>> NO_SKIPPED_COLUMNS = Collections.<Column<?>> emptySet();
+	static public final Set<Column<?>> SKIP_NONE = Collections.<Column<?>> emptySet();
 
 	// Dynamics-----------------------------------------------------------
 	protected final String name;
@@ -434,7 +434,7 @@ public class ColumnSet implements Serializable
 	 */
 	public boolean isVariableSize(boolean lossless)
 	{
-		return isVariableSize(false, NO_SKIPPED_COLUMNS, lossless);
+		return isVariableSize(false, SKIP_NONE, lossless);
 	}
 	
 	/**
@@ -474,7 +474,7 @@ public class ColumnSet implements Serializable
 	 */
 	public int getMinimumSize(boolean lossless)
 	{
-		return getMinimumSize(false, NO_SKIPPED_COLUMNS, lossless);
+		return getMinimumSize(false, SKIP_NONE, lossless);
 	}
 	
 	/**
@@ -516,7 +516,7 @@ public class ColumnSet implements Serializable
 	 */
 	public int getMaximumSize(boolean lossless)
 	{
-		return getMaximumSize(false, Collections.<Column<?>> emptySet(), lossless);
+		return getMaximumSize(false, SKIP_NONE, lossless);
 	}
 
 	/**
@@ -619,7 +619,7 @@ public class ColumnSet implements Serializable
 	
 	public void accept(ColumnVisitor visitor)
 	{
-		accept(visitor, Collections.<Column<?>>emptySet());
+		accept(visitor, SKIP_NONE);
 	}
 	
 	public void accept(ColumnVisitor visitor, Set<? extends Column<?>> skipColumns)

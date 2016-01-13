@@ -179,8 +179,22 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	/**
 	 * @return a copy of this Column
 	 */
-	public abstract Column<T> copy();
+	public final Column<T> copy()
+	{
+		// Get copy of the column itself:
+		Column<T> clone = createCopy();
+		
+		// Add copies of virtual versions:
+		for(VirtualColumn<?, T> v : getVirtualVersions())
+			clone.addVirtualVersion(v.createCopy());
+		return clone;
+	}
 	
+	/**
+	 * @return a copy of this Column (without added VirtualColumns)
+	 */
+	protected abstract Column<T> createCopy();
+
 	/**
 	 * @return the name
 	 */
@@ -207,6 +221,14 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		return defaultValue != null;
 	}
 	
+	/**
+	 * @return the defaultValue
+	 */
+	public T getDefaultValue()
+	{
+		return defaultValue;
+	}
+
 	/**
 	 * Checks whether this column, and if {@code recurse} is {@code true} also _all_ of its subcolumns, is non-optional.
 	 * 
@@ -624,7 +646,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @see {@link #stringToValue(String)}
 	 * @see {@link #toString(Object)}
 	 */
-	public T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public final T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		if(valueString == null || valueString.isEmpty()) // empty String is treated as null!
 			return null;
@@ -663,7 +685,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return a {@link String} representation of the value, or {@code null} if the value was {@code null}
 	 * @see #toString(Object)
 	 */
-	public String valueToString(T value)
+	public final String valueToString(T value)
 	{
 		return valueToString(value, false);
 	}
@@ -681,7 +703,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return a {@link String} representation of the given {@code value}, or {@code null} if the value was {@code null} and {@code emptyForNull} was {@code false}
 	 * @see #toString(Object)
 	 */
-	public String valueToString(T value, boolean emptyForNull)
+	public final String valueToString(T value, boolean emptyForNull)
 	{
 		if(value != null)
 			return toString(value);
@@ -701,7 +723,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @see #valueToString(Object)
 	 * @see #toString(Object)
 	 */
-	public String objectToString(Object valueObject, boolean convert) throws ClassCastException
+	public final String objectToString(Object valueObject, boolean convert) throws ClassCastException
 	{
 		return valueToString(convert ? convert(valueObject) : cast(convert));
 	}
@@ -1266,7 +1288,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param targetColumn
 	 * @param valueMapper
 	 */
-	public <VT> void addVirtualVersion(Column<VT> targetColumn, VirtualColumn.ValueMapper<VT, T> valueMapper)
+	public final <VT> void addVirtualVersion(Column<VT> targetColumn, VirtualColumn.ValueMapper<VT, T> valueMapper)
 	{
 		addVirtualVersion(new VirtualColumn<VT, T>(this, targetColumn, valueMapper));
 	}
