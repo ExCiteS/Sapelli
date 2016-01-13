@@ -80,22 +80,20 @@ public abstract class SingleRecordQuery extends Query<Record>
 	{
 		List<Record> records = sourceRecords;
 	
-		// Apply records query:
 		if(executeRecordQuery)
+			// Apply records query:
 			records = recordsQuery.execute(records);
+		else if(records != null)
+			// Only sort:
+			recordsQuery.order.sort(records);
 		
 		if(records != null && !records.isEmpty())
 		{
 			if(records.size() == 1)
 				return records.get(0);
 			else
-			{
-				// Sort:
-				recordsQuery.order.sort(records);
-				
 				 // Reduce & return:
 				return reduce(records);
-			}
 		}
 		else
 			// There are no records, return null
