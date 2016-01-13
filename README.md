@@ -19,7 +19,7 @@ Currently the core Sapelli team consists of:
   * [Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: anthropologist
 
 ### Legal disclaimer ###
-Copyright 2012-2015 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
+Copyright 2012-2016 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
 
 Licensed under the **Apache License, Version 2.0** (the "License");
 you may not use this file except in compliance with the License.
