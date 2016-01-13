@@ -84,11 +84,19 @@ public abstract class Query<R>
 	public abstract int getLimit();
 	
 	/**
-	 * @return where or not the query is limited to a certain number of resulting records
+	 * @return whether or not the query is limited to a certain number of resulting records
 	 */
 	public boolean isLimited()
 	{
 		return getLimit() > NO_LIMIT;
+	}
+	
+	/**
+	 * @return whether or not the query is applies a specifc ordering to the results
+	 */
+	public boolean isOrdered()
+	{
+		return getOrder() != Order.UNDEFINED;
 	}
 	
 }
