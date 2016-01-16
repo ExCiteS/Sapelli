@@ -118,7 +118,7 @@ public final class ProjectTasks
 	{
 
 		private final MediaFilesQueryCallback callback;
-		private final Map<Schema, Form> schema2Form;
+		private final List<Project> projects;
 		private Exception failure = null;
 		
 		/**
@@ -139,13 +139,8 @@ public final class ProjectTasks
 		public MediaFilesQueryTask(BaseActivity owner, List<Project> projects, MediaFilesQueryCallback callback)
 		{
 			super(owner, owner.getString(R.string.mediaScanning));
+			this.projects = projects;
 			this.callback = callback;
-
-			// Populate schema->form map:
-			this.schema2Form = new HashMap<Schema, Form>();
-			for(Project project : projects)
-				for(Form form : project.getForms())
-					schema2Form.put(form.getSchema(), form);
 		}
 
 		@Override
@@ -155,42 +150,11 @@ public final class ProjectTasks
 			List<Record> records = params[0];
 			try
 			{
-				// Group records by form:
-				Map<Form, List<Record>> recordsByForm = new HashMap<Form, List<Record>>();
-				for(Record r : records)
-				{
-					Form form = schema2Form.get(r.getSchema());
-					if(form == null)
-						continue;
-					List<Record> formRecs;
-					if(!recordsByForm.containsKey(form))
-						recordsByForm.put(form, formRecs = new ArrayList<Record>());
-					else
-						formRecs = recordsByForm.get(form);
-					formRecs.add(r);
-				}
-				// Scan for attachments:
-				final List<File> attachments = new ArrayList<File>();	
-				FileStorageProvider fileSP = getContext().getFileStorageProvider();
-				for(Form form : recordsByForm.keySet())
-					for(Record record : recordsByForm.get(form))
-						for(Field field : form.getFields())
-							if(field instanceof MediaField)
-							{
-								MediaField mf = (MediaField) field;
-								for(int i = 0; i < mf.getAttachmentCount(record); i++)
-								{
-									File attachment = mf.getAttachment(fileSP, record, i);
-									if(attachment.exists())
-										attachments.add(attachment);
-								}
-							}
-				return attachments;
+				return getMediaFiles(projects, records, getContext().getFileStorageProvider()); 
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace(System.err);
-				Log.d(getClass().getName(), ExceptionHelpers.getMessageAndCause(e));
+				Log.e(getClass().getName(), ExceptionHelpers.getMessageAndCause(e), e);
 				failure = e;
 				return Collections.<File> emptyList();
 			}
@@ -215,6 +179,65 @@ public final class ProjectTasks
 		
 		public void mediaQueryFailure(Exception reason);
 		
+	}
+	
+	/**
+	 * @param project
+	 * @param record
+	 * @param fileSP
+	 * @return
+	 * @throws Exception
+	 */
+	static public List<File> getMediaFiles(Project project, Record record, FileStorageProvider fileSP) throws Exception
+	{
+		return getMediaFiles(Collections.singletonList(project), Collections.singletonList(record), fileSP);
+	}
+	
+	/**
+	 * @param projects
+	 * @param records
+	 * @param fileSP
+	 * @return
+	 * @throws Exception
+	 */
+	static public List<File> getMediaFiles(List<Project> projects, List<Record> records, FileStorageProvider fileSP) throws Exception
+	{
+		// Populate schema->form map:
+		final Map<Schema, Form> schema2Form = new HashMap<Schema, Form>();
+		for(Project project : projects)
+			for(Form form : project.getForms())
+				schema2Form.put(form.getSchema(), form);
+		
+		// Group records by form:
+		Map<Form, List<Record>> recordsByForm = new HashMap<Form, List<Record>>();
+		for(Record r : records)
+		{
+			Form form = schema2Form.get(r.getSchema());
+			if(form == null)
+				continue;
+			List<Record> formRecs;
+			if(!recordsByForm.containsKey(form))
+				recordsByForm.put(form, formRecs = new ArrayList<Record>());
+			else
+				formRecs = recordsByForm.get(form);
+			formRecs.add(r);
+		}
+		// Scan for attachments:
+		final List<File> attachments = new ArrayList<File>();	
+		for(Form form : recordsByForm.keySet())
+			for(Record record : recordsByForm.get(form))
+				for(Field field : form.getFields())
+					if(field instanceof MediaField)
+					{
+						MediaField mf = (MediaField) field;
+						for(int i = 0; i < mf.getAttachmentCount(record); i++)
+						{
+							File attachment = mf.getAttachment(fileSP, record, i);
+							if(attachment.exists())
+								attachments.add(attachment);
+						}
+					}
+		return attachments;
 	}
 	
 	static private abstract class ProjectStoreTask<I, O> extends AsyncTaskWithWaitingDialog<BaseActivity, I, O>
