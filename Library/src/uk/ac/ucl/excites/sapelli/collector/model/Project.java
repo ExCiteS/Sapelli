@@ -133,7 +133,7 @@ public class Project extends ProjectDescriptor
 
 	/**
 	 * @param position
-	 * @return	the {@link Form} with the specified {@code position}, or {@code null} if the project has no such form. 
+	 * @return the {@link Form} with the specified {@code position}, or {@code null} if the project has no such form. 
 	 */
 	public Form getForm(int position)
 	{
@@ -145,12 +145,24 @@ public class Project extends ProjectDescriptor
 	
 	/**
 	 * @param id
-	 * @return	the {@link Form} with the specified {@code id}, or {@code null} if the project has no such form.
+	 * @return the {@link Form} with the specified {@code id}, or {@code null} if the project has no such form.
 	 */
 	public Form getForm(String id)
 	{
 		for(Form f : forms)
 			if(f.id.equalsIgnoreCase(id)) // form IDs are treated as case insensitive
+				return f;
+		return null; // no such form
+	}
+	
+	/**
+	 * @param schema the Schema of the Form we are looking for
+	 * @return the Form that is backed by the given schema, or {@code null} if the project has no such form.
+	 */
+	public Form getForm(Schema schema)
+	{
+		for(Form f : forms)
+			if(f.isProducesRecords() && f.getSchema().equals(schema))
 				return f;
 		return null; // no such form
 	}
