@@ -99,7 +99,7 @@ public abstract class TransmissionClient extends StorageClient
 	}
 	
 	/**
-	 * TODO
+	 * Creates instances of non-built-in Payload types.
 	 * 
 	 * @param nonBuiltinType
 	 * @return
@@ -209,7 +209,7 @@ public abstract class TransmissionClient extends StorageClient
 				}
 				catch(DBException e)
 				{
-					e.printStackTrace(System.err); // TODO propagate upwards (to android) error logging
+					logError("Error upon initialising the " + TransmissionStorageObserver.class.getSimpleName(), e);
 					return false;
 				}
 			}
