@@ -108,12 +108,7 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 		protected void customiseTableConverter(Schema newSchema, final TableConverter tableConverter) throws DBException
 		{
 			// Find the form the schema is backing (if it is):
-			Form form = null;
-			try
-			{
-				form = client.getForm(newSchema);
-			}
-			catch(Exception e) {}
+			Form form = client.getForm(newSchema); // (returns null if not found)
 			
 			// Check if we have a form:
 			if(form == null)
