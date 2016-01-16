@@ -346,7 +346,9 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		try
 		{
 			// Get project:
-			final Project project = getForm(schema).getProject(); // throws UnknownModelException
+			final Project project = getProject(schema.getModelID()); 
+			if(project == null)
+				throw new NullPointerException("No matching project found!");
 			
 			// Get stores:
 			ProjectStore pStore = projectStoreHandle.getStore(this);
@@ -362,7 +364,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err); // TODO log error
+			logError("Error getting receivers for " + schema.toString(), e);
 			return Collections.<Correspondent> emptyList();
 		}	
 		finally
