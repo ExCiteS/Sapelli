@@ -46,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.Console;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -55,7 +56,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 /**
  * @author mstevens
  */
-public abstract class StorageClient implements StorageObserver
+public abstract class StorageClient implements StorageObserver, Console
 {
 
 	// STATICS ------------------------------------------------------
@@ -262,7 +263,7 @@ public abstract class StorageClient implements StorageObserver
 	// DYNAMICS -----------------------------------------------------
 	private final List<StorageObserver> observers = new LinkedList<StorageObserver>();
 	
-	public final StoreHandle<RecordStore> recordStoreHandle = new StoreHandle<RecordStore>(new StoreCreator<RecordStore>()
+	public final StoreHandle<RecordStore> recordStoreHandle = new StoreHandle<RecordStore>(this, new StoreCreator<RecordStore>()
 	{
 		@Override
 		public void createAndSetStore(StoreSetter<RecordStore> setter) throws DBException
@@ -535,15 +536,19 @@ public abstract class StorageClient implements StorageObserver
 				observer.storageEvent(operation, recordRef, recordStore);
 	}
 	
+	@Override
 	public final void logError(String msg)
 	{
 		logError(msg, null);
 	}
 	
+	@Override
 	public abstract void logError(String msg, Throwable throwable);
 	
+	@Override
 	public abstract void logWarning(String msg);
 	
+	@Override
 	public abstract void logInfo(String msg);
 	
 }

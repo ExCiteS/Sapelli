@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.Console;
 
 /**
  * 
@@ -31,6 +32,8 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
  */
 public class StoreHandle<S extends Store>
 {
+	
+	private final Console console;
 
 	private final StoreCreator<S> storeCreator;
 	
@@ -43,8 +46,11 @@ public class StoreHandle<S extends Store>
 	
 	private final Set<Integer> users = new HashSet<Integer>();
 	
-	public StoreHandle(StoreCreator<S> storeCreator)
+	public StoreHandle(Console console, StoreCreator<S> storeCreator)
 	{
+		if(console == null)
+			throw new NullPointerException("Console cannot be null");
+		this.console = console;
 		if(storeCreator == null)
 			throw new NullPointerException("StoreCreator cannot be null");
 		this.storeCreator = storeCreator;
@@ -135,6 +141,24 @@ public class StoreHandle<S extends Store>
 	 * The Store is released after running the operation.
 	 * 
 	 * @param operation
+	 */
+	public <T extends Throwable> void executeNoEx(StoreOperation<S, T> operation)
+	{
+		try
+		{
+			execute(operation);
+		}
+		catch(Throwable t)
+		{
+			console.logError("StoreOperation execution error", t); // not re-thrown
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
 	 * @throws T Throwable type of the operation
 	 */
 	public <T extends Throwable> void executeNoDBEx(StoreOperation<S, T> operation) throws T
@@ -145,7 +169,7 @@ public class StoreHandle<S extends Store>
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err); // not re-thrown
+			console.logError("StoreOperation execution error", e); // not re-thrown
 		}
 	}
 	
@@ -175,6 +199,26 @@ public class StoreHandle<S extends Store>
 	 * 
 	 * @param operation
 	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or {@code null} in case an exception occurs
+	 */
+	public <R, T extends Throwable> R executeWithReturnNoEx(StoreOperationWithReturn<S, R, T> operation)
+	{
+		try
+		{
+			return executeWithReturn(operation);
+		}
+		catch(Throwable e)
+		{
+			console.logError("StoreOperation execution error", e); // not re-thrown
+			return null;
+		}
+	}
+	
+	/**
+	 * Helper method to run operation(s) against the Store without the caller needing to be a StoreUser.
+	 * The Store is released after running the operation.
+	 * 
+	 * @param operation
+	 * @return the object returned by {@link StoreOperationWithReturn#execute(Object)}, or {@code null} in case an exception occurs
 	 * @throws T Throwable type of the operation
 	 */
 	public <R, T extends Throwable> R executeWithReturnNoDBEx(StoreOperationWithReturn<S, R, T> operation) throws T
@@ -185,7 +229,7 @@ public class StoreHandle<S extends Store>
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err); // not re-thrown
+			console.logError("StoreOperation execution error", e); // not re-thrown
 			return null;
 		}
 	}

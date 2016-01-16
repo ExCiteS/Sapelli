@@ -149,7 +149,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	static protected final byte MODEL_SERIALISATION_KIND_COMPRESSED_COLLECTOR_PROJECT_XML = MODEL_SERIALISATION_KIND_RESERVED + 1;
 	
 	// DYNAMICS------------------------------------------------------
-	public final StoreHandle<ProjectStore> projectStoreHandle = new StoreHandle<ProjectStore>(new StoreCreator<ProjectStore>()
+	public final StoreHandle<ProjectStore> projectStoreHandle = new StoreHandle<ProjectStore>(this, new StoreCreator<ProjectStore>()
 	{
 		@Override
 		public void createAndSetStore(StoreSetter<ProjectStore> setter) throws DBException

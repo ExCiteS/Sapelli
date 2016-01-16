@@ -84,7 +84,7 @@ public abstract class TransmissionClient extends StorageClient
 	// DYNAMICS------------------------------------------------------
 	private final TransmissionStorageObserver transmissionStorageObserver;
 	
-	public final StoreHandle<TransmissionStore> transmissionStoreHandle = new StoreHandle<TransmissionStore>(new StoreCreator<TransmissionStore>()
+	public final StoreHandle<TransmissionStore> transmissionStoreHandle = new StoreHandle<TransmissionStore>(this, new StoreCreator<TransmissionStore>()
 	{
 		@Override
 		public void createAndSetStore(StoreSetter<TransmissionStore> setter) throws DBException
