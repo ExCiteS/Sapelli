@@ -82,6 +82,11 @@
 			<artifactId>libphonenumber</artifactId>
 			<version>7.2.2</version>
 		</dependency>
+		<dependency>
+			<groupId>commons-validator</groupId>
+			<artifactId>commons-validator</artifactId>
+			<version>1.5.0</version>
+		</dependency>
 		<!-- <dependency> <groupId>com.madgag.spongycastle</groupId> <artifactId>core</artifactId> 
 			<version>1.50.0.0</version> </dependency> -->
 		<!-- <dependency> <groupId>com.madgag</groupId> <artifactId>sc-light-jdk15on</artifactId> 
