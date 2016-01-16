@@ -51,6 +51,11 @@ public class VersionComparator implements Comparator<String>
 
 	public int compare(String version1, String version2)
 	{
+		if(version1 == null)
+			return version2 == null ? 0 : Integer.MIN_VALUE;
+		if(version2 == null)
+			return Integer.MAX_VALUE;
+		
 		VersionTokenizer tokenizer1 = new VersionTokenizer(version1);
 		VersionTokenizer tokenizer2 = new VersionTokenizer(version2);
 
