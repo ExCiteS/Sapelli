@@ -583,7 +583,7 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			// 	If the column does not apply it's own serialisation delimiting then
 			//	 we may have to wrap the valueString in the default serialisation delimiters:
 			if(!col.isApplyingSerialisationDelimiting())
-				valueString = StringUtils.escapeByDoublingAndWrapping(valueString, new char[] { SERIALISATION_SEPARATOR }, DEFAULT_SERIALISATION_DELIMITER, /*don't force:*/ false);
+				valueString = StringUtils.escapeByDoublingAndWrapping(valueString, DEFAULT_SERIALISATION_DELIMITER, /*don't force:*/ false, SERIALISATION_SEPARATOR);
 			bldr.append(valueString == null ? "" /*just in case*/ : valueString);
 		}
 		return bldr.toString();

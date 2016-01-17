@@ -294,7 +294,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	{
 		String serialisedValueSet = valueSet.serialise(includeVirtual, skipColumns);
 		return isApplyingSerialisationDelimiting() ?
-			StringUtils.escapeByDoublingAndWrapping(serialisedValueSet, null, getSerialisationDelimiter(), /*force:*/ true) :
+			StringUtils.escapeByDoublingAndWrapping(serialisedValueSet, getSerialisationDelimiter(), /*force:*/ true) :
 			serialisedValueSet;
 	}
 

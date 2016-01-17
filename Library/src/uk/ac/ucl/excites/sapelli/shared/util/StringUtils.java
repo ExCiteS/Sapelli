@@ -214,13 +214,14 @@ public final class StringUtils
 	 * existing occurrences of the {@code wrapDelimiter}.
 	 * 
 	 * @param str
-	 * @param avoid - may be null or empty, in which case only occurences of wrapDelimiter itself will cause unforced wrapping
 	 * @param wrapDelimiter
+	 * @param forceWrapping
+	 * @param avoid - maybe empty, in which case only occurrences of wrapDelimiter itself will cause unforced wrapping
 	 * @return
 	 * 
 	 * @see #deescapeByDoublingAndWrapping(String, char)
 	 */
-	static public String escapeByDoublingAndWrapping(final String str, char[] avoid, final char wrapDelimiter, final boolean forceWrapping)
+	static public String escapeByDoublingAndWrapping(final String str, final char wrapDelimiter, final boolean forceWrapping, char... avoid)
 	{
 		if(str == null)
 			return str;

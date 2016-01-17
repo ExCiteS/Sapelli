@@ -407,7 +407,7 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	@Override
 	public String toString(String value, boolean undelimited)
 	{
-		return undelimited ? value : StringUtils.escapeByDoublingAndWrapping(value, null, serialisationDelimiter, /*force:*/ true);
+		return undelimited ? value : StringUtils.escapeByDoublingAndWrapping(value, serialisationDelimiter, /*force:*/ true);
 	}
 	
 	public boolean fits(String value)

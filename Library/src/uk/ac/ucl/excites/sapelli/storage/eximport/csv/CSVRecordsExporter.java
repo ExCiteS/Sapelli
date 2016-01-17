@@ -345,7 +345,7 @@ public class CSVRecordsExporter extends SimpleExporter
 	
 	/*package*/ String escapeAndQuote(String valueString, boolean forceQuotes)
 	{
-		return StringUtils.escapeByDoublingAndWrapping(valueString, avoidChars, DOUBLE_QUOTE, forceQuotes);
+		return StringUtils.escapeByDoublingAndWrapping(valueString, DOUBLE_QUOTE, forceQuotes, avoidChars);
 	}
 	
 	@Override

@@ -471,13 +471,13 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 			// 	If the column does not apply it's own serialisation delimiting then
 			//	 we may have to wrap the valueString in the default value serialisation delimiters:
 			if(!singleColumn.isApplyingSerialisationDelimiting())
-				valueString = StringUtils.escapeByDoublingAndWrapping(valueString, new char[] { serialisationSeparator },  DEFAULT_VALUE_SERIALISATION_DELIMITER, /*don't force:*/ false);
+				valueString = StringUtils.escapeByDoublingAndWrapping(valueString, DEFAULT_VALUE_SERIALISATION_DELIMITER, /*don't force:*/ false, serialisationSeparator);
 			
 			bldr.append(valueString == null ? "" /*just in case*/ : valueString);
 			bldr.append(serialisationSeparator); // there are as many separators as elements (this allows us to preserve the difference between an empty list and a list with 1 null element)
 		}
 		 // unless undelimited, wrap in serialisationDelimiters (this allows us to preserve the difference between a null list and an empty list):
-		return undelimited ? bldr.toString() : StringUtils.escapeByDoublingAndWrapping(bldr.toString(), null, serialisationDelimiter, /*force:*/ true);
+		return undelimited ? bldr.toString() : StringUtils.escapeByDoublingAndWrapping(bldr.toString(), serialisationDelimiter, /*force:*/ true);
 	}
 	
 	/* (non-Javadoc)
