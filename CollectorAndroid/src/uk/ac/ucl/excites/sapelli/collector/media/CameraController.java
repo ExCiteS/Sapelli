@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 import android.annotation.SuppressLint;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
@@ -35,6 +33,8 @@ import android.media.MediaRecorder;
 import android.os.Build;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 
 /**
  * Camera operator class
@@ -183,14 +183,9 @@ public class CameraController implements SurfaceHolder.Callback
 			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
 
 		//	Flash mode:
-		try
-		{
-			parameters.setFlashMode(getAppropriateFlashMode(parameters));
-		}
-		catch(NullPointerException e)
-		{
-			Log.e(TAG, "Exception in setFlashMode()", e);
-		}
+		String flashMode = getAppropriateFlashMode(parameters); // may be null if flash mode setting is unavailable
+		if(flashMode != null && !flashMode.isEmpty())
+			parameters.setFlashMode(flashMode);
 		
 		//Resulting file:
 		//	Format:
