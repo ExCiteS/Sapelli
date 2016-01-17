@@ -178,7 +178,7 @@ public class CSVRecordsExporter extends SimpleExporter
 			throw new NullPointerException("Provide a non-null export folder!");
 		this.exportFolder = exportFolder;
 		this.separator = separator != null ? separator : DEFAULT_SEPARATOR;
-		this.avoidChars = new char[] { separator.getSeparatorChar(), '\n', '\r' }; // !!! 
+		this.avoidChars = new char[] { this.separator.getSeparatorChar(), '\n', '\r' }; // !!!
 	}
 	
 	@Override
