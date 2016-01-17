@@ -42,6 +42,7 @@ import android.widget.RelativeLayout;
 import android.widget.VideoView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
@@ -103,7 +104,7 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 		{	// start recording
 			try
 			{
-				cameraController.startVideoCapture(getNewCaptureFile());
+				cameraController.startVideoCapture(getNewCaptureFile().file);
 			}
 			catch(Exception e)
 			{
@@ -119,19 +120,19 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 	}
 	
 	@Override
-	protected View getReviewContent(Context context, File mediaFile)
+	protected View getReviewContent(Context context, MediaFile mediaFile)
 	{
 		if(reviewView == null)
 			reviewView = new ReviewView(context);
-		reviewView.update(mediaFile);
+		reviewView.update(mediaFile.file);
 		return reviewView;
 	}
 
 	@Override
-	protected Item<?> getGalleryItem(int index, File videoFile)
+	protected Item<?> getGalleryItem(int index, MediaFile attachment)
 	{
 		// Create thumbnail from video file:
-		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
+		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(attachment.file.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
 		return new DrawableItem(index, new BitmapDrawable(collectorUI.getResources(), thumbnail));
 	}
 

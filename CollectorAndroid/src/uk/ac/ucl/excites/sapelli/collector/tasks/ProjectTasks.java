@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.tasks;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
@@ -79,7 +79,7 @@ public final class ProjectTasks
 				{
 					
 					@Override
-					public void mediaQuerySuccess(List<File> mediaFiles)
+					public void mediaQuerySuccess(List<MediaFile> mediaFiles)
 					{
 						callback.projectDataQuerySuccess(records, mediaFiles);
 					}
@@ -103,7 +103,7 @@ public final class ProjectTasks
 	static public interface ProjectDataCallback
 	{
 		
-		public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles);
+		public void projectDataQuerySuccess(List<Record> records, List<MediaFile> mediaFiles);
 		
 		public void projectDataQueryFailure(Exception reason);
 		
@@ -114,7 +114,7 @@ public final class ProjectTasks
 	 * 
 	 * @author mstevens
 	 */
-	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<BaseActivity, List<Record>, List<File>>
+	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<BaseActivity, List<Record>, List<MediaFile>>
 	{
 
 		private final MediaFilesQueryCallback callback;
@@ -145,7 +145,7 @@ public final class ProjectTasks
 
 		@Override
 		@SafeVarargs
-		protected final List<File> runInBackground(List<Record>... params)
+		protected final List<MediaFile> runInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			try
@@ -156,12 +156,12 @@ public final class ProjectTasks
 			{
 				Log.e(getClass().getName(), ExceptionHelpers.getMessageAndCause(e), e);
 				failure = e;
-				return Collections.<File> emptyList();
+				return Collections.<MediaFile> emptyList();
 			}
 		}
 		
 		@Override
-		protected void onPostExecute(List<File> result)
+		protected void onPostExecute(List<MediaFile> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
 			if(failure != null)
@@ -175,7 +175,7 @@ public final class ProjectTasks
 	public interface MediaFilesQueryCallback
 	{
 		
-		public void mediaQuerySuccess(List<File> mediaFiles);
+		public void mediaQuerySuccess(List<MediaFile> mediaFiles);
 		
 		public void mediaQueryFailure(Exception reason);
 		
@@ -188,7 +188,7 @@ public final class ProjectTasks
 	 * @return
 	 * @throws Exception
 	 */
-	static public List<File> getMediaFiles(Project project, Record record, FileStorageProvider fileSP) throws Exception
+	static public List<MediaFile> getMediaFiles(Project project, Record record, FileStorageProvider fileSP) throws Exception
 	{
 		return getMediaFiles(Collections.singletonList(project), Collections.singletonList(record), fileSP);
 	}
@@ -200,7 +200,7 @@ public final class ProjectTasks
 	 * @return
 	 * @throws Exception
 	 */
-	static public List<File> getMediaFiles(List<Project> projects, List<Record> records, FileStorageProvider fileSP) throws Exception
+	static public List<MediaFile> getMediaFiles(List<Project> projects, List<Record> records, FileStorageProvider fileSP) throws Exception
 	{
 		// Populate schema->form map:
 		final Map<Schema, Form> schema2Form = new HashMap<Schema, Form>();
@@ -223,7 +223,7 @@ public final class ProjectTasks
 			formRecs.add(r);
 		}
 		// Scan for attachments:
-		final List<File> attachments = new ArrayList<File>();	
+		final List<MediaFile> attachments = new ArrayList<MediaFile>();
 		for(Form form : recordsByForm.keySet())
 			for(Record record : recordsByForm.get(form))
 				for(Field field : form.getFields())
@@ -232,8 +232,8 @@ public final class ProjectTasks
 						MediaField mf = (MediaField) field;
 						for(int i = 0; i < mf.getAttachmentCount(record); i++)
 						{
-							File attachment = mf.getAttachment(fileSP, record, i);
-							if(attachment.exists())
+							MediaFile attachment = mf.getAttachment(fileSP, record, i);
+							if(attachment.file.exists())
 								attachments.add(attachment);
 						}
 					}
@@ -255,7 +255,7 @@ public final class ProjectTasks
 		{
 			super(owner, waitingMsg);
 			this.projectStore = projectStore;
-		}		
+		}
 		
 	}
 	

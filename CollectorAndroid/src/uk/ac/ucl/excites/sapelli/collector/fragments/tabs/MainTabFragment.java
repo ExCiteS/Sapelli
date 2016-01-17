@@ -18,10 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import java.io.File;
 import java.util.List;
-
-import org.apache.commons.io.FileUtils;
 
 import android.content.Context;
 import android.view.View;
@@ -33,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragmentPagerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.tasks.RecordsTasks;
@@ -99,7 +97,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 			ProjectTasks.RunProjectDataQueries(getOwner(), project, new ProjectTasks.ProjectDataCallback()
 			{
 				@Override
-				public void projectDataQuerySuccess(List<Record> records, List<File> mediaFiles)
+				public void projectDataQuerySuccess(List<Record> records, List<MediaFile> mediaFiles)
 				{
 					// Data stats:
 					lblNumberOfRecords.setText("" + records.size());
@@ -162,7 +160,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 		ProjectTasks.RunProjectDataQueries(owner, project, new ProjectTasks.ProjectDataCallback()
 		{
 			@Override
-			public void projectDataQuerySuccess(final List<Record> records, final List<File> mediaFiles)
+			public void projectDataQuerySuccess(final List<Record> records, final List<MediaFile> mediaFiles)
 			{
 				// Confirm deletion ...
 				owner.showOKCancelDialog(
@@ -185,8 +183,8 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 								public void deleteSuccess(List<Record> deletedRecords)
 								{
 									// ... and media files ...
-									for(File mediaFile : mediaFiles)
-										FileUtils.deleteQuietly(mediaFile);
+									for(MediaFile mediaFile : mediaFiles)
+										mediaFile.delete();
 									refresh();
 								}
 								

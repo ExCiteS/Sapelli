@@ -18,20 +18,17 @@
 
 package uk.ac.ucl.excites.sapelli.collector.control;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import org.apache.commons.io.FileUtils;
-
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.model.Attachment;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -68,8 +65,8 @@ public class FormSession
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
-	private final List<File> addedAttachments; // list containing files to be added
-	private final List<File> discardedAttachments; // list containing files to be deleted
+	private final List<Attachment<?>> addedAttachments; // list containing files to be added
+	private final List<Attachment<?>> discardedAttachments; // list containing files to be deleted
 	
 	/**
 	 * @param form
@@ -87,8 +84,8 @@ public class FormSession
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
 		this.startTime = startTime;
-		addedAttachments = new ArrayList<File>();
-		discardedAttachments = new ArrayList<File>();
+		addedAttachments = new ArrayList<Attachment<?>>();
+		discardedAttachments = new ArrayList<Attachment<?>>();
 	}
 	
 	public FieldWithArguments getPrevious(boolean forBackMove)
@@ -196,30 +193,30 @@ public class FormSession
 	}
 	
 	/**
-	 * Adds a file to the list of attachments added in this form session.
+	 * Adds an {@link Attachment} to the list of attachments added in this form session.
 	 * 
-	 * @param file
+	 * @param attachment
 	 */
-	public void addAttachment(File file)
+	public void addAttachment(Attachment<?> attachment)
 	{
-		addedAttachments.add(file);
+		addedAttachments.add(attachment);
 	}
 	
 	/**
-	 * Adds a file to the list of attachments deleted in this form session.
+	 * Adds a {@link Attachment} to the list of attachments deleted in this form session.
 	 * 
-	 * @param file
+	 * @param attachment
 	 */
-	public void discardAttachment(File file)
+	public void discardAttachment(Attachment<?> attachment)
 	{
-		if(addedAttachments.contains(file))
+		if(addedAttachments.contains(attachment))
 		{	// the file being discard was created during the current session, i.e. it has never been "saved" along with a record so can be deleted right away (cannot be undone)...
-			FileUtils.deleteQuietly(file);
-			addedAttachments.remove(file);
+			attachment.delete();
+			addedAttachments.remove(attachment);
 		}
 		else
 			// the file being discarded was created during an earlier session (meaning the current session is an EDIT session), i.e. the deletion must not happen now as the user can still undo it by hitting cancel...
-			discardedAttachments.add(file);
+			discardedAttachments.add(attachment);
 	}
 	
 	/**
@@ -227,7 +224,8 @@ public class FormSession
 	 */
 	public void deleteDiscardedAttachments()
 	{
-		FileHelpers.deleteQuietly(discardedAttachments);
+		for(Attachment<?> attachment : discardedAttachments)
+			attachment.delete();
 	}
 	
 	/**
@@ -235,7 +233,8 @@ public class FormSession
 	 */
 	public void deleteAddedAttachments()
 	{
-		FileHelpers.deleteQuietly(addedAttachments);
+		for(Attachment<?> attachment : addedAttachments)
+			attachment.delete();
 	}
 	
 	public void clearDiscardedAttachments()

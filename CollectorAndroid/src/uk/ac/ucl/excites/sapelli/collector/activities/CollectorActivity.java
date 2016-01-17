@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
@@ -415,8 +416,8 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewAttachmentFile(getFileStorageProvider(), controller.getCurrentRecord());
-					tmpPhotoFile.renameTo(newPhoto);
+					MediaFile newPhoto = ((PhotoField) controller.getCurrentField()).getNewAttachmentFile(getFileStorageProvider(), controller.getCurrentRecord());
+					tmpPhotoFile.renameTo(newPhoto.file);
 					photoUI.attachMedia(newPhoto);
 					controller.goForward(true);
 				}

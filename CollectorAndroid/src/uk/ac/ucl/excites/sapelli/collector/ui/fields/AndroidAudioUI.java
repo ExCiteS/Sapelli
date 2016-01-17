@@ -36,6 +36,7 @@ import android.widget.LinearLayout;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -120,7 +121,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	{
 		try
 		{
-			audioRecorder.start(getNewCaptureFile());
+			audioRecorder.start(getNewCaptureFile().file);
 			volumeView.start();
 		}
 		catch(Exception e)
@@ -150,17 +151,17 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	}
 
 	@Override
-	protected Item<?> getGalleryItem(int index, File attachement)
+	protected Item<?> getGalleryItem(int index, MediaFile attachement)
 	{
 		return collectorUI.getImageItemFromProjectFileOrResource(field.getRecordingImageRelativePath(), R.drawable.audio_item);
 	}
 
 	@Override
-	protected View getReviewContent(Context context, File mediaFile)
+	protected View getReviewContent(Context context, MediaFile mediaFile)
 	{
 		if(audioReviewView == null)
 			audioReviewView = new ReviewView(context);
-		audioReviewView.setAudioFile(mediaFile);
+		audioReviewView.setAudioFile(mediaFile.file);
 		return audioReviewView;
 	}
 

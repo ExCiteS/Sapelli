@@ -18,10 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import java.io.File;
-
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -59,13 +58,13 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	}
 	
 	// Keys to use when obtaining values from field arguments:
-	protected static final String REVIEW_FROM_GALLERY_FILE_PATH_KEY = "REVIEW_FROM_GALLERY_FILE_PATH_KEY";
+	protected static final String REVIEW_FROM_GALLERY_OFFSET_KEY = "REVIEW_FROM_GALLERY_OFFSET_KEY";
 	protected static final String GO_TO_POST_CAPTURE_REVIEW = "GO_TO_POST_CAPTURE_REVIEW";
 	protected static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 	
 	// DYNAMIC ----------------------------------------------------------------
 	private Mode mode = null;
-	private File fileToReview = null;
+	private MediaFile fileToReview = null;
 		
 	public MediaUI(MF field, Controller<UI> controller, UI collectorUI)
 	{
@@ -105,10 +104,10 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 				mode = Mode.GALLERY;
 			fieldArgs.remove(GO_TO_POST_CAPTURE_REVIEW); // avoid re-entry
 		}
-		else if(fieldArgs.getValue(REVIEW_FROM_GALLERY_FILE_PATH_KEY) != null)
+		else if(fieldArgs.getValue(REVIEW_FROM_GALLERY_OFFSET_KEY) != null)
 		{	// Review specific item:
 			mode = Mode.REVIEW_ITEM_FROM_GALLERY;
-			fileToReview = new File(fieldArgs.remove(REVIEW_FROM_GALLERY_FILE_PATH_KEY)); // use & remove (to avoid re-entry) path argument
+			fileToReview = field.getAttachmentFromOffset(controller.getFileStorageProvider(), record, Long.parseLong(fieldArgs.remove(REVIEW_FROM_GALLERY_OFFSET_KEY))); // use & remove (to avoid re-entry) path argument
 		}
 		// When re-entering MediaField after having left it (e.g. after back press from next field):
 		else if(field.getMax() == 1)
@@ -146,7 +145,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	/**
 	 * @return the fileToReview
 	 */
-	public File getFileToReview()
+	public MediaFile getFileToReview()
 	{
 		return fileToReview;
 	}
@@ -159,11 +158,11 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	 * 
 	 * @param mediaAttachment - the file to be attached to {@code field} in the current record.
 	 */
-	public void attachMedia(File mediaAttachment)
+	public void attachMedia(MediaFile mediaAttachment)
 	{
-		if(mediaAttachment != null && mediaAttachment.exists())
+		if(mediaAttachment != null && mediaAttachment.file.exists())
 		{
-			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getAbsolutePath());
+			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.file.getAbsolutePath());
 			// add it to the record
 			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
 			// mark it to be added when the user saves their session
@@ -181,9 +180,9 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	 * 
 	 * @param mediaAttachment - the attachment to remove
 	 */
-	public void removeMedia(File mediaAttachment)
+	public void removeMedia(MediaFile mediaAttachment)
 	{
-		controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
+		controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.file.getName());
 		field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
 		
 		controller.discardAttachment(mediaAttachment);

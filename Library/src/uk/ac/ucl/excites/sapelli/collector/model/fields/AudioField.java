@@ -32,8 +32,10 @@ public class AudioField extends AVField
 
 	// STATICS-------------------------------------------------------
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
-	static private final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
-	static private final String EXTENSION_3GPP = "3gp";
+	
+	static public final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
+	static public final String EXTENSION_3GPP = "3gp";
+	static public final String MIME_TYPE_3GPP = "audio/3gpp";
 
 	// DYNAMICs------------------------------------------------------
 	private String recordingImageRelativePath;
@@ -73,6 +75,16 @@ public class AudioField extends AVField
 		//else if //...
 		else
 			return EXTENSION_3GPP; //or the default
+	}
+
+	@Override
+	protected String getFileMimeType(String mediaType)
+	{
+		if(mediaType == MEDIA_TYPE_3GPP)
+			return MIME_TYPE_3GPP;
+		//else if //...
+		else
+			return MIME_TYPE_3GPP; //or the default
 	}
 
 	@Override

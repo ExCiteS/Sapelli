@@ -31,6 +31,7 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
@@ -89,19 +90,19 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 	}
 	
 	@Override
-	protected View getReviewContent(Context context, File mediaFile)
+	protected View getReviewContent(Context context, MediaFile mediaFile)
 	{
 		// add an ImageView to the review UI:
 		ImageView reviewView = new ImageView(context);
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
 		reviewView.setBackgroundColor(fieldBackgroundColor);
 		// set the ImageView to the provided photo file:
-		reviewView.setImageBitmap(BitmapUtils.loadBitmap(context, mediaFile));
+		reviewView.setImageBitmap(BitmapUtils.loadBitmap(context, mediaFile.file));
 		return reviewView;
 	}
 
 	@Override
-	protected Item<?> getGalleryItem(int index, File photoFile)
+	protected Item<?> getGalleryItem(int index, MediaFile attachment)
 	{
 		// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
 		/*// Old example code to rotate bitmap (would have to be integrated in (File)ImageItem):
@@ -109,7 +110,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		bitmapMatrix.postRotate(90);
 		bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), bitmapMatrix, false);*/
 		
-		return new ImageItem(index, photoFile); // will use BitmapUtils for memory-safe scaling
+		return new ImageItem(index, attachment.file); // will use BitmapUtils for memory-safe scaling
 	}
 	
 	@Override
@@ -147,7 +148,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 		@Override
 		protected File doInBackground(byte[]... data)
 		{
-			File photoFile = getNewCaptureFile();
+			File photoFile = getNewCaptureFile().file;
 			try
 			{
 				FileOutputStream fos = new FileOutputStream(photoFile);

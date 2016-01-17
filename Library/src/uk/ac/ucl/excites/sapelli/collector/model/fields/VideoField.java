@@ -30,8 +30,9 @@ public class VideoField extends AVField
 {
 
 	// STATICS-------------------------------------------------------
-	static private final String MEDIA_TYPE_MP4 = "VIDEO_MP4";
-	static private final String EXTENSION_MP4 = "mp4";
+	static public final String MEDIA_TYPE_MP4 = "VIDEO_MP4";
+	static public final String EXTENSION_MP4 = "mp4";
+	static public final String MIME_TYPE_MP4 = "video/mp4";
 
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
@@ -47,15 +48,29 @@ public class VideoField extends AVField
 	@Override
 	public String getMediaType()
 	{
-		return MEDIA_TYPE_MP4;
+		return MEDIA_TYPE_MP4; //TODO support for other types
 	}
 
 	@Override
 	protected String getFileExtension(String mediaType)
 	{
-		return EXTENSION_MP4;
+		if(mediaType == MEDIA_TYPE_MP4)
+			return EXTENSION_MP4;
+		//else if //...
+		else
+			return EXTENSION_MP4; //or the default
 	}
-
+	
+	@Override
+	protected String getFileMimeType(String mediaType)
+	{
+		if(mediaType == MEDIA_TYPE_MP4)
+			return MIME_TYPE_MP4;
+		//else if //...
+		else
+			return MIME_TYPE_MP4; //or the default
+	}
+	
 	/**
 	 * @return the useFrontFacingCamera
 	 */

@@ -33,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
@@ -145,6 +146,13 @@ public abstract class MediaField extends Field
 	}
 	
 	protected abstract String getFileExtension(String mediaType);
+	
+	public String getFileMimeType()
+	{
+		return getFileMimeType(getMediaType());
+	}
+	
+	protected abstract String getFileMimeType(String mediaType);
 	
 	/**
 	 * @return the min
@@ -326,10 +334,10 @@ public abstract class MediaField extends Field
 	 * Note: does not actually alter the file system, only the record contents. The file is added to the file system as soon as it is requested through the
 	 * {@link #getNewAttachmentFile(FileStorageProvider, Record)} method.
 	 * 
-	 * @param attachment - the file to attach to the record
+	 * @param attachment - the MediaFile to attach to the record
 	 * @param record - the record to attach the file to
 	 */
-	public void addAttachmentToRecord(File attachment, Record record)
+	public void addAttachmentToRecord(MediaFile attachment, Record record)
 	{
 		// check if we have a record
 		if(record == null)
@@ -337,13 +345,11 @@ public abstract class MediaField extends Field
 		// check if adding would exceed max no attachments for this field
 		if(isMaxAttachmentsReached(record))
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
-		// retrieve creationTimeOffset from filename
-		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// add creationTimeOffset to column
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets == null)
 			offsets = new ArrayList<Long>();
-		offsets.add(creationTimeOffset);
+		offsets.add(attachment.creationTimeOffset);
 		getColumn().storeValue(record, offsets);
 	}
 
@@ -353,21 +359,19 @@ public abstract class MediaField extends Field
 	 * Note: does not actually alter the file system, only the record contents. Files are actually deleted from the 
 	 * file system once the user's deletions are "confirmed" by them saving the record at the end.
 	 * 
-	 * @param attachment - the attachment to delete
+	 * @param attachment - the MediaFile to delete
 	 * @param record - the record to delete the attachment from
 	 */
-	public void removeAttachmentFromRecord(File attachment, Record record)
+	public void removeAttachmentFromRecord(MediaFile attachment, Record record)
 	{
 		// check if we have a record:
 		if(record == null)
 			return;
-		// retrieve creationTimeOffset from filename
-		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// remove creationTimeOffset from column
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets != null)
 		{
-			if(offsets.remove(creationTimeOffset))
+			if(offsets.remove(attachment.creationTimeOffset))
 			{
 				if(offsets.isEmpty())
 					getColumn().clearValue(record); // reset value in column to null
@@ -386,7 +390,7 @@ public abstract class MediaField extends Field
 	 * @param file
 	 * @return the creation time offset
 	 */
-	private long getCreationTimeOffsetFromFile(File file)
+	protected long getCreationTimeOffsetFromFile(File file)
 	{
 		String deobfuscatedName = file.getName();
 		if(form.isObfuscateMediaFiles()) // deobfuscate if necessary by rotating
@@ -412,18 +416,19 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Creates a new file in which to store media with a filename determined by the field ID, record start time and
-	 * time offset at which this file was requested from that start time.
+	 * Creates a new MediaFile (with new File contained in it) in which to store media with a filename determined by the field ID,
+	 * record start time and time offset at which this file was requested from that start time.
+	 * 
 	 * @param fileStorageProvider - an object that provides information on the location of the attachments
 	 * @param record - the record with which the new file should be associated
 	 * @return the new file
 	 * @throws FileStorageException
 	 */
-	public File getNewAttachmentFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
+	public MediaFile getNewAttachmentFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		long creationTimeOffset = System.currentTimeMillis() - Form.GetStartTime(record).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
-		return new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename);
+		return new MediaFile(this, record, creationTimeOffset, new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename));
 	}
 	
 	/**
@@ -432,25 +437,25 @@ public abstract class MediaField extends Field
 	 * @param record
 	 * @return the list of attachments
 	 */
-	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record)
+	public List<MediaFile> getAttachments(FileStorageProvider fileStorageProvider, Record record)
 	{
 		// Check if we have a record:
 		if(record == null)
-			return Collections.<File> emptyList();
+			return Collections.<MediaFile> emptyList();
 		
 		// Get offsets:
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets == null || offsets.isEmpty())
-			return Collections.<File> emptyList(); // return an empty list
+			return Collections.<MediaFile> emptyList(); // return an empty list
 		
 		// Construct list of files:	
-		List<File> files = new ArrayList<File>();
+		List<MediaFile> files = new ArrayList<MediaFile>();
 		for(Long offset : offsets)
 			CollectionUtils.addIgnoreNull(files, getAttachmentFromOffset(fileStorageProvider, record, offset));
 		return files;
 	}
 	
-	public File getAttachment(FileStorageProvider fileStorageProvider, Record record, int index)
+	public MediaFile getAttachment(FileStorageProvider fileStorageProvider, Record record, int index)
 	{
 		if(record == null)
 			return null;
@@ -466,14 +471,20 @@ public abstract class MediaField extends Field
 			return null;
 	}
 	
-	private File getAttachmentFromOffset(FileStorageProvider fileStorageProvider, Record record, Long offset)
+	/**
+	 * @param fileStorageProvider
+	 * @param record
+	 * @param creationTimeOffset
+	 * @return
+	 */
+	public MediaFile getAttachmentFromOffset(final FileStorageProvider fileStorageProvider, final Record record, final Long creationTimeOffset)
 	{
-		if(offset == null)
+		if(creationTimeOffset == null)
 			return null;
 		// Locate corresponding file:
-		File file = new File(fileStorageProvider.getProjectAttachmentFolder(form.getProject(), false), generateFilename(record, offset));
+		File file = getFile(fileStorageProvider, record, creationTimeOffset, false);
 		if(file.exists())
-			return file;
+			return new MediaFile(this, record, creationTimeOffset, file);
 		else
 			return null;
 	}
@@ -484,16 +495,20 @@ public abstract class MediaField extends Field
 	 * @param record
 	 * @return
 	 */
-	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record)
+	public MediaFile getLastAttachment(final FileStorageProvider fileStorageProvider, final Record record)
 	{
 		if(record == null)
 			return null;
 		List<Long> offsets = getCurrentAttachmentOffsets(record);
-		if(offsets == null || offsets.size() < 1)
+		if(offsets == null || offsets.isEmpty())
 			return null;
-		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
-		String filename = generateFilename(record, offsets.get(offsets.size() - 1)); // get final offset from list
-		return new File(dir, filename);
+		final long creationTimeOffset = offsets.get(offsets.size() - 1); // get final offset from list
+		return new MediaFile(this, record, creationTimeOffset, getFile(fileStorageProvider, record, creationTimeOffset, false));
+	}
+	
+	protected File getFile(FileStorageProvider fileStorageProvider, Record record, long creationTimeOffset, boolean createFolder)
+	{
+		return new File(fileStorageProvider.getProjectAttachmentFolder(form.getProject(), createFolder), generateFilename(record, creationTimeOffset));
 	}
 	
 	/**

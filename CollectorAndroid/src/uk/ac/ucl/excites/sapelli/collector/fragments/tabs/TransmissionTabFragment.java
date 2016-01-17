@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import java.io.File;
 import java.util.List;
 
 import android.content.Context;
@@ -42,6 +41,7 @@ import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.SendScheduleFragment;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
@@ -254,7 +254,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), new ProjectTasks.ProjectDataCallback()
 			{
 				@Override
-				public void projectDataQuerySuccess(final List<Record> records, List<File> mediaFiles)
+				public void projectDataQuerySuccess(final List<Record> records, List<MediaFile> mediaFiles)
 				{
 					if(!records.isEmpty())
 						getOwner().showYesNoDialog(

@@ -18,11 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -41,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -74,7 +72,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	
 	// DYNAMIC ------------------------------------------------------
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
-	private File captureFile; // file used to store media while it is being captured
+	private MediaFile captureFile; // file used to store media while it is being captured
 
 	protected final boolean unblockUIAfterCaptureClick;
 	
@@ -246,7 +244,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	/**
 	 * @return a new file to save capture result to
 	 */
-	protected File getNewCaptureFile()
+	protected MediaFile getNewCaptureFile()
 	{
 		this.captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord()); // remember the file!
 		return captureFile;
@@ -298,8 +296,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	{
 		//Log.d(TAG, "cancel()");
 		if(captureFile != null)
-			controller.addLogLine("DELETE_TEMP_FILE", field.id, captureFile.getAbsolutePath());
-		FileUtils.deleteQuietly(captureFile); // does nothing when null
+		{
+			controller.addLogLine("DELETE_TEMP_FILE", field.id, captureFile.file.getAbsolutePath());
+			captureFile.delete();
+		}
 		captureFile = null;
 	}
 	
@@ -312,10 +312,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * Returns an appropriate {@link Item} to display the provided file in the gallery.
 	 * 
 	 * @param index - the index of the attachment (= position within the gallery)
-	 * @param attachement - the attached media file
+	 * @param attachement - the attached MediaFile
 	 * @return an Item corresponding to the attachment
 	 */
-	protected abstract Item<?> getGalleryItem(int index, File attachement);
+	protected abstract Item<?> getGalleryItem(int index, MediaFile attachement);
 
 	/**
 	 * Sets the background colour & padding on button {@link Item}s.
@@ -392,10 +392,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * Is called again every time we go into single item review.
 	 * 
 	 * @param context
-	 * @param mediaFile - the file to be reviewed.
+	 * @param mediaFile - the MediaFile to be reviewed.
 	 * @return a {@code View} containing the content for review mode.
 	 */
-	protected abstract View getReviewContent(Context context, File mediaFile);
+	protected abstract View getReviewContent(Context context, MediaFile mediaFile);
 	
 	/**
 	 * LinearLayout that holds the capture UI.
@@ -488,7 +488,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private final Runnable approveAction;
 		private final Runnable discardAction;
 
-		private File toReview;
+		private MediaFile toReview;
 		
 		private ReviewView(Context context)
 		{
@@ -522,7 +522,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			reviewButtons.getAdapter().addItem(getDiscardButton(context));
 		}
 		
-		public void setReviewFile(File toReview)
+		public void setReviewFile(MediaFile toReview)
 		{
 			if(this.toReview != null)
 				removeViewAt(0);
@@ -547,7 +547,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				@Override
 				public void run()
 				{
-					controller.addLogLine("REVIEW_MEDIA", field.id, discarding ? "DISCARD" : "APPROVE", toReview != null ? toReview.getName() : "?");
+					controller.addLogLine("REVIEW_MEDIA", field.id, discarding ? "DISCARD" : "APPROVE", toReview != null ? toReview.file.getName() : "?");
 					
 					if(discarding)
 					{
@@ -587,7 +587,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		/**
 		 * Map used to cache gallery items so that every attachment doesn't have to be reloaded when a change is made
 		 */
-		private final Map<File, Item<?>> cache;
+		private final Map<MediaFile, Item<?>> cache;
 		
 		private View addButtonView;
 		private final Runnable addButtonAction;
@@ -600,7 +600,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			super(context);
 			
 			// Init cache:
-			cache = new HashMap<File, Item<?>>();
+			cache = new HashMap<MediaFile, Item<?>>();
 			
 			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
@@ -656,15 +656,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				
 				adapter.clear(); // reset adapter
 				int f = 0;
-				for(File file : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
+				for(MediaFile mediaFile : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
 				{
 					// See if it can be found in the gallery cache:
-					Item<?> toAdd = cache.get(file);
+					Item<?> toAdd = cache.get(mediaFile);
 					if(toAdd == null)
 					{	// If not, create a new item and put it in the cache:
-						toAdd = getGalleryItem(f++, file);
+						toAdd = getGalleryItem(f++, mediaFile);
 						toAdd.setBackgroundColor(fieldBackgroundColor);
-						cache.put(file, toAdd);
+						cache.put(mediaFile, toAdd);
 					}
 					// Set padding and add item to adapter:
 					toAdd.setPaddingDip(CollectorView.PADDING_DIP);
@@ -704,8 +704,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				@Override
 				public void run()
 				{
-					controller.getCurrentFieldArguments().put(	REVIEW_FROM_GALLERY_FILE_PATH_KEY,
-																field.getAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord(), position).getAbsolutePath());
+					controller.getCurrentFieldArguments().put(	REVIEW_FROM_GALLERY_OFFSET_KEY,
+																Long.toString(field.getAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord(), position).creationTimeOffset));
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 				}
 			});

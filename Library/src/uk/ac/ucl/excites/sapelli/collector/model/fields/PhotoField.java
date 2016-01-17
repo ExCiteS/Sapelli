@@ -36,8 +36,9 @@ public class PhotoField extends MediaField
 {
 
 	// STATICS-------------------------------------------------------
-	static private final String MEDIA_TYPE_JPEG = "PHOTO_JPEG";
-	static private final String EXTENSION_JPEG = "jpg";
+	static public final String MEDIA_TYPE_JPEG = "PHOTO_JPEG";
+	static public final String EXTENSION_JPEG = "jpg";
+	static public final String MIME_TYPE_JPEG = "image/jpeg";
 	
 	static public enum FlashMode
 	{
@@ -119,6 +120,12 @@ public class PhotoField extends MediaField
 	protected String getFileExtension(String mediaType)
 	{
 		return EXTENSION_JPEG;
+	}
+	
+	@Override
+	protected String getFileMimeType(String mediaType)
+	{
+		return MIME_TYPE_JPEG;
 	}
 
 	/* (non-Javadoc)
