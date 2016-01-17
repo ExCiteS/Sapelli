@@ -427,8 +427,7 @@ public abstract class MediaField extends Field
 	public MediaFile getNewAttachmentFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		long creationTimeOffset = System.currentTimeMillis() - Form.GetStartTime(record).getMsSinceEpoch();
-		String filename = generateFilename(record, creationTimeOffset);
-		return new MediaFile(this, record, creationTimeOffset, new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename));
+		return new MediaFile(this, record, creationTimeOffset, getFile(fileStorageProvider, record, creationTimeOffset, true));
 	}
 	
 	/**
@@ -475,7 +474,7 @@ public abstract class MediaField extends Field
 	 * @param fileStorageProvider
 	 * @param record
 	 * @param creationTimeOffset
-	 * @return
+	 * @return a MediaFile instance or null if no such file exists
 	 */
 	public MediaFile getAttachmentFromOffset(final FileStorageProvider fileStorageProvider, final Record record, final Long creationTimeOffset)
 	{
@@ -506,6 +505,16 @@ public abstract class MediaField extends Field
 		return new MediaFile(this, record, creationTimeOffset, getFile(fileStorageProvider, record, creationTimeOffset, false));
 	}
 	
+	
+	/**
+	 * Creates new File instance (to be wrapped in a MediaFile).
+	 * 
+	 * @param fileStorageProvider
+	 * @param record
+	 * @param creationTimeOffset
+	 * @param createFolder
+	 * @return
+	 */
 	protected File getFile(FileStorageProvider fileStorageProvider, Record record, long creationTimeOffset, boolean createFolder)
 	{
 		return new File(fileStorageProvider.getProjectAttachmentFolder(form.getProject(), createFolder), generateFilename(record, creationTimeOffset));
