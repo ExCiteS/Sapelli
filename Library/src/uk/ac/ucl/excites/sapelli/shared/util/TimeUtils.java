@@ -37,6 +37,9 @@ import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 public final class TimeUtils
 {
 
+	public static final int ONE_HOUR_MS = 60 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
+	public static final int QUARTER_OF_AN_HOUR_MS = 15 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
+	
 	public static final DateTimeFormatter ISOWithMSFormatter = ISODateTimeFormat.dateTime();
 	public static final DateTimeFormatter ISOWithoutMSFormatter = ISODateTimeFormat.dateTimeNoMillis();
 	public static final DateTimeFormatter FileTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH.mm.ss");

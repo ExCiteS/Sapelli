@@ -24,6 +24,8 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+
 /**
  * @author mstevens
  * 
@@ -34,9 +36,6 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	// STATICS-------------------------------------------------------
 	private static final long serialVersionUID = 2L;
 	
-	static private final int HOUR_MS = 60 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
-	static private final int QUARTER_OF_AN_HOUR_MS = 15 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
-
 	/**
 	 * Returns the "raw" timezone offset in milliseconds.
 	 * 
@@ -70,7 +69,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	 */
 	static public int getTimeZoneOffsetQH(DateTime value)
 	{
-		return getTimeZoneOffsetMS(value) / QUARTER_OF_AN_HOUR_MS;
+		return getTimeZoneOffsetMS(value) / TimeUtils.QUARTER_OF_AN_HOUR_MS;
 	}
 	
 	/**
@@ -81,7 +80,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	 */
 	static public float getTimeZoneOffsetH(DateTime value)
 	{
-		return ((float) getTimeZoneOffsetMS(value)) / HOUR_MS;
+		return ((float) getTimeZoneOffsetMS(value)) / TimeUtils.ONE_HOUR_MS;
 	}
 
 	/**
@@ -92,7 +91,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	 */
 	static public DateTimeZone getDateTimeZoneForQHOffset(int offsetQH)
 	{
-		return getDateTimeZoneForMSOffset(offsetQH * QUARTER_OF_AN_HOUR_MS);
+		return getDateTimeZoneForMSOffset(offsetQH * TimeUtils.QUARTER_OF_AN_HOUR_MS);
 	}
 
 	/**
