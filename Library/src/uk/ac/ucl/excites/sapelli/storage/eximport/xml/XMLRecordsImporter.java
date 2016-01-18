@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.SimpleExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
@@ -376,6 +377,14 @@ public class XMLRecordsImporter extends DocumentParser implements Importer
 	public TimeStamp getLastImportExportedAtTime()
 	{
 		return exportedAt;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.Importer#addCustomValueParser(uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser)
+	 */
+	public void addCustomValueParser(CustomValueParser customValueParser)
+	{
+		helper.addCustomValueParser(customValueParser);
 	}
 	
 	/**

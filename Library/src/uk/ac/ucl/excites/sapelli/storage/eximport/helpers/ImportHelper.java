@@ -18,6 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.storage.eximport.helpers;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
@@ -39,10 +43,17 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer.SubValueSetInitialis
  */
 public class ImportHelper extends ExImportHelper implements SubValueSetInitialiser
 {
-
+	
+	private final List<CustomValueParser> customValueParsers = new ArrayList<CustomValueParser>();
+	
 	private String valueString;
 	private Object value;
 	private Exception error;
+	
+	public void addCustomValueParser(CustomValueParser customValueParser)
+	{
+		customValueParsers.add(customValueParser);
+	}
 	
 	/**
 	 * Called by the importer to parse the given String representation and to a Column value and store it in the given valueSet.
@@ -64,8 +75,26 @@ public class ImportHelper extends ExImportHelper implements SubValueSetInitialis
 		this.value = null;
 		this.error = null;
 		
-		// Visit column:
-		inspect(column);
+		// Check if we have a CustomParser:
+		boolean foundParser = false;
+		for(CustomValueParser customValueParser : customValueParsers)
+			if(customValueParser.matches(column, valueString))
+			{
+				foundParser = true;
+				try
+				{
+					this.value = customValueParser.parseValue(column, valueString);
+				}
+				catch(Exception e)
+				{
+					this.error = e;
+				}
+				break;
+			}
+		
+		if(!foundParser)
+			// Visit column:		
+			inspect(column);
 		
 		// Check for errors:
 		if(error != null)
@@ -132,7 +161,9 @@ public class ImportHelper extends ExImportHelper implements SubValueSetInitialis
 	{
 		try
 		{
+			System.out.println(valueString);
 			this.value = (valueString != null ? listLikeColumn.parse(valueString, true /*undelimited*/) : null);
+			System.out.println(value.toString());
 		}
 		catch(Exception e)
 		{
@@ -152,9 +183,10 @@ public class ImportHelper extends ExImportHelper implements SubValueSetInitialis
 	}
 	
 	/**
-	 * TODO explain
+	 * Makes all values in the given ValueSet null.
+	 * 
 	 * Two reasons:
-	 * 	- CSV/XML: {@link #parseAndStoreValue(Column, String, ValueSet)} only if null!
+	 * 	- CSV/XML: {@link #parseAndStoreValue(Column, String, ValueSet)} only stores values in columns that are still null!
 	 *  - XML: This is needed because if a column value is missing in the imported XML it means it was null (and not the default value)
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer.SubValueSetInitialiser#initialise(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
@@ -170,6 +202,28 @@ public class ImportHelper extends ExImportHelper implements SubValueSetInitialis
 		
 		// Return vs:
 		return newValueSet;
+	}
+	
+	/**
+	 * @author mstevens
+	 */
+	static public abstract class CustomValueParser
+	{
+		
+		/**
+		 * @param column - must be a real (non-virtual) column
+		 * @param valueString
+		 * @return
+		 */
+		public abstract boolean matches(Column<?> column, String valueString);
+		
+		/**
+		 * @param column - must be a real (non-virtual) column
+		 * @param valueString
+		 * @return
+		 */
+		public abstract Object parseValue(Column<?> column, String valueString) throws Exception;
+		
 	}
 	
 }

@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
 import java.io.Serializable;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +42,9 @@ import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
@@ -602,19 +606,61 @@ public abstract class MediaField extends Field
 		if(!v1XColumn.isValuePresent(v1XRecord))
 			return null;
 		int attachmentCount = v1XColumn.retrieveValue(v1XRecord).intValue();
+		List<Long> creationTimeOffsets = convertV1XColumnValue(attachmentCount);
+		if(findAndRenameFiles)
+			for(int attachmentNumber = 0; attachmentNumber < attachmentCount; attachmentNumber++)
+			{
+				File v1XFile = new File(attachmentFolder, generateFilenameV1X(v1XRecord, attachmentNumber));
+				if(v1XFile.exists())
+					v1XFile.renameTo(new File(attachmentFolder, generateFilename(v1XRecord, creationTimeOffsets.get(attachmentNumber))));
+			}
+		return creationTimeOffsets;
+	}
+	
+	/**
+	 * @param attachmentCount
+	 * @return
+	 */
+	public List<Long> convertV1XColumnValue(int attachmentCount)	
+	{
 		List<Long> creationTimeOffsets = new ArrayList<Long>(attachmentCount);
 		for(int attachmentNumber = 0; attachmentNumber < attachmentCount; attachmentNumber++)
 		{
 			Long fakeCreationTimeOffset = Long.valueOf((attachmentNumber + 1) * 100); // 100ms apart and 1st one 100ms after record StartTime 
 			creationTimeOffsets.add(fakeCreationTimeOffset);
-			if(findAndRenameFiles)
-			{
-				File v1XFile = new File(attachmentFolder, generateFilenameV1X(v1XRecord, attachmentNumber));
-				if(v1XFile.exists())
-					v1XFile.renameTo(new File(attachmentFolder, generateFilename(v1XRecord, fakeCreationTimeOffset)));
-			}
 		}
 		return creationTimeOffsets;
+	}
+	
+	/**
+	 * TODO explain
+	 * 
+	 * @return
+	 */
+	public ImportHelper.CustomValueParser getV1XColumnValueParser()
+	{
+		return new CustomValueParser()
+		{
+			@Override
+			public boolean matches(Column<?> column, String valueString)
+			{
+				IntegerListColumn fieldColumn = getColumn();
+				return	fieldColumn != null &&
+						fieldColumn.equals(column) &&
+						valueString.indexOf(fieldColumn.getSerialisationSeparator()) == -1;
+			}
+
+			@Override
+			public Object parseValue(Column<?> column, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+			{
+				IntegerColumn v1XColumn = createV1XColumn();
+				Long attachmentCount = v1XColumn.stringToValue(valueString);
+				if(attachmentCount == null)
+					return null;
+				return convertV1XColumnValue(attachmentCount.intValue());
+			}
+	
+		};
 	}
 	
 	@Override

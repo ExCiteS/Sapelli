@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Importer;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -407,6 +408,14 @@ public class CSVRecordsImporter extends WarningKeeperImpl implements Importer
 	public TimeStamp getLastImportExportedAtTime()
 	{
 		return exportedAt;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.eximport.Importer#addCustomValueParser(uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser)
+	 */
+	public void addCustomValueParser(CustomValueParser customValueParser)
+	{
+		helper.addCustomValueParser(customValueParser);
 	}
 	
 	/**

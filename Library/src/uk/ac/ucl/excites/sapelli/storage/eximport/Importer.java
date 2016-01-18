@@ -22,6 +22,8 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper;
+import uk.ac.ucl.excites.sapelli.storage.eximport.helpers.ImportHelper.CustomValueParser;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -46,5 +48,10 @@ public interface Importer extends WarningKeeper
 	 * @return the "exportedAt" time of the last file to be imported (may be null)
 	 */
 	public TimeStamp getLastImportExportedAtTime();
+	
+	/**
+	 * @param customValueParser
+	 */
+	public void addCustomValueParser(CustomValueParser customValueParser);
 	
 }
