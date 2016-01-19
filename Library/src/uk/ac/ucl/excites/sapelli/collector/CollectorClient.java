@@ -340,31 +340,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		return Collections.<CollectorAttachment<?>> emptyList();
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.TransmissionClient#getEncryptionSettingsFor(Model)
-	 */
-	//@Override
-	public EncryptionSettings getEncryptionSettingsFor(Model model)
-	{
-		/*TODO FIX THIS
-		 * This is buggy/hacky! Because schema's can be shared by multiple forms (and no schema ID/version duplicates are allowed)
-		 * we cannot safely determine transmission settings based on the schema id/version.
-		 */
-//		List<Form> forms = dao.retrieveForms(schema.getID(), schema.getVersion());
-//		if(!forms.isEmpty())
-//		{
-//			if(forms.get(0)/*HACK!*/.getProject() != null)
-//				return forms.get(0).getProject().getTransmissionSettings();
-//			else
-//				return null;
-//		}
-//		else
-//		{
-//			return null;
-//		}
-		return null;
-	}
-
 	@Override
 	public Payload createCustomPayload(int nonBuiltinType)
 	{
