@@ -48,7 +48,9 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Console;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.Attachment;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -279,6 +281,12 @@ public abstract class StorageClient implements StorageObserver, Console
 	 * @throws DBException
 	 */
 	protected abstract void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException;
+	
+	/**
+	 * @param record should not be {@code null}
+	 * @return a {@link List} with {@link Attachment}s associated with the given record, note that the attachment files do *not* necessarily exist
+	 */
+	public abstract List<? extends Attachment> getRecordAttachments(Record record);
 	
 	/**
 	 * @param modelID

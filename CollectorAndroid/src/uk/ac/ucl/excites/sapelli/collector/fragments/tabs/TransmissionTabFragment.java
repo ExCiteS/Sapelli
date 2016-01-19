@@ -251,7 +251,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			listScheduleAdapter.add(schedule);
 			
 			// Query for currently existing project data & propose transmission: 
-			ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), new ProjectTasks.ProjectDataCallback()
+			ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), true, new ProjectTasks.ProjectDataCallback()
 			{
 				@Override
 				public void projectDataQuerySuccess(final List<Record> records, List<MediaFile> mediaFiles)

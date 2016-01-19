@@ -18,11 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.tasks;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 
@@ -30,20 +27,16 @@ import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.collector.util.CollectorAttachmentUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
@@ -62,9 +55,10 @@ public final class ProjectTasks
 	 * 
 	 * @param owner
 	 * @param project
+	 * @param excludeNonExistingFiles whether or not to exclude non-existing MediaFiles
 	 * @param callback
 	 */
-	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final ProjectDataCallback callback)
+	static public void RunProjectDataQueries(final BaseActivity owner, final Project project, final boolean excludeNonExistingFiles, final ProjectDataCallback callback)
 	{
 		if(project == null)
 			return;
@@ -75,7 +69,7 @@ public final class ProjectTasks
 			public void querySuccess(final List<Record> records)
 			{
 				// Run media scan:
-				new MediaFilesQueryTask(owner, project, new MediaFilesQueryCallback()
+				new MediaFilesQueryTask(owner, project, excludeNonExistingFiles, new MediaFilesQueryCallback()
 				{
 					
 					@Override
@@ -119,27 +113,31 @@ public final class ProjectTasks
 
 		private final MediaFilesQueryCallback callback;
 		private final List<Project> projects;
+		private final boolean excludeNonExisting;
 		private Exception failure = null;
 		
 		/**
 		 * @param owner
-		 * @param project project used to create the records to find media attachments for
+		 * @param project project project used to create the records to find media attachments for
+		 * @param excludeNonExisting whether or not to exclude non-existing MediaFiles
 		 * @param callback
 		 */
-		public MediaFilesQueryTask(BaseActivity owner, Project project, MediaFilesQueryCallback callback)
+		public MediaFilesQueryTask(BaseActivity owner, Project project, boolean excludeNonExisting, MediaFilesQueryCallback callback)
 		{
-			this(owner, Collections.singletonList(project), callback);
+			this(owner, Collections.singletonList(project), excludeNonExisting, callback);
 		}
 		
 		/**
 		 * @param owner
 		 * @param projects projects used to create the records to find media attachments for
+		 * @param excludeNonExisting whether or not to exclude non-existing MediaFiles
 		 * @param callback
 		 */
-		public MediaFilesQueryTask(BaseActivity owner, List<Project> projects, MediaFilesQueryCallback callback)
+		public MediaFilesQueryTask(BaseActivity owner, List<Project> projects, boolean excludeNonExisting, MediaFilesQueryCallback callback)
 		{
 			super(owner, owner.getString(R.string.mediaScanning));
 			this.projects = projects;
+			this.excludeNonExisting = excludeNonExisting;
 			this.callback = callback;
 		}
 
@@ -150,7 +148,7 @@ public final class ProjectTasks
 			List<Record> records = params[0];
 			try
 			{
-				return getMediaFiles(projects, records, getContext().getFileStorageProvider()); 
+				return CollectorAttachmentUtils.getMediaFiles(projects, records, getContext().getFileStorageProvider(), excludeNonExisting); 
 			}
 			catch(Exception e)
 			{
@@ -179,65 +177,6 @@ public final class ProjectTasks
 		
 		public void mediaQueryFailure(Exception reason);
 		
-	}
-	
-	/**
-	 * @param project
-	 * @param record
-	 * @param fileSP
-	 * @return
-	 * @throws Exception
-	 */
-	static public List<MediaFile> getMediaFiles(Project project, Record record, FileStorageProvider fileSP) throws Exception
-	{
-		return getMediaFiles(Collections.singletonList(project), Collections.singletonList(record), fileSP);
-	}
-	
-	/**
-	 * @param projects
-	 * @param records
-	 * @param fileSP
-	 * @return
-	 * @throws Exception
-	 */
-	static public List<MediaFile> getMediaFiles(List<Project> projects, List<Record> records, FileStorageProvider fileSP) throws Exception
-	{
-		// Populate schema->form map:
-		final Map<Schema, Form> schema2Form = new HashMap<Schema, Form>();
-		for(Project project : projects)
-			for(Form form : project.getForms())
-				schema2Form.put(form.getSchema(), form);
-		
-		// Group records by form:
-		Map<Form, List<Record>> recordsByForm = new HashMap<Form, List<Record>>();
-		for(Record r : records)
-		{
-			Form form = schema2Form.get(r.getSchema());
-			if(form == null)
-				continue;
-			List<Record> formRecs;
-			if(!recordsByForm.containsKey(form))
-				recordsByForm.put(form, formRecs = new ArrayList<Record>());
-			else
-				formRecs = recordsByForm.get(form);
-			formRecs.add(r);
-		}
-		// Scan for attachments:
-		final List<MediaFile> attachments = new ArrayList<MediaFile>();
-		for(Form form : recordsByForm.keySet())
-			for(Record record : recordsByForm.get(form))
-				for(Field field : form.getFields())
-					if(field instanceof MediaField)
-					{
-						MediaField mf = (MediaField) field;
-						for(int i = 0; i < mf.getAttachmentCount(record); i++)
-						{
-							MediaFile attachment = mf.getAttachment(fileSP, record, i);
-							if(attachment.file.exists())
-								attachments.add(attachment);
-						}
-					}
-		return attachments;
 	}
 	
 	static private abstract class ProjectStoreTask<I, O> extends AsyncTaskWithWaitingDialog<BaseActivity, I, O>

@@ -28,10 +28,13 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.CollectorAttachment;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.collector.util.CollectorAttachmentUtils;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperation;
@@ -42,6 +45,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.upgrades.Beta17UpgradeStep;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
@@ -166,6 +170,11 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 */
 	protected abstract void createAndSetProjectStore(StoreSetter<ProjectStore> setter) throws DBException;
 	
+	/**
+	 * @return a {@link FileStorageProvider} instance, or {@code null} if there is none
+	 */
+	public abstract FileStorageProvider getFileStorageProvider();
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#serialiseClientModel(uk.ac.ucl.excites.sapelli.storage.model.Model, java.io.OutputStream)
 	 */
@@ -234,7 +243,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	
 	/**
 	 * @param model
-	 * @return the project corresponding to the given model, or {@code null} if the model was {@code null), if no such project was found, or if no projectStore is available
+	 * @return the project corresponding to the given model, or {@code null} if the model was {@code null}, if no such project was found, or if no projectStore is available
 	 */
 	public Project getProject(Model model)
 	{
@@ -307,6 +316,28 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		{
 			projectStoreHandle.doneUsing(this);
 		}
+	}
+
+	/**
+	 * Note:
+	 * 	Currently we only return MediaFiles associated with MediaFields. In the
+	 * 	future there may be other types of CollectorAttachments.
+	 *  
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getRecordAttachments(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	public List<? extends CollectorAttachment<?>> getRecordAttachments(Record record)
+	{
+		if(record != null)
+		{
+			Project project = getProject(record.getSchema().model);
+			FileStorageProvider fsp = getFileStorageProvider();
+		
+			if(project != null && fsp != null)
+				return CollectorAttachmentUtils.getMediaFiles(project, record, fsp, false);
+		}
+		//else:
+		return Collections.<CollectorAttachment<?>> emptyList();
 	}
 
 	/* (non-Javadoc)

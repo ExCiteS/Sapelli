@@ -20,55 +20,50 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
+import uk.ac.ucl.excites.sapelli.storage.model.Attachment;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * @author mstevens
  *
  */
-public class MediaFile extends CollectorAttachment<MediaField>
+public abstract class CollectorAttachment<F extends Field> extends Attachment 
 {
 	
-	public final long creationTimeOffset;
+	public final F field;
 	
 	/**
 	 * @param field
 	 * @param record
 	 * @param file
 	 */
-	public MediaFile(MediaField field, Record record, long creationTimeOffset, File file)
+	public CollectorAttachment(F field, Record record, File file)
 	{
-		super(field, record, file);
-		this.creationTimeOffset = creationTimeOffset;
+		super(record, file);
+		if(field == null)
+			throw new NullPointerException("Field cannot be null!");
+		this.field = field;
 	}
 	
-	@Override
-	public String getMimeType()
-	{
-		return field.getFileMimeType();
-	}
-
 	@Override
 	public boolean equals(Object obj)
 	{
 		if(this == obj)
-			return true; // references to same object
-		if(obj instanceof MediaFile)
+			return true;
+		if(this.getClass().isInstance(obj))
 		{
-			MediaFile that = (MediaFile) obj;
-			return	super.equals(that) && // CollectorAttachment#equals(Object)
-					this.creationTimeOffset == that.creationTimeOffset;
+			CollectorAttachment<?> that = (CollectorAttachment<?>) obj;
+			return	super.equals(that) && // Attachment#equals(Object)
+					this.field.equals(that.field);
 		}
-		else
-			return false;
+		return false;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		int hash = super.hashCode(); // CollectorAttachment#hashCode()
-		hash = 31 * hash + (int) (creationTimeOffset ^ (creationTimeOffset >>> 32));
+		int hash = super.hashCode(); // Attachment#hashCode()
+		hash = 31 * hash + field.hashCode();
 		return hash;
 	}
 	

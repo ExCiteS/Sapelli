@@ -16,39 +16,38 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.model;
+package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-
 /**
+ * A class which associates a {@link Record} with a {@link File) (which may or may not actually exist).
+ * 
  * @author mstevens
- *
  */
-public abstract class Attachment<F extends Field>
+public abstract class Attachment
 {
 	
-	public final F field;
 	public final Record record;
 	public final File file;
 	
 	/**
-	 * @param field
-	 * @param record
-	 * @param file
+	 * @param record should not be {@code null}
+	 * @param file should not be {@code null}, but may or may not actually exist
 	 */
-	public Attachment(F field, Record record, File file)
+	public Attachment(Record record, File file)
 	{
-		if(field == null || record == null || file == null)
-			throw new NullPointerException("Field, record & file cannot be null!");
-		this.field = field;
+		if(record == null || file == null)
+			throw new NullPointerException("Record & file cannot be null!");
 		this.record = record;
 		this.file = file;
 	}
 	
+	/**
+	 * Quietly deletes the file.
+	 */
 	public void delete()
 	{
 		FileUtils.deleteQuietly(file);
@@ -66,9 +65,8 @@ public abstract class Attachment<F extends Field>
 			return true;
 		if(this.getClass().isInstance(obj))
 		{
-			Attachment<?> that = (Attachment<?>) obj;
-			return	this.field.equals(that.field) &&
-					this.record.equals(that.record) &&
+			Attachment that = (Attachment) obj;
+			return	this.record.equals(that.record) &&
 					this.file.equals(that.file);
 		}
 		return false;
@@ -78,7 +76,6 @@ public abstract class Attachment<F extends Field>
 	public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + field.hashCode();
 		hash = 31 * hash + record.hashCode();
 		hash = 31 * hash + file.hashCode();
 		return hash;

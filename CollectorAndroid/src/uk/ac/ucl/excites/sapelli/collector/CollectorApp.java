@@ -70,7 +70,12 @@ public class CollectorApp extends Application
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
-	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT"; // used as a System property as well as on Crashlytics
+	
+	/**
+	 * Used as a System property as well as on Crashlytics.
+	 */
+	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT";
+	
 	public static enum StorageStatus
 	{
 		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
@@ -303,6 +308,12 @@ public class CollectorApp extends Application
 
 		private int oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
 		private List<String> upgradeWarnings = Collections.<String> emptyList();
+		
+		@Override
+		public FileStorageProvider getFileStorageProvider()
+		{
+			return fileStorageProvider;
+		}
 		
 		@Override
 		protected void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException

@@ -26,7 +26,7 @@ import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.model.Attachment;
+import uk.ac.ucl.excites.sapelli.collector.model.CollectorAttachment;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -1001,12 +1001,12 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		return currFormSession.startTime;
 	}
 	
-	public void addAttachment(Attachment<?> attachment)
+	public void addAttachment(CollectorAttachment<?> attachment)
 	{
 		currFormSession.addAttachment(attachment);
 	}
 	
-	public void discardAttachment(Attachment<?> attachment)
+	public void discardAttachment(CollectorAttachment<?> attachment)
 	{
 		currFormSession.discardAttachment(attachment);
 	}

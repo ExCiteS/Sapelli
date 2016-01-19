@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.Attachment;
+import uk.ac.ucl.excites.sapelli.collector.model.CollectorAttachment;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -65,8 +65,8 @@ public class FormSession
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
-	private final List<Attachment<?>> addedAttachments; // list containing files to be added
-	private final List<Attachment<?>> discardedAttachments; // list containing files to be deleted
+	private final List<CollectorAttachment<?>> addedAttachments; // list containing files to be added
+	private final List<CollectorAttachment<?>> discardedAttachments; // list containing files to be deleted
 	
 	/**
 	 * @param form
@@ -84,8 +84,8 @@ public class FormSession
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
 		this.startTime = startTime;
-		addedAttachments = new ArrayList<Attachment<?>>();
-		discardedAttachments = new ArrayList<Attachment<?>>();
+		addedAttachments = new ArrayList<CollectorAttachment<?>>();
+		discardedAttachments = new ArrayList<CollectorAttachment<?>>();
 	}
 	
 	public FieldWithArguments getPrevious(boolean forBackMove)
@@ -193,21 +193,21 @@ public class FormSession
 	}
 	
 	/**
-	 * Adds an {@link Attachment} to the list of attachments added in this form session.
+	 * Adds an {@link CollectorAttachment} to the list of attachments added in this form session.
 	 * 
 	 * @param attachment
 	 */
-	public void addAttachment(Attachment<?> attachment)
+	public void addAttachment(CollectorAttachment<?> attachment)
 	{
 		addedAttachments.add(attachment);
 	}
 	
 	/**
-	 * Adds a {@link Attachment} to the list of attachments deleted in this form session.
+	 * Adds a {@link CollectorAttachment} to the list of attachments deleted in this form session.
 	 * 
 	 * @param attachment
 	 */
-	public void discardAttachment(Attachment<?> attachment)
+	public void discardAttachment(CollectorAttachment<?> attachment)
 	{
 		if(addedAttachments.contains(attachment))
 		{	// the file being discard was created during the current session, i.e. it has never been "saved" along with a record so can be deleted right away (cannot be undone)...
@@ -224,7 +224,7 @@ public class FormSession
 	 */
 	public void deleteDiscardedAttachments()
 	{
-		for(Attachment<?> attachment : discardedAttachments)
+		for(CollectorAttachment<?> attachment : discardedAttachments)
 			attachment.delete();
 	}
 	
@@ -233,7 +233,7 @@ public class FormSession
 	 */
 	public void deleteAddedAttachments()
 	{
-		for(Attachment<?> attachment : addedAttachments)
+		for(CollectorAttachment<?> attachment : addedAttachments)
 			attachment.delete();
 	}
 	

@@ -94,7 +94,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), project));
 			
 			// Query for project data:
-			ProjectTasks.RunProjectDataQueries(getOwner(), project, new ProjectTasks.ProjectDataCallback()
+			ProjectTasks.RunProjectDataQueries(getOwner(), project, true, new ProjectTasks.ProjectDataCallback()
 			{
 				@Override
 				public void projectDataQuerySuccess(List<Record> records, List<MediaFile> mediaFiles)
@@ -157,7 +157,7 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 		final Project project = getProject(false);
 		if(owner == null || project == null)
 			return; // just in case
-		ProjectTasks.RunProjectDataQueries(owner, project, new ProjectTasks.ProjectDataCallback()
+		ProjectTasks.RunProjectDataQueries(owner, project, true, new ProjectTasks.ProjectDataCallback()
 		{
 			@Override
 			public void projectDataQuerySuccess(final List<Record> records, final List<MediaFile> mediaFiles)
