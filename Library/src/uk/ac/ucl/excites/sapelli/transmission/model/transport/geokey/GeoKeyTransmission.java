@@ -36,8 +36,6 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 {
 	
-	public static final int MAX_BODY_SIZE = 4096; // bytes (TODO determine a good value)
-	
 	private byte[] body;
 	
 	/**
@@ -98,8 +96,6 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	{
 		byte[] payloadBytes = payloadBits.toByteArray();
  		//String serialisedData = Base64.encodeBase64String(payloadBytes);
-		if(payloadBytes.length > MAX_BODY_SIZE)
-			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE + "), exceeded by " + (payloadBytes.length - MAX_BODY_SIZE) + " bytes");
 		this.body = payloadBytes;
 	}
 
@@ -125,7 +121,7 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	@Override
 	protected int getMaxBodyBits()
 	{
-		return MAX_BODY_SIZE * Byte.SIZE;
+		return UNLIMITED_BODY_SIZE;
 	}
 
 	/* (non-Javadoc)

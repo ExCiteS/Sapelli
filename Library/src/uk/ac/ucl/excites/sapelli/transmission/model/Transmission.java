@@ -120,6 +120,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	static protected final IntegerRangeMapping FORMAT_VERSION_FIELD = IntegerRangeMapping.ForSize(V2_FORMAT, FORMAT_VERSION_SIZE); // can take values from [2, 5] (but stored binary as [0, 3])
 	
+	static protected final int UNLIMITED_BODY_SIZE = -1;
 	
 	// DYNAMICS------------------------------------------------------
 	protected final TransmissionClient client;
@@ -149,9 +150,8 @@ public abstract class Transmission<C extends Correspondent>
 	
 	/**
 	 * The payloadBitsLengthField is an IntegerRangeMapping which will be used to read/write the length of the payload data (in number of bits).<br/>
-	 * It is initialised in {@link #initialise()}.
 	 */
-	private IntegerRangeMapping payloadBitsLengthField = null;
+	private final IntegerRangeMapping payloadBitsLengthField;
 	
 	/**
 	 * Contents of the transmission
@@ -199,13 +199,10 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C receiver, Payload payload)
 	{
-		this.received = false; // !!!
-		this.client = client;
-		this.correspondent = receiver;
+		this(client, receiver, false); // !!!
 		this.payload = payload;
 		this.payload.setTransmission(this); // !!!
 		this.payloadType = payload.getType();
-		initialise(); // !!!
 	}
 	
 	/**
@@ -218,12 +215,9 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C sender, int sendingSideID, int payloadHash)
 	{
-		this.received = true; // !!!
-		this.client = client;
-		this.correspondent = sender;
+		this(client, sender, true); // !!!
 		this.remoteID = sendingSideID;
 		this.payloadHash = payloadHash;
-		initialise(); // !!!
 	}
 	
 	/**
@@ -241,20 +235,17 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
 	{
-		this.client = client;
-		this.correspondent = correspondent;
-		this.received = received;
+		this(client, correspondent, received); // !!!
 		this.localID = localID;
 		this.remoteID = remoteID; 
 		this.payloadType = payloadType;
 		this.payloadHash = payloadHash;
 		this.sentAt = sentAt;
 		this.receivedAt = receivedAt;
-		initialise(); // !!!
 	}
 	
 	/**
-	 * Initialise method.
+	 * Private constructor.
 	 * 
 	 * Instantiates the payloadBitsLengthField: an IntegerRangeMapping which is used to read/write the length of the
 	 * payload data (in number of bits). The size of this field is chosen such that it is *just* big enough space to hold
@@ -266,30 +257,43 @@ public abstract class Transmission<C extends Correspondent>
 	 * 
 	 * @return the payloadBitsLengthField
 	 */
-	private void initialise()
+	private Transmission(TransmissionClient client, C correspondent, boolean received)
 	{
-		// Transmission capacity check:
-		if(getMaxBodyBits() < MIN_BODY_LENGTH_BITS)
-			throw new IllegalStateException("Transmission capacity (max body size) is too small! It is " + getMaxBodyBits() + " bits; while the minimum is " + MIN_BODY_LENGTH_BITS + " bits.");
+		// Set client, correspondent & received:
+		this.client = client;
+		this.correspondent = correspondent;
+		this.received = received;
 		
-		// Helper variable: a = bits available for length field (at least 1) + the actual data bits (at least 1)
-		int a = getMaxBodyBits() - Payload.PAYLOAD_TYPE_SIZE;
-		
-		/* The payloadBitlengthField must be *just* big enough to contain values from [0, b], where b (the field's
-		 * 	strict highbound) is the maximum number of actual payload data bits with can store.
-		 * This means that:
-		 * 												/ 0	in most cases --> no bits wasted
-		 * 		a - payloadBitlengthField.size() - b = { 
-		 * 												\ 1	in rare cases (6 times for 2 <= a <= 100) --> 1 bit wasted
-		 * This is achieved by the following equation:
-		 * 		b = a - floor(log2(a - floor(log2(a)))) - 1
-		 * However, because ...
-		 * 		floor(log2(x)) = 31 - Integer.numberOfLeadingZeros(x) = Integer.SIZE - 1 - Integer.numberOfLeadingZeros(x)
-		 * ... this equation can be reduced to: */
-		int b = a - Integer.SIZE + Integer.numberOfLeadingZeros(a - Integer.SIZE + 1 + Integer.numberOfLeadingZeros(a));
-		
-		// Construct payloadBitsLengthField:
-		payloadBitsLengthField = new IntegerRangeMapping(0, b);
+		// Set payloadBitsLengthField:
+		if(getMaxBodyBits() == UNLIMITED_BODY_SIZE)
+		{
+			this.payloadBitsLengthField = new IntegerRangeMapping(0, Integer.MAX_VALUE);
+		}
+		else
+		{
+			// Transmission capacity check:
+			if(getMaxBodyBits() < MIN_BODY_LENGTH_BITS)
+				throw new IllegalStateException("Transmission capacity (max body size) is too small! It is " + getMaxBodyBits() + " bits; while the minimum is " + MIN_BODY_LENGTH_BITS + " bits.");
+			
+			// Helper variable: a = bits available for length field (at least 1) + the actual data bits (at least 1)
+			int a = getMaxBodyBits() - Payload.PAYLOAD_TYPE_SIZE;
+			
+			/* The payloadBitlengthField must be *just* big enough to contain values from [0, b], where b (the field's
+			 * 	strict highbound) is the maximum number of actual payload data bits with can store.
+			 * This means that:
+			 * 												/ 0	in most cases --> no bits wasted
+			 * 		a - payloadBitlengthField.size() - b = { 
+			 * 												\ 1	in rare cases (6 times for 2 <= a <= 100) --> 1 bit wasted
+			 * This is achieved by the following equation:
+			 * 		b = a - floor(log2(a - floor(log2(a)))) - 1
+			 * However, because ...
+			 * 		floor(log2(x)) = 31 - Integer.numberOfLeadingZeros(x) = Integer.SIZE - 1 - Integer.numberOfLeadingZeros(x)
+			 * ... this equation can be reduced to: */
+			int b = a - Integer.SIZE + Integer.numberOfLeadingZeros(a - Integer.SIZE + 1 + Integer.numberOfLeadingZeros(a));
+			
+			// Construct payloadBitsLengthField:
+			this.payloadBitsLengthField = new IntegerRangeMapping(0, b);
+		}
 	}
 	
 	/**
@@ -454,6 +458,9 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public void checkCapacity() throws IOException, TransmissionCapacityExceededException
 	{
+		if(isBodySizeUnlimited())
+			return; // there's no point in checking capacity if body size is unlimited
+		
 		// Clear previous preparations (necessary because payload contents have likely changed):
 		clearPreparation();
 		// Prepare for simulation/
@@ -614,11 +621,20 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * The maximum length of the body of this transmission (in number of bits).
+	 * The maximum length of the body of this transmission (in number of bits),
+	 * or {@value #UNLIMITED_BODY_SIZE} if there is no practical limit on the body of this transmission.
 	 * 
 	 * @return
 	 */
 	protected abstract int getMaxBodyBits();
+	
+	/**
+	 * @return whether or not the body size is unlimited
+	 */
+	public boolean isBodySizeUnlimited()
+	{
+		return getMaxBodyBits() == UNLIMITED_BODY_SIZE;
+	}
 	
 	/**
 	 * The maximum length of the payload data (in number of bits) which can be fitted into this transmission.
