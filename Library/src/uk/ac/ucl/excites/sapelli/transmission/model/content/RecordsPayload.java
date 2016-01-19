@@ -329,12 +329,11 @@ public class RecordsPayload extends Payload
 	 * @param BitInputStream
 	 * @throws IOException
 	 * @throws RecordsPayloadDecodeException
-	 * @throws UnknownModelException
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
-	protected void read(BitInputStream in) throws IOException, RecordsPayloadDecodeException, UnknownModelException
+	protected void read(BitInputStream in) throws IOException, RecordsPayloadDecodeException
 	{
 		// Read HEADER ----------------------------------------------
 		//	Format version:
@@ -345,7 +344,14 @@ public class RecordsPayload extends Payload
 		this.lossless = in.readBit();
 		//	Model & schema identification:
 		//		Read Model ID & loop-up model:
-		this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.readLong(in));
+		try
+		{
+			this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.readLong(in));
+		}
+		catch(UnknownModelException ume)
+		{
+			throw new RecordsPayloadDecodeException(this, ume);
+		}
 		//		Read schema occurrence bits:
 		List<Schema> schemataInT = new ArrayList<Schema>();
 		for(Schema sInM : model.getSchemata())

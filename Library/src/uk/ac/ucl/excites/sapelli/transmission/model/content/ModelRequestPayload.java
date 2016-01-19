@@ -23,7 +23,6 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -63,7 +62,7 @@ public class ModelRequestPayload extends ResponsePayload
 	}
 
 	@Override
-	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
+	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
 		super.read(bitstream);
 		unknownModelID = Model.MODEL_ID_FIELD.readLong(bitstream);
@@ -72,7 +71,7 @@ public class ModelRequestPayload extends ResponsePayload
 	@Override
 	public boolean acknowledgeReception()
 	{
-		return true; // ?
+		return true; // ??
 	}
 	
 	public long getUnknownModelID()

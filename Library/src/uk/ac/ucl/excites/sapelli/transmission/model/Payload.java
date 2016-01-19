@@ -30,11 +30,10 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -142,6 +141,8 @@ public abstract class Payload
 	// DYNAMICS------------------------------------------------------
 	protected Transmission<?> transmission;
 	
+	protected PayloadDecodeException decodeException = null;
+	
 	public abstract int getType();
 
 	/**
@@ -210,17 +211,29 @@ public abstract class Payload
 	
 	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException;
 	
-	public void deserialise(BitArray payloadBits) throws IllegalStateException, IOException, PayloadDecodeException, UnknownModelException
+	/**
+	 * Important: this method does *not* throw exceptions but instead stores any exception which does occur as the {@link #decodeException}.
+	 * 
+	 * @param payloadBits
+	 */
+	public void deserialise(BitArray payloadBits)
 	{
-		if(this.transmission == null)
-			throw new IllegalStateException("Cannot deserialise before transmission has been set!");
+		decodeException = null; // wipe any previous exception 
 		BitArrayInputStream bitstream = null;
 		try
 		{
+			if(this.transmission == null)
+				throw new IllegalStateException("Cannot deserialise before transmission has been set!");
+			
 			bitstream = new BitArrayInputStream(payloadBits);
 			
 			// Deserialise payload data:
 			read(bitstream);
+		}
+		catch(Exception e)
+		{
+			// don't throw!
+			decodeException = (e instanceof PayloadDecodeException) ? (PayloadDecodeException) e : new PayloadDecodeException(this, e);
 		}
 		finally
 		{
@@ -228,7 +241,20 @@ public abstract class Payload
 		}
 	}
 	
-	protected abstract void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException;
+	public boolean hasDecodeException()
+	{
+		return decodeException != null;
+	}
+	
+	/**
+	 * @return the decodeException or {@code null}
+	 */
+	public PayloadDecodeException getDecodeException()
+	{
+		return decodeException;
+	}
+
+	protected abstract void read(BitInputStream bitstream) throws IOException, PayloadDecodeException;
 	
 	public abstract boolean acknowledgeReception();
 	

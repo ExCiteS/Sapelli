@@ -25,7 +25,6 @@ import org.joda.time.DateTimeZone;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -76,7 +75,7 @@ public class AckPayload extends ResponsePayload
 	 * @see uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
-	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
+	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
 		super.read(bitstream);
 		subjectReceivedAt = new TimeStamp(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream, true).getMsSinceEpoch(), DateTimeZone.getDefault());

@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -546,59 +545,72 @@ public abstract class Transmission<C extends Correspondent>
 		wrapped = false;
 	}
 	
-	public void receive() throws IOException, IllegalArgumentException, IllegalStateException, UnknownModelException, TransmissionReceivingException
+	/**
+	 * @throws TransmissionReceivingException
+	 */
+	public void receive() throws TransmissionReceivingException
 	{
 		// Some checks:
 		if(!isComplete())
 			throw new IncompleteTransmissionException(this);
 		if(this.payload != null)
 		{
-			System.out.println("This transmission has already been received.");
+			client.logWarning("This transmission has already been received.");
 			return;
 		}
 		
-		// Unwrap (reassemble/decode) body:
-		BitArray bodyBits = unwrap();
-		
-		// Length check:
-		if(bodyBits.length() < MIN_BODY_LENGTH_BITS - 1) // - 1 because in an extreme case it could be that the payload data is empty (0 bits long)
-			throw new IncompleteTransmissionException(this, "Transmission body length (" + bodyBits.length() + " bits) for this to be a valid transmission.");
-		
-		// Open input stream:
-		BitArrayInputStream bitstream = new BitArrayInputStream(bodyBits);
-		
-		short format = FORMAT_VERSION_FIELD.readShort(bitstream);
-		if(format > HIGHEST_SUPPORTED_FORMAT)
-			throw new TransmissionReceivingException("Unsupported transmission format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
-		
-		// Read payload type & instantiate Payload object:
-		this.payloadType = Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream);
-		this.payload = Payload.New(client, payloadType);
-		this.payload.setTransmission(this); // !!!
-		
-		// Read payload bits length:
-		int payloadBitsLength = payloadBitsLengthField.readInt(bitstream);
-		
-		// Read the actual payload bits:
-		BitArray payloadBits;
+		// Decode transmission & payload:
 		try
 		{
-			payloadBits = bitstream.readBitArray(payloadBitsLength);
+			// Unwrap (reassemble/decode) body:
+			BitArray bodyBits = unwrap();
+			
+			// Length check:
+			if(bodyBits.length() < MIN_BODY_LENGTH_BITS - 1) // - 1 because in an extreme case it could be that the payload data is empty (0 bits long)
+				throw new IncompleteTransmissionException(this, "Transmission body length (" + bodyBits.length() + " bits) for this to be a valid transmission.");
+			
+			// Open input stream:
+			BitArrayInputStream bitstream = new BitArrayInputStream(bodyBits);
+			
+			short format = FORMAT_VERSION_FIELD.readShort(bitstream);
+			if(format > HIGHEST_SUPPORTED_FORMAT)
+				throw new TransmissionReceivingException(this, "Unsupported transmission format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
+			
+			// Read payload type & instantiate Payload object:
+			this.payloadType = Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream);
+			this.payload = Payload.New(client, payloadType);
+			this.payload.setTransmission(this); // !!!
+			
+			// Read payload bits length:
+			int payloadBitsLength = payloadBitsLengthField.readInt(bitstream);
+			
+			// Read the actual payload bits:
+			BitArray payloadBits;
+			try
+			{
+				payloadBits = bitstream.readBitArray(payloadBitsLength);
+			}
+			catch(EOFException eofe)
+			{	// not enough bits could be read (i.e. less than payloadBitsLength)
+				throw new IncompleteTransmissionException(this, "Transmission body is incomplete, could not read all of the expected " + payloadBitsLength + " payload data bits.");
+			}
+			
+			// Close stream:
+			bitstream.close();
+			
+			// Verify payload hash:
+			if(payloadHash != computePayloadHash(payloadBits))
+				throw new TransmissionReceivingException(this, "Payload hash mismatch!");
+			
+			// Deserialise payload:
+			payload.deserialise(payloadBits); // does not throw exception, instead any exception can be accessed through Payload.getDecodeException()
 		}
-		catch(EOFException eofe)
-		{	// not enough bits could be read (i.e. less than payloadBitsLength)
-			throw new IncompleteTransmissionException(this, "Transmission body is incomplete, could not read all of the expected " + payloadBitsLength + " payload data bits.");
+		catch(Exception e)
+		{
+			if(e instanceof TransmissionReceivingException)
+				throw (TransmissionReceivingException) e;
+			throw new TransmissionReceivingException(this, "Transmission could not be received/decoded", e);
 		}
-		
-		// Close stream:
-		bitstream.close();
-		
-		// Verify payload hash:
-		if(payloadHash != computePayloadHash(payloadBits))
-			throw new TransmissionReceivingException("Payload hash mismatch!");
-		
-		// Deserialise payload:
-		payload.deserialise(payloadBits);
 	}
 	
 	/**

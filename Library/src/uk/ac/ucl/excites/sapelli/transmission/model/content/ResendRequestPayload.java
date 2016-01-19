@@ -9,7 +9,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
@@ -75,7 +74,7 @@ public class ResendRequestPayload extends ResponsePayload
 	}
 
 	@Override
-	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
+	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
 		super.read(bitstream);
 		subjectTotalParts = TOTAL_PARTS_FIELD.readInt(bitstream);

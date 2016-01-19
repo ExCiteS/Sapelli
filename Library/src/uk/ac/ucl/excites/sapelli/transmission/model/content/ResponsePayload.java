@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -71,7 +70,7 @@ public abstract class ResponsePayload extends Payload
 	}
 
 	@Override
-	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
+	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
 		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
 		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
