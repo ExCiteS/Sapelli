@@ -302,7 +302,7 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 
 	/**
-	 * Converts Numbers (Integers, Shorts, etc.) to Longs
+	 * Converts {@link Number}s ({@link Integer}s, {@link Short}s, etc.) and {@link Enum}s to {@link Long}s.
 	 * 
 	 * @param value possibly null
 	 * @return
