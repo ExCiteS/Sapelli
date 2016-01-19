@@ -200,7 +200,7 @@
     <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
     <string name="scheduledReceivers">Scheduled receivers:</string>
     <string name="longClickFromEditDel">(long-click to edit or delete)</string>
-    <string name="sendExistingData">Do you which to send all existing data (%1$d records, %2$d files) to receiver %3$s?</string>
+    <string name="sendExistingData">Do you wish to send all existing data (%1$d records, %2$d files) to receiver %3$s?</string>
     <string name="receiver">Receiver:</string>
     <string name="receivers">Receivers:</string>
     <string name="interval">Interval:</string>
