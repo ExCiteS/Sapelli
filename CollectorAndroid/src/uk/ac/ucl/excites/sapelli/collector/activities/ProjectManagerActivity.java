@@ -29,6 +29,7 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
@@ -107,6 +108,8 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
 	
 	private static final int PAGER_MARGIN_DIP = 4;
+	
+	static public final Typeface FONT_SANS_SERIF_CONDENSED = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
 
 	// DYNAMICS-------------------------------------------------------
 	private DeviceID deviceID;
