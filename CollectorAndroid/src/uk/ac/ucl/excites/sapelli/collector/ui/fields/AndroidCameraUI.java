@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
@@ -48,9 +48,9 @@ public abstract class AndroidCameraUI<MF extends MediaField> extends AndroidMedi
 	private SurfaceView captureSurface;
 	
 	/**
-	 * @see AndroidMediaUI#AndroidMediaUI(MediaField, CollectorController, CollectorView, boolean)
+	 * @see AndroidMediaUI#AndroidMediaUI(MediaField, AndroidCollectorController, CollectorView, boolean)
 	 */
-	public AndroidCameraUI(MF field, CollectorController controller, CollectorView collectorUI, boolean unblockUIAfterCaptureClick)
+	public AndroidCameraUI(MF field, AndroidCollectorController controller, CollectorView collectorUI, boolean unblockUIAfterCaptureClick)
 	{
 		super(field, controller, collectorUI, unblockUIAfterCaptureClick);
 	}

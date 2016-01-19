@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.shared.util.android.ViewHelpers;
@@ -53,7 +53,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 	private int wrapperPaddingPx;
 	private LayoutParams wrapperLayoutParams;
 	
-	public AndroidPageUI(Page page, CollectorController controller, CollectorView collectorView)
+	public AndroidPageUI(Page page, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(page, controller, collectorView);
 		

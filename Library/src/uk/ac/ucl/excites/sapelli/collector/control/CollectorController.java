@@ -60,13 +60,13 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
- * Abstract Controller class
+ * Abstract CollectorController class
  *
  * @param <CUI>
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-public abstract class Controller<CUI extends CollectorUI<?, ?>> implements FieldVisitor
+public abstract class CollectorController<CUI extends CollectorUI<?, ?>> implements FieldVisitor
 {
 	
 	// STATICS-------------------------------------------------------
@@ -186,7 +186,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	
 	protected volatile boolean blockedUI = false;
 
-	public Controller(Project project, CUI ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
+	public CollectorController(Project project, CUI ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
 		this.ui = ui;

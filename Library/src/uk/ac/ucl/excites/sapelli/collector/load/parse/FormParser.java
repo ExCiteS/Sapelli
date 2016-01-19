@@ -25,7 +25,7 @@ import java.util.Stack;
 
 import org.xml.sax.SAXException;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.Mode;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Description;

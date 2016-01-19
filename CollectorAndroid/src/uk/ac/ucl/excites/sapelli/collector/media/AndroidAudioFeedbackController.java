@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
@@ -46,7 +46,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	private static final String TAG = "AudioFeedbackController";
 	private static final int FFEDBACK_GAP_DURATION_MILISEC = 1000; // time (in milliseconds) to pause if a piece of audio is not available
 
-	private CollectorController controller;
+	private AndroidCollectorController controller;
 	private Context context;
 
 	private Thread playbackThread;
@@ -55,7 +55,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	private Semaphore playbackCompletedSem; // semaphore used to notify when the media player has finished playing the current track
 	private Semaphore animationCompletedSem; // semaphore used to notify when the UI thread has finished animating the view
 
-	public AndroidAudioFeedbackController(CollectorController controller)
+	public AndroidAudioFeedbackController(AndroidCollectorController controller)
 	{
 		this.controller = controller;
 		this.context = controller.activity.getApplicationContext();

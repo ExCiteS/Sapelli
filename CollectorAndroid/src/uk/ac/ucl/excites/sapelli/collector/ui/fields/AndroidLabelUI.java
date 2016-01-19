@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -37,7 +37,7 @@ public class AndroidLabelUI extends LabelUI<View, CollectorView>
 	
 	private TextView label;
 	
-	public AndroidLabelUI(LabelField labelField, CollectorController controller, CollectorView collectorView)
+	public AndroidLabelUI(LabelField labelField, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(labelField, controller, collectorView);
 	}

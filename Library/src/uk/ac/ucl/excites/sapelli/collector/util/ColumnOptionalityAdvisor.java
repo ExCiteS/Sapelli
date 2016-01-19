@@ -29,8 +29,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.Mode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
@@ -197,7 +197,7 @@ public final class ColumnOptionalityAdvisor
 			while(iter.hasNext())
 			{
 				Field fieldToCheck = iter.next();
-				if(!Controller.IsFieldToBeShown(mode, fieldToCheck))
+				if(!CollectorController.IsFieldToBeShown(mode, fieldToCheck))
 				{
 					bypassableFieldIDs.add(fieldToCheck.id);
 					iter.remove(); // !!! remove field from fieldsToCheck (we now know it is "by-passable" so we don't need to check it against paths)
@@ -254,7 +254,7 @@ public final class ColumnOptionalityAdvisor
 			// Clear assembleNextFields set:
 			assembleNextFields.clear();
 			
-			if(Controller.IsFieldToBeShown(mode, currentField))
+			if(CollectorController.IsFieldToBeShown(mode, currentField))
 			{	
 				// This field would be shown to the user...
 				passed.push(currentField); // remember we visited it
@@ -317,7 +317,7 @@ public final class ColumnOptionalityAdvisor
 			if(!cf.isLeaf())
 				// Children the user can choose from:
 				for(ChoiceField child : cf.getChildren())
-					if(Controller.IsFieldEnabled(mode, child))
+					if(CollectorController.IsFieldEnabled(mode, child))
 					{
 						atLeast1Child = true;
 						// Add to next stack/list:
@@ -353,7 +353,7 @@ public final class ColumnOptionalityAdvisor
 			
 			// Enter child fields (but signal that they are entered as part of entering the page):
 			for(Field fieldOnPage : page.getFields())
-				if(Controller.IsFieldToBeShown(mode, fieldOnPage))
+				if(CollectorController.IsFieldToBeShown(mode, fieldOnPage))
 				{
 					// Remember the field is visited:
 					passed.push(fieldOnPage);

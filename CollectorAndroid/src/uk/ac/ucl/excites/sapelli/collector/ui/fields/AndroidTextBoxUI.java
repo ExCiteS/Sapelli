@@ -19,8 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -64,7 +64,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 	// DYNAMIC ------------------------------------------------------
 	private TextBoxView view;
 
-	public AndroidTextBoxUI(TextBoxField textBox, CollectorController controller, CollectorView collectorView)
+	public AndroidTextBoxUI(TextBoxField textBox, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(textBox, controller, collectorView);
 	}

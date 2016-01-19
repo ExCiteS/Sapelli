@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
@@ -84,7 +84,7 @@ public class CollectorActivity extends ProjectActivity
 	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 	
 	// DYNAMICS-------------------------------------------------------
-	private CollectorController controller;
+	private AndroidCollectorController controller;
 
 	// Temp location to save a photo
 	private File tmpPhotoFile;
@@ -229,7 +229,7 @@ public class CollectorActivity extends ProjectActivity
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
-			controller = new CollectorController(project, collectorView, projectStore, recordStore, getFileStorageProvider(), this);
+			controller = new AndroidCollectorController(project, collectorView, projectStore, recordStore, getFileStorageProvider(), this);
 			collectorView.initialise(controller); // (re)initialise the UI !!!
 			
 			// Start project:

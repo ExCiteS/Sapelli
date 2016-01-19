@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -94,7 +94,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final int SCREEN_TRANSITION_DURATION = 800;
 
 	public final CollectorActivity activity;
-	private CollectorController controller;
+	private AndroidCollectorController controller;
 
 	// UI elements:
 	private AndroidControlsUI controlsUI;
@@ -135,7 +135,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * 
 	 * @param controller the controller to set
 	 */
-	public void initialise(CollectorController controller)
+	public void initialise(AndroidCollectorController controller)
 	{
 		this.controller = controller;
 

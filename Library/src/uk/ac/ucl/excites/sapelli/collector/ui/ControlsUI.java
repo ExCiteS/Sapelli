@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.util.Arrays;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
@@ -45,14 +45,14 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	}
 	
 	// Dynamics------------------------------------------------------
-	protected Controller<UI> controller;
+	protected CollectorController<UI> controller;
 	protected UI collectorUI;
 	protected boolean enabled;
 	
 	private Form currentForm;
 	private State[] controlStates;
 	
-	public ControlsUI(Controller<UI> controller, UI collectorUI)
+	public ControlsUI(CollectorController<UI> controller, UI collectorUI)
 	{
 		this.controller = controller;
 		this.collectorUI = collectorUI;

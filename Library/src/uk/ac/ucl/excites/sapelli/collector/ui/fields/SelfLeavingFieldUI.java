@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -41,7 +41,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends CollectorUI<V, UI>> extends FieldUI<F, V, UI>
 {
 
-	public SelfLeavingFieldUI(F field, Controller<UI> controller, UI collectorUI)
+	public SelfLeavingFieldUI(F field, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

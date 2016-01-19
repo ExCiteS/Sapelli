@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorAttachment;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -40,12 +40,12 @@ public class FormSession
 {
 	
 	// STATIC -------------------------------------------------------
-	static public FormSession Create(Form form, Controller<?> controller)
+	static public FormSession Create(Form form, CollectorController<?> controller)
 	{
 		return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(controller.getDeviceID()) : null, controller.getElapsedMillis());
 	}
 	
-	static public FormSession Edit(Form form, Record record, Controller<?> controller)
+	static public FormSession Edit(Form form, Record record, CollectorController<?> controller)
 	{
 		return new FormSession(form, Mode.EDIT, record, controller.getElapsedMillis());
 	}
@@ -55,7 +55,7 @@ public class FormSession
 	protected final Mode mode;
 	
 	/**
-	 * Note we should make this final for the reason explained here: {@link Controller#discardRecordAndAttachments()}. 
+	 * Note we should make this final for the reason explained here: {@link CollectorController#discardRecordAndAttachments()}. 
 	 */
 	protected Record record;
 	
@@ -105,7 +105,7 @@ public class FormSession
 	}
 	
 	/**
-	 * Called from {@link Controller#goTo(FieldWithArguments, boolean)}
+	 * Called from {@link CollectorController#goTo(FieldWithArguments, boolean)}
 	 * 
 	 * @param nextFieldAndArguments
 	 */

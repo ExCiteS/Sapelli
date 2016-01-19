@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -75,7 +75,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	private PageView pageView;
 	private ChoiceView choiceView;
 
-	public AndroidChoiceUI(ChoiceField choice, CollectorController controller, CollectorView collectorView)
+	public AndroidChoiceUI(ChoiceField choice, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(choice, controller, collectorView);
 	}

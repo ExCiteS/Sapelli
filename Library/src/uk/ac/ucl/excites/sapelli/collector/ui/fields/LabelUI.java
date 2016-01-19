@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class LabelUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<LabelField, V, UI>
 {
 
-	public LabelUI(LabelField labelField, Controller<UI> controller, UI collectorUI)
+	public LabelUI(LabelField labelField, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(labelField, controller, collectorUI);
 	}

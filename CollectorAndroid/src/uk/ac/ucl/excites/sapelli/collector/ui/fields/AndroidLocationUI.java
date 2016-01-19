@@ -22,8 +22,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -53,7 +53,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 	
 	static public final float PADDING = 20.0f;
 
-	public AndroidLocationUI(LocationField field, CollectorController controller, CollectorView collectorUI)
+	public AndroidLocationUI(LocationField field, AndroidCollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

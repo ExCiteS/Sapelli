@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -42,7 +42,7 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 	private int negativeTopMarginPx;
 	private int negativeBottomMarginPx;
 	
-	public AndroidCheckBoxUI(CheckBoxField checkBox, CollectorController controller, CollectorView collectorView)
+	public AndroidCheckBoxUI(CheckBoxField checkBox, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(checkBox, controller, collectorView);
 		negativeTopMarginPx = collectorView.convertDipToPx(NEGATIVE_TOP_MARGIN_DIP);

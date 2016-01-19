@@ -62,7 +62,7 @@ import com.crashlytics.android.Crashlytics;
  * 
  * @author mstevens, Michalis Vitos, Julia, benelliott
  */
-public class CollectorController extends Controller<CollectorView> implements LocationListener, OrientationListener
+public class AndroidCollectorController extends CollectorController<CollectorView> implements LocationListener, OrientationListener
 {
 
 	// STATICS-------------------------------------------------------
@@ -80,7 +80,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	
 	private AudioPlayer audioPlayer;
 
-	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
+	public AndroidCollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
 	{
 		super(project, collectorView, projectStore, recordStore, fileStorageProvider);
 		this.activity = activity;
@@ -111,7 +111,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 			@Override
 			public void run()
 			{
-				CollectorController.super.setFieldInUI(newCurrentField);
+				AndroidCollectorController.super.setFieldInUI(newCurrentField);
 			}
 		});
 	}
@@ -218,7 +218,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 						});
 					}
 					
-					locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, CollectorController.this);
+					locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, AndroidCollectorController.this);
 				}	
 			}
 		});

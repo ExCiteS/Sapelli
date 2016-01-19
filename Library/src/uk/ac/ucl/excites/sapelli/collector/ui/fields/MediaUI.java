@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
@@ -66,7 +66,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	private Mode mode = null;
 	private MediaFile fileToReview = null;
 		
-	public MediaUI(MF field, Controller<UI> controller, UI collectorUI)
+	public MediaUI(MF field, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

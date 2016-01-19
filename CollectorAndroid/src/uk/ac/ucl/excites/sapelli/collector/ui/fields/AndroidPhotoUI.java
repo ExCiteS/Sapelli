@@ -30,7 +30,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -53,7 +53,7 @@ public class AndroidPhotoUI extends AndroidCameraUI<PhotoField> implements Pictu
 	
 	static protected final String TAG = "AndroidPhotoUI";
 
-	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
+	public AndroidPhotoUI(PhotoField field, AndroidCollectorController controller, CollectorView collectorUI)
 	{
 		super(	field,
 				controller,

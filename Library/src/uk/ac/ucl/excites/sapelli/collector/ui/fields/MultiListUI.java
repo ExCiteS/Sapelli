@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<MultiListField, V, UI>
 {
 
-	public MultiListUI(MultiListField listField, Controller<UI> controller, UI collectorUI)
+	public MultiListUI(MultiListField listField, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(listField, controller, collectorUI);
 	}

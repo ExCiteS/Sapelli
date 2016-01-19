@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
@@ -61,9 +61,9 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	// Dynamics------------------------------------------------------
 	private ControlItem[] controlItems;
 	private ItemPickerView view;
-	private CollectorController controller;
+	private AndroidCollectorController controller;
 	
-	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
+	public AndroidControlsUI(AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(controller, collectorView);
 		

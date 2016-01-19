@@ -22,8 +22,8 @@ import java.io.File;
 import java.util.List;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.Mode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
@@ -156,8 +156,8 @@ public abstract class Field extends JumpSource
 		this.showControlByMode = new boolean[Control.Type.values().length][];
 		for(Control.Type controlType : Control.Type.values())
 		{
-			showControlByMode[controlType.ordinal()] = new boolean[Controller.Mode.values().length];
-			for(Mode mode : Controller.Mode.values())
+			showControlByMode[controlType.ordinal()] = new boolean[CollectorController.Mode.values().length];
+			for(Mode mode : CollectorController.Mode.values())
 			{
 				boolean defaultShown = true;
 				switch(controlType)
@@ -376,7 +376,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowControl(Control.Type controlType, boolean show)
 	{
-		for(Mode mode : Controller.Mode.values())
+		for(Mode mode : CollectorController.Mode.values())
 			showControlByMode[controlType.ordinal()][mode.ordinal()] = show;
 	}
 

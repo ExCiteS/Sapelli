@@ -34,7 +34,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.LinearLayout;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
@@ -71,7 +71,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	private VolumeView volumeView;
 	private ReviewView audioReviewView;
 
-	public AndroidAudioUI(AudioField field, CollectorController controller, CollectorView collectorUI)
+	public AndroidAudioUI(AudioField field, AndroidCollectorController controller, CollectorView collectorUI)
 	{
 		super(	field,
 				controller,

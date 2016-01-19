@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -42,7 +42,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	static protected final int VALIDATION_ERROR_INVALID_NUMERIC = 6;
 	
 	// DYNAMIC ------------------------------------------------------
-	public TextBoxUI(TextBoxField textBox, Controller<UI> controller, UI collectorUI)
+	public TextBoxUI(TextBoxField textBox, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(textBox, controller, collectorUI);
 	}

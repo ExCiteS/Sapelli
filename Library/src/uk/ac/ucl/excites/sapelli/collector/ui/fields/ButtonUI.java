@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
@@ -35,7 +35,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * @param field
 	 * @param controller
 	 */
-	public ButtonUI(ButtonField field, Controller<UI> controller, UI collectorUI)
+	public ButtonUI(ButtonField field, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

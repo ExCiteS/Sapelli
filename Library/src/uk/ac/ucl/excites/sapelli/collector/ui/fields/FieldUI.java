@@ -21,8 +21,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -50,7 +50,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	static public final byte VISIBILITY_SHOWN_ON_PAGE = 2;
 	
 	public final F field;
-	protected final Controller<UI> controller;
+	protected final CollectorController<UI> controller;
 	protected final UI collectorUI;
 	
 	private boolean current = false;
@@ -59,7 +59,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	private Record lastKnownRecord = null;
 	private boolean wasUserGoingBack = false;
 	
-	public FieldUI(F field, Controller<UI> controller, UI collectorUI)
+	public FieldUI(F field, CollectorController<UI> controller, UI collectorUI)
 	{
 		this.field = field;
 		this.controller = controller;
@@ -176,7 +176,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param rule determines whether the leaving is (un)conditional and whether validation/storage is allowed to take place
 	 * @return whether or not leaving the field is allowed
 	 */
-	public boolean leaveField(Record record, Controller.LeaveRule rule)
+	public boolean leaveField(Record record, CollectorController.LeaveRule rule)
 	{
 		if(	// when the request is unconditional AND no storage is allowed we don't call leave() so no validation/storage happens:
 			(rule == LeaveRule.UNCONDITIONAL_NO_STORAGE) ||

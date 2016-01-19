@@ -33,8 +33,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -94,7 +94,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param unblockUIAfterCaptureClick indicates whether or not to immediately allow new user interactions (i.e. clicks) after the capture button is clicked
 	 * after this method has returned.
 	 */
-	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI, boolean unblockUIAfterCaptureClick)
+	public AndroidMediaUI(MF field, AndroidCollectorController controller, CollectorView collectorUI, boolean unblockUIAfterCaptureClick)
 	{
 		super(field, controller, collectorUI);
 		

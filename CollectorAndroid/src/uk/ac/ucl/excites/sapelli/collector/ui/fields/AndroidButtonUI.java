@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -36,7 +36,7 @@ public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements On
 	// private CollectorController controller;
 	private Button button;
 	
-	public AndroidButtonUI(ButtonField buttonField, CollectorController controller, CollectorView collectorView)
+	public AndroidButtonUI(ButtonField buttonField, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(buttonField, controller, collectorView);
 	}

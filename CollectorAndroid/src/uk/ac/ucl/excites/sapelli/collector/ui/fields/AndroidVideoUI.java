@@ -41,7 +41,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.VideoView;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AVField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
@@ -66,7 +66,7 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 	
 	private ReviewView reviewView;
 
-	public AndroidVideoUI(VideoField field, CollectorController controller, CollectorView collectorUI)
+	public AndroidVideoUI(VideoField field, AndroidCollectorController controller, CollectorView collectorUI)
 	{
 		super(	field,
 				controller,

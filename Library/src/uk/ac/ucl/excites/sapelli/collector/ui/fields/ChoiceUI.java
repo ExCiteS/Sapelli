@@ -20,8 +20,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
@@ -42,7 +42,7 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * @param controller
 	 * @param collectorUI
 	 */
-	public ChoiceUI(ChoiceField choice, Controller<UI> controller, UI collectorUI)
+	public ChoiceUI(ChoiceField choice, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(choice, controller, collectorUI);
 		if(choice.isLeaf()) // just in case...

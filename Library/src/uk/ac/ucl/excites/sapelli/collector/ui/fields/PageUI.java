@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -37,7 +37,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 
 	protected List<FieldUI<?, V, UI>> fieldUIs;
 	
-	public PageUI(Page page, Controller<UI> controller, UI collectorUI)
+	public PageUI(Page page, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(page, controller, collectorUI);
 		fieldUIs = new ArrayList<FieldUI<?, V, UI>>();

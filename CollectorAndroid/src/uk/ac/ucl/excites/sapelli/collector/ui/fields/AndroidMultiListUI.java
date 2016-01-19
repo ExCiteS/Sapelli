@@ -30,7 +30,7 @@ import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -48,7 +48,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	private MultiListView view;
 	private Stack<MultiListItem> selectionStack;
 	
-	public AndroidMultiListUI(MultiListField listField, CollectorController controller, CollectorView collectorView)
+	public AndroidMultiListUI(MultiListField listField, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(listField, controller, collectorView);
 		selectionStack = new Stack<MultiListItem>();

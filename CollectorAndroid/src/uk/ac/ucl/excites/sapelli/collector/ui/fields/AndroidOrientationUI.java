@@ -19,8 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -48,7 +48,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 
 	static public final float PADDING = 40.0f;
 
-	public AndroidOrientationUI(OrientationField field, CollectorController controller, CollectorView collectorUI)
+	public AndroidOrientationUI(OrientationField field, AndroidCollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

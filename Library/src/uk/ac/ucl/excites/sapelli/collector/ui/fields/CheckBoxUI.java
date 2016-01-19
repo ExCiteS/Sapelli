@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class CheckBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<CheckBoxField, V, UI>
 {
 
-	public CheckBoxUI(CheckBoxField checkBox, Controller<UI> controller, UI collectorUI)
+	public CheckBoxUI(CheckBoxField checkBox, CollectorController<UI> controller, UI collectorUI)
 	{
 		super(checkBox, controller, collectorUI);
 	}
