@@ -74,7 +74,7 @@ public class EqualityConstraint extends Constraint
 	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value, boolean equal)
 	{
 		this.columnPointer = columnPointer;
-		this.value = value;
+		this.value = columnPointer.getColumn().convert(value); // convert to column type!
 		this.equal = equal;
 	}
 

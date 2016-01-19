@@ -142,7 +142,7 @@ public class RuleConstraint extends Constraint
 			throw new NullPointerException("Value cannot be null unless comparison is equality or inequality.");
 		this.lhsColumnPointer = lhsColumnPointer;
 		this.comparison = comparison;
-		this.rhsValue = rhsValue;
+		this.rhsValue = lhsColumnPointer.getColumn().convert(rhsValue); // convert to column type!
 	}
 	
 	/**
