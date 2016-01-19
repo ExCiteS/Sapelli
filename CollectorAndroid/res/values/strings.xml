@@ -217,16 +217,19 @@
     <string name="airplaneModeCycling">Airplane mode cycling</string>
     <string name="chooseReceiverType">Choose receiver type</string>
     <string name="receiverName">Name:</string>
+    <string name="pickOptionalName">Pick a name (optional):</string>
     <string name="SMSReceiver">SMS receiver</string>
     <string name="receiverPhoneNumber">Phone number:</string>
+    <string name="useBinarySMS">Use binary SMS</string>
     <string name="GeoKeyServer">GeoKey server</string>
     <string name="geokeyServerUrl">URL:</string>
     <string name="username">Username:</string>
+    <string name="email">E-mail address:</string>
     <string name="password">Password:</string>
     <string name="url_protocol_http">http://</string>
     <string name="url_protocol_https">https://</string>
     <string name="verifyingServerAndAccount">Checking server &amp; user credentials.</string>
-    <string name="useBinarySMS">Use binary SMS</string>
     <string name="emptyReceiverName">Please enter a name.</string>
     <string name="invalidPhoneNumber">Please enter a valid phone number.</string>
+    <string name="uploadedFromAt">Uploaded from %1$s at %2$s.</string>
 </resources>

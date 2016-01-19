@@ -22,10 +22,10 @@ package uk.ac.ucl.excites.sapelli.transmission.util;
  * @author mstevens
  *
  */
-public class TransmissionCapacityExceededException extends Exception
+public class TransmissionCapacityExceededException extends TransmissionSendingException
 {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
 	public TransmissionCapacityExceededException(String msg)
 	{

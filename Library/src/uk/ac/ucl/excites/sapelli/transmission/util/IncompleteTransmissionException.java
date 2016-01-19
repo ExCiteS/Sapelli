@@ -28,25 +28,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmissio
 public class IncompleteTransmissionException extends TransmissionReceivingException
 {
 
-	private static final long serialVersionUID = 1L;
-
-	private Transmission<?> transmission;
-	
-	/**
-	 * @param transmission
-	 */
-	public IncompleteTransmissionException(Transmission<?> transmission)
-	{
-		this(transmission, "Incomplete transmission");
-	}
-	
-	/**
-	 * @param transmission
-	 */
-	public IncompleteTransmissionException(SMSTransmission<?> transmission)
-	{
-		this(transmission, "Incomplete transmission, " + (transmission.getTotalNumberOfParts() - transmission.getCurrentNumberOfParts()) + "/" + transmission.getTotalNumberOfParts() + " parts missing");
-	}
+	private static final long serialVersionUID = 2L;
 
 	/**
 	 * @param transmission
@@ -54,8 +36,7 @@ public class IncompleteTransmissionException extends TransmissionReceivingExcept
 	 */
 	public IncompleteTransmissionException(Transmission<?> transmission, String detailMessage)
 	{
-		super(detailMessage);
-		this.transmission = transmission;	
+		super(transmission, detailMessage);
 	}
 	
 	/**
@@ -65,16 +46,23 @@ public class IncompleteTransmissionException extends TransmissionReceivingExcept
 	 */
 	public IncompleteTransmissionException(Transmission<?> transmission, String detailMessage, Throwable cause)
 	{
-		super(detailMessage, cause);
-		this.transmission = transmission;
+		super(transmission, detailMessage, cause);
 	}
 
 	/**
-	 * @return the transmission
+	 * @param transmission
 	 */
-	public Transmission<?> getTransmission()
+	public IncompleteTransmissionException(Transmission<?> transmission)
 	{
-		return transmission;
+		super(transmission, "Incomplete transmission");
+	}
+	
+	/**
+	 * @param transmission
+	 */
+	public IncompleteTransmissionException(SMSTransmission<?> transmission)
+	{
+		super(transmission, "Incomplete transmission, " + (transmission.getTotalNumberOfParts() - transmission.getCurrentNumberOfParts()) + "/" + transmission.getTotalNumberOfParts() + " parts missing");
 	}
 
 }

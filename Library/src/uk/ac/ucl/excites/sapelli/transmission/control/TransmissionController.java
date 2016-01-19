@@ -18,8 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -27,13 +29,14 @@ import org.joda.time.DateTime;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -62,6 +65,10 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTr
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionReceivingException;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * @author mstevens, benelliott
@@ -85,9 +92,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	private final PayloadAckHandler payloadAckHandler;
 	
 	// Logger:
-	protected Logger logger;
+	private Logger logger;
 	
-	public TransmissionController(TransmissionClient client, FileStorageProvider fileStorageProvider) throws DBException
+	public TransmissionController(TransmissionClient client) throws DBException
 	{
 		// Client:
 		this.transmissionClient = client;
@@ -104,16 +111,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		
 		// Payload ACK handler:
 		this.payloadAckHandler = new PayloadAckHandler();
-		
-		// Logger:
-		try
-		{
-			logger = createLogger(fileStorageProvider);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	/**
@@ -121,22 +118,48 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 */
 	protected void initialise()
 	{
+		// Create logger:
+		try
+		{
+			this.logger = createLogger(getLogsFolder());
+		}
+		catch(Exception e)
+		{
+			transmissionClient.logError("Could not initialise logger", e);
+		}
+		
 		addLogLine("Application: " + getApplicationInfo());
 		addLogLine("TRANSMISSION CONTROLLER CREATED");
 	}
 	
 	/**
-	 * To be overridden
+	 * @return an existing(!) and writable folder for storage of log files
 	 */
-	protected Logger createLogger(FileStorageProvider fileStorageProvider) throws FileStorageException, IOException
+	protected abstract File getLogsFolder() throws FileStorageException;
+	
+	/**
+	 * May be overridden.
+	 * 
+	 * @param logsFolder
+	 * @return
+	 * @throws FileStorageException
+	 * @throws IOException
+	 */
+	protected Logger createLogger(File logsFolder) throws FileStorageException, IOException
 	{
-		return new Logger(fileStorageProvider.getLogsFolder(true).getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), true);
+		return new Logger(logsFolder.getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), true);
 	}
 	
-	public boolean deleteTransmissionUponDecoding()
+	/**
+	 * By default transmissions are not deleted after decoding
+	 * Subclasses may override this if transmissions should be deleted after decoding.
+	 * 
+	 * @param transmission
+	 * @return
+	 */
+	public boolean deleteTransmissionUponDecoding(Transmission<?> transmission)
 	{
-		// TODO was abstract ......
-		return false;
+		return false; // default
 	}
 	
 	public abstract SMSClient getSMSClient();
@@ -147,38 +170,78 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	// ================= SEND =================
 	
-	public void sendRecords(Model model, Correspondent receiver) throws Exception
+	public synchronized void sendRecords(Model model, Correspondent receiver)
 	{
 		List<Record> recsToSend = new ArrayList<Record>();
 		
 		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
-		//recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
+		CollectionUtils.addAllIgnoreNull(recsToSend, transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
 		
 		//Also include transmittable records which have a transmission which was never sent or not received since the timeout:
-		// recsToSend.addAll(transmissionStore.retrieveTransmittableRecordsWithTimedOutTransmission(receiver, model, ));
+		//CollectionUtils.addAllIgnoreNull(recsToSend, transmissionStore.retrieveTransmittableRecordsWithTimedOutTransmission(receiver, model, 5));
 		// TODO what is a good timeout??
 		
 		addLogLine("Records to send: " + recsToSend.size());
-		// while we still have records to send...
-		while(!recsToSend.isEmpty())
+
+		// Create RecordsPayloads & Transmissions (add as many records as possible to each):
+		RecordsPayload payload = null;
+		Iterator<Record> recsToSendIt = recsToSend.iterator();
+		Record record = null;
+		while(recsToSendIt.hasNext() || record != null || payload != null)
 		{
-			// Create a new Payload:
-			RecordsPayload payload = new RecordsPayload(receiver.favoursLosslessPayload());
-
-			// Create a new Transmission:
-			Transmission<?> transmission = createOutgoingTransmission(payload, receiver);
-
-			// Add as many records to the Payload as possible (this call will remove from the list the records that were successfully added to the payload):
-			addLogLine("Trying to add " + recsToSend.size() + " records to payload...");
-			payload.addRecords(recsToSend);
-			addLogLine("Records that weren't added: " + recsToSend.size() + "; payload has " + payload.getNumberOfRecords());
+			// Get next record if needed:
+			if(record == null && recsToSendIt.hasNext())
+				record = recsToSendIt.next();
 			
-			// Send transmission:
-			storeAndSend(transmission);
+			// Create new payload & transmission if needed:
+			if(payload == null)
+			{
+				// Create a new Payload...
+				payload = new RecordsPayload(receiver.favoursLosslessPayload());
+
+				// ... and a new Transmission:
+				createOutgoingTransmission(payload, receiver);
+			}
+
+			// Add record if we have one:
+			if(record != null)
+			{
+				try
+				{
+					payload.addRecord(record); // may throw any of the 4 Exception types caught below
+					
+					// if we get here the record was added successfully...
+					record = null; // make sure we use a new record in the next iteration
+					continue; // go to next iteration to try to add more records
+				}
+				catch(IllegalArgumentException e) // may happen if record is not transmittable or not fully filled
+				{	// skip record and move on:
+					record = null;
+					continue;
+				}
+				catch(TransmissionCapacityExceededException e) // when the payload/transmission is full
+				{
+					/* do nothing, current transmission will be sent below and current record
+					 * will be added to a new payload/transmission in the next iteration.*/
+				}
+				catch(TransmissionSendingException | IllegalStateException e)
+				{	// should never happen really
+					transmissionClient.logError("Error upon preparing RecordsPayload", e);
+					payload = null;
+					continue;
+				}
+			}
+			
+			// Store & send the transmission:
+			boolean sent = storeAndSend(payload.getTransmission());
 			
 			// Associate the transmittables with the transmission:
-			for(Record recBeingSent : payload.getRecords())
-				transmissionStore.storeTransmittableRecord(receiver, recBeingSent.getReference(), transmission);
+			if(sent)
+				for(Record recBeingSent : payload.getRecords())
+					transmissionStore.storeTransmittableRecord(receiver, recBeingSent.getReference(), payload.getTransmission());
+			
+			// Make payload null so a new was is created in the next iteration:
+			payload = null;
 		}
 	}
 	
@@ -200,30 +263,32 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 	}
 	
-	private void storeAndSend(Transmission<?> transmission) throws Exception
+	/**
+	 * @param transmission
+	 * @return whether preparation, storing & sending were successful or not
+	 */
+	private boolean storeAndSend(Transmission<?> transmission)
 	{
-		addLogLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: " + transmission.getPayload().getType(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
+		addLogLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: " + transmission.getPayloadType(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
 		
-		// Prepare transmission for storage & sending:
-		transmission.prepare();
-		
-		// Store "in-flight transmissions" to get local ID:
-		transmissionStore.store(transmission); // update record now that it is prepared (payload hash has been computed, etc.)
-		
-		// actually send the transmission:
-		transmission.send(this);
-	}
-	
-	public void updateSentTransmission(Transmission<?> transmission)
-	{	// TODO is this ever used?
 		try
 		{
-			transmissionStore.store(transmission); // TODO only update not insert?
+			// Prepare transmission for storage & sending:
+			transmission.prepare();
+			
+			// Store "in-flight transmissions" to get local ID:
+			transmissionStore.store(transmission); // update record now that it is prepared (payload hash has been computed, etc.)
+			
+			// actually send the transmission:
+			transmission.send(this);
+			
+			// Success:
+			return true;
 		}
 		catch(Exception e)
 		{
-			logger.addLine("Failed to update sent transmission");
-			e.printStackTrace();
+			transmissionClient.logError("Error upon preparing/storing/sending transmission", e);
+			return false;
 		}
 	}
 	
@@ -235,69 +300,39 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 * Method that does most of the work for receiving Transmissions (if complete, read contents and act on them).
 	 * 
 	 * @param transmission the transmission that has been received, it is assumed to be complete!
-	 * @return true if the transmission was successfully "acted on" i.e. it was complete and no errors occurred when reading it
+	 * @throws TransmissionReceivingException when something goes wrong
 	 */
-	protected boolean doReceive(Transmission<?> transmission) throws Exception
+	protected void doReceive(Transmission<?> transmission) throws TransmissionReceivingException
 	{	
 		addLogLine(	"INCOMING", "Transmission", transmission.getType().toString(),
 					"From: " + transmission.getCorrespondent());
 
-		// Receive (i.e. decode) the transmission:
+		// "Receive" the transmission (merge parts, decode, verify):
+		transmission.receive(); // throws TransmissionReceivingException
+		
+		// Store/update transmission now that the payload type is known:
 		try
 		{
-			// "Receive" the transmission (merge parts, decode, verify):
-			transmission.receive();
-			
-			// Store/update transmission now that the payload type is known:
 			transmissionStore.store(transmission);
+		}
+		catch(DBException dbE)
+		{
+			throw new TransmissionReceivingException(transmission, "Error upon storing/updating received transmission", dbE);
+		}
 		
-			// Handle/receive the payload:
-			payloadReceiver.receive(transmission, transmission.getPayload()); // TODO call payload.deserialise() from here instead of transmission.receive()??
+		// Handle/receive the payload (also deals with PayloadDecodeExceptions):
+		payloadReceiver.receive(transmission.getPayload()); // throws TransmissionReceivingException
 			
-			// Acknowledge reception if needed
-			if(transmission.getPayload().acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)
-			{
-				try
-				{	// TODO this won't work for http? an http response is not quite like a sending a transmission, right?
-					storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
-				}
-				catch(Exception e)
-				{
-					throw new Exception("Error upon sending ACK", e);
-				}
-			}
+		// Acknowledge reception if needed
+		if(transmission.getPayload().acknowledgeReception())
+			storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
 			
-			// Delete transmission (and parts) from store:
-			if(deleteTransmissionUponDecoding())
-				transmissionStore.deleteTransmission(transmission);
-			
-			return true;
-		}
-		catch(UnknownModelException e)
-		{
-			// TODO send model request payload, would make more sense to do this in the payload receiver but the exception is thrown from transmission.receive()
-			return false;
-		}
-		catch(Exception e)
-		{
-			throw new Exception("Exception when trying to receive/decode transmission", e);
-		}
+		// Delete transmission (and parts) from store if needed:
+		if(deleteTransmissionUponDecoding(transmission))
+			transmissionStore.deleteTransmission(transmission);
 	}
 	
 	// ----- "handle"/"receive" methods for different transmission types:
-
-	public void receive(HTTPTransmission httpTransmission) throws Exception
-	{
-		/*HTTPTransmission existingTransmission = transmissionStore.retrieveHTTPTransmission(httpTransmission.getPayload().getType(), httpTransmission.getPayloadHash());
-		if(existingTransmission == null)
-		{
-			// Store/Update transmission unless it was successfully received in its entirety: TODO HTTP transmissions will usually be received in entirety??
-			if(!doReceive(httpTransmission))
-				transmissionStore.store(httpTransmission);
-		}
-		// else have already seen this transmission... TODO is this check necessary?
-		*/
-	}
 	
 	/**
 	 * @param phoneNumber
@@ -318,7 +353,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	/**
 	 * @param msg
 	 */
-	public void receiveSMS(Message<?, ?> msg) throws Exception
+	public synchronized void receiveSMS(Message<?, ?> msg) throws Exception
 	{
 		try
 		{
@@ -355,7 +390,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 * @return whether or not future resend requests may needed for this transmission 
 	 * @throws Exception
 	 */
-	public void sendSMSResendRequest(int localID) throws Exception
+	public void sendSMSResendRequest(int localID)
 	{
 		// Query for the subject transmission:
 		Transmission<?> trans = transmissionStore.retrieveTransmissionOrNull(true, localID);
@@ -476,7 +511,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	}
 	
 	/**
-	 * Helper class with "handle" methods for different payload types (called once the transmission is complete)
+	 * Helper class with "handle" methods for different payload types (called once the transmission is complete).
 	 * 
 	 * @author benelliott, mstevens
 	 */
@@ -486,13 +521,40 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		/**
 		 * Receive/decode payload
 		 * 
-		 * @param transmission
 		 * @param payload
-		 * @throws Exception
+		 * @throws TransmissionReceivingException
 		 */
-		public void receive(Transmission<?> transmission, Payload payload) throws Exception
+		public void receive(Payload payload) throws TransmissionReceivingException
 		{
-			payload.handle(this);
+			// Deal with possible PayloadDecodeException:
+			if(payload.hasDecodeException())
+			{
+				PayloadDecodeException exception = payload.getDecodeException();
+				
+				// Deal with UnknownModelException cause:
+				if(exception.getCause() instanceof UnknownModelException)
+				{
+					UnknownModelException ume = (UnknownModelException) exception.getCause();
+					// Send model request payload:
+					storeAndSend(createOutgoingTransmission(new ModelRequestPayload(payload.getTransmission(), ume.getModelID()), payload.getTransmission().getCorrespondent()));
+				}
+				
+				// re-throw:
+				throw exception;
+			}
+			
+			// Handle payload:
+			try
+			{
+				payload.handle(this);
+			}
+			catch(Exception e)
+			{
+				if(e instanceof TransmissionReceivingException)
+					throw (TransmissionReceivingException) e;
+				else
+					throw new TransmissionReceivingException(payload.getTransmission(), "Error upon handing payload (type: " + payload.getType() + ")", e);
+			}
 		}
 		
 		@Override
@@ -517,7 +579,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				subject.getPayload().handle(payloadAckHandler);
 			}
 			else
-				System.err.println("No matching transmission (ID " + ack.getSubjectSenderSideID() + "; payload hash: " + ack.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + ack.getTransmission().getCorrespondent());
+				transmissionClient.logError("No matching transmission (ID " + ack.getSubjectSenderSideID() + "; payload hash: " + ack.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + ack.getTransmission().getCorrespondent());
 		}
 		
 		@Override
@@ -547,7 +609,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				}
 			}
 			else
-				System.err.println("No matching transmission (ID " + resendReq.getSubjectSenderSideID() + "; payload hash: " + resendReq.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + resendReq.getTransmission().getCorrespondent());			
+				transmissionClient.logError("No matching transmission (ID " + resendReq.getSubjectSenderSideID() + "; payload hash: " + resendReq.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + resendReq.getTransmission().getCorrespondent());			
 		}
 
 		@Override
@@ -555,19 +617,19 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		{
 			if(logger != null)
 			{
-				StringBuilder schemataString = new StringBuilder();
 				Map<Schema, List<Record>> recordsBySchema = recordsPayload.getRecordsBySchema();
-				for (Schema schema : recordsPayload.getSchemata())
+				TransactionalStringBuilder bldr = new TransactionalStringBuilder(", ");
+				for(Schema schema : recordsPayload.getSchemata())
 				{
-					schemataString.append(schema.getName());
-					schemataString.append(" (");
-					schemataString.append((recordsBySchema.get(schema) != null) ? recordsBySchema.get(schema).size() : -1);
-					schemataString.append(")");
-					schemataString.append(",");
+					bldr.openTransaction(" ");
+					bldr.append(schema.getName());
+					bldr.append("(");
+					bldr.append("" + (recordsBySchema.get(schema) != null ? recordsBySchema.get(schema).size() : 0), false);
+					bldr.append(")", false);
+					bldr.commitTransaction();
 				}
-				logger.addLine("INCOMING RECORDS", "TOTAL: "+recordsPayload.getNumberOfRecords(), "SCHEMATA: "+schemataString.toString());
+				logger.addLine("INCOMING RECORDS", "TOTAL: " + recordsPayload.getNumberOfRecords(), "SCHEMATA: " + bldr.toString());
 			}
-			
 			try
 			{
 				// Store received records...
@@ -583,7 +645,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		public void handle(ModelPayload projectModelPayload) throws Exception
 		{
 			// TODO
-			addLogLine("INCOMING MODEL", "ID: "+projectModelPayload.getModel().getID(), "NAME: "+projectModelPayload.getModel().getName());
+			addLogLine("INCOMING MODEL", "ID: "+projectModelPayload.getModel().getID(), "NAME: " + projectModelPayload.getModel().getName());
 			// add model from payload
 			// try to decode records from unknown model
 		}
@@ -592,8 +654,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
 		{
 			// TODO
-			addLogLine("INCOMING MODEL REQUEST", "ID: "+modelRequestPayload.getUnknownModelID());
+			addLogLine("INCOMING MODEL REQUEST", "ID: " + modelRequestPayload.getUnknownModelID());
 			// look for requested model
+			
+			// TODO report that project is missing on receiver (tray alert?)
 			
 			// create projectModelPayload and send
 		}
@@ -606,8 +670,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(Payload customPayload, int type) throws Exception
 		{
-			addLogLine("INCOMING CUSTOM", "TRANS ID: "+customPayload.getTransmission().getLocalID());
-			System.err.println("Receiving custom payload (type: " + type + ") not supported!");
+			addLogLine("INCOMING CUSTOM", "TRANSMISSION ID: " + customPayload.getTransmission().getLocalID());
+			transmissionClient.logError("Receiving custom payload (type: " + type + ") not supported!");
 		}
 		
 	}
@@ -622,8 +686,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(RecordsPayload recordsPayload) throws Exception
 		{
-			// does nothing for now
-			// TODO we could delete the transmittables here, but then we lose information about the records having been sent
+			// does nothing (for now)
+			// Note: We could delete the transmittables here, but then we lose an easy way to query which records have been sent to which receiver(s)
 		}
 
 		@Override
@@ -641,19 +705,19 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
 		{
-			// TODO
+			// TODO ?
 		}
 
 		@Override
 		public void handle(ModelPayload projectModelPayload) throws Exception
 		{
-			// TODO
+			// TODO ?
 		}
 
 		@Override
 		public void handle(Payload customPayload, int type) throws Exception
 		{
-			// TODO
+			// TODO deal with custom payload
 		}
 		
 	}
@@ -666,6 +730,14 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			logger.addLine(fields);
 	}
 	
+	/**
+	 * @return the transmissionStore
+	 */
+	public TransmissionStore getTransmissionStore()
+	{
+		return transmissionStore;
+	}
+
 	@Override
 	public void finalize()
 	{

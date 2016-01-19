@@ -320,7 +320,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		@Override
 		protected CharSequence getItemString(SendSchedule sendSchedule)
 		{
-			return SendConfigurationHelpers.getReceiverLabelText(sendSchedule.getReceiver(), false);
+			return SendConfigurationHelpers.getReceiverLabelText(sendSchedule.getReceiver(), true);
 		}
 
 		@Override

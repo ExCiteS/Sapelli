@@ -28,10 +28,11 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
 public abstract class Correspondent
 {
 	
+	// STATIC -----------------------------------------------------------------
 	static public final String UNKNOWN_SENDER_NAME = "anonymous_sender";
 	
 	static public final int CORRESPONDENT_NAME_MAX_LENGTH_CHARS = 128;
-	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS = 512;
+	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_CHARS = 2048;
 	static public final int CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES = 32;
 	
 	static public interface Handler
@@ -44,9 +45,10 @@ public abstract class Correspondent
 		public void handle(GeoKeyAccount geokeyAccount);
 		
 	}
-	
+
+	// DYNAMIC ----------------------------------------------------------------
 	private Integer localID;
-	private final String name;
+	private String name;
 	private final Transmission.Type transmissionType;
 	//private String key; TODO ??
 	// encryption key TODO ??
@@ -59,37 +61,41 @@ public abstract class Correspondent
 	private boolean userDeleted = false;
 	
 	/**
+	 * @param localID may be {@code null} if Correspondent has never been stored
 	 * @param name
 	 * @param transmissionType
 	 */
-	public Correspondent(String name, Transmission.Type transmissionType)
+	public Correspondent(Integer localID, String name, Transmission.Type transmissionType)
 	{
-		if(name == null || name.isEmpty())
-			throw new IllegalArgumentException("Please provide a non-empty name String");
-		if(name.length() > CORRESPONDENT_NAME_MAX_LENGTH_CHARS)
-			throw new IllegalArgumentException("Correspondent name is too long");
-		this.name = name;
+		this.localID = localID;
+		setName(name);
 		this.transmissionType = transmissionType;
 	}
 	
-	/**
-	 * @return the localID
-	 */
-	public int getLocalID()
-	{
-		return localID;
-	}
-
 	public boolean isLocalIDSet()
 	{
 		return localID != null;
 	}
 	
 	/**
-	 * @param localID the localID to set
+	 * @return
+	 * @throws IllegalStateException when no local ID has been set
 	 */
-	public void setLocalID(int localID)
+	public int getLocalID() throws IllegalStateException
 	{
+		if(localID == null)
+			throw new IllegalStateException("LocalID has not been set yet");
+		return localID.intValue();
+	}
+	
+	/**
+	 * @param localID the localID to set
+	 * @throws IllegalStateException when the Transmission already has a localID which is different from the given one
+	 */
+	public void setLocalID(int localID) throws IllegalStateException
+	{
+		if(this.localID != null && this.localID.intValue() != localID)
+			throw new IllegalStateException("A different localID value has already been set (existing: " + this.localID + "; new: " + localID + ")!");
 		this.localID = localID;
 	}
 
@@ -99,6 +105,18 @@ public abstract class Correspondent
 	public String getName()
 	{
 		return name;
+	}
+
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(String name)
+	{
+		if(name == null || name.isEmpty())
+			throw new IllegalArgumentException("Please provide a non-empty name String");
+		if(name.length() > CORRESPONDENT_NAME_MAX_LENGTH_CHARS)
+			throw new IllegalArgumentException("Correspondent name is too long");
+		this.name = name;
 	}
 
 	/**

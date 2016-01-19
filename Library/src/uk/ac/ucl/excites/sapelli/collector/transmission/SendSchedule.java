@@ -111,8 +111,9 @@ public class SendSchedule
 
 	/**
 	 * @return the id
+	 * @throws IllegalStateException when no ID has been set
 	 */
-	public int getID()
+	public int getID() throws IllegalStateException
 	{
 		if(id == null)
 			throw new IllegalStateException("ID has not been set yet");
@@ -121,8 +122,9 @@ public class SendSchedule
 
 	/**
 	 * @param id the id to set
+	 * @throws IllegalStateException when the Transmission already has an ID which is different from the given one
 	 */
-	public void setID(int id)
+	public void setID(int id) throws IllegalStateException
 	{
 		if(this.id != null && this.id.intValue() != id)
 			throw new IllegalStateException("A different id value has already been set (existing: " + this.id + "; new: " + id + ")!");

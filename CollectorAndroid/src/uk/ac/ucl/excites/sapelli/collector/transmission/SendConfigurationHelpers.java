@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import android.graphics.Typeface;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.util.Log;
@@ -34,6 +33,7 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.GeoKeyReceiverFragm
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.SMSReceiverFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.CustomTypefaceSpan;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
@@ -45,8 +45,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
  */
 public final class SendConfigurationHelpers
 {
-	
-	static public final Typeface FONT_SANS_SERIF_CONDENSED = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
 
 	private SendConfigurationHelpers() {}
 	
@@ -378,7 +376,7 @@ public final class SendConfigurationHelpers
 			if(receiverAddressStringProvider.addressStr != null)
 			{
 				SpannableString condensedAddress = new SpannableString(receiverAddressStringProvider.addressStr);
-				condensedAddress.setSpan(new CustomTypefaceSpan(FONT_SANS_SERIF_CONDENSED), 0, receiverAddressStringProvider.addressStr.length(), 0);
+				condensedAddress.setSpan(new CustomTypefaceSpan(ProjectManagerActivity.FONT_SANS_SERIF_CONDENSED), 0, receiverAddressStringProvider.addressStr.length(), 0);
 				return TextUtils.concat(receiver.getName(), multiLine ? "\n" : " ", "[", condensedAddress, "]");	
 			}
 		}
@@ -398,7 +396,9 @@ public final class SendConfigurationHelpers
 		@Override
 		public void handle(GeoKeyAccount geokeyAccount)
 		{
-			addressStr = geokeyAccount.getUsername() + "@" + geokeyAccount.getUrl();
+			addressStr =
+				(geokeyAccount.hasUserDisplayName() ? geokeyAccount.getUserDisplayName() + "@" : "") +
+				URLUtils.stripTrailingSlash(URLUtils.stripHTTP(geokeyAccount.getUrl()));
 		}
 		
 		@Override

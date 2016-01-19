@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -43,7 +42,6 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 {
 	
 	// STATIC -------------------------------------------------------
-	
 	public static final int MAX_RESEND_REQUESTS = 5;
 	
 	/**
@@ -262,7 +260,7 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	}
 	
 	@Override
-	public void resend(TransmissionController controller) throws IOException, TransmissionCapacityExceededException, TransmissionSendingException
+	public void resend(TransmissionController controller) throws TransmissionCapacityExceededException, TransmissionSendingException
 	{
 		// Clear sentAt of messages (otherwise they can't be resent):
 		for(M m : parts)

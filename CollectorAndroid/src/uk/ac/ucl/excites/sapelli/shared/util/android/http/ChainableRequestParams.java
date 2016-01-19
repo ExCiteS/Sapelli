@@ -18,7 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.shared.util.android.http;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+
 import com.loopj.android.http.RequestParams;
+
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 
 /**
  * @author mstevens
@@ -39,6 +44,29 @@ public class ChainableRequestParams extends RequestParams
 	public ChainableRequestParams putt(String key, Object value)
 	{
 		super.put(key, value);
+		return this;
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.loopj.android.http.RequestParams#put(java.lang.String, java.io.File)
+	 */
+	public ChainableRequestParams putt(String key, File file)
+	{
+		return putt(key, file, null);
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.loopj.android.http.RequestParams#put(java.lang.String, java.io.File, String)
+	 */
+	public ChainableRequestParams putt(String key, File file, String contentType)
+	{
+		if(!FileHelpers.isReadableFile(file))
+			return this;
+		try
+		{
+			super.put(key, file, contentType);
+		}
+		catch(FileNotFoundException fnfe) { /*should never happen*/ }
 		return this;
 	}
 	

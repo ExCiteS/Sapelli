@@ -34,6 +34,7 @@
 		<charsetinfo-folder>${project.basedir}/charsetinfo</charsetinfo-folder>
 		<resources-folder>${project.basedir}/res</resources-folder>
 		<xerces-src-folder>${project.build.directory}/xerces-src</xerces-src-folder>
+		<validator-src-folder>${project.build.directory}/validator-src</validator-src-folder>
 	</properties>
 
 	<dependencies>
@@ -81,11 +82,6 @@
 			<groupId>com.googlecode.libphonenumber</groupId>
 			<artifactId>libphonenumber</artifactId>
 			<version>7.2.2</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-validator</groupId>
-			<artifactId>commons-validator</artifactId>
-			<version>1.5.0</version>
 		</dependency>
 		<!-- <dependency> <groupId>com.madgag.spongycastle</groupId> <artifactId>core</artifactId> 
 			<version>1.50.0.0</version> </dependency> -->
@@ -212,6 +208,32 @@
 							</artifactItems>
 						</configuration>
 					</execution>
+					<execution>
+						<id>unpack-and-filter-validator-src</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>commons-validator</groupId>
+									<artifactId>commons-validator</artifactId>
+									<version>1.5.0</version>
+									<classifier>sources</classifier>
+									<overWrite>true</overWrite>
+									<includes>
+										org/apache/commons/validator/routines/DomainValidator.java,
+										org/apache/commons/validator/routines/EmailValidator.java,
+										org/apache/commons/validator/routines/InetAddressValidator.java,
+										org/apache/commons/validator/routines/RegexValidator.java,
+										org/apache/commons/validator/routines/UrlValidator.java
+									</includes>
+									<outputDirectory>${validator-src-folder}</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -220,7 +242,7 @@
 				<artifactId>build-helper-maven-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>add-xerces-src</id>
+						<id>add-additional-src-folders</id>
 						<phase>generate-sources</phase>
 						<goals>
 							<goal>add-source</goal>
@@ -228,6 +250,7 @@
 						<configuration>
 							<sources>
 								<source>${xerces-src-folder}</source>
+								<source>${validator-src-folder}</source>
 							</sources>
 						</configuration>
 					</execution>

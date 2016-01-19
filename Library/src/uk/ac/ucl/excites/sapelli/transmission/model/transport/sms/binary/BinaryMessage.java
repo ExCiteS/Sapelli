@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * Binary SMS message
@@ -244,7 +245,7 @@ public class BinaryMessage extends Message<BinaryMessage, byte[]>
 	}
 
 	@Override
-	protected void doSend(SMSClient smsClient)
+	protected void doSend(SMSClient smsClient) throws TransmissionSendingException
 	{
 		smsClient.send(transmission.getCorrespondent(), this);
 	}

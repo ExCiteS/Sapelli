@@ -18,14 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.collector.transmission.control;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.joda.time.DateTime;
 
 import android.telephony.PhoneNumberUtils;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.AndroidGeoKeyClient;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -47,13 +47,28 @@ public class AndroidTransmissionController extends TransmissionController
 
 	private final CollectorApp app;
 	private AndroidSMSClient smsClient;
-	private GeoKeySapelliClient gkSapClient;
+	private AndroidGeoKeyClient gkClient;
 	
 	public AndroidTransmissionController(CollectorApp app) throws DBException
 	{
-		super(app.collectorClient, app.getFileStorageProvider());
+		super(app.collectorClient);
 		this.app = app;
 		initialise();
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController#getLogsFolder()
+	 */
+	@Override
+	protected File getLogsFolder() throws FileStorageException
+	{
+		return app.getFileStorageProvider().getLogsFolder(true);
+	}
+	
+	@Override
+	protected Logger createLogger(File logsFolder) throws FileStorageException, IOException
+	{
+		return new AndroidLogger(logsFolder.getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), false, true);
 	}
 
 	@Override
@@ -73,15 +88,9 @@ public class AndroidTransmissionController extends TransmissionController
 	@Override
 	public GeoKeyClient getGeoKeyClient()
 	{
-		if(gkSapClient == null)
-			gkSapClient = new GeoKeySapelliClient(app);
-		return gkSapClient;
-	}
-
-	@Override
-	protected Logger createLogger(FileStorageProvider fileStorageProvider) throws FileStorageException, IOException
-	{
-		return new AndroidLogger(fileStorageProvider.getLogsFolder(true).getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), false, true);
+		if(gkClient == null)
+			gkClient = new AndroidGeoKeyClient(app);
+		return gkClient;
 	}
 	
 	@Override

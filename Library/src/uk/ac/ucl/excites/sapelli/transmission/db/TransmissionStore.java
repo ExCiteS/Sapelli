@@ -190,14 +190,14 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	//	Transmittable Records schema:
 	static final public Schema TRANSMITTABLE_RECORDS_SCHEMA = TransmissionClient.CreateSchemaWithSuffixedTableName(TRANSMISSION_MANAGEMENT_MODEL, "Transmittable" + Record.class.getSimpleName(), "s");
 	//		Columns:
-	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_RECEIVER = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(CORRESPONDENT_SCHEMA, false));
+	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_RECEIVER = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(CORRESPONDENT_SCHEMA, false));
 	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_SCHEMA = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(Model.SCHEMA_SCHEMA, false));
 	static public final ByteArrayColumn TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ByteArrayColumn("PKValueBytes", false));
 	static public final ForeignKeyColumn TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION = TRANSMITTABLE_RECORDS_SCHEMA.addColumn(new ForeignKeyColumn(SENT_TRANSMISSION_SCHEMA, true));
 	//		Set PK and seal:
 	static
 	{
-		TRANSMITTABLE_RECORDS_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(TRANSMITTABLE_RECORDS_RECEIVER, TRANSMITTABLE_RECORDS_COLUMN_SCHEMA, TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES), true /*seal!*/);
+		TRANSMITTABLE_RECORDS_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(TRANSMITTABLE_RECORDS_COLUMN_RECEIVER, TRANSMITTABLE_RECORDS_COLUMN_SCHEMA, TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES), true /*seal!*/);
 	}
 	//		ColumnPointers (helpers):
 	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_TRANSMISSION_ID = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, TRANSMISSION_COLUMN_ID);
@@ -231,7 +231,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		return received ? receivedCache : sentCache;
 	}
 	
-	public void store(Correspondent correspondent) throws Exception
+	public void store(Correspondent correspondent) throws DBException
 	{
 		// Start transaction
 		recordStore.startTransaction();
@@ -240,7 +240,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		{
 			doStoreCorrespondent(correspondent);
 		}
-		catch(Exception e)
+		catch(DBException e)
 		{
 			recordStore.rollbackTransactions();
 			client.logError("Error upon storing correspondent", e);
@@ -272,6 +272,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		// Null check:
 		if(correspondent == null)
 			return null;
+
+		client.logInfo("Storing correspondent: " + correspondent.getName() + " (localid: " + (correspondent.isLocalIDSet() ? correspondent.getLocalID() : "null") + ")");
 		
 		Record cRec = getCorrespondentRecord(correspondent);
 		
@@ -289,6 +291,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			// Set local transmissionID in object as on the record: 
 			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(cRec).intValue());
 		
+		client.logInfo("Stored correspondent: " + correspondent.getName() + " (localid: " + (correspondent.isLocalIDSet() ? correspondent.getLocalID() : "null") + ")");
+		
 		return cRec.getReference();
 	}
 	
@@ -305,8 +309,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	{
 		if(correspondent == null)
 			return null;
-		else if(correspondent.isLocalIDSet() && !forceUpdate)
-			return CORRESPONDENT_SCHEMA.createRecordReference(CORRESPONDENT_COLUMN_ID.convert(correspondent.getLocalID()));
+		else if(correspondent.isLocalIDSet() /*already stored*/ && !forceUpdate)
+			return CORRESPONDENT_SCHEMA.createRecordReference(correspondent.getLocalID());
 		else if(storeIfNeeded || forceUpdate)
 			return doStoreCorrespondent(correspondent);
 		else
@@ -337,7 +341,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 				corr = null; // TODO !!!
 				break;
 			case GeoKey:
-				corr = new GeoKeyAccount(name, address);
+				corr = new GeoKeyAccount(localID, name, address);
 				break;
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
@@ -454,7 +458,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		getCache(transmission.received).put(transmission.getLocalID(), transmission);
 	}
 	
-	public void store(Transmission<?> transmission) throws Exception
+	public void store(Transmission<?> transmission) throws DBException
 	{
 		// Start transaction
 		recordStore.startTransaction();
@@ -484,7 +488,9 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		catch(Exception e)
 		{
 			recordStore.rollbackTransactions();
-			throw e;
+			if(e instanceof DBException)
+				throw (DBException) e;
+			throw new DBException(e);
 		}
 		
 		// Commit transaction
@@ -773,6 +779,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		}
 		catch(Exception e)
 		{
+			client.logError("Error upon deleting translission (local ID: " + transmission.getLocalID() + ")", e);
 			try
 			{
 				recordStore.rollbackTransactions();
@@ -863,8 +870,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * (and therefore intended for its receiver).
 	 * Note that the result should be the (bar order) as getting the records from the Transmission's RecordsPayload.
 	 * 
-	 * TODO will we really need this?
-	 * 
 	 * @param correspondent
 	 * @param model
 	 * @param transmission
@@ -898,9 +903,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			if(transmission == null || transmission.getLocalID() != tID)
 			{
 				transmission = retrieveTransmissionOrNull(false, tID);
-				timedOut =		transmission == null 	// unknown transmission
-							||	!transmission.isSent()	// never actually sent
-							||	(!transmission.isReceived() && transmission.getSentAt().shift(timeOutS * 1000).isBefore(TimeStamp.now())); // never received (or no ACK received) and sent longer ago than timeoutS
+				timedOut =	// unknown transmission:
+							transmission == null ||
+							// never actually sent:
+							!transmission.isSent() ||
+							// never received (or no ACK received) and sent longer ago than timeoutS
+							(!transmission.isReceived() && transmission.getSentAt().shift(timeOutS * 1000).isBefore(TimeStamp.now()));
 			}
 			if(timedOut)
 				CollectionUtils.addIgnoreNull(userRecs, getUserRecordFromTransmittable(toSendRec, model));

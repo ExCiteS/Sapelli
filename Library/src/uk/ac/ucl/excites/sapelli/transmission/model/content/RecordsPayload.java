@@ -45,10 +45,9 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
- * TODO ? implement SentCallback to mark records as sent!?
- * 
  * @author mstevens
  */
 public class RecordsPayload extends Payload
@@ -129,62 +128,61 @@ public class RecordsPayload extends Payload
 	}
 	
 	/**
-	 * To be called from the sending side. This method will remove records from the list that were successfully added to the Payload.
+	 * To be called from the sending side
 	 * 
 	 * TODO OPTIMISE THIS
 	 * 
-	 * @param records to try adding
-	 * @throws Exception
+	 * @param record the record to add
+	 * @throws IllegalStateException when no transmission is set
+	 * @throws IllegalArgumentException when schema of given record is not transmittable or the record is not filled (some non-optional, transmittable values are null)
+	 * @throws TransmissionCapacityExceededException when adding this record caused transmission capacity to be exceeded
+	 * @throws TransmissionSendingException when another Transmission preparation or I/O problem occurs
 	 */
-	public void addRecords(List<Record> records) throws Exception
+	public void addRecord(Record record) throws IllegalStateException, IllegalArgumentException, TransmissionCapacityExceededException, TransmissionSendingException
 	{
 		if(!isTansmissionSet())
 			throw new IllegalStateException("No transmission set!");
 		
-		for(Iterator<Record> iterator = records.iterator(); iterator.hasNext();) // use an iterator so we can remove elements during for loop
+		Schema schema = record.getSchema();
+
+		// Check if transmittable:
+		if(!schema.hasFlags(TransmissionClient.SCHEMA_FLAG_TRANSMITTABLE))
+			throw new IllegalArgumentException("Schema of given record(s) is not transmittable.");
+		
+		// Check if record has non-null values for all transmittable columns:
+		if(!record.isFilled(transmission.getClient().getNonTransmittableColumns(schema))) // includes auto-incr-PK columns
+			throw new IllegalArgumentException("Record is not filled (some non-optional, transmittable values are null).");
+		
+		// Model:
+		if(recordsBySchema.isEmpty())
+			// set model:
+			model = schema.getModel();
+		//	Check model:
+		else if(model != schema.getModel())
+			throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
+		
+		// Add the record to the list of attached records for this schema:
+		List<Record> recordsOfSchema = recordsBySchema.get(schema);
+		if(recordsOfSchema == null)
 		{
-			Record record = iterator.next();
-			if(!record.isFilled())
-				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping? TODO what with autoIncrementingPK? should such records be transferable at all?
-			Schema schema = record.getSchema();
-			
-			// Check if transmittable:
-			if(!schema.hasFlags(TransmissionClient.SCHEMA_FLAG_TRANSMITTABLE))
-				throw new IllegalArgumentException("Schema of given record(s) is not transmittable.");
-			
-			// Model:
-			if(recordsBySchema.isEmpty())
-				// set model:
-				model = schema.getModel();
-			//	Check model:
-			else if(model != schema.getModel())
-				throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
-			
-			// Add the record to the list of attached records for this schema:
-			List<Record> recordsOfSchema = recordsBySchema.get(schema);
-			if(recordsOfSchema == null)
-			{
-				recordsOfSchema = new ArrayList<Record>();
-				recordsBySchema.put(schema, recordsOfSchema);
-			}
-			recordsOfSchema.add(record);
-			
-			// Try serialising and check capacity:
-			if(getNumberOfRecords() > 0) // only bother checking if we have already added a record
-			{
-				try
-				{
-					transmission.checkCapacity();
-				}
-				catch(TransmissionCapacityExceededException tcee)
-				{	// adding this record caused transmission capacity to be exceeded so do not "mark" it as added (i.e. do not remove it from the input list)
-					return;
-				}
-			}
-			// If we succeeded...
-			
-			// Remove the record from the list of remaining records:
-			iterator.remove(); // (removes the last element returned by the iterator)
+			recordsOfSchema = new ArrayList<Record>();
+			recordsBySchema.put(schema, recordsOfSchema);
+		}
+		recordsOfSchema.add(record);
+		
+		// Try serialising and check capacity:
+		try
+		{
+			transmission.checkCapacity();
+		}
+		catch(TransmissionSendingException e)
+		{	// Adding this record caused transmission capacity to be exceeded, or an IO problem occurred:
+			// 	Undo adding of record:
+			recordsOfSchema.remove(record);
+			if(recordsOfSchema.isEmpty())
+				recordsBySchema.remove(schema);
+			//	Re-throw exception:
+			throw e;
 		}
 	}
 	

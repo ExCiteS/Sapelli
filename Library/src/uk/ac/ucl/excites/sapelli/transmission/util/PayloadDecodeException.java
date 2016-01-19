@@ -27,19 +27,24 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 public class PayloadDecodeException extends TransmissionReceivingException
 {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 	
 	protected Payload payload;
-	
-	public PayloadDecodeException(Payload payload, String message, Throwable cause)
-	{
-		super(message, cause);
-		this.payload = payload;
-	}
 	
 	public PayloadDecodeException(Payload payload, String message)
 	{
 		this(payload, message, null);
+	}
+	
+	public PayloadDecodeException(Payload payload, Throwable cause)
+	{
+		this(payload, "Error upon decoding payload", cause);
+	}
+	
+	public PayloadDecodeException(Payload payload, String message, Throwable cause)
+	{
+		super(payload.getTransmission(), message, cause);
+		this.payload = payload;
 	}
 
 	/**

@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * Textual SMS message in which data is encoded as 7-bit characters using the default GSM 03.38 alphabet.
@@ -262,7 +263,7 @@ public class TextMessage extends Message<TextMessage, String>
 	}
 
 	@Override
-	protected void doSend(SMSClient smsClient)
+	protected void doSend(SMSClient smsClient) throws TransmissionSendingException
 	{
 		smsClient.send(transmission.getCorrespondent(), this);
 	}

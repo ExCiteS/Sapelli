@@ -41,6 +41,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
 
@@ -184,7 +185,9 @@ public class GeoKeyFormDescriber implements FieldVisitor
 	@Override
 	public boolean enterBelongsTo(BelongsToField belongsTo, FieldParameters arguments)
 	{
-		// TODO Auto-generated method stub
+		ForeignKeyColumn fkCol = (ForeignKeyColumn) belongsTo.getColumn();
+		addFieldNode(baseField(fkCol.getQualifiedSubColumnName(Form.COLUMN_TIMESTAMP_START), false,	false, belongsTo.getRelatedForm().id + " Start Time", belongsTo.description.getText(), "DateTimeField"));
+		addFieldNode(baseField(fkCol.getQualifiedSubColumnName(Form.COLUMN_DEVICE_ID),		 false,	false, belongsTo.getRelatedForm().id + " Device Id",  belongsTo.description.getText(), "NumericField"));
 		return true;
 	}
 

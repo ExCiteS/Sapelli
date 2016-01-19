@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
@@ -30,49 +31,73 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccou
  */
 public final class GeoKeyTasks
 {
+	
+	static public enum CheckResult
+	{
+		NoInternet,
+		InvalidServer,
+		InvalidAccount,
+		NoSuchProject,
+		OK
+	};
 
 	private GeoKeyTasks() {}
 	
-	static public void VerifyServerAndAccount(final BaseActivity owner, final GeoKeyAccount account, final VerificationCallback callback)
+	/**
+	 * @param owner
+	 * @param account
+	 * @param project - may be null
+	 * @param callback
+	 */
+	static public void CheckServer(final BaseActivity owner, final GeoKeyAccount account, final Project project, final CheckCallback callback)
 	{
-		// Verify account:
-		if(!DeviceControl.isOnline(owner))
-			// We are not online...
-			callback.noInternet();
-		else
-			// We are online, perform actual verification:
-			new AsyncTaskWithWaitingDialog<BaseActivity, GeoKeyAccount, Boolean>(owner, R.string.verifyingServerAndAccount)
+		new AsyncTaskWithWaitingDialog<BaseActivity, Void, CheckResult>(owner, R.string.verifyingServerAndAccount)
+		{
+			@Override
+			protected CheckResult runInBackground(Void... params)
 			{
-				@Override
-				protected Boolean runInBackground(GeoKeyAccount... params)
-				{
-					return new GeoKeySapelliSession(getContext(), params[0]).login();
-				}
-	
-				@Override
-				protected void onPostExecute(Boolean result)
-				{
-					// Dismiss waiting dialog:
-					super.onPostExecute(result);
-					// Deal with result:
-					if(result == null || !result)
-						callback.invalidAccount(); // TODO server check
-					else
-						callback.validAccount();
-				}
-			}.execute(account);
+				if(!DeviceControl.isOnline(owner))
+					return CheckResult.NoInternet;
+				
+				// We are online, perform actual checks:
+				AndroidGeoKeyClient client = new AndroidGeoKeyClient(owner.getCollectorApp());
+				
+				//	Check if server is reachable and run the right GeoKey & extension versions:
+				if(!client.verifyServer(account))
+					return CheckResult.InvalidServer;
+				
+				//	Check if user can login:
+				if(!client.login(account))
+					return CheckResult.InvalidAccount;
+
+				// Check if given project exists on server:
+				if(project != null && client.doesServerHaveProjectForContribution(project))
+					return CheckResult.NoSuchProject;
+				
+				// All OK!:
+				return CheckResult.OK;
+			}
+
+			@Override
+			protected void onPostExecute(CheckResult result)
+			{
+				// Dismiss waiting dialog:
+				super.onPostExecute(result);
+				// Deal with result:
+				if(callback != null)
+					callback.checkDone(result);
+			}
+		}.execute();
 	}
 	
-	public interface VerificationCallback
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public interface CheckCallback
 	{
 		
-		public void noInternet();
-		
-		public void invalidServer();
-		
-		public void invalidAccount();
-		
-		public void validAccount();
+		public void checkDone(CheckResult result);
 		
 	}
 	

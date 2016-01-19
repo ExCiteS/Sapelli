@@ -32,7 +32,13 @@ public abstract class HTTPServer extends Correspondent
 	
 	public HTTPServer(String name, String url)
 	{
-		super(name, Transmission.Type.HTTP);
+		super(null, name, Transmission.Type.HTTP);
+		this.url = url;
+	}
+	
+	public HTTPServer(int localID, String name, String url)
+	{
+		super(localID, name, Transmission.Type.HTTP);
 		this.url = url;
 	}
 	

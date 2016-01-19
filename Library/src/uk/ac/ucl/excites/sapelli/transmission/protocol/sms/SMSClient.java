@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.transmission.protocol.sms;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * @author mstevens
@@ -29,8 +30,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessa
 public interface SMSClient
 {
 
-	public boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS);
+	public boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS) throws TransmissionSendingException;
 	
-	public boolean send(SMSCorrespondent receiver, TextMessage textSMS);
+	public boolean send(SMSCorrespondent receiver, TextMessage textSMS) throws TransmissionSendingException;
 	
 }

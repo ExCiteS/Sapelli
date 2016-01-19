@@ -18,7 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey;
 
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import org.apache.commons.validator.routines.EmailValidator;
+import org.apache.commons.validator.routines.UrlValidator;
+
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
+import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
+import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
@@ -28,51 +35,109 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
  */
 public class GeoKeyAccount extends Correspondent
 {
-
-	private static final char ADDRESS_SEPARATOR = '|';
-	private static final char ADDRESS_SEPARATOR_REPLACEMENT = ':';
-	private static final char ADDRESS_SEPARATOR_PREFIX = '~';
 	
+	// STATIC -----------------------------------------------------------------
+	static public final String[] ALLOWED_URL_SCHEMES = {"http", "https"};
+	
+	static public final UrlValidator URL_VALIDATOR = new UrlValidator(ALLOWED_URL_SCHEMES, UrlValidator.ALLOW_LOCAL_URLS | UrlValidator.NO_FRAGMENTS);
+	
+	static public final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
+	
+	/**
+	 * Called to create a new GeoKeyAccount.
+	 * 
+	 * @param name
+	 * @param url
+	 * @param email
+	 * @param password
+	 * @return
+	 */
+	static public GeoKeyAccount CreateNew(String name, String url, String email, String password)
+	{		
+		// Check url:
+		if(url == null || url.isEmpty())
+			throw new IllegalArgumentException("Url cannot be null or empty!");
+		// add trailing slash:
+		url = URLUtils.addTrailingSlash(url);
+		if(!URL_VALIDATOR.isValid(url))
+			throw new IllegalArgumentException("Url is invalid: " + url);
+		
+		// TODO make user credentials optional?
+		if(email == null || email.isEmpty())
+			throw new IllegalArgumentException("Username cannot be null or empty!");
+		if(!EMAIL_VALIDATOR.isValid(email))
+			throw new IllegalArgumentException("E-mail address is invalid: " + email);
+		if(password == null)
+			throw new IllegalArgumentException("Password cannot be null!");
+		
+		// Check name, use url as fallback:
+		if(name == null || name.isEmpty())
+			name = URLUtils.stripTrailingSlash(URLUtils.stripHTTP(url)); // get rid of "http[s]://" and trailing slash
+
+		return new GeoKeyAccount(
+			name,
+			url,
+			email,
+			password);
+	}
+	
+	static private final ColumnSet ADDRESS_COLUMNS = new ColumnSet("Address", false);
+	static private final StringColumn ADDRESS_COLUMN_URL = ADDRESS_COLUMNS.addColumn(new StringColumn("URL", false));
+	static private final StringColumn ADDRESS_COLUMN_EMAIL = ADDRESS_COLUMNS.addColumn(new StringColumn("Email", true));
+	static private final StringColumn ADDRESS_COLUMN_PASSWORD = ADDRESS_COLUMNS.addColumn(new StringColumn("Password", true));
+	static private final StringColumn ADDRESS_COLUMN_TOKEN = ADDRESS_COLUMNS.addColumn(new StringColumn("Token", true));
+	static private final StringColumn ADDRESS_COLUMN_USER_DISPLAY_NAME = ADDRESS_COLUMNS.addColumn(new StringColumn("UserDisplayName", true), true);
+	
+	// DYNAMIC ----------------------------------------------------------------
 	private final String url;
-	private final String username;
-	private final String password;
+	private String email;
+	private String password;
+	private String userDisplayName;
 	private String token;
 	
 	/**
+	 * Called to create a new GeoKeyAccount.
+	 * 
 	 * @param name
 	 * @param url
-	 * @param username
+	 * @param email
 	 * @param password
 	 */
-	public GeoKeyAccount(String name, String url, String username, String password)
+	private GeoKeyAccount(String name, String url, String email, String password)
 	{
-		super(name, Type.GeoKey);
-		if(url == null || url.isEmpty())
-			throw new IllegalArgumentException("Url cannot be null or empty!");
-		this.url = url + (url.endsWith("/") ? "" : "/"); // add trailing slash
-		if(username == null || username.isEmpty())
-			throw new IllegalArgumentException("Username cannot be null or empty!");
-		this.username = username;
-		if(password == null)
-			throw new IllegalArgumentException("Password cannot be null!");
+		super(null, name, Type.GeoKey);
+		this.url = url;
+		this.email = email;
 		this.password = password;
 	}
 	
 	/**
 	 * To be called upon database retrieval only.
 	 * 
+	 * @param localID
 	 * @param name
 	 * @param address
 	 */
-	public GeoKeyAccount(String name, String address)
+	public GeoKeyAccount(int localID, String name, String address)
 	{
-		super(name, Type.GeoKey);
-		String[] parts = address.split("\\" + ADDRESS_SEPARATOR, -1); // -1: allow empty Strings
-		this.url = StringUtils.deescape(parts[0], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);
-		this.username = StringUtils.deescape(parts[1], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);
-		this.password = StringUtils.deescape(parts[2], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);
-		if(parts.length > 3)
-			this.token = StringUtils.deescape(parts[3], ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX);
+		super(localID, name, Type.GeoKey);
+		// Parse address string:
+		ValueSet<ColumnSet> addressValues;
+		try
+		{
+			addressValues = new ValueSet<ColumnSet>(ADDRESS_COLUMNS, address);
+		}
+		catch(Exception e)
+		{	// should never happen
+			e.printStackTrace();
+			this.url = null;
+			return;
+		}
+		this.url = ADDRESS_COLUMN_URL.retrieveValue(addressValues);
+		this.email = ADDRESS_COLUMN_EMAIL.retrieveValue(addressValues);
+		this.password = ADDRESS_COLUMN_PASSWORD.retrieveValue(addressValues);
+		this.token = ADDRESS_COLUMN_TOKEN.retrieveValue(addressValues);
+		this.userDisplayName = ADDRESS_COLUMN_USER_DISPLAY_NAME.retrieveValue(addressValues);
 	}
 	
 	/* (non-Javadoc)
@@ -81,10 +146,7 @@ public class GeoKeyAccount extends Correspondent
 	@Override
 	public String getAddress()
 	{
-		return	StringUtils.escape(url, ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX) +
-				"|" + StringUtils.escape(username, ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX) +
-				"|" + StringUtils.escape(password, ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX) +
-				(token != null ? "|" + StringUtils.escape(token, ADDRESS_SEPARATOR, ADDRESS_SEPARATOR_REPLACEMENT, ADDRESS_SEPARATOR_PREFIX) : "");
+		return new ValueSet<ColumnSet>(ADDRESS_COLUMNS, url, email, password, token, userDisplayName).serialise();
 	}
 	
 	/**
@@ -96,11 +158,19 @@ public class GeoKeyAccount extends Correspondent
 	}
 
 	/**
-	 * @return the username
+	 * @return the email
 	 */
-	public String getUsername()
+	public String getEmail()
 	{
-		return username;
+		return email;
+	}
+
+	/**
+	 * @param email the email to set
+	 */
+	public void setEmail(String email)
+	{
+		this.email = email;
 	}
 
 	/**
@@ -112,7 +182,40 @@ public class GeoKeyAccount extends Correspondent
 	}
 	
 	/**
-	 * @return
+	 * @param password the password to set
+	 */
+	public void setPassword(String password)
+	{
+		this.password = password;
+	}
+	/**
+	 * @return whether or not a userDisplayName has been set
+	 */
+	public boolean hasUserDisplayName()
+	{
+		return userDisplayName != null;
+	}
+	
+	/**
+	 * @return the userDisplayName
+	 */
+	public String getUserDisplayName()
+	{
+		return userDisplayName;
+	}
+
+	/**
+	 * @param userDisplayName the userDisplayName to set
+	 */
+	public void setUserDisplayName(String userDisplayName)
+	{
+		if("".equals(userDisplayName))
+			userDisplayName = null;
+		this.userDisplayName = userDisplayName;
+	}
+
+	/**
+	 * @return whether or not a token has been set
 	 */
 	public boolean hasToken()
 	{
@@ -132,7 +235,7 @@ public class GeoKeyAccount extends Correspondent
 	 */
 	public void setToken(String token)
 	{
-		if(token == "")
+		if("".equals(token))
 			token = null;
 		this.token = token;
 	}
@@ -155,7 +258,7 @@ public class GeoKeyAccount extends Correspondent
 	@Override
 	public String toString()
 	{
-		return getName() + " [" + username + "@" + url + "]";
+		return getName() + " [" + email + "@" + url + "]";
 	}
 	
 	@Override
@@ -168,8 +271,9 @@ public class GeoKeyAccount extends Correspondent
 			GeoKeyAccount that = (GeoKeyAccount) obj;
 			return	super.equals(that) && // Correspondent#equals(Object)
 					this.url.equals(that.url) &&
-					this.username.equals(that.username) &&
-					this.password.equals(that.password);
+					this.email.equals(that.email) &&
+					this.password.equals(that.password) &&
+					Objects.equals(this.userDisplayName, that.userDisplayName);
 			// ignore token
 		}
 		return false;
@@ -180,8 +284,9 @@ public class GeoKeyAccount extends Correspondent
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + url.hashCode();
-		hash = 31 * hash + username.hashCode();
+		hash = 31 * hash + email.hashCode();
 		hash = 31 * hash + password.hashCode();
+		hash = 31 * hash + Objects.hashCode(userDisplayName);
 		// ignore token
 		return hash;
 	}

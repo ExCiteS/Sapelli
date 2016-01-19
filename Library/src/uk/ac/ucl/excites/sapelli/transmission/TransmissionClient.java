@@ -219,7 +219,7 @@ public abstract class TransmissionClient extends StorageClient
 		public void scheduleSending(RecordReference recordRef, Correspondent receiver)
 		{
 			if(init()) // make sure we have tStore
-				tStore.storeTransmittableRecord(receiver, recordRef, null); // TODO will this wipe tosend rec's for same rec that already had a transmission?
+				tStore.storeTransmittableRecord(receiver, recordRef, null); // will wipe any previously associated transmission (i.e. record will be scheduled for resending)
 		}
 		
 		@Override

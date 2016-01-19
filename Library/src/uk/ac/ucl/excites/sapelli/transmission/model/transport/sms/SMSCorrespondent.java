@@ -104,19 +104,6 @@ public class SMSCorrespondent extends Correspondent
 	/**
 	 * @param name
 	 * @param phoneNumber
-	 * @param binarySMS
-	 */
-	public SMSCorrespondent(String name, PhoneNumber phoneNumber, boolean binarySMS)
-	{
-		super(name, binarySMS ? Type.BINARY_SMS : Type.TEXTUAL_SMS);
-		if(phoneNumber == null)
-			throw new NullPointerException("Please provide a non-null PhoneNumber instance.");
-		this.phoneNumber = phoneNumber;
-	}
-	
-	/**
-	 * @param name
-	 * @param phoneNumber
 	 * @param defaultCountryCode the ISO 3166-1 two-letter region code that denotes the region that we are expecting the number to be from.
 	 * @param binarySMS
 	 * @throws IllegalArgumentException
@@ -138,6 +125,16 @@ public class SMSCorrespondent extends Correspondent
 	}
 
 	/**
+	 * @param name
+	 * @param phoneNumber
+	 * @param binarySMS
+	 */
+	public SMSCorrespondent(String name, PhoneNumber phoneNumber, boolean binarySMS)
+	{
+		this(null, name, phoneNumber, binarySMS);
+	}
+
+	/**
 	 * To be called upon database retrieval only.
 	 * 
 	 * @param localID
@@ -147,8 +144,21 @@ public class SMSCorrespondent extends Correspondent
 	 */
 	public SMSCorrespondent(int localID, String name, String phoneNumberInternational, boolean binarySMS) throws IllegalArgumentException
 	{
-		this(name, phoneNumberInternational, binarySMS);
-		setLocalID(localID);
+		this(localID, name, toPhoneNumber(phoneNumberInternational), binarySMS);
+	}
+	
+	/**
+	 * @param localID may be {@code null} if Correspondent has never been stored
+	 * @param name
+	 * @param phoneNumber
+	 * @param binarySMS
+	 */
+	private SMSCorrespondent(Integer localID, String name, PhoneNumber phoneNumber, boolean binarySMS)
+	{
+		super(localID, name, binarySMS ? Type.BINARY_SMS : Type.TEXTUAL_SMS);
+		if(phoneNumber == null)
+			throw new NullPointerException("Please provide a non-null PhoneNumber instance.");
+		this.phoneNumber = phoneNumber;
 	}
 	
 	/**

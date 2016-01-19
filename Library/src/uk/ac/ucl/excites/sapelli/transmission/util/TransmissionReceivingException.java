@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.util;
 
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+
 /**
  * @author mstevens
  *
@@ -25,16 +27,37 @@ package uk.ac.ucl.excites.sapelli.transmission.util;
 public class TransmissionReceivingException extends Exception
 {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
+	
+	protected final Transmission<?> transmission;
 
-	public TransmissionReceivingException(String msg)
+	/**
+	 * @param transmission
+	 * @param detailMessage
+	 */
+	public TransmissionReceivingException(Transmission<?> transmission, String detailMessage)
 	{
-		super(msg);
+		super(detailMessage);
+		this.transmission = transmission;
 	}
 	
-	public TransmissionReceivingException(String msg, Throwable cause)
+	/**
+	 * @param transmission
+	 * @param detailMessage
+	 * @param cause
+	 */
+	public TransmissionReceivingException(Transmission<?> transmission, String detailMessage, Throwable cause)
 	{
-		super(msg, cause);
+		super(detailMessage, cause);
+		this.transmission = transmission;
+	}
+
+	/**
+	 * @return the transmission
+	 */
+	public Transmission<?> getTransmission()
+	{
+		return transmission;
 	}
 	
 }

@@ -115,9 +115,8 @@ public class DataSendingService extends SignalMonitoringService implements Store
 	{
 		if(isOnline(sendSchedule))
 		{	// We are online...
-			//	Send records:
+			//	Send records (attachments will also be sent if transmission/receiver supports that):
 			transmissionController.sendRecords(sendSchedule.getProject().getModel(), sendSchedule.getReceiver());
-			//	TODO send files?
 		}
 		else if(!leftAirplaneMode && DeviceControl.inAirplaneMode(getApplicationContext()) && DeviceControl.canSetAirplaneMode() && sendSchedule.isAirplaneModeCycling())
 		{	// We are in airplane mode and we can and are configured to control it:

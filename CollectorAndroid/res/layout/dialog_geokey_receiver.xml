@@ -15,26 +15,12 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- --><LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ -->
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:compat="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingTop="15dp"
-        android:text="@string/receiverName" />
-
-    <EditText
-        android:id="@+id/txtGeoKeyReceiverName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="textCapWords"
-        android:ems="10" >
-        <requestFocus />
-    </EditText>
 
     <TextView
         android:layout_width="wrap_content"
@@ -47,20 +33,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="textUri" />
+        android:inputType="textUri">
+        <requestFocus/>
+    </android.support.v7.widget.AppCompatEditText>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="10dp"
-        android:text="@string/username" />
+        android:text="@string/email" />
 
     <EditText
-        android:id="@+id/txtUsername"
+        android:id="@+id/txtEmail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="text" />
+        android:inputType="textEmailAddress" />
     
     <TextView
         android:layout_width="wrap_content"
@@ -74,4 +62,18 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textWebPassword" />
+    
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="15dp"
+        android:text="@string/pickOptionalName" />
+
+    <EditText
+        android:id="@+id/txtGeoKeyReceiverName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textCapWords"
+        android:ems="10" />
+
 </LinearLayout>
