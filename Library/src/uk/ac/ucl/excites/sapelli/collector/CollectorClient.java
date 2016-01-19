@@ -48,7 +48,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
@@ -57,7 +56,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
  * @author mstevens
  *
  */
-public abstract class CollectorClient extends TransmissionClient implements StoreHandle.StoreUser
+public abstract class CollectorClient extends TransmissionClient
 {
 	
 	// STATICS-------------------------------------------------------
@@ -300,21 +299,24 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getSchemaV1(int, int)
 	 */
 	@Override
-	public Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException
+	public Schema getSchemaV1(final int schemaID, final int schemaVersion) throws UnknownModelException
 	{
 		try
 		{
-			Project project = projectStoreHandle.getStore(this).retrieveV1Project(schemaID, schemaVersion); // can throw NPE or DBException
-			// return schema of the first (and assumed only) form:
-			return project.getForm(0).getSchema(); // can throw NPE
+			return projectStoreHandle.executeWithReturn(new StoreOperationWithReturn<ProjectStore, Schema, Exception>()
+			{
+				@Override
+				public Schema execute(ProjectStore store) throws Exception
+				{
+					Project project = projectStoreHandle.getStore(this).retrieveV1Project(schemaID, schemaVersion); // can throw NPE or DBException
+					// return schema of the first (and assumed only) form:
+					return project.getForm(0).getSchema(); // can throw NPE
+				}
+			});
 		}
 		catch(Exception e)
 		{	// regardless of whether it is an NPE, DBException or another Exception:
 			throw new UnknownModelException(schemaID, schemaVersion);
-		}
-		finally
-		{
-			projectStoreHandle.doneUsing(this);
 		}
 	}
 
@@ -356,14 +358,18 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 			if(project == null)
 				throw new NullPointerException("No matching project found!");
 			
-			// Get stores:
-			ProjectStore pStore = projectStoreHandle.getStore(this);
-			
 			// Get schedules (and their receivers) for the project:
-			List<Correspondent> receivers = new ArrayList<Correspondent>();
-			for(SendSchedule schedule : pStore.retrieveSendSchedulesForProject(project))
-				if(SendSchedule.hasValidReceiver(schedule))
-					receivers.add(schedule.getReceiver());
+			final List<Correspondent> receivers = new ArrayList<Correspondent>();
+			projectStoreHandle.executeNoEx(new StoreHandle.StoreOperationNoException<ProjectStore>()
+			{
+				@Override
+				public void execute(ProjectStore pStore)
+				{
+					for(SendSchedule schedule : pStore.retrieveSendSchedulesForProject(project))
+						if(SendSchedule.hasValidReceiver(schedule))
+							receivers.add(schedule.getReceiver());
+				}
+			});
 			
 			// Return list:
 			return receivers;
@@ -372,10 +378,6 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 		{
 			logError("Error getting receivers for " + schema.toString(), e);
 			return Collections.<Correspondent> emptyList();
-		}	
-		finally
-		{
-			projectStoreHandle.doneUsing(this);
 		}
 	}
 
