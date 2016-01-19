@@ -40,7 +40,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
-import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.UnmodifiableValueSet;
@@ -51,6 +50,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.TimeStampUtils;
 
 /**
  * MediaField base class.
@@ -744,7 +744,7 @@ public abstract class MediaField extends Field
 		public String generateFilename(ValueSet<?> record, Long creationTimeOffset)
 		{
 			// Elements:
-			String dateTime = TimeUtils.getTimestampForFileName(Form.GetStartTime(record));
+			String dateTime = TimeStampUtils.getTimestampForFileName(Form.GetStartTime(record));
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename
@@ -810,7 +810,7 @@ public abstract class MediaField extends Field
 		public String generateFilename(ValueSet<?> record, Integer attachmentNumber)
 		{
 			// Elements:
-			String dateTime = TimeUtils.getTimestampForFileName(COLUMN_TIMESTAMP_START_V1X.toLossy(Form.GetStartTime(record)));
+			String dateTime = TimeStampUtils.getTimestampForFileName(COLUMN_TIMESTAMP_START_V1X.toLossy(Form.GetStartTime(record)));
 			long deviceID = Form.GetDeviceID(record);
 			
 			// Assemble base filename

@@ -48,6 +48,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Attachment;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.TimeStampUtils;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
@@ -441,7 +442,7 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 				return false;
 			}
 			ResponseHandler handler = getWithJSONResponse(
-				getAbsoluteUrl(account, getSapelliProjectURL() + "find_observation/" + gkCategoryID.toString() + "/" + TimeUtils.getISOTimestamp(Form.GetStartTime(record), true) + "/" + Long.toString(Form.GetDeviceID(record)) + "/"),
+				getAbsoluteUrl(account, getSapelliProjectURL() + "find_observation/" + gkCategoryID.toString() + "/" + TimeStampUtils.getISOTimestamp(Form.GetStartTime(record), true) + "/" + Long.toString(Form.GetDeviceID(record)) + "/"),
 				getNewHeaders(token),
 				null);
 			if(!checkResponseObject(handler, JSON_KEY_OBSERVATION_ID))
@@ -486,7 +487,7 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 					getNewRequestParams(token)
 						.putt(PARAMETER_KEY_FILE, attachment.file, attachment.getMimeType())
 						.putt(PARAMETER_KEY_NAME, name)
-						.putt(PARAMETER_KEY_DESC, app.getString(R.string.uploadedFromAt, app.getBuildInfo().getNameAndVersion(), TimeUtils.getISOTimestamp(TimeStamp.now(), true))));
+						.putt(PARAMETER_KEY_DESC, app.getString(R.string.uploadedFromAt, app.getBuildInfo().getNameAndVersion(), TimeStampUtils.getISOTimestamp(TimeStamp.now(), true))));
 				if(!checkResponseObject(handler, JSON_KEY_NAME))
 				{
 					logError(handler, "Could not upload media file: " + attachment.file.getName());

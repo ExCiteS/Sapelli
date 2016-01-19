@@ -28,13 +28,11 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-
 /**
  * @author mstevens, Michalis Vitos
  *
  */
-public final class TimeUtils
+public class TimeUtils
 {
 
 	public static final int ONE_HOUR_MS = 60 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
@@ -46,7 +44,10 @@ public final class TimeUtils
 	public static final DateTimeFormatter PrettyTimestampWithoutMSFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss");
 	public static final DateTimeFormatter PrettyTimestampWithMSFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss.SSS");
 
-	private TimeUtils() {}
+	protected TimeUtils() throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Cannot instantiate TimeUtils object");
+	}
 
 	static public Calendar getCalendar(int year, int month, int day, TimeZone timeZone)
 	{
@@ -115,11 +116,6 @@ public final class TimeUtils
 			return ISOWithoutMSFormatter.print(dateTime);
 	}
 	
-	static public String getISOTimestamp(TimeStamp timeStamp, boolean withMS)
-	{
-		return getISOTimestamp(timeStamp.toDateTime(), withMS);
-	}
-	
 	static public String getISOTimestamp(long timestamp, boolean withMS)
 	{
 		if(withMS)
@@ -138,11 +134,6 @@ public final class TimeUtils
 		return FileTimestampFormatter.print(dateTime);
 	}
 	
-	static public String getTimestampForFileName(TimeStamp timeStamp)
-	{
-		return FileTimestampFormatter.print(timeStamp.toDateTime());
-	}
-	
 	static public String getTimestampForFileName(long timestamp)
 	{
 		return FileTimestampFormatter.print(timestamp);
@@ -156,11 +147,6 @@ public final class TimeUtils
 	static public String getPrettyTimestamp(DateTime dateTime)
 	{
 		return PrettyTimestampWithoutMSFormatter.print(dateTime);
-	}
-	
-	static public String getPrettyTimestamp(TimeStamp timeStamp)
-	{
-		return PrettyTimestampWithoutMSFormatter.print(timeStamp.toDateTime());
 	}
 	
 	static public String getPrettyTimestamp(long timestamp)

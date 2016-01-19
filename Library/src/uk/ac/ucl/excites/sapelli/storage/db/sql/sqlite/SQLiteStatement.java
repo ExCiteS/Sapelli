@@ -21,9 +21,9 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 import java.io.Closeable;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordValueSet;
 

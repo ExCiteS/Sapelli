@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.shared.db.exceptions;
+package uk.ac.ucl.excites.sapelli.storage.db.exceptions;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
@@ -24,16 +24,16 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  * @author mstevens
  *
  */
-public class DBPrimaryKeyException extends DBConstraintException
+public class DBConstraintException extends DBRecordsException
 {
 
 	private static final long serialVersionUID = 2L;
-	
+
 	/**
 	 * @param detailMessage
 	 * @param cause
 	 */
-	public DBPrimaryKeyException(String detailMessage, Throwable cause)
+	public DBConstraintException(String detailMessage, Throwable cause)
 	{
 		super(detailMessage, cause);
 	}
@@ -43,7 +43,7 @@ public class DBPrimaryKeyException extends DBConstraintException
 	 * @param cause
 	 * @param records
 	 */
-	public DBPrimaryKeyException(String detailMessage, Throwable cause, Record... records)
+	public DBConstraintException(String detailMessage, Throwable cause, Record... records)
 	{
 		super(detailMessage, cause, records);
 	}
@@ -51,7 +51,7 @@ public class DBPrimaryKeyException extends DBConstraintException
 	/**
 	 * @param detailMessage
 	 */
-	public DBPrimaryKeyException(String detailMessage)
+	public DBConstraintException(String detailMessage)
 	{
 		super(detailMessage);
 	}
@@ -60,7 +60,7 @@ public class DBPrimaryKeyException extends DBConstraintException
 	 * @param detailMessage
 	 * @param records
 	 */
-	public DBPrimaryKeyException(String detailMessage, Record... records)
+	public DBConstraintException(String detailMessage, Record... records)
 	{
 		super(detailMessage, records);
 	}
@@ -68,7 +68,7 @@ public class DBPrimaryKeyException extends DBConstraintException
 	/**
 	 * @param cause
 	 */
-	public DBPrimaryKeyException(Throwable cause)
+	public DBConstraintException(Throwable cause)
 	{
 		super(cause);
 	}
@@ -77,7 +77,7 @@ public class DBPrimaryKeyException extends DBConstraintException
 	 * @param cause
 	 * @param records
 	 */
-	public DBPrimaryKeyException(Throwable cause, Record... records)
+	public DBConstraintException(Throwable cause, Record... records)
 	{
 		super(cause, records);
 	}

@@ -18,12 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.shared.db.exceptions;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-
 /**
  * @author mstevens
  *
@@ -32,8 +26,6 @@ public class DBException extends Exception
 {
 
 	private static final long serialVersionUID = 2L;
-	
-	private List<Record> records = null;
 	
 	/**
 	 * 
@@ -45,36 +37,15 @@ public class DBException extends Exception
 	 */
 	public DBException(String detailMessage, Throwable cause)
 	{
-		this(detailMessage, cause, (Record[]) null);
+		super(detailMessage, cause);
 	}
 	
-	/**
-	 * @param detailMessage
-	 * @param cause
-	 * @param records
-	 */
-	public DBException(String detailMessage, Throwable cause, Record... records)
-	{
-		super(detailMessage, cause);
-		addRecords(records);
-	}
-
 	/**
 	 * @param detailMessage
 	 */
 	public DBException(String detailMessage)
 	{
-		this(detailMessage, (Record[]) null);
-	}
-	
-	/**
-	 * @param detailMessage
-	 * @param records
-	 */
-	public DBException(String detailMessage, Record... records)
-	{
 		super(detailMessage);
-		addRecords(records);
 	}
 
 	/**
@@ -82,33 +53,7 @@ public class DBException extends Exception
 	 */
 	public DBException(Throwable cause)
 	{
-		this(cause, (Record[]) null);
-	}
-	
-	/**
-	 * @param cause
-	 * @param records
-	 */
-	public DBException(Throwable cause, Record... records)
-	{
 		super(cause);
-		addRecords(records);
-	}
-	
-	private void addRecords(Record... records)
-	{
-		if(records == null || records.length == 0)
-			return;
-		if(this.records == null)
-			this.records = new ArrayList<Record>();
-		for(Record r : records)
-			if(r != null)
-				this.records.add(r);
-	}
-	
-	public List<Record> getRecords()
-	{
-		return this.records == null ? Collections.<Record> emptyList() : this.records;
 	}
 
 }

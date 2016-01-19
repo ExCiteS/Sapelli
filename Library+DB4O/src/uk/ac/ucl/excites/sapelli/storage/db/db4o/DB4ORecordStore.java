@@ -27,10 +27,11 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBPrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBRecordsException;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -214,7 +215,7 @@ public class DB4ORecordStore extends RecordStore
 		}
 		catch(Exception e)
 		{
-			throw new DBException("DB4O exception", e, record);
+			throw new DBRecordsException("DB4O exception", e, record);
 		}
 	}
 	
@@ -367,7 +368,7 @@ public class DB4ORecordStore extends RecordStore
 		}
 		catch(Exception e)
 		{
-			throw new DBException("Error upon deleting record", e, record);
+			throw new DBRecordsException("Error upon deleting record", e, record);
 		}
 	}
 	
