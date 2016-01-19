@@ -223,6 +223,8 @@
     <string name="geokeyServerUrl">URL:</string>
     <string name="username">Username:</string>
     <string name="password">Password:</string>
+    <string name="url_protocol_http">http://</string>
+    <string name="url_protocol_https">https://</string>
     <string name="verifyingServerAndAccount">Checking server &amp; user credentials.</string>
     <string name="useBinarySMS">Use binary SMS</string>
     <string name="emptyReceiverName">Please enter a name.</string>
