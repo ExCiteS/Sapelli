@@ -27,10 +27,10 @@ import org.joda.time.DateTime;
 
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -52,7 +52,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;

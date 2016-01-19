@@ -28,7 +28,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -37,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;

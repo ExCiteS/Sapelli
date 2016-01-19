@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Attachment;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -49,6 +48,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;

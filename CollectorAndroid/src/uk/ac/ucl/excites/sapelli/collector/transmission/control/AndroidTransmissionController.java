@@ -24,12 +24,12 @@ import org.joda.time.DateTime;
 
 import android.telephony.PhoneNumberUtils;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeySapelliClient;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;

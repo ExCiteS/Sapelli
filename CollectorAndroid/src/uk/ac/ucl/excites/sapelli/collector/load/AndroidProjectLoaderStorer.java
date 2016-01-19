@@ -24,11 +24,11 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import android.content.Context;
 
 /**

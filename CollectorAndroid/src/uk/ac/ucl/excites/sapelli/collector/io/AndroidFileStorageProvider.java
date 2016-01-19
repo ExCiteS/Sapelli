@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.io;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.model.ProjectDescriptor;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 
 /**
  * @author mstevens, Michalis Vitos

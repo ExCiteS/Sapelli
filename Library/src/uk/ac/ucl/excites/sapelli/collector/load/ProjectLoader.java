@@ -29,13 +29,13 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.parse.ProjectParser;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;

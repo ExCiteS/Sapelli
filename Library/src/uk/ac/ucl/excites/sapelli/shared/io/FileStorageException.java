@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 /**
  * @author mstevens

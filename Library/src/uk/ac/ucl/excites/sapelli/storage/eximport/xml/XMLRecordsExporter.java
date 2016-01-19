@@ -29,8 +29,8 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;

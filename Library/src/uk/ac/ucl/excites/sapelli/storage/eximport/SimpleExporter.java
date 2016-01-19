@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 

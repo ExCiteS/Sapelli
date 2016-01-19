@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.io;
 
+import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
+
 /**
  * @author mstevens, Michalis Vitos
  *
