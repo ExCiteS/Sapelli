@@ -18,7 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -50,6 +52,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
@@ -72,6 +75,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	private LinearLayout receiveHeader;
 	private SwitchCompat switchReceive;
 	private LinearLayout receiveSettings;
+	private Set<SwitchCompat> receiveSwitches = new HashSet<SwitchCompat>();
 	
 	// Adapter:
 	private SendScheduleAdapter listScheduleAdapter;
@@ -107,16 +111,15 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
 		switchReceive.setOnClickListener(this);
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
+		addReceiveSwitch(Transmission.Type.BINARY_SMS, (SwitchCompat) rootLayout.findViewById(R.id.switchReceiveBinSMS));
+		addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (SwitchCompat) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
 	}
 	
-	private void toggleConfigGroup(boolean send, boolean enabled)
+	private void addReceiveSwitch(Transmission.Type transmissionType, SwitchCompat receiveSwitch)
 	{
-		// Switch state:
-		(send ? switchSend : switchReceive).setChecked(enabled);
-		// Header background:
-		(send ? sendHeader : receiveHeader).setBackgroundResource(enabled ? R.drawable.drop_shadow_top : R.drawable.drop_shadow);
-		// Settings pane:
-		(send ? sendSettings : receiveSettings).setVisibility(enabled ? View.VISIBLE : View.GONE);
+		receiveSwitch.setTag(transmissionType);
+		receiveSwitch.setOnClickListener(this);
+		receiveSwitches.add(receiveSwitch);
 	}
 	
 	@Override
@@ -140,12 +143,32 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				break;
 			}
 		toggleConfigGroup(true, sendingEnabled);
+		
+		// Update receiving config UI parts:
+		boolean receivingEnabled = false;
+		for(SwitchCompat receiveSwitch : receiveSwitches)
+		{
+			receiveSwitch.setChecked(getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitch.getTag()));
+			if(receiveSwitch.isChecked())
+				receivingEnabled = true;
+		}
+		toggleConfigGroup(false, receivingEnabled);
+	}
+	
+	private void toggleConfigGroup(boolean send, boolean enabled)
+	{
+		// Switch state:
+		(send ? switchSend : switchReceive).setChecked(enabled);
+		// Header background:
+		(send ? sendHeader : receiveHeader).setBackgroundResource(enabled ? R.drawable.drop_shadow_top : R.drawable.drop_shadow);
+		// Settings pane:
+		(send ? sendSettings : receiveSettings).setVisibility(enabled ? View.VISIBLE : View.GONE);
 	}
 	
 	@Override
-	public void onClick(View v)
+	public void onClick(View view)
 	{
-		switch(v.getId())
+		switch(view.getId())
 		{
 			case R.id.switchSend :
 				toggleConfigGroup(true, switchSend.isChecked());
@@ -161,11 +184,22 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 					disableSending(); // disable all schedules
 				}
 				break;
-			case R.id.switchReceive :
-				toggleConfigGroup(false, switchReceive.isChecked());
-				break;
 			case R.id.btnAddSchedule :
 				SendScheduleFragment.ShowAddDialog(this);
+				break;
+			case R.id.switchReceive :
+				toggleConfigGroup(false, switchReceive.isChecked());
+				if(!switchReceive.isChecked())
+					// Disable receiving of all transmission types:
+					for(SwitchCompat receiveSwitch : receiveSwitches)
+					{
+						receiveSwitch.setChecked(false);
+						getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitch.getTag(), false);
+					}
+				break;
+			case R.id.switchReceiveBinSMS :
+			case R.id.switchReceiveTxtSMS :
+				getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) view.getTag(), ((SwitchCompat) view).isChecked());
 				break;
 		}
 	}

@@ -35,7 +35,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:text="@string/send" />
+            android:text="@string/sendData" />
 
     </LinearLayout>
 
@@ -113,15 +113,35 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:text="@string/receive" />
+            android:text="@string/receiveData" />
     </LinearLayout>
-
-    <LinearLayout
+    
+   <LinearLayout
         android:id="@+id/receiveSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/drop_shadow_bottom"
         android:orientation="vertical"
-        android:visibility="gone" />
+        android:visibility="gone" >
+
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/switchReceiveBinSMS"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_gravity="center"
+            android:focusable="false"
+            android:padding="4dp"
+            android:text="@string/receiveBinarySMS" />
+       
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/switchReceiveTxtSMS"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_gravity="center"
+            android:focusable="false"
+            android:padding="4dp"
+            android:text="@string/receiveTextualSMS" />
+
+    </LinearLayout>
 
 </LinearLayout>

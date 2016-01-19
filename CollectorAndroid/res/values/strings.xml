@@ -130,9 +130,6 @@
     <string name="output">Output</string>
     <string name="expand_transmission">Expand Transmission Settings</string>
     <string name="expand_export">Expand Export Settings</string>
-    <string name="phone_number">Phone Number</string>
-    <string name="send">Send Data</string>
-    <string name="receive">Receive Data</string>
     <string name="add_project">Please add a project by clicking the \"＋\" above…</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
@@ -198,9 +195,13 @@
     <string name="share">Share …</string>
     <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
     <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
+    <string name="sendData">Send data</string>
+    <string name="receiveData">Receive data</string>
     <string name="scheduledReceivers">Scheduled receivers:</string>
     <string name="longClickFromEditDel">(long-click to edit or delete)</string>
     <string name="sendExistingData">Do you wish to send all existing data (%1$d records, %2$d files) to receiver %3$s?</string>
+    <string name="receiveBinarySMS">By binary SMS</string>
+    <string name="receiveTextualSMS">By textual SMS</string>
     <string name="receiver">Receiver:</string>
     <string name="receivers">Receivers:</string>
     <string name="interval">Interval:</string>

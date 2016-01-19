@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * Abstract super class for Project storage back-ends
@@ -212,6 +213,30 @@ public abstract class ProjectStore extends Store
 	public abstract void delete(Project project);
 	
 	/**
+	 * Delete specific Project, identified by ProjectDescriptor
+	 * 
+	 * @param projectDescriptor
+	 */
+	public abstract void delete(ProjectDescriptor projectDescriptor);
+	
+	/**
+	 * @param relationship
+	 * @param foreignKey
+	 */
+	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
+	
+	/**
+	 * @param relationship
+	 * @return
+	 */
+	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
+	
+	/**
+	 * @param relationship
+	 */
+	public abstract void deleteHeldForeignKey(Relationship relationship);
+	
+	/**
 	 * Stores a new SendingSchedule.
 	 * Projects can have multiple SendingSchedules as long as they have a different receiver.
 	 * 
@@ -259,29 +284,36 @@ public abstract class ProjectStore extends Store
 	public abstract List<SendSchedule> retrieveEnabledSendSchedules(Transmission.Type recieverTransmissionType);
 	
 	/**
-	 * @return the transmissionStore instance which is used by this ProjectStore instance
-	 */
-	public abstract TransmissionStore getTransmissionStore();
-
-	/**
-	 * Delete specific Project, identified by ProjectDescriptor
-	 * 
-	 * @param projectDescriptor
-	 */
-	public abstract void delete(ProjectDescriptor projectDescriptor);
-	
-	/**
 	 * Deletes all SendSchedules associates with the given Project.
 	 * 
 	 * @param project
 	 */
 	public abstract void deleteSendSchedulesForProject(Project project);
 	
-	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
+	/**
+	 * @param transmissionType
+	 * @return
+	 */
+	public abstract boolean isReceiving(Type transmissionType);
 	
-	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
+	/**
+	 * @param projectDesc
+	 * @param transmissionType
+	 * @return
+	 */
+	public abstract boolean isReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType);
 	
-	public abstract void deleteHeldForeignKey(Relationship relationship);
+	/**
+	 * @param projectDesc
+	 * @param transmissionType
+	 * @param enabled
+	 */
+	public abstract void setReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType, boolean enabled);
+	
+	/**
+	 * @return the transmissionStore instance which is used by this ProjectStore instance
+	 */
+	public abstract TransmissionStore getTransmissionStore();
 	
 	/**
 	 * Must serialise the given Project instance and write the result to the given OutputStream.
