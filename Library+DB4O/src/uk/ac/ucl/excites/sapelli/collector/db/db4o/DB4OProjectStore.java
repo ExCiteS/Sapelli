@@ -339,7 +339,7 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public List<SendSchedule> retrieveEnabledSendSchedules(Type recieverTransmissionType)
+	public List<SendSchedule> retrieveSendSchedulesForTransmissionType(Transmission.Type transmissionType, boolean enabledOnly)
 	{
 		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
 	}

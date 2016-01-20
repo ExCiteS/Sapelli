@@ -376,7 +376,7 @@ public class PrefProjectStore extends ProjectStore
 	}
 
 	@Override
-	public List<SendSchedule> retrieveEnabledSendSchedules(Type recieverTransmissionType) throws UnsupportedOperationException
+	public List<SendSchedule> retrieveSendSchedulesForTransmissionType(Transmission.Type transmissionType, boolean enabledOnly) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented");
 	}

@@ -679,11 +679,11 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	}
 	
 	@Override
-	public List<SendSchedule> retrieveEnabledSendSchedules(Transmission.Type transmissionType)
+	public List<SendSchedule> retrieveSendSchedulesForTransmissionType(Transmission.Type transmissionType, boolean enabledOnly)
 	{
 		List<SendSchedule> schedules = new ArrayList<SendSchedule>();
-		for(SendSchedule schedule : retrieveSendSchedules(new EqualityConstraint(SEND_SCHEDULE_COLUMN_ENABLED, Boolean.TRUE)))
-			if(schedule.getProject() != null && schedule.getReceiver() != null && (transmissionType == null || schedule.getReceiver().getTransmissionType() == transmissionType))
+		for(SendSchedule schedule : retrieveSendSchedules(enabledOnly ? new EqualityConstraint(SEND_SCHEDULE_COLUMN_ENABLED, Boolean.TRUE) : null))
+			if(schedule.getProject() != null && schedule.getReceiver() != null && (transmissionType == null || transmissionType.ordinal() == schedule.getReceiver().getTransmissionType().ordinal()))
 				schedules.add(schedule);
 		return schedules;
 	}

@@ -274,14 +274,15 @@ public abstract class ProjectStore extends Store
 	 */
 	public List<SendSchedule> retrieveEnabledSendSchedules()
 	{
-		return retrieveEnabledSendSchedules(null);
+		return retrieveSendSchedulesForTransmissionType(null, true);
 	}
 	
 	/**
-	 * @param recieverTransmissionType only include receivers with the given transmission type (pass {@code null} to include any transmission type)
-	 * @return a list of all SendSchedules which are enabled and are associated with an existing Project and an existing Correspondent (i.e. receiver) with the given transmissionType
-	 */
-	public abstract List<SendSchedule> retrieveEnabledSendSchedules(Transmission.Type recieverTransmissionType);
+	 * @param receiverTransmissionType only include receivers with the given transmission type (pass {@code null} to include any transmission type)
+	 * @param enabledOnly whether to only include enabled SendSchedules or also disabled ones
+	 * @return a list of all SendSchedules which are associated with an existing Project and an existing Correspondent (i.e. receiver) with the given transmissionType
+	 */	
+	public abstract List<SendSchedule> retrieveSendSchedulesForTransmissionType(Transmission.Type receiverTransmissionType, boolean enabledOnly);
 	
 	/**
 	 * Deletes all SendSchedules associates with the given Project.
