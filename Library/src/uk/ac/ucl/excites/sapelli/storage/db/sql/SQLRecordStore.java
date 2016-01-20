@@ -391,7 +391,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
 	 */
-	protected void cleanup() throws DBException
+	protected synchronized void cleanup() throws DBException
 	{
 		// Find empty tables & release all table resources:
 		List<Map.Entry<RecordReference, STable>> emptyTables = null;
