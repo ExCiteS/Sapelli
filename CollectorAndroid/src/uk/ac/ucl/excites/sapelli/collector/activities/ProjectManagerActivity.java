@@ -523,12 +523,15 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	}
 
 	@Override
-	protected void onDestroy()
+	protected void onStop()
 	{
+		Log.d(TAG, "Stopping...");
+		
 		// signal that the activity no longer needs the stores (projecStore and its internally use transmissionStore instance):
 		getCollectorApp().collectorClient.projectStoreHandle.doneUsing(this);
+		
 		// super:
-		super.onDestroy();
+		super.onStop();
 	}
 	
 	public void closeDrawer(View view)
