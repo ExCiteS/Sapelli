@@ -270,7 +270,16 @@ public class StoreHandle<S extends Store>
 		{
 			S store = getStoreFromWeakRef();
 			if(store != null)
-				store.close();
+			{
+				try
+				{
+					store.close();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace(System.err);
+				}
+			}
 		}
 	}
 	
