@@ -87,4 +87,5 @@ public class CheckableLinearLayout extends LinearLayout implements Checkable
 		}
 		return drawableState;
 	}
+
 }
