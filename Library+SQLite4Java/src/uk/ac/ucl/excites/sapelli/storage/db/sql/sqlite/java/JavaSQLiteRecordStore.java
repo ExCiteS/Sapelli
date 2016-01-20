@@ -113,7 +113,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	protected void executeSQL(String sql) throws DBException
 	{
 		if(loggingEnabled)
-			System.out.println("SQLite> Raw execute: " + sql);
+			client.logInfo("SQLite> Raw execute: " + sql);
 		try
 		{
 			db.exec(sql);
@@ -134,7 +134,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		{
 			int rows = db.getChanges();
 			if(loggingEnabled)
-				System.out.println("SQLite> Affected rows: " + rows);
+				client.logInfo("SQLite> Affected rows: " + rows);
 			return rows;
 		}
 		catch(SQLiteException e)
@@ -162,7 +162,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		try
 		{
 			if(loggingEnabled)
-				System.out.println("SQLite> Compile/reuse statement: " + sql);
+				client.logInfo("SQLite> Compile/reuse statement: " + sql);
 			return new JavaSQLiteStatement(db, sql, paramCols);
 		}
 		catch(SQLiteException sqliteE)
