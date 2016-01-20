@@ -800,8 +800,8 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 	@Override
 	protected void doClose() throws DBException
 	{
-		rsWrapper.doClose();
 		client.transmissionStoreHandle.doneUsing(this);
+		rsWrapper.doClose();
 	}
 
 	/* (non-Javadoc)
