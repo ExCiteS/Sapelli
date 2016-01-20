@@ -47,7 +47,7 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	
 	protected final void traverse(Schema schema, Set<? extends Column<?>> skipColumns)
 	{
-		parentStack.clear();
+		parentStack.clear(); // !!!
 		schema.accept(this, skipColumns);
 	}
 	
@@ -66,7 +66,7 @@ public abstract class SchemaTraverser implements ColumnVisitor
 	@Override
 	public <VS extends ValueSet<CS>, CS extends ColumnSet> void leave(ValueSetColumn<VS, CS> valueSetCol)
 	{
-		if(parentStack.peek() != valueSetCol)
+		if(parentStack.isEmpty() || parentStack.peek() != valueSetCol)
 			throw new IllegalStateException("Invalid parent stack state!");
 		parentStack.pop();
 	}

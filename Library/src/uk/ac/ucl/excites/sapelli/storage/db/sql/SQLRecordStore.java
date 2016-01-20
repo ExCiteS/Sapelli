@@ -32,6 +32,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient.RecordOperation;
@@ -1700,15 +1701,35 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		private boolean insertBoolColsForAllOptionalValueSetCols = true; // !!!
 		private boolean useBLOBsForAllListColumns = false; // !!!
 		
+		/**
+		 * Note:
+		 * 	It is of crucial importance that this method is {@code synchronized},
+		 * 	otherwise multiple table generation processes can happen concurrently using the
+		 * 	same BasicTableFactory instance, which will lead to a mangling of columns.
+		 * 
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TableFactory#generateTable(uk.ac.ucl.excites.sapelli.storage.model.Schema)
+		 */
 		@Override
-		public STable generateTable(Schema schema) throws DBException
+		public synchronized STable generateTable(Schema schema) throws DBException
 		{
-			table = createTable(schema);
-			
-			// Traverse schema:
-			schema.accept(this); // generates SQLColumns which get added to the table
-			
-			return table;
+			try
+			{
+				if(loggingEnabled)
+					client.logInfo(getClass().getSimpleName() + ": generating table for " + Objects.toString(schema));
+				
+				// Create table
+				table = createTable(schema);
+				
+				// Traverse schema to add columns, etc.:
+				this.traverse(schema); // !!! (don't call schema.accept(this) directly because then the parentStack is not cleared!)
+				
+				// Done:
+				return table;
+			}
+			catch(Exception e)
+			{
+				throw new DBException(getClass().getSimpleName() + ": error upon generating table for " + Objects.toString(schema), e);
+			}
 		}
 		
 		/**
