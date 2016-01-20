@@ -321,6 +321,7 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			project = ProjectLoader.ParseProjectXMLInFolder(getProjectFolder(projDescr), this); // pass this as FormSchemaInfoProvider
 			// Check if we have a project:
 			if(project == null)
+				// If not, delete the project:
 				delete(projDescr);
 			else
 				// Add to cache:

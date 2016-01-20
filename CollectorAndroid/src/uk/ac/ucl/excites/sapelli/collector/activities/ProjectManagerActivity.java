@@ -410,7 +410,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		closeDrawer(null);
 	}
 	
-	private void switchToProject(ProjectDescriptor projDescr)
+	private void switchToProject(final ProjectDescriptor projDescr)
 	{
 		// Select in list:
 		if(projDescr != null && projectListAdaptor.getPosition(projDescr) != -1)
@@ -434,7 +434,13 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 					setCurrentProject(project);
 					
 					// Refresh drawer list (to use project instead of projectDescriptor instance):
-					updateProjectList(true);					
+					updateProjectList(true);
+				}
+
+				@Override
+				public void projectReloadFailure()
+				{	// Project could not be loaded (likely the XML file is no longer there), make sure it is fully removed:
+					removeProject(projDescr); // will also update the project list
 				}
 			}).execute(projDescr);
 	}
@@ -933,31 +939,55 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	}
 
 	/**
-	 * Dialog to check whether it is desired to remove project
+	 * Menu action which removes project if user confirms this is what he/she wants.
 	 * 
 	 * @param view
 	 */
 	public void removeProject(MenuItem item)
 	{
-		final Project project = getCurrentProject(true);
-		if(project != null)
-		{
-			showYesNoDialog(R.string.remove_project, getString(R.string.removeProjectConfirm, project.toString(false)), R.drawable.ic_delete_black_36dp, new Runnable()
+		removeProject(getCurrentProject(false), true);
+	}
+	
+	/**
+	 * Removes the given project, optionally after asking for confirmation.
+	 * 
+	 * @param projDesc
+	 * @param askConfirmation
+	 */
+	public void removeProject(final ProjectDescriptor projDesc, boolean askConfirmation)
+	{
+		if(projDesc == null)
+			return;
+		if(askConfirmation)		
+			showYesNoDialog(R.string.remove_project, getString(R.string.removeProjectConfirm, projDesc.toString(false)), R.drawable.ic_delete_black_36dp, new Runnable()
 			{
 				@Override
 				public void run()
 				{
-					new ProjectTasks.RemoveProjectTask(ProjectManagerActivity.this, projectStore, new ProjectTasks.RemoveProjectCallback()
-					{
-						@Override
-						public void projectRemoved()
-						{
-							updateProjectList(true); // Refresh list
-						}
-					}).execute(project);
+					removeProject(projDesc);
 				}
 			}, false, null, false);
-		}
+		else
+			removeProject(projDesc); // remove straight away
+	}
+	
+	/**
+	 * Removes the given project. Does *not* ask for confirmation.
+	 * Use with care!
+	 * 
+	 * @param projDesc
+	 */
+	public void removeProject(final ProjectDescriptor projDesc)
+	{
+		if(projDesc != null)
+			new ProjectTasks.RemoveProjectTask(ProjectManagerActivity.this, projectStore, new ProjectTasks.RemoveProjectCallback()
+			{
+				@Override
+				public void projectRemoved()
+				{
+					updateProjectList(true); // Refresh list
+				}
+			}).execute(projDesc);
 	}
 
 	/**

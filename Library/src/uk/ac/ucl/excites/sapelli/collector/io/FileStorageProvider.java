@@ -209,7 +209,7 @@ public class FileStorageProvider
 	 */
 	protected File getProjectSpecificSubFolder(File parent, String projectName, String projectVariant, String projectVersion, boolean create) throws FileStorageException
 	{
-		// Hierarchy: (PARENT]/(projectName)[ (projectVariant)]/v(projectVersion)
+		// Hierarchy: (PARENT)/(projectName)[ (projectVariant)]/v(projectVersion)/
 		return	getSubFolder(	getSubFolder(	parent,
 												FileHelpers.makeValidFileName(projectName + (projectVariant != null && !projectName.isEmpty() ? " " + projectVariant : "")),
 												create),

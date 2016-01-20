@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.tasks;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.CollectorAttachmentUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -222,8 +224,13 @@ public final class ProjectTasks
 		protected void onPostExecute(Project project)
 		{
 			super.onPostExecute(project); // dismiss dialog
-			if(callback != null && project != null) // project may be null if task was cancelled
-				callback.projectReloaded(project);
+			if(callback != null) // project may be null if task was cancelled
+			{
+				if(project != null)
+					callback.projectReloaded(project);
+				else
+					callback.projectReloadFailure();
+			}
 		}
 
 	}
@@ -232,6 +239,8 @@ public final class ProjectTasks
 	{
 		
 		public void projectReloaded(Project project);
+		
+		public void projectReloadFailure();
 		
 	}
 	
@@ -262,12 +271,19 @@ public final class ProjectTasks
 				// Remove project from store:
 				projectStore.delete(projDescr);
 				
+				// TODO re-assess receiving of transmission types...
+				
 				BaseActivity owner = getContext();
 				if(owner != null)
 				{
-					// Remove installation folder:
-					FileUtils.deleteQuietly(owner.getFileStorageProvider().getProjectInstallationFolder(projDescr, false));
+					File projectInstallationFolder = owner.getFileStorageProvider().getProjectInstallationFolder(projDescr, false);
 					
+					// Remove installation folder:
+					FileUtils.deleteQuietly(projectInstallationFolder); // this deletes: .../Projects/(projectName)[ (projectVariant)]/v(projectVersion)/
+					// Delete parent folder as well if it is empty:
+					FileHelpers.deleteDirectoryIfEmpty(projectInstallationFolder.getParentFile());  // this deletes: .../Projects/(projectName)[ (projectVariant)]/
+					
+					//(projectName)[ (projectVariant)]/v(projectVersion)
 					// Remove shortcut:
 					ProjectRunHelpers.removeShortcut(owner, projDescr);
 				

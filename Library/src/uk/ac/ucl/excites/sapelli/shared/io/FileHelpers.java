@@ -303,6 +303,16 @@ public final class FileHelpers
 			moveFile(source, destination);
 	}
 	
+	public static void deleteDirectoryIfEmpty(File directory)
+	{
+		try
+		{
+			if(isDirectoryEmpty(directory))
+				FileUtils.deleteQuietly(directory);
+		}
+		catch(Exception ignore) {}
+	}
+	
 	public static boolean isDirectoryEmpty(File directory)
 	{
 		if(!directory.isDirectory())
