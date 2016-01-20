@@ -393,6 +393,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected synchronized void cleanup() throws DBException
 	{
+		if(loggingEnabled)
+			client.logInfo(getClass().getSimpleName() + ": cleaning up...");
+		
 		// Find empty tables & release all table resources:
 		List<Map.Entry<RecordReference, STable>> emptyTables = null;
 		for(Iterator<Map.Entry<RecordReference, STable>> tablesIt = tables.entrySet().iterator(); tablesIt.hasNext();)
