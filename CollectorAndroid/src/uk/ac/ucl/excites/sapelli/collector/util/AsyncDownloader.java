@@ -29,16 +29,14 @@ import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
 
-import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.util.Log;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 
 /**
  * Background Async Task to download files
@@ -112,8 +110,6 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 				public void onClick(DialogInterface dialog, int which)
 				{
 					AsyncDownloader.this.cancel(true);
-					// Delete the downloaded file
-					FileUtils.deleteQuietly(downloadedFile);
 				}
 			});
 			// Don't show dialog yet!
@@ -263,7 +259,7 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 		dismisDialog();
 		
 		// Report success or failure:
-		if(downloadFinished)
+		if(downloadFinished != null && downloadFinished)
 			callback.downloadSuccess(downloadUrl, downloadedFile);
 		else
 		{
@@ -274,26 +270,19 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 			callback.downloadFailure(downloadUrl, failure);
 		}
 	}
-	
-	/* (non-Javadoc)
-	 * @see android.os.AsyncTask#onCancelled(java.lang.Object)
-	 */
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	@Override
-	protected void onCancelled(Boolean result)
-	{
-		dismisDialog();
-		super.onCancelled(result);
-	}
 
-	/* (non-Javadoc)
+	/**
+	 * Also called by {@link #onCancelled(Boolean)}.
+	 * 
 	 * @see android.os.AsyncTask#onCancelled()
 	 */
 	@Override
 	protected void onCancelled()
 	{
 		dismisDialog();
-		super.onCancelled();
+		
+		// Delete the downloaded file
+		FileUtils.deleteQuietly(downloadedFile);
 	}
 
 	/**
