@@ -158,7 +158,7 @@ public class Schema extends ColumnSet implements Serializable
 	 */
 	public Schema(Model model, String name, String tableName, int flags) throws ModelFullException, NullPointerException
 	{
-		super((name == null || name.trim().isEmpty() ? model.getName() + "_Schema" + model.getNumberOfSchemata() : name), true);
+		super((name == null || name.trim().isEmpty() ? model.getName() + "_Schema" + model.getNumberOfSchemata() : name.trim()), true);
 		if(this.name.length() > MAX_SCHEMA_NAME_LENGTH)
 			throw new IllegalArgumentException("Please provide a schema name of maximum " + MAX_SCHEMA_NAME_LENGTH + " characters");
 		if(model == null)
@@ -557,6 +557,20 @@ public class Schema extends ColumnSet implements Serializable
 		hash = 31 * hash + ((int) (model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
 		hash = 31 * hash + modelSchemaNumber;
 		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
+		hash = 31 * hash + flags;
+		return hash;
+	}
+	
+	/**
+	 * @return computes a hashCode (different from the one computed by {@link #hashCode()}!) *without* considering columns, indexes (and PK), and the sealed state
+	 */
+	public int columnLessHashcode()
+	{
+		int hash = 1;
+		hash = 31 * hash + name.hashCode();
+		hash = 31 * hash + tableName.hashCode();
+		hash = 31 * hash + ((int) (model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
+		hash = 31 * hash + modelSchemaNumber;
 		hash = 31 * hash + flags;
 		return hash;
 	}

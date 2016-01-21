@@ -129,11 +129,22 @@ public class ForeignKeyColumn extends ValueSetColumn<RecordReference, PrimaryKey
 		return "ForeignKey";
 	}
 	
+	/**
+	 * Note:
+	 * 	We cannot use {@link Schema#hashCode()} here because the foreignSchema
+	 * 	and the Schema which contains this {@link ForeignKeyColumn} may be
+	 * 	mutually related! In which case calling {@link Schema#hashCode()} would
+	 * 	cause an infinite loop. Calling {@link Schema#columnLessHashcode()}
+	 * 	instead avoids this.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.ValueSetColumn#hashCode()
+	 * @see Schema#columnLessHashcode()
+	 */
 	@Override
 	public int hashCode()
 	{
 		int hash = super.hashCode();
-		hash = 31 * hash + foreignSchema.hashCode();
+		hash = 31 * hash + foreignSchema.columnLessHashcode();
 		return hash;
 	}
 

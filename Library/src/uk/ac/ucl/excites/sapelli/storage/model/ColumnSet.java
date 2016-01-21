@@ -611,7 +611,7 @@ public class ColumnSet implements Serializable
 	public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + (name == null ? 0 : name.hashCode());
+		hash = 31 * hash + Objects.hashCode(name);
 		hash = 31 * hash + realColumns.hashCode();
 		hash = 31 * hash + (sealed ? 0 : 1);
 		return hash;
