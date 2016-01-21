@@ -45,7 +45,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.VersionComparator;
 import uk.ac.ucl.excites.sapelli.shared.util.android.http.ChainableRequestParams;
 import uk.ac.ucl.excites.sapelli.shared.util.android.http.ResponseHandler;
 import uk.ac.ucl.excites.sapelli.storage.model.Attachment;
-import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.TimeStampUtils;
@@ -243,9 +242,9 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	}
 	
 	@Override
-	protected ProjectSession getModelSession(Model model) throws UnknownModelException
+	protected ProjectSession getModelSession(long modelID) throws UnknownModelException
 	{
-		Project project = app.collectorClient.getProject(model);
+		Project project = app.collectorClient.getProject(modelID);
 		if(project == null)
 		{
 			Log.e(TAG, "Cannot open ProjectSession because no Project was found for the given Model.");

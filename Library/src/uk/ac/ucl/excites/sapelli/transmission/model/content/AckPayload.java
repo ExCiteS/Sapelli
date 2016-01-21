@@ -18,17 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.content;
 
-import java.io.IOException;
-
-import org.joda.time.DateTimeZone;
-
-import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
-import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
  * A Payload used to acknowledge the successful reception (& decoding, processing, etc.) of an other transmission.
@@ -39,8 +29,6 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
 public class AckPayload extends ResponsePayload
 {
 	
-	private TimeStamp subjectReceivedAt;
-
 	/**
 	 * To be called from receiving side
 	 */
@@ -57,29 +45,7 @@ public class AckPayload extends ResponsePayload
 	public AckPayload(Transmission<?> subject)
 	{
 		super(subject);
-		this.subjectReceivedAt = subject.getReceivedAt();
 		// no need for a callback
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload#write(uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream)
-	 */
-	@Override
-	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
-	{
-		super.write(bitstream);
-		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream, true);
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
-	 */
-	@Override
-	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
-	{
-		super.read(bitstream);
-		subjectReceivedAt = new TimeStamp(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream, true).getMsSinceEpoch(), DateTimeZone.getDefault());
-		// the TimeStamp read by the column is in UTC so we convert to local timezone (of this device, i.e. the receiver) to match the other timestamps stored with transmissions 
 	}
 
 	/* (non-Javadoc)
@@ -96,14 +62,6 @@ public class AckPayload extends ResponsePayload
 	public final boolean acknowledgeReception()
 	{
 		return false; // !!!
-	}
-
-	/**
-	 * @return the subjectReceivedAt
-	 */
-	public TimeStamp getSubjectReceivedAt()
-	{
-		return subjectReceivedAt;
 	}
 
 	@Override

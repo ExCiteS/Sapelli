@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
@@ -57,8 +57,9 @@ public abstract class Payload
 		Files,
 		Ack,
 		ResendRequest,
+		ModelQuery,
 		ModelRequest,
-		ProjectModel
+		Model,
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
 	
@@ -74,6 +75,11 @@ public abstract class Payload
 				return new AckPayload();
 			case ResendRequest:
 				return new ResendRequestPayload();
+			case ModelQuery:
+				return new ModelQueryPayload();
+			case ModelRequest:
+				return new ModelRequestPayload();
+			case Model:
 			case Files:
 			default:
 				throw new IllegalArgumentException("Unsupported/Unimplemented Payload type: " + type.name());
@@ -107,9 +113,10 @@ public abstract class Payload
 		
 		public void handle(ResendRequestPayload resendRequestPayload) throws Exception;
 		
+		public void handle(ModelQueryPayload modelQueryPayload) throws Exception;
+		
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception;
 		
-		public void handle(ModelPayload projectModelPayload) throws Exception;
 		/**
 		 * Handle method for non-built-in payload types
 		 * 

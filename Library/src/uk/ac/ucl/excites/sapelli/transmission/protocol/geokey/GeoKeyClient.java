@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.model.Attachment;
-import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -36,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
@@ -59,7 +58,6 @@ public abstract class GeoKeyClient implements Payload.Handler
 	static protected final String JSON_KEY_INSTALLED_EXTENSIONS = "installed_extensions";
 	static protected final String JSON_KEY_LOGGED_IN = "logged_in";
 	static protected final String JSON_KEY_ERROR = "error";
-	static protected final String JSON_VALUE_ERROR_NO_SUCH_PROJECT = "No such project";
 	static protected final String JSON_KEY_ACCESS_TOKEN = "access_token";
 	static protected final String JSON_KEY_TOKEN_TYPE = "token_type";
 	static protected final String JSON_KEY_GEOKEY_PROJECT_ID = "geokey_project_id";
@@ -70,6 +68,9 @@ public abstract class GeoKeyClient implements Payload.Handler
 	static protected final String JSON_KEY_IGNORED_NO_LOC = "ignored_no_loc";
 	static protected final String JSON_KEY_OBSERVATION_ID = "observation_id";
 	static protected final String JSON_KEY_NAME = "name";
+	
+	static protected final String JSON_VALUE_ERROR_NO_SUCH_PROJECT = "No such project";
+	static protected final String JSON_VALUE_ERROR_PROJECT_ACCESS_DENIED = "User cannot contribute to project";
 	
 	static protected final String PARAMETER_KEY_CVS_FILE = "csv_file";
 	static protected final String PARAMETER_KEY_FILE = "file";
@@ -123,6 +124,9 @@ public abstract class GeoKeyClient implements Payload.Handler
 	{
 		// Register we are attempting to send the transmission now:
 		gkTransmission.getSentCallback().onSent();
+	
+		// Set mock remote ID as local ID (necessary for sending mock responses below):
+		gkTransmission.setRemoteID(gkTransmission.getLocalID());
 		
 		// Log sending attempt:
 		client.logInfo("Attempting sending of GeokeyTransmission (id: " + gkTransmission.getLocalID() + ")...");
@@ -131,7 +135,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 		final GeoKeyAccount account = gkTransmission.getCorrespondent();
 		if(account == null || !login(account))
 		{
-			return; // !!!
+			return; // !!! TODO mock response?
 		}		
 		//else: we are now logged in...
 		
@@ -144,30 +148,37 @@ public abstract class GeoKeyClient implements Payload.Handler
 				store.store(account);
 			}
 		});
-					
+		
 		// Handle payload:
 		try
 		{
 			gkTransmission.getPayload().handle(this); // expected to throw Exception if something goes wrong
 		}
+		catch(UnknownModelException ume)
+		{
+			// Send ModelRequestPayload in mock response:
+			gkTransmission.getSentCallback().setMockResponse(new GeoKeyTransmission(new ModelRequestPayload(gkTransmission, ume.getModelID())));
+			return; // !!!
+		}
 		catch(Exception e)
 		{
 			return; // !!!
 		}
-					
-		// Mark as received if successful:
-		gkTransmission.getSentCallback().onReceived();
+		
+		// Mock AckPayload if needed:
+		if(gkTransmission.getPayload().acknowledgeReception())
+			gkTransmission.getSentCallback().setMockResponse(new GeoKeyTransmission(new AckPayload(gkTransmission)));
 		
 		// Log success:
 		client.logInfo("Successfully sent GeokeyTransmission (id: " + gkTransmission.getLocalID() + ")");
 	}
 	
 	/**
-	 * @param model
+	 * @param modelID
 	 * @return a {@link ModelSession} object or {@code null}
 	 * @throws UnknownModelException when the server knows no such model
 	 */
-	protected abstract ModelSession getModelSession(Model model) throws UnknownModelException;
+	protected abstract ModelSession getModelSession(long modelID) throws UnknownModelException;
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload)
@@ -180,15 +191,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 		
 		// Open session:
 		ModelSession session = null;
-		
-		try 
-		{
-			session = getModelSession(recordsPayload.getModel());
-		}
-		catch(UnknownModelException ume)
-		{
-			 // TODO request model?
-		}
+		session = getModelSession(recordsPayload.getModel().id); // throws UnknownModelException
 		
 		// Check session:
 		if(session == null)
@@ -223,12 +226,12 @@ public abstract class GeoKeyClient implements Payload.Handler
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload)
 	 */
 	@Override
-	public void handle(ModelPayload projectModelPayload) throws Exception
+	public void handle(ModelQueryPayload modelQueryPayload) throws Exception
 	{
-		// TODO perhaps implement using SAP file upload (geokey-sapelli has an API end-point for that)
+		getModelSession(modelQueryPayload.getModelID()); // throws UnknownModelException
 	}
 
 	/* (non-Javadoc)

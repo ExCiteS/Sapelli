@@ -27,10 +27,13 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
@@ -129,6 +132,8 @@ public abstract class Transmission<C extends Correspondent>
 	 * If {@code false} this Transmission was created on the current device for sending to another device,
 	 * if {@code true} it was received on the current device by means of transmission from another one.
 	 * Or in other words, if {@code false} we are on the sending side, if {@code true} we are on the receiving side.
+	 * 
+	 * Not to be confused with {@link #isReceived()}!
 	 */
 	public final boolean received;
 	
@@ -181,6 +186,11 @@ public abstract class Transmission<C extends Correspondent>
 	private TimeStamp receivedAt;
 	
 	/**
+	 * The transmission that was sent or received in response to this one.
+	 */
+	private Transmission<?> response;
+	
+	/**
 	 * used only on sending side
 	 */
 	private transient BitArray preparedBodyBits = null;
@@ -221,7 +231,7 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * To be called upon database retrieval only
+	 * To be called upon database retrieval only.
 	 * 
 	 * @param client
 	 * @param correspondent
@@ -232,8 +242,9 @@ public abstract class Transmission<C extends Correspondent>
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
+	 * @param response - may be null
 	 */
-	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, Transmission<C> response)
 	{
 		this(client, correspondent, received); // !!!
 		this.localID = localID;
@@ -242,6 +253,24 @@ public abstract class Transmission<C extends Correspondent>
 		this.payloadHash = payloadHash;
 		this.sentAt = sentAt;
 		this.receivedAt = receivedAt;
+		this.response = response;
+	}
+	
+	/**
+	 * To be called to create a mock received response.
+	 * 
+	 * @param responsePayload
+	 */
+	@SuppressWarnings("unchecked")
+	protected Transmission(ResponsePayload responsePayload)
+	{
+		this(responsePayload.getSubject().client, (C) responsePayload.getSubject().correspondent, true); // !!!
+		this.payload = responsePayload;
+		this.payload.setTransmission(this); // !!!
+		this.payloadType = payload.getType();
+		this.sentAt = TimeStamp.now();
+		this.receivedAt = this.sentAt;
+		this.response = null;
 	}
 	
 	/**
@@ -715,6 +744,29 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
+	 * @return the response
+	 */
+	public Transmission<?> getResponse()
+	{
+		return response;
+	}
+
+	/**
+	 * @param response the response to set
+	 */
+	public void setResponse(Transmission<?> response)
+	{
+		if(this == response)
+			throw new IllegalArgumentException("Transmission cannot be its own response!");
+		this.response = response;
+	}
+	
+	public boolean hasResponse()
+	{
+		return response != null;
+	}
+
+	/**
 	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
 	 */
 	public abstract boolean canWrapIncreaseSize();
@@ -739,6 +791,11 @@ public abstract class Transmission<C extends Correspondent>
 
 		protected void store()
 		{
+			store(Transmission.this);
+		}
+
+		protected void store(final Transmission<?> t)
+		{
 			try
 			{
 				client.transmissionStoreHandle.executeNoDBEx(new StoreHandle.StoreOperation<TransmissionStore, Exception>()
@@ -746,7 +803,7 @@ public abstract class Transmission<C extends Correspondent>
 					@Override
 					public void execute(TransmissionStore store) throws Exception
 					{
-						store.store(Transmission.this);
+						store.store(t);
 					}
 				});
 			}
@@ -778,12 +835,53 @@ public abstract class Transmission<C extends Correspondent>
 			onSent(TimeStamp.now());
 		}
 		
-		public void onReceived(TimeStamp receivedAt)
+		/**
+		 * Handles a ResponsePayload received (or mocked) in response to this transmission.
+		 * 
+		 * @param responsePayload
+		 */
+		public void onResponse(ResponsePayload responsePayload)
 		{
-			setReceivedAt(receivedAt);
+			if(	responsePayload == null ||
+				(Transmission.this != responsePayload.getSubject() && !Objects.equals(Transmission.this.localID, responsePayload.getSubject().localID)))
+				return; // should never happen
+			
+			// Set transmission use to bring us the responsePayload as this transmission's response:
+			setResponse(responsePayload.transmission);
+			
+			// Set remote ID if we got it:
+			if(responsePayload.getSubjectReceiverSideID() != null)
+				setRemoteID(responsePayload.getSubjectReceiverSideID());
+			
+			// If is is an ACK response...
+			if(responsePayload instanceof AckPayload)
+				// ... mark subject as (successfully) received:
+				setReceivedAt(responsePayload.getSubjectReceivedAt());
 			
 			// Store updated transmission:
 			store();
+		}
+		
+		public void setMockResponse(Transmission<C> mockResponseTransmission)
+		{
+			if(!(mockResponseTransmission.payload instanceof ResponsePayload))
+				return; // should never happen
+			
+			try
+			{
+				// Prepare mock transmission for storage:
+				mockResponseTransmission.prepare();
+				
+				// Store the mock transmission:
+				store(mockResponseTransmission);
+				
+				// Handle responsePayload:
+				onResponse((ResponsePayload) mockResponseTransmission.payload);
+			}
+			catch(Exception e)
+			{
+				client.logError("Error in " + Transmission.class.getSimpleName() + "#setMockResponse()", e);
+			}
 		}
 		
 	}

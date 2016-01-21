@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
@@ -51,19 +52,13 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	}
 	
 	/**
-	 * To be called on the receiving side.
+	 * To be called to create a mock response.
 	 * 
-	 * @param client
-	 * @param sendingSideID
-	 * @param payloadHash
-	 * @param body
-	 * @param receivedAt
+	 * @param responsePayload
 	 */
-	public GeoKeyTransmission(TransmissionClient client, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
+	public GeoKeyTransmission(ResponsePayload responsePayload)
 	{
-		super(client, null, sendingSideID, payloadHash);
-		this.body = body;
-		setReceivedAt(receivedAt);
+		super(responsePayload);
 	}
 	
 	/**
@@ -77,11 +72,12 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	 * @param payloadType - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
+	 * @param response
 	 * @param body
 	 */
-	public GeoKeyTransmission(TransmissionClient client, GeoKeyAccount correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, byte[] body) 
+	public GeoKeyTransmission(TransmissionClient client, GeoKeyAccount correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, GeoKeyTransmission response, byte[] body) 
 	{
-		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt);
+		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, response);
 		this.body = body;
 	}
 	

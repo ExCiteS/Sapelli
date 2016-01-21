@@ -111,13 +111,14 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
+	 * @param response - may be null
 	 * @param parts - list of {@link Message}s
 	 * @param numberOfSentResendRequests
 	 * @param lastResendReqSentAt - may be null
 	 */
-	protected SMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, int numberOfSentResendRequests, TimeStamp lastResendReqSentAt)
+	protected SMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSTransmission<?> response, int numberOfSentResendRequests, TimeStamp lastResendReqSentAt)
 	{
-		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt);
+		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, response);
 		this.numberOfSentResendRequests = numberOfSentResendRequests;
 		this.lastResendRequestSentAt = lastResendReqSentAt;
 		// add parts by calling receivePart (not by passing them through this constructor)

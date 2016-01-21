@@ -103,7 +103,7 @@ public class AndroidTransmissionController extends TransmissionController
 	 * @param localID local ID of an incomplete SMSTransmission
 	 * @param time at which to send the request, or null (in which case no request will be scheduled)
 	 */
-	public void scheduleSMSResendRequest(int localID, TimeStamp time)
+	public synchronized void scheduleSMSResendRequest(int localID, TimeStamp time)
 	{
 		IncomingSMSReceiverService.ScheduleResendRequest(app, localID, time.toDateTime());
 	}
@@ -111,7 +111,7 @@ public class AndroidTransmissionController extends TransmissionController
 	/**
 	 * @param localID local ID of an incomplete SMSTransmission
 	 */
-	protected void cancelSMSResendRequest(int localID)
+	protected synchronized void cancelSMSResendRequest(int localID)
 	{
 		IncomingSMSReceiverService.CancelResendRequest(app, localID);
 	}

@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,74 +23,74 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
- * Payload that is sent to signify that the sender (of this payload) is unfamiliar with the model that the receiver has just sent records for.
+ * Payload that is sent to query whether a receiver has a certain {@link Model}.
  * 
- * This is a ResponsePayload because a model request will be sent as a result of receiving records of an unknown model.
- * 
- * TODO perhaps also include a list of the model IDs that *are* known?
- * 
- * @author benelliott
+ * @author mstevens
  */
-public class ModelRequestPayload extends ResponsePayload
+public class ModelQueryPayload extends Payload
 {
 
-	private long unknownModelID = -1;
+	private long modelID = -1;
 	
 	/**
 	 * Called from sending side.
 	 * 
-	 * @param subject
-	 * @param unknownModelID
+	 * @param modelID
 	 */
-	public ModelRequestPayload(Transmission<?> subject, long unknownModelID)
+	public ModelQueryPayload(long modelID)
 	{
-		super(subject);
-		this.unknownModelID = unknownModelID;
+		this.modelID = modelID;
 	}
 	
 	/**
 	 * Called from receiving side or upon db retrieval.
 	 */
-	public ModelRequestPayload()
+	public ModelQueryPayload()
 	{
-		super();
+		// do nothing
 	}
 	
-	@Override
 	public int getType()
 	{
-		return Payload.BuiltinType.ModelRequest.ordinal();
+		return Payload.BuiltinType.ModelQuery.ordinal();
 	}
 
 	@Override
 	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
-		super.write(bitstream);
-		Model.MODEL_ID_FIELD.write(unknownModelID, bitstream);
+		Model.MODEL_ID_FIELD.write(modelID, bitstream);
 	}
 
 	@Override
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
-		super.read(bitstream);
-		unknownModelID = Model.MODEL_ID_FIELD.readLong(bitstream);
+		modelID = Model.MODEL_ID_FIELD.readLong(bitstream);
+		// Check if we (=receiving end) have this model:
+		try
+		{
+			transmission.getClient().getModel(modelID);
+		}
+		catch(UnknownModelException ume)
+		{
+			throw new PayloadDecodeException(this, ume);
+		}
 	}
 
 	@Override
 	public boolean acknowledgeReception()
 	{
-		return true; // ??
+		return true; // !!!
 	}
 	
-	public long getUnknownModelID()
+	public long getModelID()
 	{
-		return unknownModelID;
+		return modelID;
 	}
 	
 	@Override

@@ -45,7 +45,7 @@ public class ModelPayload extends Payload
 	@Override
 	public int getType()
 	{
-		return Payload.BuiltinType.ProjectModel.ordinal();
+		return Payload.BuiltinType.Model.ordinal();
 	}
 
 	@Override
