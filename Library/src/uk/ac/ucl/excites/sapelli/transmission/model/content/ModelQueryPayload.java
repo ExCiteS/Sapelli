@@ -30,6 +30,8 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
 
 /**
  * Payload that is sent to query whether a receiver has a certain {@link Model}.
+ * If the receiver has the model it should reply with an {@link AckPayload}, if
+ * not with a {@link ModelRequestPayload}.
  * 
  * @author mstevens
  */
@@ -85,7 +87,7 @@ public class ModelQueryPayload extends Payload
 	@Override
 	public boolean acknowledgeReception()
 	{
-		return true; // !!!
+		return true; // !!! ACK response means the receiver has the model
 	}
 	
 	public long getModelID()
