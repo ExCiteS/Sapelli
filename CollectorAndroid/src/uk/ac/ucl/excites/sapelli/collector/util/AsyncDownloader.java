@@ -105,11 +105,11 @@ public class AsyncDownloader extends AsyncTask<String, Integer, Boolean>
 	{
 		try
 		{
-			progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(android.R.string.cancel), new DialogInterface.OnClickListener()
+			progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(android.R.string.cancel), new DialogInterface.OnClickListener()
 			{
 				public void onClick(DialogInterface dialog, int which)
 				{
-					AsyncDownloader.this.cancel(true);
+					cancel(true);
 				}
 			});
 			// Don't show dialog yet!

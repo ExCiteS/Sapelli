@@ -23,6 +23,8 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
@@ -41,6 +43,7 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 
 	private final WeakReference<C> contextRef;
 	private final String waitingMsg;
+	private final boolean cancelable;
 	private ProgressDialog dialog;
 	
 	/**
@@ -48,7 +51,16 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 	 */
 	public AsyncTaskWithWaitingDialog(C context)
 	{
-		this(context, null);
+		this(context, false);
+	}
+
+	/**
+	 * @param context
+	 * @param cancelable
+	 */
+	public AsyncTaskWithWaitingDialog(C context, boolean cancelable)
+	{
+		this(context, null, cancelable);
 	}
 	
 	/**
@@ -57,7 +69,17 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 	 */
 	public AsyncTaskWithWaitingDialog(C context, int waitingMsgId)
 	{
-		this(context, context.getString(waitingMsgId));
+		this(context, waitingMsgId, false);
+	}
+	
+	/**
+	 * @param context
+	 * @param waitingMsgId
+	 * @param cancelable
+	 */
+	public AsyncTaskWithWaitingDialog(C context, int waitingMsgId, boolean cancelable)
+	{
+		this(context, context.getString(waitingMsgId), cancelable);
 	}
 	
 	/**
@@ -66,8 +88,19 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 	 */
 	public AsyncTaskWithWaitingDialog(C context, String waitingMsg)
 	{
+		this(context, waitingMsg, false);
+	}
+	
+	/**
+	 * @param context
+	 * @param waitingMsg
+	 * @param cancelable
+	 */
+	public AsyncTaskWithWaitingDialog(C context, String waitingMsg, boolean cancelable)
+	{
 		this.contextRef = new WeakReference<C>(context);
 		this.waitingMsg = waitingMsg;
+		this.cancelable = cancelable;
 	}
 	
 	protected C getContext()
@@ -99,7 +132,25 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 			dialog = new ProgressDialog(context);
 			if(waitingMsg != null) // set waiting msg if one was given
 				dialog.setMessage(waitingMsg);
-			dialog.setCancelable(false);
+			dialog.setCancelable(cancelable);
+			if(cancelable)
+			{
+				dialog.setOnCancelListener(new OnCancelListener()
+				{
+					@Override
+					public void onCancel(DialogInterface dialog)
+					{
+						cancel(true);
+					}
+				});
+				dialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(android.R.string.cancel), new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, int which)
+					{
+						cancel(true);
+					}
+				});
+			}
 			// Do *not* show dialog yet! It will be shown upon first call to publishProgress()! (see doInBackground())
 		}
 		else
@@ -187,7 +238,6 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 	protected void onCancelled(Result result)
 	{
 		dismisDialog();
-		super.onCancelled(result);
 	}
 
 	/* (non-Javadoc)
@@ -197,7 +247,6 @@ public abstract class AsyncTaskWithWaitingDialog<C extends Context, Params, Resu
 	protected void onCancelled()
 	{
 		dismisDialog();
-		super.onCancelled();
 	}
 
 }
