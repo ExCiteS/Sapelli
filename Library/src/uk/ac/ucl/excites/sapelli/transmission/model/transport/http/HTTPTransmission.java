@@ -26,7 +26,6 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
@@ -96,8 +95,6 @@ public class HTTPTransmission extends Transmission<HTTPServer>
 	@Override
 	protected void doSend(TransmissionController controller) throws TransmissionSendingException
 	{
-		@SuppressWarnings("unused")
-		HTTPClient client = controller.getHTTPClient();
 		// TODO send http transmission
 	}
 
