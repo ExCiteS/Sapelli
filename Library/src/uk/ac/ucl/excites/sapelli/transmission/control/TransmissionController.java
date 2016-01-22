@@ -124,7 +124,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	/**
 	 * To be called by subclass when all constructors are done
 	 */
-	protected void initialise()
+	public void initialise()
 	{
 		// Create logger:
 		try
