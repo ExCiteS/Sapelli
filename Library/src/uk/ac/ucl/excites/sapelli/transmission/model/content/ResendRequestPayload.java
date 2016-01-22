@@ -52,7 +52,7 @@ public class ResendRequestPayload extends ResponsePayload
 		subjectTotalParts = subject.getTotalNumberOfParts();
 		requestedParts = new boolean[subjectTotalParts];
 		for(int p = 0; p < subjectTotalParts; p++)
-			requestedParts[p] = subject.hasPart(p + 1); // (part numbers start from 1)
+			requestedParts[p] = !subject.hasPart(p + 1); // put true for missing parts; part numbers start from 1
 		
 		// Set-up SentCallback:
 		setCallback(new ResentRequestSentCallback(subject, controller));
@@ -69,7 +69,6 @@ public class ResendRequestPayload extends ResponsePayload
 	{
 		super.write(bitstream);
 		TOTAL_PARTS_FIELD.write(subjectTotalParts, bitstream);
-		// Write "true" bit for parts that are requested and "false" bits for parts that are not:
 		bitstream.write(requestedParts);
 	}
 
