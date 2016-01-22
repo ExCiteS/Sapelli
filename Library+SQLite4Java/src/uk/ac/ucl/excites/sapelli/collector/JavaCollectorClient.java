@@ -66,6 +66,7 @@ public class JavaCollectorClient extends CollectorClient implements SQLRecordSto
 	/**
 	 * @return the fileStorageProvider
 	 */
+	@Override
 	public FileStorageProvider getFileStorageProvider()
 	{
 		return fileStorageProvider;
