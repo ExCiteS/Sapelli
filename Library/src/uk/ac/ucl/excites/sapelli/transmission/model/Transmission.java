@@ -843,7 +843,7 @@ public abstract class Transmission<C extends Correspondent>
 		public void onResponse(ResponsePayload responsePayload)
 		{
 			if(	responsePayload == null ||
-				(Transmission.this != responsePayload.getSubject() && !Objects.equals(Transmission.this.localID, responsePayload.getSubject().localID)))
+				(responsePayload.getSubject() != null && !Objects.equals(Transmission.this.localID, responsePayload.getSubject().localID)))
 				return; // should never happen
 			
 			// Set transmission use to bring us the responsePayload as this transmission's response:
