@@ -100,6 +100,19 @@ public abstract class Payload
 		}
 	}
 	
+	static public String GetPayloadTypeString(int payloadType) throws IllegalArgumentException
+	{
+		if(payloadType >= MAX_BUILTIN_TYPES)
+			return "Custom";
+		else
+		{
+			if(payloadType >= 0 && payloadType < BuiltinType.values().length)
+				return BuiltinType.values()[payloadType].name();
+			else
+				throw new IllegalArgumentException("Unsupport Payload type: " + payloadType);
+		}
+	}
+	
 	/**
 	 * Interface for dispatching on payload type
 	 * 
