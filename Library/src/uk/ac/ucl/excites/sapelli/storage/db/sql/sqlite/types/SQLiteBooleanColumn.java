@@ -34,7 +34,6 @@ public class SQLiteBooleanColumn<SapType> extends SQLiteIntegerColumn<SapType>
 	
 	static private final TypeMapping<Long, Boolean> boolIntMapping = new TypeMapping<Long, Boolean>()
 	{
-		
 		@Override
 		public Boolean toSapelliType(Long value)
 		{
@@ -68,7 +67,6 @@ public class SQLiteBooleanColumn<SapType> extends SQLiteIntegerColumn<SapType>
 	{
 		super(store, name, sourceColumnPointer, new TypeMapping<Long, SapType>()
 		{
-
 			@Override
 			public SapType toSapelliType(Long value)
 			{
