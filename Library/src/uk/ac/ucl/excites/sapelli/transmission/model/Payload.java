@@ -178,7 +178,7 @@ public abstract class Payload
 		return transmission;
 	}
 	
-	public void setTransmission(Transmission<?> transmission)
+	/*package*/ void setTransmission(Transmission<?> transmission)
 	{
 		if(this.transmission != null && this.transmission != transmission)
 			throw new IllegalStateException("Transmission cannot be changed once it has been set!");
