@@ -106,14 +106,15 @@ public class FileStorageProvider
 		{
 			if(sapelliFolder == null)
 				throw new NullPointerException("SapelliFolder cannot be null!");
-			if(!sapelliFolder.exists() || !sapelliFolder.isDirectory())
-				throw new FileStorageException("No an existing directory (" + sapelliFolder.getAbsolutePath() + ")");
+			if(!FileHelpers.createDirectory(sapelliFolder))
+				throw new FileStorageException("Could not access or create directory (" + sapelliFolder.getAbsolutePath() + ")");
+			
 			this.sapelliFolder = sapelliFolder;
 	
 			if(downloadsFolder == null)
 				throw new NullPointerException("DownloadsFolder cannot be null!");
-			if(!downloadsFolder.exists() || !downloadsFolder.isDirectory())
-				throw new FileStorageException("No an existing directory (" + downloadsFolder.getAbsolutePath() + ")");
+			if(!FileHelpers.createDirectory(downloadsFolder))
+				throw new FileStorageException("Could not access or create directory (" + downloadsFolder.getAbsolutePath() + ")");
 			this.downloadsFolder = downloadsFolder;
 		}
 		catch(SecurityException se) // may be thrown by File#exists() and File#isDirectory()
