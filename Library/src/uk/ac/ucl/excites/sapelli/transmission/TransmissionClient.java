@@ -225,7 +225,7 @@ public abstract class TransmissionClient extends StorageClient
 		@Override
 		public void storageEvent(RecordOperation operation, RecordReference recordRef, RecordStore recordStore)
 		{
-			if(init() /*make sure we have tStore*/ && recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRANSMITTABLE))
+			if(recordRef.getReferencedSchema().hasFlags(SCHEMA_FLAG_TRANSMITTABLE) && init() /*make sure we have tStore*/)
 				receiverLoop : for(Correspondent receiver : getReceiversFor(recordRef.getReferencedSchema()))
 				{
 					switch(operation)
