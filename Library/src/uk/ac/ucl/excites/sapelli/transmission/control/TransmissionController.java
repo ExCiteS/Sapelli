@@ -321,8 +321,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 */
 	private boolean storeAndSend(Transmission<?> transmission)
 	{
-		addLogLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: " + transmission.getPayloadType(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
-		
 		try
 		{
 			// Prepare transmission for storage & sending:
@@ -330,6 +328,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			
 			// Store "in-flight transmissions" to get local ID:
 			transmissionStore.store(transmission); // update record now that it is prepared (payload hash has been computed, etc.)
+
+			// Log sending attempt:
+			addLogLine("OUTGOING TRANSMISSION", "Type: " +  transmission.getType().toString(), "SendingSideID: " + transmission.getLocalID(), "PAYLOAD: " + Payload.GetPayloadTypeString(transmission.getPayloadType()), "TO: " + transmission.getCorrespondent().toString());
 			
 			// actually send the transmission:
 			transmission.send(this);
@@ -457,10 +458,11 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 
 	/**
 	 * @param localID local ID of an incomplete SMSTransmission (i.e. the subject of the resend request)
+	 * @param force if {@code true} the request is sent even if it is too early
 	 * @return whether or not future resend requests may needed for this transmission 
 	 * @throws Exception
 	 */
-	public synchronized void sendSMSResendRequest(int localID)
+	public synchronized void sendSMSResendRequest(int localID, boolean force)
 	{
 		// Query for the subject transmission:
 		Transmission<?> trans = transmissionStore.retrieveTransmission(true, localID);
@@ -474,7 +476,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		
 		// Further checks...
 		TimeStamp sendReqAt = smsTrans.getNextResendRequestSendingTime();
-		if(sendReqAt == null || sendReqAt.isAfter(TimeStamp.now()))
+		if(sendReqAt == null || (!force && sendReqAt.isAfter(TimeStamp.now())))
 			return; // either no more reqs are allowed, or it is too early to send the next one (shouldn't happen)
 		
 		addLogLine("PREPARING", "Outgoing resend request for incomplete transmission with local ID: " + localID);

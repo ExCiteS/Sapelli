@@ -316,7 +316,7 @@ public class IncomingSMSReceiverService extends SignalMonitoringService
 		{
 			if(signalMonitor.isInService())
 			{	// Send out resend request for any incomplete SMS transmissions:
-				transmissionController.sendSMSResendRequest(localID);
+				transmissionController.sendSMSResendRequest(localID, false);
 			}
 			else
 			{	// Try again in 6 minutes:
