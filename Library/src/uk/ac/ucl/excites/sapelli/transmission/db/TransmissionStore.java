@@ -218,7 +218,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		TRANSMISSION_MANAGEMENT_MODEL.seal();
 	}
 	
-	static private final int MAX_CACHE_SIZE = 32; 
+	static private final int MAX_CACHE_SIZE = 32;
+	
+	static public TimeStamp retrieveTimeStamp(TimeStampColumn column, Record record)
+	{
+		return TimeStamp.setLocalTimeZone(column.retrieveValue(record));
+	}
 	
 	// DYNAMICS--------------------------------------------
 	private final Map<Integer, Transmission<?>> sentCache;
@@ -585,12 +590,12 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValuePresent(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null;
 		Integer payloadType = TRANSMISSION_COLUMN_PAYLOAD_TYPE.isValuePresent(tRec) ? TRANSMISSION_COLUMN_PAYLOAD_TYPE.retrieveValue(tRec).intValue() : null;
 		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
-		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
-		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
+		TimeStamp sentAt = retrieveTimeStamp(COLUMN_SENT_AT, tRec);
+		TimeStamp receivedAt = retrieveTimeStamp(COLUMN_RECEIVED_AT, tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
 		//	Columns only occurring on receiving side:
 		int numberOfSentResendRequests = received ? TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.retrieveValue(tRec).intValue() : 0;
-		TimeStamp lastResendReqSentAt =	received ? TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.retrieveValue(tRec) : null;
+		TimeStamp lastResendReqSentAt =	received ? retrieveTimeStamp(TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT, tRec) : null;
 		RecordReference responseRecRef = getResponseColumn(received).retrieveValue(tRec);
 		Transmission<?> response = responseRecRef != null ? retrieveTransmission(!received, TRANSMISSION_COLUMN_ID.retrieveValue(responseRecRef).intValue()) : null;
 				
@@ -611,9 +616,9 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 					binarySMST.addPart(new BinaryMessage(	binarySMST,
 															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
 															totalParts,
-															COLUMN_SENT_AT.retrieveValue(tPartRec),
-															TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(tPartRec),
-															COLUMN_RECEIVED_AT.retrieveValue(tPartRec),
+															retrieveTimeStamp(COLUMN_SENT_AT, tPartRec),
+															retrieveTimeStamp(TRANSMISSION_PART_COLUMN_DELIVERED_AT, tPartRec),
+															retrieveTimeStamp(COLUMN_RECEIVED_AT, tPartRec),
 															BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec),
 																				TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(tPartRec).intValue())));
 				return binarySMST;
@@ -625,9 +630,9 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 					textSMST.addPart(new TextMessage(	textSMST,
 														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
 														totalParts,
-														COLUMN_SENT_AT.retrieveValue(tPartRec),
-														TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(tPartRec),
-														COLUMN_RECEIVED_AT.retrieveValue(tPartRec),
+														retrieveTimeStamp(COLUMN_SENT_AT, tPartRec),
+														retrieveTimeStamp(TRANSMISSION_PART_COLUMN_DELIVERED_AT, tPartRec),
+														retrieveTimeStamp(COLUMN_RECEIVED_AT, tPartRec),
 														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec))));
 				return textSMST;
 			case GeoKey:

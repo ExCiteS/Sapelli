@@ -20,8 +20,6 @@ package uk.ac.ucl.excites.sapelli.transmission.model.content;
 
 import java.io.IOException;
 
-import org.joda.time.DateTimeZone;
-
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -88,8 +86,7 @@ public abstract class ResponsePayload extends Payload
 		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
 		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
 		subjectReceiverSideID = bitstream.readBit() ? Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream) : null; // read presence bit, and value if presence = 1/true
-		subjectReceivedAt = new TimeStamp(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream, true).getMsSinceEpoch(), DateTimeZone.getDefault());
-		// the TimeStamp read by the column is in UTC so we convert to local timezone (of this device, i.e. the receiver) to match the other timestamps stored with transmissions
+		subjectReceivedAt = TimeStamp.setLocalTimeZone(TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream, true));
 	}
 	
 	/**

@@ -153,6 +153,15 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 		else
 			return t1.msSinceEpoch <= t2.msSinceEpoch ? t1 : t2;
 	}
+	
+	/** 
+	 * @param timestamp
+	 * @return return the same timestamp but with the device/local/default timezone
+	 */
+	static public TimeStamp setLocalTimeZone(TimeStamp timestamp)
+	{
+		return timestamp == null ? null : new TimeStamp(timestamp.getMsSinceEpoch(), DateTimeZone.getDefault());
+	}
 
 	// DYNAMICS------------------------------------------------------
 	private final long msSinceEpoch;
