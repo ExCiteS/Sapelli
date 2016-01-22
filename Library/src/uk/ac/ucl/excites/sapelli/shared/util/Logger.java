@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
@@ -39,7 +37,6 @@ public class Logger
 	public static final String FIELD_SEPARATOR = ";";
 	public static final String LOG_EXTENSION = ".log";
 	
-	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
 	protected final boolean printToOutputStream;
 	
@@ -65,7 +62,6 @@ public class Logger
 	 */
 	public Logger(String folderPath, String baseFileName, boolean timestampFilename, boolean printToOutputStream) throws IOException
 	{
-		this.formatter = ISODateTimeFormat.dateTime();
 		this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (timestampFilename ? TimeUtils.getTimestampForFileName() : "") + LOG_EXTENSION);
 		this.printToOutputStream = printToOutputStream;
 		fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
@@ -190,8 +186,7 @@ public class Logger
 	 */
 	private String getTime()
 	{
-		DateTime now = new DateTime();
-		return formatter.withZone(now.getZone()).print(now) + FIELD_SEPARATOR + TimeUtils.PrettyTimestampWithoutMSFormatter.print(now);
+		return TimeUtils.ISOWithMSFormatter.print(DateTime.now());
 	}
 
 }
