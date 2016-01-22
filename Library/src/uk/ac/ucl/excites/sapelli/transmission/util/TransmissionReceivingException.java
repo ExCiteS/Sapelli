@@ -32,6 +32,15 @@ public class TransmissionReceivingException extends Exception
 	protected final Transmission<?> transmission;
 
 	/**
+	 * @param cause
+	 */
+	public TransmissionReceivingException(Throwable cause)
+	{
+		super(cause);
+		this.transmission = null;
+	}
+	
+	/**
 	 * @param transmission
 	 * @param detailMessage
 	 */

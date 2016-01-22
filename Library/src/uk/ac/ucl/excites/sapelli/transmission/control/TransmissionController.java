@@ -598,6 +598,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		 */
 		public void receive(Payload payload) throws TransmissionReceivingException
 		{
+			// Null check:
+			if(payload == null)
+				throw new TransmissionReceivingException(new NullPointerException("Payload is null!"));
+				
 			// Deal with possible PayloadDecodeException:
 			if(payload.hasDecodeException())
 			{
@@ -681,8 +685,11 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 						"Subject hash: " + ack.getSubjectPayloadHash(),
 						"Subject found: " + (subject != null));
 			if(subject != null)
-				// Payload-specific ACK handling:
-				subject.getPayload().handle(payloadAckHandler);
+			{
+				Payload subjectPayload = subject.getPayload();
+				if(subjectPayload != null)
+					subjectPayload.handle(payloadAckHandler); 	// Payload-specific ACK handling
+			}
 		}
 		
 		@Override

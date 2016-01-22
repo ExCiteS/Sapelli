@@ -201,7 +201,7 @@ public abstract class Transmission<C extends Correspondent>
 	private transient boolean wrapped;
 	
 	/**
-	 * To be called from the sending side
+	 * To be called from the sending side.
 	 * 
 	 * @param client
 	 * @param receiver
@@ -216,7 +216,7 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * To be called from the receiving side
+	 * To be called from the receiving side.
 	 * 
 	 * @param client
 	 * @param sender
@@ -406,6 +406,17 @@ public abstract class Transmission<C extends Correspondent>
 	
 	public Payload getPayload()
 	{
+		if(payload == null && isComplete())
+		{	// Reconstruct (i.e. "re-receive") Payload (after db retrieval):
+			try
+			{
+				receive();
+			}
+			catch(TransmissionReceivingException e)
+			{
+				client.logError("Transmission: error upon reconstructing Payload", e);
+			}
+		}
 		return payload;
 	}
 	
