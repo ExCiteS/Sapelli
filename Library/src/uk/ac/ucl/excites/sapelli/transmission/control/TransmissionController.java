@@ -69,6 +69,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionReceivingException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
+import uk.ac.ucl.excites.sapelli.transmission.util.UnknownCorrespondentException;
 
 /**
  * Controller class to handling all incoming / outgoing transmissions.
@@ -538,6 +539,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			try
 			{	// try finding an (incomplete) transmission this message belongs to (assuming this is not the first part):
 				transmission = (SMSTransmission<?>) transmissionStore.retrieveTransmission(true, smsMsg.getTransmissionType(), smsMsg.getSender(), smsMsg.getSendingSideTransmissionID(), smsMsg.getPayloadHash(), smsMsg.getTotalParts());
+			}
+			catch(UnknownCorrespondentException uce)
+			{
+				// ignore (this just means this is the first SMS te be received from that sender)
 			}
 			catch(Exception e)
 			{
