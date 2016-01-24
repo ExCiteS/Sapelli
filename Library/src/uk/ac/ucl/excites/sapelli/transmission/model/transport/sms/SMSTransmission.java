@@ -160,7 +160,7 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 			return; // discard duplicate
 		// Add the part:
 		parts.add(msg);
-		msg.setTransmission(this);
+		msg.setTransmission(this); // !!!
 		// If all parts are received, set overall reception time: 
 		if(isComplete())
 		{

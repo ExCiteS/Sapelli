@@ -22,7 +22,6 @@ import java.io.EOFException;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
@@ -31,11 +30,9 @@ import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
@@ -73,8 +70,6 @@ public abstract class Transmission<C extends Correspondent>
 		public void handle(BinarySMSTransmission binSMST);
 		
 		public void handle(TextSMSTransmission txtSMST);
-		
-		public void handle(HTTPTransmission httpT);
 		
 		public void handle(GeoKeyTransmission geoKeyT);
 		
@@ -126,7 +121,7 @@ public abstract class Transmission<C extends Correspondent>
 	static protected final int UNLIMITED_BODY_SIZE = -1;
 	
 	// DYNAMICS------------------------------------------------------
-	protected final TransmissionClient client;
+	public final TransmissionClient client;
 	
 	/**
 	 * If {@code false} this Transmission was created on the current device for sending to another device,
@@ -749,11 +744,6 @@ public abstract class Transmission<C extends Correspondent>
 		this.receivedAt = receivedAt;
 	}
 	
-	public TransmissionClient getClient()
-	{
-		return client;
-	}
-	
 	/**
 	 * @return the response
 	 */
@@ -797,31 +787,12 @@ public abstract class Transmission<C extends Correspondent>
 	 * 
 	 * @author mstevens
 	 */
-	public class SentCallback
+	public class SentCallback extends Callback
 	{
 
 		protected void store()
 		{
 			store(Transmission.this);
-		}
-
-		protected void store(final Transmission<?> t)
-		{
-			try
-			{
-				client.transmissionStoreHandle.executeNoDBEx(new StoreHandle.StoreOperation<TransmissionStore, Exception>()
-				{
-					@Override
-					public void execute(TransmissionStore store) throws Exception
-					{
-						store.store(t);
-					}
-				});
-			}
-			catch(Exception e)
-			{
-				client.logError("Error upon storing transmission from " + getClass().getSimpleName(), e);
-			}
 		}
 		
 		public void onSent()
@@ -857,7 +828,7 @@ public abstract class Transmission<C extends Correspondent>
 				(responsePayload.getSubject() != null && !Objects.equals(Transmission.this.localID, responsePayload.getSubject().localID)))
 				return; // should never happen
 			
-			// Set transmission use to bring us the responsePayload as this transmission's response:
+			// Set transmission used to bring us the responsePayload as this transmission's response:
 			setResponse(responsePayload.transmission);
 			
 			// Set remote ID if we got it:

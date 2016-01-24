@@ -18,11 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
+import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
+
 /**
  * @author mstevens
  *
  */
-public class InvalidMessageException extends Exception
+public class InvalidMessageException extends TransmissionSendingException
 {
 
 	private static final long serialVersionUID = 1L;

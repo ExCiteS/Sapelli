@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
@@ -118,7 +116,7 @@ public class ResendRequestPayload extends ResponsePayload
 	/**
 	 * @author mstevens
 	 */
-	private class ResentRequestSentCallback extends SentCallback implements StoreUser
+	private class ResentRequestSentCallback extends SentCallback
 	{
 		
 		private final SMSTransmission<?> incompleteT;
@@ -141,19 +139,7 @@ public class ResendRequestPayload extends ResponsePayload
 			incompleteT.setLastResendRequestSentAt(sentAt);
 			
 			// Store updated transmission:
-			TransmissionClient client = incompleteT.getClient();
-			try
-			{
-				client.transmissionStoreHandle.getStore(this).store(incompleteT);
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-			}
-			finally
-			{
-				client.transmissionStoreHandle.doneUsing(this);
-			}
+			store(incompleteT);
 			
 			// Schedule next request (won't do anything if max reached):
 			controller.scheduleSMSResendRequest(incompleteT.getLocalID(), incompleteT.getNextResendRequestSendingTime());

@@ -76,7 +76,7 @@ public class ModelQueryPayload extends Payload
 		// Check if we (=receiving end) have this model:
 		try
 		{
-			transmission.getClient().getModel(modelID);
+			transmission.client.getModel(modelID);
 		}
 		catch(UnknownModelException ume)
 		{

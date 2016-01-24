@@ -150,7 +150,7 @@ public class RecordsPayload extends Payload
 			throw new IllegalArgumentException("Schema of given record(s) is not transmittable.");
 		
 		// Check if record has non-null values for all transmittable columns:
-		if(!record.isFilled(transmission.getClient().getNonTransmittableColumns(schema))) // includes auto-incr-PK columns
+		if(!record.isFilled(transmission.client.getNonTransmittableColumns(schema))) // includes auto-incr-PK columns
 			throw new IllegalArgumentException("Record is not filled (some non-optional, transmittable values are null).");
 		
 		// Model:
@@ -344,7 +344,7 @@ public class RecordsPayload extends Payload
 		//		Read Model ID & loop-up model:
 		try
 		{
-			this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.readLong(in));
+			this.model = transmission.client.getModel(Model.MODEL_ID_FIELD.readLong(in));
 		}
 		catch(UnknownModelException ume)
 		{
@@ -391,7 +391,7 @@ public class RecordsPayload extends Payload
 			for(Schema schema : schemataInT)
 			{
 				// Get columns which should *not* be transmitted:
-				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema); // includes auto-incr-PK columns
+				Set<Column<?>> nonTransmittableColumns = transmission.client.getNonTransmittableColumns(schema); // includes auto-incr-PK columns
 				
 				// Get records:
 				List<Record> records = recordsBySchema.get(schema);
@@ -494,7 +494,7 @@ public class RecordsPayload extends Payload
 			for(Schema schema : schemataInT)
 			{
 				// Get columns which should *not* be transmitted:
-				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema); // includes auto-incr-PK columns
+				Set<Column<?>> nonTransmittableColumns = transmission.client.getNonTransmittableColumns(schema); // includes auto-incr-PK columns
 				
 				// Create & store list for the records that will be decoded:
 				List<Record> records = new ArrayList<Record>();

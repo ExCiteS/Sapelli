@@ -166,7 +166,7 @@ public abstract class Payload
 	public abstract int getType();
 
 	/**
-	 * Only used on sending side, and even there if can be null for certain payloads
+	 * Only used on sending side, and only by some Payload subclasses
 	 */
 	private SentCallback callback;
 	
@@ -186,7 +186,7 @@ public abstract class Payload
 	}
 	
 	/**
-	 * @return the callback- may be null
+	 * @return the callback - may be null
 	 */
 	public SentCallback getCallback()
 	{
@@ -291,7 +291,7 @@ public abstract class Payload
 	/**
 	 * @author mstevens
 	 */
-	protected class SentCallback
+	protected class SentCallback extends Callback
 	{
 		
 		public void onSent(TimeStamp sentAt)
