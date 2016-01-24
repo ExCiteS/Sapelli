@@ -26,7 +26,7 @@ import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.Helpers.SMSInfo;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreOperationWithReturn;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -68,10 +68,19 @@ public class OutgoingSMSCallbackService extends IntentService
 	{
 		try
 		{
-			SMSInfo smsInfo = SMSInfo.FromIntent(intent);
+			final SMSInfo smsInfo = SMSInfo.FromIntent(intent);
 			if(smsInfo.multiPartNumber == smsInfo.multiPartTotal)
 			{
-				SMSTransmission<?> smsT = getTransmission(smsInfo);
+				SMSTransmission<?> smsT = app.collectorClient.transmissionStoreHandle.executeWithReturnNoEx(new StoreHandle.StoreOperationWithReturnNoException<TransmissionStore, SMSTransmission<?>>()
+				{
+					@Override
+					public SMSTransmission<?> execute(TransmissionStore store)
+					{
+						return store.retrieveSMSTransmission(false, smsInfo.transmissionLocalID, smsInfo.transmissionBinary, smsInfo.transmissionNumberOfParts);
+					}
+				});
+				if(smsT == null)
+					return;
 				getHandler(intent.getIntExtra(Helpers.EXTRA_CALLBACK_ACTION_ID, Integer.MIN_VALUE)).handle(
 					smsInfo.smsID,
 					smsT.getPart(smsInfo.transmissionPartNumber),
@@ -106,18 +115,6 @@ public class OutgoingSMSCallbackService extends IntentService
 				(msg.getTotalParts() > 1 ? ("; SMS-PART:" + msg.getPartNumber() + "/" + msg.getTotalParts()) : "") +
 				"; TRANSMISSION-ID: " + msg.getTransmission().getLocalID() +
 				"; TRANSMISSION-PART: " + msg.getPartNumber() + "/" + msg.getTotalParts() + "]";
-	}
-	
-	private SMSTransmission<?> getTransmission(final SMSInfo smsInfo) throws Exception
-	{
-		return app.collectorClient.transmissionStoreHandle.executeWithReturnNoDBEx(new StoreOperationWithReturn<TransmissionStore, SMSTransmission<?>, Exception>()
-		{
-			@Override
-			public SMSTransmission<?> execute(TransmissionStore store) throws Exception
-			{
-				return store.retrieveSMSTransmission(false, smsInfo.transmissionLocalID, smsInfo.transmissionBinary, smsInfo.transmissionNumberOfParts);
-			}
-		});
 	}
 	
 	/**
