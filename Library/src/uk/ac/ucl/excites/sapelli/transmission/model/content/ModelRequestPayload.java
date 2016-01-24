@@ -33,9 +33,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * 
  * This is a ResponsePayload because a model request will be sent as a result of receiving records of an unknown model.
  * 
- * TODO perhaps also include a list of the model IDs that *are* known?
- * 
- * @author benelliott
+ * @author benelliott, mstevens
  */
 public class ModelRequestPayload extends ResponsePayload
 {
@@ -85,7 +83,7 @@ public class ModelRequestPayload extends ResponsePayload
 	@Override
 	public boolean acknowledgeReception()
 	{
-		return true; // ??
+		return false;
 	}
 	
 	public long getUnknownModelID()
