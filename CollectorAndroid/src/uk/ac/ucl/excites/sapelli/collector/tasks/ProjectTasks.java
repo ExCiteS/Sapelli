@@ -271,8 +271,6 @@ public final class ProjectTasks
 				// Remove project from store:
 				projectStore.delete(projDescr);
 				
-				// TODO re-assess receiving of transmission types...
-				
 				BaseActivity owner = getContext();
 				if(owner != null)
 				{
