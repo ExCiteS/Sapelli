@@ -302,7 +302,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			// Set local transmissionID in object as on the record: 
 			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(cRec).intValue());
 		
-		client.logInfo("Stored correspondent: " + correspondent.getName() + " (localid: " + (correspondent.isLocalIDSet() ? correspondent.getLocalID() : "null") + ")");
+		//client.logInfo("Stored correspondent: " + correspondent.getName() + " (localid: " + (correspondent.isLocalIDSet() ? correspondent.getLocalID() : "null") + ")");
 		
 		return cRec.getReference();
 	}
