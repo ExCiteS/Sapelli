@@ -357,7 +357,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Checks whether the schema contains a column with the given name.
+	 * Checks whether the schema contains a column with the given name, as a top-level column.
 	 * 
 	 * @param name the name of a column
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
@@ -369,7 +369,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()).
+	 * Checks whether the schema contains the given column (checked by object identity; i.e. == and not equals()), as a top-level column.
 	 * 
 	 * @param column
 	 * @return whether or not this Schema contains the given Column
@@ -383,7 +383,7 @@ public class ColumnSet implements Serializable
 	}
 	
 	/**
-	 * Checks whether the schema contains the given Column or an exact equivalent of it.
+	 * Checks whether the schema contains the given Column or an exact equivalent of it, as a top-level column.
 	 * 
 	 * @param column
 	 * @return whether or not this Schema contains the given Column or an exact equivalent of it
