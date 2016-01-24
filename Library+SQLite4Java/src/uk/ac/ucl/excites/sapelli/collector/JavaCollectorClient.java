@@ -40,6 +40,11 @@ public class JavaCollectorClient extends CollectorClient implements SQLRecordSto
 	
 	static private final String DATABASE_BASENAME = "Sapelli";
 	
+	/**
+	 * Only for logging
+	 */
+	private final String identifier;
+	
 	private final FileStorageProvider fileStorageProvider;
 	
 	/**
@@ -48,7 +53,18 @@ public class JavaCollectorClient extends CollectorClient implements SQLRecordSto
 	 */
 	public JavaCollectorClient(File sapelliFolder, File downloadsFolder)
 	{
+		this(sapelliFolder, downloadsFolder, null);
+	}
+	
+	/**
+	 * @param sapelliFolder
+	 * @param downloadsFolder
+	 * @param identifier
+	 */
+	public JavaCollectorClient(File sapelliFolder, File downloadsFolder, String identifier)
+	{
 		this.fileStorageProvider = new FileStorageProvider(sapelliFolder, downloadsFolder);
+		this.identifier = identifier;
 	}
 	
 	@Override
@@ -84,10 +100,15 @@ public class JavaCollectorClient extends CollectorClient implements SQLRecordSto
 		}
 	}
 
+	private String getLogIdentifier()
+	{
+		return identifier != null ? identifier : getClass().getSimpleName();
+	}
+	
 	@Override
 	public void logError(String msg, Throwable throwable)
 	{
-		System.err.println("ERROR@" + getClass().getSimpleName() + ":" + msg);
+		System.err.println("ERROR@" + getLogIdentifier() + ":" + msg);
 		if(throwable != null)
 			throwable.printStackTrace(System.err);
 	}
@@ -95,13 +116,13 @@ public class JavaCollectorClient extends CollectorClient implements SQLRecordSto
 	@Override
 	public void logWarning(String msg)
 	{
-		System.out.println("WARNING@" + getClass().getSimpleName() + ":" + msg);
+		System.out.println("WARNING@" + getLogIdentifier() + ":" + msg);
 	}
 
 	@Override
 	public void logInfo(String msg)
 	{
-		System.out.println("INFO@" + getClass().getSimpleName() + ":" + msg);
+		System.out.println("INFO@" + getLogIdentifier() + ":" + msg);
 	}
 
 }
