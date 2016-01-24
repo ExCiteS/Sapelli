@@ -298,7 +298,7 @@ public class IntegerColumn extends NumberColumn<Long>
 	 */
 	public void storeValue(ValueSet<?> valueSet, Integer value) throws IllegalArgumentException, NullPointerException
 	{
-		storeValue(valueSet, (Long) convert(value));
+		storeValue(valueSet, convert(value));
 	}
 
 	/**
