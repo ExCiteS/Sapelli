@@ -43,11 +43,21 @@ public abstract class SQLiteStatement implements Closeable
 	
 	protected final List<SQLiteColumn<?, ?>> paramCols;
 	
+	protected boolean verifyLastInsert;
+	
+	/**
+	 * Creates a SQLIteStatement without parameters.
+	 */
 	public SQLiteStatement()
 	{
 		this.paramCols = null;
 	}
 	
+	/**
+	 * Creates a SQLIteStatement with the given columns as parameters.
+	 * 
+	 * @param paramCols
+	 */
 	public SQLiteStatement(List<SQLiteColumn<?, ?>> paramCols)
 	{
 		this.paramCols = paramCols;
@@ -61,7 +71,7 @@ public abstract class SQLiteStatement implements Closeable
 	{
 		if(paramCols != null)
 		{
-			int p = 0;
+			int p = 1; // SQLite uses 1-based parameter indexes when binding!
 			for(SQLiteColumn<?, ?> sqliteCol : paramCols)
 				sqliteCol.retrieveAndBind(this, p++, recordOrReference);
 		}
@@ -75,9 +85,12 @@ public abstract class SQLiteStatement implements Closeable
 	{
 		if(paramCols != null)
 		{
-			int p = 0;
+			int p = 1; // SQLite uses 1-based parameter indexes when binding!
 			for(SQLiteColumn<?, ?> sqliteCol : paramCols)
-				sqliteCol.bindSapelliObject(this, p, arguments.get(p++));
+			{
+				sqliteCol.bindSapelliObject(this, p, arguments.get(p - 1 /*collection uses 0-based index*/));
+				p++;
+			}
 		}
 	}
 	
@@ -96,7 +109,9 @@ public abstract class SQLiteStatement implements Closeable
 	/**
 	 * Executes a SQL INSERT operation, i.e. the creation (the "C" in "CRUD") of a new record in a database table.
 	 * 
-	 * @return the ROWID of the new record
+	 * If after this method returns {@link #mustLastInsertBeVerified()} returns {@code true} then the INSERT operation should be verified. 
+	 * 
+	 * @return the ROWID of the last record to be insert (in normal circumstances this is the ROWID of the record being inserted with this call)
 	 * @throws DBPrimaryKeyException
 	 * @throws DBConstraintException
 	 * @throws DBException
@@ -106,6 +121,14 @@ public abstract class SQLiteStatement implements Closeable
 	 * @see http://www.sqlite.org/version3.html
 	 */
 	public abstract long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException;
+	
+	/**
+	 * @return whether or not the last INSERT operation should be verified
+	 */
+	public boolean mustLastInsertBeVerified()
+	{
+		return verifyLastInsert;
+	}
 	
 	/**
 	 * Executes a SQL UPDATE operation, i.e. the updating (the "U" in "CRUD") of (an) existing record(s) in a database table.
@@ -157,7 +180,7 @@ public abstract class SQLiteStatement implements Closeable
 	 */
 	protected abstract String getSQL();
 	
-	protected String formatMessageWithSQL(String message)
+	public String formatMessageWithSQL(String message)
 	{
 		return String.format(message, getSQL());
 	}

@@ -389,9 +389,11 @@ public class ColumnPointer<C extends Column<?>>
 	 * @param topLevelVS
 	 * @param create whether or not to create a new subValueSet if there is none
 	 * @return the (sub)record or null if there was none and creation was disabled
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
 	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 * @throws InvalidColumnException when the pointed-at column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public ValueSet<?> getValueSet(ValueSet<?> topLevelVS, boolean create) throws IllegalArgumentException
+	public ValueSet<?> getValueSet(ValueSet<?> topLevelVS, boolean create) throws NullPointerException, IllegalArgumentException, InvalidColumnException
 	{
 		return getValueSet(topLevelVS, create, null);
 	}
@@ -403,9 +405,11 @@ public class ColumnPointer<C extends Column<?>>
 	 * @param create whether or not to create a new subValueSet if there is none
 	 * @param initialiser {@link SubValueSetInitialiser} to initialise new subValueSet(s) with, or {@code null}
 	 * @return the (sub)record or null if there was none and creation was disabled
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
 	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 * @throws InvalidColumnException when the pointed-at column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public ValueSet<?> getValueSet(ValueSet<?> topLevelVS, boolean create, SubValueSetInitialiser initialiser) throws IllegalArgumentException
+	public ValueSet<?> getValueSet(ValueSet<?> topLevelVS, boolean create, SubValueSetInitialiser initialiser) throws NullPointerException, IllegalArgumentException, InvalidColumnException
 	{
 		// Get path:
 		Stack<Column<?>> path = getPathFrom(topLevelVS.getColumnSet());
@@ -438,9 +442,11 @@ public class ColumnPointer<C extends Column<?>>
 	 * Creates a (sub)valueSet in the given valueSet (if needed) corresponding to the column this ColumnPointer points to.
 	 * 
 	 * @param topLevelVS
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
 	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 * @throws InvalidColumnException when the pointed-at column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public void createValueSet(ValueSet<?> topLevelVS)  throws IllegalArgumentException
+	public void createValueSet(ValueSet<?> topLevelVS) throws NullPointerException, IllegalArgumentException, InvalidColumnException
 	{
 		createValueSet(topLevelVS, null);
 	}
@@ -450,9 +456,11 @@ public class ColumnPointer<C extends Column<?>>
 	 * 
 	 * @param topLevelVS
 	 * @param initialiser
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
 	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 * @throws InvalidColumnException when the pointed-at column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public void createValueSet(ValueSet<?> topLevelVS, SubValueSetInitialiser initialiser)  throws IllegalArgumentException
+	public void createValueSet(ValueSet<?> topLevelVS, SubValueSetInitialiser initialiser) throws NullPointerException, IllegalArgumentException, InvalidColumnException
 	{
 		getValueSet(topLevelVS, true, initialiser);
 	}
@@ -463,8 +471,11 @@ public class ColumnPointer<C extends Column<?>>
 	 * 
 	 * @param topLevelVS
 	 * @return
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws IllegalArgumentException when no path could be constructed from the schema of the given record to the column pointed at by this ColumnPointer
+	 * @throws InvalidColumnException when the pointed-at column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public Object retrieveValue(ValueSet<?> topLevelVS)
+	public Object retrieveValue(ValueSet<?> topLevelVS) throws NullPointerException, IllegalArgumentException, InvalidColumnException
 	{
 		ValueSet<?> subVS = getValueSet(topLevelVS, false);
 		if(subVS != null)

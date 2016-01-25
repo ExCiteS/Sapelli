@@ -23,7 +23,10 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -83,10 +86,11 @@ public class FloatColumn extends NumberColumn<Double>
 	 * 
 	 * @param valueSet
 	 * @param value
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the given value is invalid
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public void storeValue(ValueSet<?> valueSet, Float value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(ValueSet<?> valueSet, Float value) throws InvalidColumnException, InvalidValueException, NullPointerException
 	{
 		Double doubleValue = (value != null ? Double.valueOf(value.floatValue()) : null);
 		storeValue(valueSet, doubleValue);
@@ -110,8 +114,10 @@ public class FloatColumn extends NumberColumn<Double>
 	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public double getPrimitiveDouble(ValueSet<?> valueSet, double nullReplacement)
+	public double getPrimitiveDouble(ValueSet<?> valueSet, double nullReplacement) throws NullPointerException, InvalidColumnException
 	{
 		Double doubleValue = retrieveValue(valueSet);
 		if(doubleValue == null)
@@ -123,8 +129,10 @@ public class FloatColumn extends NumberColumn<Double>
 	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public float getPrimitiveFloat(ValueSet<?> valueSet, float nullReplacement)
+	public float getPrimitiveFloat(ValueSet<?> valueSet, float nullReplacement) throws NullPointerException, InvalidColumnException
 	{
 		Double doubleValue = retrieveValue(valueSet);
 		if(doubleValue == null)
@@ -144,10 +152,10 @@ public class FloatColumn extends NumberColumn<Double>
 	}
 
 	@Override
-	protected void validate(Double value) throws IllegalArgumentException
+	protected void validate(Double value) throws InvalidValueException
 	{
 		if(!signed && value < 0.0d)
-			throw new IllegalArgumentException("Cannot store negative values because column is unsigned");
+			throw new InvalidValueException("Cannot store negative values because column is unsigned", this);
 		/*
 		 * Note: I originally planned to also check whether the value could fit in a 32 bit float when in
 		 * 		 single precision mode, but it seems there is no obvious (or even correct) way to do this. 

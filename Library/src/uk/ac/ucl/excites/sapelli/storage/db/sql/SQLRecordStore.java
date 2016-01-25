@@ -54,7 +54,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
@@ -84,6 +83,7 @@ import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SchemaTraverser;
 
 /**
@@ -1051,12 +1051,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public final Map<ValueSetColumn<?, ?>, List<SColumn>> composite2SqlColumns;
 		
 		/**
-		 * The auto-incrementing primary key column as (a Sapelli Column, not an S/SQLColumn), will be null if there is none
-		 */
-		protected final IntegerColumn autoIncrementKeySapColumn;
-		protected SColumn autoIncrementKeySQLColumn;
-		
-		/**
 		 * Contains the SQLColumns that correspond to (parts of) the Schema's public key
 		 */
 		private Set<SColumn> keyPartSqlColumns;
@@ -1068,8 +1062,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer<?>, SColumn>(); // to preserve column order we use a LinkedHashMap (i.e. a collection that is iterated in insertion-order)!
 			composite2SqlColumns = new HashMap<ValueSetColumn<?, ?>, List<SColumn>>();
-			// Deal with auto-increment key:
-			this.autoIncrementKeySapColumn = schema.getAutoIncrementingPrimaryKeyColumn();
 		}
 		
 		public final String getUnsanitisedName()
@@ -1093,10 +1085,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(sqlColumns.get(sourceCP) != null)
 				throw new IllegalArgumentException("Duplicate source column!");
 			sqlColumns.put(sourceCP, sqlColumn);
-			
-			// Deal with AutoIncr...
-			if(sourceCP.getColumn() == autoIncrementKeySapColumn)
-				this.autoIncrementKeySQLColumn = sqlColumn;
 			
 			// Deal with composites...
 			while(sourceCP.isSubColumn())
@@ -1274,7 +1262,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
 			// This method cannot be used on schemata with auto-incrementing PKs:
-			if(autoIncrementKeySapColumn != null)
+			if(schema.getAutoIncrementingPrimaryKeyColumn() != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
 			//else...
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
@@ -1558,8 +1546,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * @param recordOrReference
 		 * @param value
+		 * @throws InvalidValueException when the given value is invalid
 		 */
-		public void store(RecordValueSet<?> recordOrReference, SQLType value)
+		public void store(RecordValueSet<?> recordOrReference, SQLType value) throws InvalidValueException
 		{
 			// Get column:
 			Column<SapType> col = sourceColumnPointer.getColumn();
@@ -1605,6 +1594,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isBoolColForAllOptionalValueSetCol()
 		{
 			return false;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return getClass().getSimpleName() + "{" + sanitisedName + "}";
 		}
 		
 	}
@@ -1723,8 +1718,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				// Create table
 				table = createTable(schema);
 				
-				// Traverse schema to add columns, etc.:
+				// Traverse schema to add columns:
 				this.traverse(schema); // !!! (don't call schema.accept(this) directly because then the parentStack is not cleared!)
+				
+				// Run post-processing:
+				postProcessiong(table);
 				
 				// Done:
 				return table;
@@ -1742,6 +1740,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @throws DBException 
 		 */
 		protected abstract STable createTable(Schema schema) throws DBException;
+		
+		/**
+		 * Called after the columns have been added to the table:
+		 * 
+		 * @param table
+		 * @throws DBException
+		 */
+		protected void postProcessiong(STable table) throws DBException
+		{
+			// does nothing by default
+		}
 		
 		@Override
 		public void setInsertBoolColsForAllOptionalValueSetCols(boolean enable) throws DBException
@@ -1942,7 +1951,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Generate column constraints:
 			this.colConstraints = new HashMap<SColumn, String>();
 			for(SColumn sqlCol : table.sqlColumns.values())
-				colConstraints.put(sqlCol, getColumnConstraint(sqlCol.sourceColumnPointer, indexesToProcess)); // processed indexes are removed from list
+				colConstraints.put(sqlCol, getColumnConstraint(sqlCol, indexesToProcess)); // processed indexes are removed from list
 			
 			// Generate any additional table constraints:
 			tableConstraints = new ArrayList<String>();
@@ -1961,7 +1970,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param indexesToProcess indexes which may relate to the column, any which do and which are described entirely by the returned constraint will be removed from the list
 		 * @return an SQL constraint expression for the given column
 		 */
-		protected abstract String getColumnConstraint(ColumnPointer<?> sourceCP, List<Index> indexesToProcess);
+		protected abstract String getColumnConstraint(SColumn sqlCol, List<Index> indexesToProcess);
 		
 		/**
 		 * Generates SQL constraint expressions for the table as a whole and adds them to the tableConstraints list.
@@ -2150,23 +2159,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Columns names:
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
-					bldr.append(sqlCol.sanitisedName);
+				bldr.append(sqlCol.sanitisedName);
 			bldr.commitTransaction(false);
 			// Values:
 			bldr.append(") VALUES (", false);
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(sqlCol != table.autoIncrementKeySQLColumn) // skip auto-incrementing key
+				if(isParameterised())
 				{
-					if(isParameterised())
-					{
-						bldr.append(valuePlaceHolder);
-						addParameterColumn(sqlCol);
-					}
-					else
-						bldr.append(sqlCol.retrieveAsLiteral(record, true));
+					bldr.append(valuePlaceHolder);
+					addParameterColumn(sqlCol);
 				}
+				else
+					bldr.append(sqlCol.retrieveAsLiteral(record, true));
 			bldr.commitTransaction(false);
 			bldr.append(")", false);
 		}

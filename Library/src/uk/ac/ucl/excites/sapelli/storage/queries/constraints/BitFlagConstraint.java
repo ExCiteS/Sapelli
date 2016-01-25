@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;

@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * Class representing a reference to another {@link Record}, identified by the value(s) of its primary key.
@@ -58,9 +59,12 @@ public class RecordReference extends RecordValueSet<PrimaryKey>
 	 * 
 	 * @param referencedSchema (also called "foreign" schema)
 	 * @param keyPartValues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
-	 * @throws NullPointerException	if the referencedSchema does not have a primary key
+	 * @throws IllegalArgumentException in case of an incorrect number of values
+	 * @throws InvalidValueException in case of an invalid value
+	 * @throws NullPointerException if the referencedSchema does not have a primary key, of if one of the keyPartValues is null
+	 * @throws ClassCastException when a value cannot be converted/casted to the column's type {@code <T>}
 	 */
-	protected RecordReference(Schema referencedSchema, Object... keyPartValues) throws NullPointerException
+	protected RecordReference(Schema referencedSchema, Object... keyPartValues) throws IllegalArgumentException, InvalidValueException, NullPointerException, ClassCastException
 	{
 		super(referencedSchema.getPrimaryKey(), keyPartValues); // We use the recordSchema's primary key as the schema for this record (i.e. for the recordReference, which is "a record" in its own right)
 		this.referencedSchema = referencedSchema;

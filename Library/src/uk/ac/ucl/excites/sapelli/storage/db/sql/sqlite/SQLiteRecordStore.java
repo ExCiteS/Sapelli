@@ -32,6 +32,8 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -58,11 +60,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * Abstract {@link SQLRecordStore} implementation which is backed by a SQLite database.
@@ -150,7 +154,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected void doStartTransaction() throws DBException
 	{
-		if(!isInTransaction()) // TODO re-assess this for android/java
+		if(!isInTransaction()) // only the first/outer transaction is real, all nested/inner transactions are simulated
 			try
 			{
 				executeSQL("BEGIN TRANSACTION;");
@@ -176,16 +180,16 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	}
 
 	@Override
-	protected void doRollbackTransaction() throws DBException
+	protected void doRollbackTransaction()
 	{
 		if(numberOfOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
 				executeSQL("ROLLBACK TRANSACTION;");
 			}
-			catch(Exception ex)
+			catch(DBException ex)
 			{
-				throw new DBException("Could not roll-back SQLite transaction", ex);
+				client.logError("Could not roll-back SQLite transaction: " + ExceptionHelpers.getMessageAndCause(ex));
 			}
 	}
 	
@@ -423,6 +427,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				return new RecordCountHelper(SQLiteTable.this);
 			}
 		};
+		
+		/**
+		 * An explicitly defined column (i.e. corresponding to a Schema column), which acts as an alias for the ROWID column.
+		 * This happens if there a single INTEGER column is the PRIMARY KEY (possibly AUTOINCREMENTing).
+		 * 
+		 * @see https://www.sqlite.org/lang_createtable.html#rowid
+		 * @see https://www.sqlite.org/autoinc.html
+		 */
+		private SQLiteIntegerColumn<?> rowidAliasColumn;
 
 		public SQLiteTable(Schema schema)
 		{
@@ -479,7 +492,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return executeLongQuery(recordOrReference, ROWIDStatementHandle);
 		}
 		
-		/* (non-Javadoc)
+		/**
+		 * @see https://www.sqlite.org/lang_createtable.html#rowid
+		 * @see https://www.sqlite.org/autoinc.html
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#insert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
@@ -490,13 +505,55 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 
 			// Bind parameters:
 			insertStatement.retrieveAndBindAll(record);
+
+			// Check if the value of the ROWID is bound:
+			Long boundROWID = rowidAliasColumn != null ? rowidAliasColumn.retrieve(record) : null;
+			
+			if(boundROWID == null && schema.getAutoIncrementingPrimaryKeyColumn() != null)
+				// If the is an "auto-incrementing" primary key column (which is always the ROWID alias as well),
+				//	and its value isn't bound yet, then SQLite will determine the value. But we must be careful
+				//	because the value may not fit in the IntegerColumn. If it doesn't we must be able to undo
+				//	the insertion. Hence we start a transaction:
+				startTransaction();
 			
 			// Execute:
 			long rowID = insertStatement.executeInsert();
 			
-			// Set auto-incrementing key value:
-			if(autoIncrementKeySapColumn != null)
-				autoIncrementKeySapColumn.storeValue(record, rowID);
+			client.logInfo("TABLE " + this.sanitisedName + " INSERT ROWID: " + rowID + "; must verify: " + insertStatement.mustLastInsertBeVerified());
+			
+			// Perform various checks & set autoIncr PK value if needed:
+			if(boundROWID != null)
+			{
+				// Check if rowID matches excepted (i.e. bound) value:
+				if(rowID != boundROWID.longValue())
+					throw new DBException(insertStatement.formatMessageWithSQL("Execution of INSERT statement (%s) failed (Unexpected ROWID; expected: " + boundROWID + "; last inserted ROWID: " + rowID + ")"));
+				
+				// If needed, check whether INSERT really happened:
+				if(insertStatement.mustLastInsertBeVerified() && !Objects.equals(boundROWID, getROWID(record))) // if insert failed getROWID(record) will return null
+					throw new DBException(insertStatement.formatMessageWithSQL("Execution of INSERT statement (%s) failed (Unexpected ROWID; expected: " + boundROWID + "; last inserted ROWID: " + rowID + "; found matching record with ROWID: " + getROWID(record) + ")"));
+			}
+			else
+			{
+				// If needed, check whether INSERT really happened:
+				if(insertStatement.mustLastInsertBeVerified() && !isRecordInDB(record))
+					throw new DBException(insertStatement.formatMessageWithSQL("Execution of INSERT statement (%s) failed: record not found (last inserted ROWID: " + rowID + ")"));
+				
+				// If needed, set auto-incrementing PK value:
+				if(schema.getAutoIncrementingPrimaryKeyColumn() != null)
+				{
+					try
+					{
+						schema.getAutoIncrementingPrimaryKeyColumn().storeValue(record, Long.valueOf(rowID)); // value will be validated
+					}
+					catch(InvalidValueException ive)
+					{	// this means the PK value chosen by SQLite does not fit in the bounds of the corresponding Sapelli column 
+						rollbackTransactions(); // Undo the INSERT!
+						throw new DBPrimaryKeyException(insertStatement.formatMessageWithSQL("Execution of INSERT statement (%s) failed: auto-incrementing PK value invalid"), ive);
+					}
+					// AutoIncr value was valid, commit transaction:
+					commitTransaction();
+				}
+			}
 		}
 
 		/**
@@ -787,6 +844,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return new SQLiteTable(schema);
 		}
 
+		/**
+		 * Here we detect if the table has a primary key column which serves as an implicit alias for the ROWID column.
+		 * 
+		 * From the SQLite documentation:
+		 * 	'[...] if a rowid table has a primary key that consists of a single column and the declared type of that column is "INTEGER"
+		 * 	in any mixture of upper and lower case, then the column becomes an alias for the rowid'
+
+		 * @see https://www.sqlite.org/lang_createtable.html#rowid
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#postProcessiong(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable)
+		 */
+		@Override
+		protected void postProcessiong(SQLiteTable table) throws DBException
+		{
+			PrimaryKey pk = table.schema.getPrimaryKey();
+			if(!pk.isMultiColumn())
+			{
+				SQLiteColumn<?, ?> pkSQLiteColumn = table.getSQLColumn(pk.getColumns(false).get(0));
+				if(pkSQLiteColumn.type.equalsIgnoreCase(SQLiteIntegerColumn.SQLITE_DATA_TYPE))
+					table.rowidAliasColumn = (SQLiteIntegerColumn<?>) pkSQLiteColumn;
+			}
+		}
+
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#addBoolColForAllOptionalValueSetCol(uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer, uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping)
 		 */
@@ -952,8 +1031,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		@Override
-		public String getColumnConstraint(ColumnPointer<?> sourceCP, List<Index> indexesToProcess)
+		protected String getColumnConstraint(SQLiteColumn<?, ?> sqlCol, List<Index> indexesToProcess)
 		{
+			ColumnPointer<?> sourceCP = sqlCol.sourceColumnPointer;
+			
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 		
 			// Primary key & unique indexes:

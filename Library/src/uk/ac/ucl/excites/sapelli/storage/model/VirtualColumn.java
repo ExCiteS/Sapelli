@@ -24,6 +24,8 @@ import java.text.ParseException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -100,11 +102,14 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	
 	/**
 	 * Overridden to retrieve value from sourceColum and convert it.
-	 *  
+	 * 
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when the sourceColumn is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.ValueSet)
 	 */
 	@Override
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> TT retrieveValue(VS valueSet)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> TT retrieveValue(VS valueSet) throws NullPointerException, InvalidColumnException
 	{
 		// Retrieve value from sourceColumn:
 		ST sourceValue = sourceColumn.retrieveValue(valueSet);
@@ -148,7 +153,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 	}
 
 	@Override
-	protected void validate(TT value) throws IllegalArgumentException
+	protected void validate(TT value) throws InvalidValueException
 	{
 		targetColumn.validate(value);
 	}

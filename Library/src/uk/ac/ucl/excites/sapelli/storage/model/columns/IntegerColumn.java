@@ -27,8 +27,11 @@ import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnSet;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -293,10 +296,11 @@ public class IntegerColumn extends NumberColumn<Long>
 	 * 
 	 * @param valueSet
 	 * @param value
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the given value is invalid
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public void storeValue(ValueSet<?> valueSet, Integer value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(ValueSet<?> valueSet, Integer value) throws InvalidColumnException, InvalidValueException, NullPointerException
 	{
 		storeValue(valueSet, convert(value));
 	}
@@ -330,8 +334,10 @@ public class IntegerColumn extends NumberColumn<Long>
 	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public long getPrimitiveLong(ValueSet<?> valueSet, long nullReplacement)
+	public long getPrimitiveLong(ValueSet<?> valueSet, long nullReplacement) throws NullPointerException, InvalidColumnException
 	{
 		Long longValue = retrieveValue(valueSet);
 		if(longValue == null)
@@ -343,8 +349,10 @@ public class IntegerColumn extends NumberColumn<Long>
 	 * @param valueSet
 	 * @param nullReplacement
 	 * @return
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public int getPrimitiveInt(ValueSet<?> valueSet, int nullReplacement)
+	public int getPrimitiveInt(ValueSet<?> valueSet, int nullReplacement) throws NullPointerException, InvalidColumnException
 	{
 		Long longValue = retrieveValue(valueSet);
 		if(longValue == null)
@@ -364,16 +372,16 @@ public class IntegerColumn extends NumberColumn<Long>
 	}
 
 	@Override
-	protected void validate(Long value) throws IllegalArgumentException
+	protected void validate(Long value) throws InvalidValueException
 	{
 		if(rangeMapping != null && !rangeMapping.inStrictRange(value))
-			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range: " + rangeMapping.getStrictRangeString() + ".");
+			throw new InvalidValueException("The value (" + value + ") is not in the allowed range: " + rangeMapping.getStrictRangeString() + ".", this);
 		if(value < getMinValue() || value > getMaxValue())
 		{
 			if(!signed && value < 0l)
-				throw new IllegalArgumentException("Cannot store negative value (" + value + ") as an unsigned integer.");
+				throw new InvalidValueException("Cannot store negative value (" + value + ") as an unsigned integer.", this);
 			//else:
-			throw new IllegalArgumentException("The value (" + value + ") does not fit a" + (signed ? " " : "n un") + "signed integer of " + size + " bits (allowed range: " + IntegerRangeMapping.GetRangeString(getMinValue(), getMaxValue()) + ").");
+			throw new InvalidValueException("The value (" + value + ") does not fit a" + (signed ? " " : "n un") + "signed integer of " + size + " bits (allowed range: " + IntegerRangeMapping.GetRangeString(getMinValue(), getMaxValue()) + ").", this);
 		}
 	}
 	

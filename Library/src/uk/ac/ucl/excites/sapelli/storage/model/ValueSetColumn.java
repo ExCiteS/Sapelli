@@ -32,6 +32,8 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.types.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -130,7 +132,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	}
 	
 	/**
-	 * @return new "sub-ValueSet" instance, in which each value should be set to the {@link #defaultValue} of the corresponding sub-{@link Column}
+	 * @return new non-null "sub-ValueSet" instance, in which each value should be set to the {@link #defaultValue} of the corresponding sub-{@link Column}
 	 */
 	public abstract VS getNewValueSet();
 	
@@ -140,9 +142,11 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * 
 	 * @param valueSet
 	 * @return the new "sub-ValueSet" instance
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given valueSet is {@code null}
 	 * @see #getNewValueSet()
 	 */
-	public VS storeNewValueSet(ValueSet<?> valueSet)
+	public VS storeNewValueSet(ValueSet<?> valueSet) throws InvalidColumnException, NullPointerException
 	{
 		return storeValue(valueSet, getNewValueSet());
 	}
@@ -336,12 +340,13 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to recursively check if all subColumns also have a non-{@code null} value
 	 * @return whether or not a non-{@code null} value is set for this column (if recursive is {@code false}), and also all its sub[...]columns (if recurse if {@code true})
-	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#isValuePresent(uk.ac.ucl.excites.sapelli.storage.model.ValueSet, boolean)
 	 */
 	@Override
-	public boolean isValuePresent(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	public boolean isValuePresent(ValueSet<?> valueSet, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		VS subValueSet = retrieveValue(valueSet);
 		if(subValueSet == null || !recurse)
@@ -359,10 +364,11 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value or are optional
 	 * @return whether a non-{@code null} value is set or the column is optional (if recursive is {@code false}), and whether the same applies for all its sub[...]columns (if recurse if {@code true})
-	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
 	@Override
-	public final boolean isValuePresentOrOptional(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	public final boolean isValuePresentOrOptional(ValueSet<?> valueSet, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		VS subValueSet = retrieveValue(valueSet);
 		if(subValueSet == null || !recurse)
@@ -382,12 +388,14 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @param valueSet
 	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
 	 * @param recurse whether or not to apply the operation recursively to all subColumns
-	 *
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the valueSet is {@code null}
+	 * 
 	 * @see #resetValue(ValueSet)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#resetIfEmpty(uk.ac.ucl.excites.sapelli.storage.model.ValueSet, boolean)
 	 */
 	@Override
-	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse) throws IllegalArgumentException
+	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		// At this level:
 		super.resetIfEmpty(valueSet, onlyIfRequired, false);
@@ -403,10 +411,11 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @return whether or not a non-{@code null} value is set
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
 	@Override
-	public final boolean isValueDefault(ValueSet<?> valueSet) throws IllegalArgumentException
+	public final boolean isValueDefault(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
 		VS subValueSet = retrieveValue(valueSet);
 		if(defaultValue != null)
@@ -428,10 +437,11 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have valid values
 	 * @return whether the value currently contained by the valueSet for this column is valid (if recursive is {@code false}), and whether the same applies for all its sub[...]columns (if recurse if {@code true})
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
 	@Override
-	public boolean isValueValid(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	public boolean isValueValid(ValueSet<?> valueSet, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		VS subValueSet = retrieveValue(valueSet);
 		if(subValueSet == null || !recurse)
@@ -452,7 +462,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(VS record) throws IllegalArgumentException
+	protected void validate(VS record) throws InvalidValueException
 	{
 		// does nothing
 	}

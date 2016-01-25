@@ -41,6 +41,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLNameEncoder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -158,9 +160,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param name
 	 * @param optional
 	 * @param defaultValue
-	 * @throws IllegalArgumentException in case the defaultValue is invalid
+	 * @throws IllegalArgumentException in case the given name is invalid
+	 * @throws InvalidValueException in case the given defaultValue is invalid
 	 */
-	public Column(String name, boolean optional, T defaultValue) throws IllegalArgumentException
+	public Column(String name, boolean optional, T defaultValue) throws IllegalArgumentException, InvalidValueException
 	{
 		if(!IsValidName(name))
 			throw new IllegalArgumentException("Invalid column name (" + name + "), please use the static Column#SanitiseName method.");
@@ -275,10 +278,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} if column is optional
 	 * @return the stored value
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the given value is invalid
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the given value is invalid
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 */
-	public T storeValue(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public T storeValue(ValueSet<?> valueSet, T value) throws InvalidColumnException, InvalidValueException, NullPointerException, UnsupportedOperationException
 	{
 		// Check:
 		if(value == null)
@@ -287,7 +291,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 				throw new NullPointerException("Cannot set null value for non-optional column \"" + getName() + "\"!");
 		}
 		else
-			validate(value); // throws IllegalArgumentException if invalid
+			validate(value); // throws InvalidValueException if invalid
 		// Store & return value:
 		return storeValueUnchecked(valueSet, value);
 	}
@@ -296,11 +300,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet the valueSet in which to store the value, may not be {@code null}
 	 * @param value the value to store, may be {@code null} (which will wipe earlier non-{@code null} values)
 	 * @return the stored value
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if the valueSet is {@code null}
 	 */
-	private final T storeValueUnchecked(ValueSet<?> valueSet, T value) throws IllegalArgumentException, NullPointerException
+	private final T storeValueUnchecked(ValueSet<?> valueSet, T value) throws InvalidColumnException, NullPointerException
 	{
+		if(valueSet == null)
+			throw new NullPointerException("Given valueSet is null");
 		valueSet.setValue(this, value); // also store null (to overwrite earlier non-null value)
 		return value;
 	}
@@ -312,12 +318,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
 	 * @return the stored value
-	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
-	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException in case of an invalid value
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
 	 */
-	public T storeObject(ValueSet<?> valueSet, Object valueObject) throws IllegalArgumentException, NullPointerException, ClassCastException
+	public T storeObject(ValueSet<?> valueSet, Object valueObject) throws InvalidColumnException, InvalidValueException, NullPointerException, ClassCastException
 	{
 		return storeObject(valueSet, valueObject, true); // convert to T!
 	}
@@ -330,13 +337,14 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueObject value to store, given as an {@link Object} (may be converted first), is allowed to be {@code null} only if column is optional
 	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return the stored value
-	 * @throws IllegalArgumentException in case of a columnSet mismatch or invalid value
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the given (possibly converted) value is invalid
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #cast(Object)
 	 * @see #convert(Object)
 	 */
-	public T storeObject(ValueSet<?> valueSet, Object valueObject, boolean convert) throws IllegalArgumentException, NullPointerException, ClassCastException
+	public T storeObject(ValueSet<?> valueSet, Object valueObject, boolean convert) throws InvalidColumnException, InvalidValueException, NullPointerException, ClassCastException
 	{
 		return storeValue(valueSet, convert ? convert(valueObject) : cast(valueObject)); // convert or cast to T
 	}
@@ -353,14 +361,15 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet {@link ValueSet} to store the parsed value in, should not be {@code null}
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
 	 * @return the stored value
-	 * @throws ParseException
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the parsed value is invalid
+	 * @throws ParseException when the given String could not be parsed to a value
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the parsed value is invalid
 	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * 
 	 * @see {@link #stringToValue(String)}
 	 * @see {@link #parse(String)}
 	 */
-	public T storeString(ValueSet<?> valueSet, String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public T storeString(ValueSet<?> valueSet, String valueString) throws ParseException, InvalidColumnException, InvalidValueException, NullPointerException
 	{
 		return storeValue(valueSet, stringToValue(valueString));
 	}
@@ -373,12 +382,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueBytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the stored value
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the read value is invalid
 	 * @throws NullPointerException if the given {@code byte[]} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws IOException if an I/O error happens
 	 * @see #fromBytes(byte[], boolean)
 	 */
-	public T storeBytes(ValueSet<?> valueSet, byte[] valueBytes, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	public T storeBytes(ValueSet<?> valueSet, byte[] valueBytes, boolean lossless) throws InvalidColumnException, InvalidValueException, NullPointerException, IOException
 	{
 		return storeValueUnchecked(valueSet, fromBytes(valueBytes, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBytes()) already performs all checks
 	}
@@ -391,12 +401,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bytes binary representation of a column value, given as a {@link BitArray}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the stored value
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the read value is invalid
 	 * @throws NullPointerException if the given {@link BitArray} is {@code null}, if the read value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * @throws IOException if an I/O error happens
 	 * @see #fromBits(BitArray, boolean)
 	 */
-	public T storeBits(ValueSet<?> valueSet, BitArray valueBits, boolean lossless) throws IllegalArgumentException, NullPointerException, IOException
+	public T storeBits(ValueSet<?> valueSet, BitArray valueBits, boolean lossless) throws InvalidColumnException, InvalidValueException, NullPointerException, IOException
 	{
 		return storeValueUnchecked(valueSet, fromBits(valueBits, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() (called by fromBits()) already performs all checks
 	}
@@ -406,10 +417,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Use with care!
 	 * 
 	 * @param valueSet the valueSet in which to clear the value, may not be {@code null}
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if the valueSet is {@code null}
 	 */
-	public final void clearValue(ValueSet<?> valueSet) throws IllegalArgumentException, NullPointerException
+	public final void clearValue(ValueSet<?> valueSet) throws InvalidColumnException, NullPointerException
 	{
 		storeValueUnchecked(valueSet, null);
 	}
@@ -419,10 +430,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Use with care!
 	 * 
 	 * @param valueSet
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the valueSet is {@code null}
 	 */
-	public final void resetValue(ValueSet<?> valueSet) throws IllegalArgumentException, NullPointerException
+	public final void resetValue(ValueSet<?> valueSet) throws InvalidColumnException, NullPointerException
 	{
 		storeValueUnchecked(valueSet, defaultValue);
 	}
@@ -435,9 +446,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet
 	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
 	 * 
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * 
 	 * @see #resetValue(ValueSet)
 	 */
-	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired)
+	public final void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired) throws InvalidColumnException, NullPointerException
 	{
 		resetIfEmpty(valueSet, onlyIfRequired, false); // don't recurse by default
 	}
@@ -450,10 +464,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet
 	 * @param onlyIfRequired whether to only reset required columns ((@code true}) or also optional ones ({@code false})
 	 * @param recurse whether or not to apply the operation recursively to all subColumns (only relevant if this is a composite Column)
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the valueSet is {@code null}
 	 * 
 	 * @see #resetValue(ValueSet)
 	 */
-	public void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse)
+	public void resetIfEmpty(ValueSet<?> valueSet, boolean onlyIfRequired, boolean recurse) throws InvalidColumnException, NullPointerException
 	{
 		if(defaultValue != null && !isValuePresent(valueSet) && !(optional && onlyIfRequired))
 			resetValue(valueSet);
@@ -465,10 +481,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @return stored value (may be {@code null})
 	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
 	@SuppressWarnings("unchecked")
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws NullPointerException, IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet) throws NullPointerException, InvalidColumnException
 	{
 		if(valueSet == null)
 			throw new NullPointerException("valueSet is null!");
@@ -481,8 +497,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet should not be {@code null}
 	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet does not contain a value for this Column
 	 * @see #valueToString(Object)
+	 * 
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public String retrieveValueAsString(ValueSet<?> valueSet)
+	public String retrieveValueAsString(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
 		return valueToString(retrieveValue(valueSet));
 	}
@@ -498,9 +517,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet should not be {@code null}
 	 * @param emptyForNull whether to return "" ({@code true}) or {@code null} ({@code false}) if the valueSet does not contain a value for this Column
 	 * @return a {@link String} representation of the value retrieved from the valueSet for this Column, or {@code null} if the valueSet did not contain a value for this Column and {@code emptyForNull} was {@code false}
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @see #valueToString(Object,boolean)
 	 */
-	public String retrieveValueAsString(ValueSet<?> valueSet, boolean emptyForNull)
+	public String retrieveValueAsString(ValueSet<?> valueSet, boolean emptyForNull) throws NullPointerException, InvalidColumnException
 	{
 		return valueToString(retrieveValue(valueSet), emptyForNull);
 	}
@@ -511,11 +532,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @return stored value as a {@code byte[]}
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 * @see #toBytes(Object, boolean)
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> byte[] retrieveValueAsBytes(VS valueSet, boolean lossless) throws IllegalArgumentException, IOException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> byte[] retrieveValueAsBytes(VS valueSet, boolean lossless) throws NullPointerException, InvalidColumnException, InvalidValueException, IOException
 	{
 		return toBytes(retrieveValue(valueSet), lossless);
 	}
@@ -526,11 +549,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @return stored value as a {@link BitArray}
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 * @see #toBits(Object, boolean)
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> BitArray retrieveValueAsBits(VS valueSet, boolean lossless) throws IllegalArgumentException, IOException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> BitArray retrieveValueAsBits(VS valueSet, boolean lossless) throws NullPointerException, InvalidColumnException, InvalidValueException, IOException
 	{
 		return toBits(retrieveValue(valueSet), lossless);
 	}
@@ -540,9 +565,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @return whether or not a non-{@code null} value is set
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public final boolean isValuePresent(ValueSet<?> valueSet) throws IllegalArgumentException
+	public final boolean isValuePresent(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
 		return isValuePresent(valueSet, false); // don't recurse by default
 	}
@@ -553,9 +579,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value (only relevant if this is a composite Column)
 	 * @return whether or not a non-{@code null} value is set
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public boolean isValuePresent(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	public boolean isValuePresent(ValueSet<?> valueSet, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		return retrieveValue(valueSet) != null;
 	}
@@ -565,9 +592,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @return whether a non-{@code null} value is set or the column is optional 
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public final boolean isValuePresentOrOptional(ValueSet<?> valueSet) throws IllegalArgumentException
+	public final boolean isValuePresentOrOptional(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
 		return isValuePresentOrOptional(valueSet, false); // don't recurse by default
 	}
@@ -578,9 +606,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have a non-{@code null} value or are optional (only relevant if this is a composite Column)
 	 * @return whether a non-{@code null} value is set or the column is optional 
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public boolean isValuePresentOrOptional(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	public boolean isValuePresentOrOptional(ValueSet<?> valueSet, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		if(isValuePresent(valueSet))
 			return true;
@@ -593,9 +622,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param valueSet should not be {@code null}
 	 * @return whether or not a non-{@code null} value is set
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public boolean isValueDefault(ValueSet<?> valueSet) throws IllegalArgumentException
+	public boolean isValueDefault(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
 		return Objects.deepEquals(retrieveValue(valueSet), defaultValue);
 	}
@@ -606,9 +636,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * @param valueSet should not be {@code null}
 	 * @return whether the value currently contained by the valueSet for this column is valid (note that a {@code null} value is valid if the column is optional)
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public final boolean isValueValid(ValueSet<?> valueSet) throws IllegalArgumentException
+	public final boolean isValueValid(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
 		return isValueValid(valueSet, false); // don't recurse by default
 	}
@@ -620,9 +651,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet should not be {@code null}
 	 * @param recurse whether or not to check recursively if all subColumns also have valid values (only relevant if this is a composite Column)
 	 * @return whether the value currently contained by the valueSet for this column is valid (note that a {@code null} value is valid if the column is optional)
-	 * @throws IllegalArgumentException when this column is not part of the ValueSet's ColumnSet, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public boolean isValueValid(ValueSet<?> valueSet, boolean recurse) throws IllegalArgumentException
+	public boolean isValueValid(ValueSet<?> valueSet, boolean recurse) throws NullPointerException, InvalidColumnException
 	{
 		return isValidValue(retrieveValue(valueSet));
 	}
@@ -639,14 +671,13 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * @param valueString may be {@code null} or empty {@code String} but both cases treated as representing a {@code null} value
 	 * @return the corresponding value of type {@code <T>}, or {@code null} if the given valueString was {@code null} or empty {@code String}
-	 * @throws ParseException
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @throws IllegalArgumentException when parsing fails (e.g. {@link NumberFormatException})
+	 * @throws NullPointerException when the given valueString is {@code null}
 	 * 
 	 * @see {@link #stringToValue(String)}
 	 * @see {@link #toString(Object)}
 	 */
-	public final T stringToValue(String valueString) throws ParseException, IllegalArgumentException, NullPointerException
+	public final T stringToValue(String valueString) throws ParseException, IllegalArgumentException
 	{
 		if(valueString == null || valueString.isEmpty()) // empty String is treated as null!
 			return null;
@@ -665,9 +696,9 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * @param valueString the {@link String} to parse, should be neither {@code null} nor empty {@code String} (as those both represent a {@code null} value)
 	 * @return the parsed value as type {@code <T>}
-	 * @throws ParseException
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @throws ParseException when parsing fails
+	 * @throws IllegalArgumentException when parsing fails (e.g. {@link NumberFormatException})
+	 * @throws NullPointerException when the given valueString is {@code null}
 	 * 
 	 * @see {@link #toString(Object)}
 	 */
@@ -770,9 +801,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param value
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @return a byte[] array
+	 * @throws InvalidValueException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 */
-	public byte[] toBytes(T value, boolean lossless) throws IOException
+	public byte[] toBytes(T value, boolean lossless) throws IOException, InvalidValueException
 	{
 		BitOutputStream bos = null;
 		try
@@ -797,9 +829,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param value
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @return a {@link BitArray}
+	 * @throws InvalidValueException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 */
-	public BitArray toBits(T value, boolean lossless) throws IOException
+	public BitArray toBits(T value, boolean lossless) throws IOException, InvalidValueException
 	{
 		BitArrayOutputStream bitsOut = null;
 		try
@@ -821,10 +854,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value
-	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws InvalidValueException if the read value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 */
-	public T fromBytes(byte[] bytes, boolean lossless) throws IllegalArgumentException, IOException
+	public T fromBytes(byte[] bytes, boolean lossless) throws InvalidValueException, IOException
 	{
 		BitInputStream bis = null;
 		try
@@ -846,10 +879,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bits binary representation of a column value, given as a {@link BitArray}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value
-	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws InvalidValueException if the read value does not pass the validation test
 	 * @throws IOException if an I/O error happens
 	 */
-	public T fromBits(BitArray bits, boolean lossless) throws IllegalArgumentException, IOException
+	public T fromBits(BitArray bits, boolean lossless) throws InvalidValueException, IOException
 	{
 		BitInputStream bis = null;
 		try
@@ -867,11 +900,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet should not be {@code null}
 	 * @param bitStream should not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
-	 * @throws IOException if an I/O error happens upon writing to the bitStream
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if the valueSet or the bitStream is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException if the value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
-	public final void retrieveAndWriteValue(ValueSet<?> valueSet, BitOutputStream bitStream, boolean lossless) throws IOException, IllegalArgumentException, NullPointerException
+	public final void retrieveAndWriteValue(ValueSet<?> valueSet, BitOutputStream bitStream, boolean lossless) throws NullPointerException, InvalidColumnException, InvalidValueException, IOException
 	{
 		writeValue(retrieveValue(valueSet), bitStream, lossless);
 	}
@@ -885,12 +919,12 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws ClassCastException if the Object cannot be casted to type {@code <T>}
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null} 
-	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws InvalidValueException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 * @throws ClassCastException when the value cannot be casted to the column's type {@code <T>}
 	 * @see #cast(Object)
 	 */
-	public void writeObject(Object value, BitOutputStream bitStream, boolean lossless) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
+	public void writeObject(Object value, BitOutputStream bitStream, boolean lossless) throws ClassCastException, NullPointerException, IOException, InvalidValueException
 	{
 		writeValue(cast(value), bitStream, lossless);
 	}
@@ -902,10 +936,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
 	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null}
-	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws InvalidValueException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
-	public void writeValue(T value, BitOutputStream bitStream, boolean lossless) throws NullPointerException, IOException, IllegalArgumentException
+	public void writeValue(T value, BitOutputStream bitStream, boolean lossless) throws NullPointerException, IOException, InvalidValueException
 	{
 		if(optional)
 			bitStream.write(value != null); // write "presence"-bit
@@ -916,7 +950,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		}
 		if(value != null)
 		{
-			validate(value); // just in case, throws IllegalArgumentException if invalid
+			validate(value); // just in case, throws InvalidValueException if invalid
 			write(value, bitStream, lossless); // handled by subclass
 		}
 	}
@@ -938,10 +972,11 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param bitStream the {@link BitInputStream} to read from, should not be {@code null}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is, or when the read value is invalid
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws InvalidValueException when the read value is invalid
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, if the valueSet is {@code null}, or if the bitStream is {@code null}
 	 */
-	public final void readAndStoreValue(ValueSet<?> valueSet, BitInputStream bitStream, boolean lossless) throws IOException, IllegalArgumentException, NullPointerException
+	public final void readAndStoreValue(ValueSet<?> valueSet, BitInputStream bitStream, boolean lossless) throws IOException, InvalidColumnException, InvalidValueException, NullPointerException
 	{
 		storeValueUnchecked(valueSet, readValue(bitStream, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() already performs all checks
 	}
@@ -953,10 +988,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the value that was read, should not be {@code null}
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
-	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws InvalidValueException if the read value does not pass the validation test
 	 * @throws NullPointerException if the read value is {@code null} on an non-optional column, or if the bitStream is {@code null}
 	 */
-	public final T readValue(BitInputStream bitStream, boolean lossless) throws IOException, IllegalArgumentException, NullPointerException
+	public final T readValue(BitInputStream bitStream, boolean lossless) throws IOException, InvalidValueException, NullPointerException
 	{
 		T value = null;
 		if(!optional || bitStream.readBit()) // in case of optional column: only read value if "presence"-bit is true
@@ -964,7 +999,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 			value = read(bitStream, lossless);
 			if(value == null)
 				throw new NullPointerException(optional ? "Read null value even though presence-bit was set to true!" : "Non-optional value is null!");
-			validate(value); // throws IllegalArgumentException if invalid
+			validate(value); // throws InvalidValueException if invalid
 		}
 		return value;
 	}
@@ -1047,9 +1082,9 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Argument is assumed to be non-{@code null}! Hence, {@code null} checks should happen before any call of this method.
 	 *
 	 * @param value should not be {@code null}!
-	 * @throws IllegalArgumentException	in case of invalid value
+	 * @throws InvalidValueException in case of invalid value
 	 */
-	protected abstract void validate(T value) throws IllegalArgumentException;
+	protected abstract void validate(T value) throws InvalidValueException;
 	
 	/**
 	 * Retrieves previously stored value for this column at a given {@code from} ValueSet and 
@@ -1057,24 +1092,31 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * @param from the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @param to the valueSet in which to store the value, may not be {@code null}
-	 * @throws IllegalArgumentException when this column is not part of one of the ValueSets' {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if one of the ValueSets is {@code null}
+	 * @throws InvalidColumnException when this column is not part of one of the given valueSets' {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public void copyValue(ValueSet<?> from, ValueSet<?> to)
+	public void copyValue(ValueSet<?> from, ValueSet<?> to) throws NullPointerException, InvalidColumnException
 	{
-		storeValue(to, retrieveValue(from));
+		storeValueUnchecked(to, retrieveValue(from));
 	}
 	
-	public T retrieveValueCopy(Record record)
+	/**
+	 * @param valueSet
+	 * @return a copy of this Column's value in the given ValueSet
+	 * 
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 */
+	public T retrieveValueCopy(ValueSet<?> valueSet) throws NullPointerException, InvalidColumnException
 	{
-		T value = retrieveValue(record);
+		T value = retrieveValue(valueSet);
 		return (value == null ? null : copy(value));
 	}
 	
 	/**
 	 * @param valueObject
 	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
-	 * @return
+	 * @return a copied and possibly converted version of the given valueObject
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type {@code <T>}
 	 * @see #convert(Object)
 	 * @see #cast(Object)
@@ -1156,9 +1198,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @param valueSet the {@link ValueSet} to retrieve the value from, should not be {@code null}
 	 * @param asLossy whether or not to simulate the information loss sustained by converting the retrieved value to lossy binary encoding and back
 	 * @return stored value (may be {@code null}), possibly made lossy
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet, boolean asLossy) throws IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValue(VS valueSet, boolean asLossy) throws NullPointerException, InvalidColumnException
 	{
 		if(!asLossy || !canBeLossy() || valueSet.isLossy() /*whole ValueSet is already lossy*/)
 			return retrieveValue(valueSet);
@@ -1173,8 +1216,10 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * @param valueSet
 	 * @return value as retrieved from lossy binary representation
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValueAsLossy(VS valueSet)
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> T retrieveValueAsLossy(VS valueSet) throws NullPointerException, InvalidColumnException
 	{
 		return toLossy(retrieveValue(valueSet));
 	}
@@ -1355,27 +1400,28 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param valueSet (probably shouldn't be null, but if it we will compare the given value to null)
 	 * @param value (may be null if column is optional)
 	 * @return comparison result
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public int retrieveAndCompareToValue(ValueSet<?> vs, T value)
+	public int retrieveAndCompareToValue(ValueSet<?> valueSet, T value) throws InvalidColumnException
 	{
-		return compareValues(vs != null ? retrieveValue(vs) : null, value);
+		return compareValues(valueSet != null ? retrieveValue(valueSet) : null, value);
 	}
 	
 	/**
-	 * @param vs (probably shouldn't be null, but if it we will compare the given value to null)
+	 * @param valueSet (probably shouldn't be null, but if it we will compare the given value to null)
 	 * @param value (as object, will be converted, may be null if column is optional)
 	 * @return comparison result
-	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 * @see #convert(Object)
 	 */
-	public int retrieveAndCompareToObject(ValueSet<?> vs, Object value) throws ClassCastException
+	public int retrieveAndCompareToObject(ValueSet<?> valueSet, Object value) throws InvalidColumnException, ClassCastException
 	{
-		return compareValues(vs != null ? retrieveValue(vs) : null, convert(value));
+		return compareValues(valueSet != null ? retrieveValue(valueSet) : null, convert(value));
 	}
 	
 	/**

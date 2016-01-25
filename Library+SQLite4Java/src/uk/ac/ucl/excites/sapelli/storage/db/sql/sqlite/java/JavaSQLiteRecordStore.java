@@ -21,6 +21,10 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.java;
 import java.io.File;
 import java.util.List;
 
+import com.almworks.sqlite4java.SQLiteBackup;
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -28,10 +32,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
-
-import com.almworks.sqlite4java.SQLiteBackup;
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
 
 /**
  * A RecordStore class which stores records in a SQLite database, using the sqlite4java library.
@@ -109,6 +109,30 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		}
 	}
 	
+	/**
+	 * @return {@code true} if the connection is in auto-commit mode (which means we are *not* in an {@code TRANSACTION})
+	 * @see http://www.sqlite.org/c3ref/get_autocommit.html
+	 * @see {@link SQLiteConnection#getAutoCommit()}
+	 */
+	public boolean getAutoCommit()
+	{
+		try
+		{
+			return db.getAutoCommit();
+		}
+		catch(SQLiteException sqlE)
+		{
+			client.logError("Error upon calling SQLiteConnection#getAutoCommit()", sqlE);
+			return true; // (autocommit mode is enable by default)
+		}
+	}
+	
+	@Override
+	public boolean _isInTransaction()
+	{
+		return !getAutoCommit();
+	}
+	
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
@@ -152,12 +176,16 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		// Bind parameters:
 		selectStatement.bindAll(sapArguments);
 		
+		// Log query & arguments:
+		if(isLoggingEnabled())
+			client.logInfo("SQLite> " + getQueryLogMessage(sql, paramCols, sapArguments));
+		
 		// Execute and return cursor:
 		return selectStatement.executeSelectRows();
 	}
 	
 	@Override
-	protected JavaSQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
+	protected synchronized JavaSQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
 		try
 		{

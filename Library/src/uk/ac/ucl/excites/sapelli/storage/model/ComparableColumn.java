@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.util.Comparator;
 
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
+
 /**
  * Column with support for comparing (for grouping AND ranking) values of generic type {@code T}.
  * 
@@ -31,7 +33,14 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	
 	static private final long serialVersionUID = 2L;
 
-	public ComparableColumn(String name, boolean optional, T defaultValue)
+	/**
+	 * @param name
+	 * @param optional
+	 * @param defaultValue
+	 * @throws IllegalArgumentException in case the given name is invalid
+	 * @throws InvalidValueException in case the given defaultValue is invalid
+	 */
+	public ComparableColumn(String name, boolean optional, T defaultValue) throws IllegalArgumentException, InvalidValueException
 	{
 		super(name, optional, defaultValue);
 	}

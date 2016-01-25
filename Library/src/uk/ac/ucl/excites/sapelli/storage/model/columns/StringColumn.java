@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.ListLikeColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -421,11 +422,11 @@ public class StringColumn extends ComparableColumn<String> implements ListLikeCo
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(String value) throws IllegalArgumentException
+	protected void validate(String value) throws InvalidValueException
 	{
 		int bytesNeeded = StringUtils.sizeBytes(value, getCharset());
 		if(bytesNeeded > getMaximumBytes())
-			throw new IllegalArgumentException("String \"" + value + "\" is too long (it would take " + bytesNeeded + " bytes, while the maximum allowed is " + getMaximumBytes() + " bytes).");
+			throw new InvalidValueException("String \"" + value + "\" is too long (it would take " + bytesNeeded + " bytes, while the maximum allowed is " + getMaximumBytes() + " bytes).", this);
 	}
 
 	@Override

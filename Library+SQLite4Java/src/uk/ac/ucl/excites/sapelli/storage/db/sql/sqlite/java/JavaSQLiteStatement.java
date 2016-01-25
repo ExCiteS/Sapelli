@@ -69,7 +69,7 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	{
 		try
 		{
-			javaSQLiteSt.bind(paramIdx + 1, value); // SQLite uses 1-based parameter indexes when binding
+			javaSQLiteSt.bind(paramIdx, value);
 		}
 		catch(SQLiteException e)
 		{
@@ -82,7 +82,7 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	{
 		try
 		{
-			javaSQLiteSt.bind(paramIdx + 1, value); // SQLite uses 1-based parameter indexes when binding
+			javaSQLiteSt.bind(paramIdx, value);
 		}
 		catch(SQLiteException e)
 		{
@@ -95,7 +95,7 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	{
 		try
 		{
-			javaSQLiteSt.bind(paramIdx + 1, value); // SQLite uses 1-based parameter indexes when binding
+			javaSQLiteSt.bind(paramIdx, value);
 		}
 		catch(SQLiteException e)
 		{
@@ -108,7 +108,7 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	{
 		try
 		{
-			javaSQLiteSt.bind(paramIdx + 1, value); // SQLite uses 1-based parameter indexes when binding
+			javaSQLiteSt.bind(paramIdx, value);
 		}
 		catch(SQLiteException e)
 		{
@@ -121,7 +121,7 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	{
 		try
 		{
-			javaSQLiteSt.bindNull(paramIdx + 1); // SQLite uses 1-based parameter indexes when binding
+			javaSQLiteSt.bindNull(paramIdx);
 		}
 		catch(SQLiteException e)
 		{
@@ -179,7 +179,7 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	}
 	
 	/**
-	 * Insert a record
+	 * Inserts a record.
 	 * 
 	 * @throws DBPrimaryKeyException
 	 * @throws DBConstraintException
@@ -188,16 +188,16 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement#executeInsert()
 	 */
-	@Override
 	public long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException
 	{
+		verifyLastInsert = false;
 		try
 		{
 			javaSQLiteSt.step();
-			long rowID = db.getLastInsertId();
-			if(rowID <= 0)
-				throw new DBException(formatMessageWithSQL("Execution of INSERT statement (%s) failed (returned ROWID = " + rowID + ")"));
-			return rowID;
+			long lastRowID = db.getLastInsertId();
+			if(lastRowID == 0) // 0 can be a valid ROWID in a number of cases, but getLastInsertId() also returns 0 if nothing was inserted... 
+				verifyLastInsert = true; // so this insert must be verified
+			return lastRowID;
 		}
 		catch(SQLiteException e)
 		{
@@ -209,7 +209,10 @@ public class JavaSQLiteStatement extends SQLiteStatement implements SQLiteCursor
 				else
 					throw new DBConstraintException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to constraint violation"), e);
 			}
-			throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement: %s"), e);
+			else if(e.getBaseErrorCode() == SQLiteConstants.SQLITE_FULL) // happens (among other cases) when an auto-incrementing PK has reached max value (9223372036854775807) in previous insert
+				throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to table, database or storage medium being full"), e);
+			else
+				throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement: %s"), e);
 		}
 	}
 

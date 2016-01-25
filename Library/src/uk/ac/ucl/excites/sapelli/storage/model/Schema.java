@@ -371,7 +371,7 @@ public class Schema extends ColumnSet implements Serializable
 	}
 	
 	/**
-	 * @return the integerColumn of the AutoIncrementingPrimaryKey, or null if there is no primary key or it is not an AutoIncrementingPrimaryKey
+	 * @return the {@link IntegerColumn} of the {@link AutoIncrementingPrimaryKey}, or {@code null} if there is no primary key or it is not an AutoIncrementingPrimaryKey
 	 */
 	public IntegerColumn getAutoIncrementingPrimaryKeyColumn()
 	{

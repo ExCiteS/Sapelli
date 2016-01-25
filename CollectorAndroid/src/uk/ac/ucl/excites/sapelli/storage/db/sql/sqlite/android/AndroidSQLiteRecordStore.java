@@ -36,6 +36,7 @@ import android.database.sqlite.SQLiteQuery;
 import android.os.Build;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
@@ -122,20 +123,31 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		return getNumberOfAffectedRows();
 	}
 	
+	@Override
+	public boolean _isInTransaction()
+	{
+		return db.inTransaction();
+	}
+
 	/**
 	 * In SQlite basic transactions (those controlled with BEGIN...COMMIT/ROLLBACK) cannot
 	 * be nested (for that one needs to use the SAVEPOINT and RELEASE commands, which we won't
 	 * use here). However, for flexibility reasons we will pretend that it is possible (i.e. we
 	 * don't throw an exception if a request arrives to open a 2nd, 3rd, etc. transaction).
 	 * 
+	 * The Android SQLite API seems to suggest it does support nested transactions but this is
+	 * just an "illusion" because the inner transactions cannot be individually rolled-back.
+	 * Given that {@link SQLiteRecordStore} already has its own (similar) nested-transaction
+	 * simulation we don't use Android's nested transactions.
+	 * 
 	 * @see <a href="http://sqlite.org/lang_transaction.html">http://sqlite.org/lang_transaction.html</a>
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStartTransaction()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#doStartTransaction()
 	 */
 	@Override
 	protected void doStartTransaction() throws DBException
 	{
-		if(!isInTransaction())
+		if(!isInTransaction()) // only the first/outer transaction is real, all nested/inner transactions are simulated
 			try
 			{
 				db.beginTransaction();
@@ -162,16 +174,16 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected void doRollbackTransaction() throws DBException
+	protected void doRollbackTransaction()
 	{
 		if(numberOfOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
 				db.endTransaction();
 			}
-			catch(Exception ex)
+			catch(SQLiteException sqliteE)
 			{
-				throw new DBException("Could not roll-back SQLite transaction", ex);
+				client.logError("Could not roll-back SQLite transaction: " + ExceptionHelpers.getMessageAndCause(sqliteE));
 			}
 	}
 

@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * Abstract superclass for {@link Record} and {@link RecordReference}.
@@ -50,8 +51,12 @@ public abstract class RecordValueSet<CS extends ColumnSet> extends ValueSet<CS>
 	/**
 	 * @param columnSet
 	 * @param values
+	 * @throws IllegalArgumentException in case of an incorrect number of values
+	 * @throws InvalidValueException in case of an invalid value
+	 * @throws NullPointerException if a value is null on an non-optional column
+	 * @throws ClassCastException when a value cannot be converted/casted to the column's type {@code <T>}
 	 */
-	public RecordValueSet(CS columnSet, Object... values)
+	public RecordValueSet(CS columnSet, Object... values) throws IllegalArgumentException, InvalidValueException, NullPointerException, ClassCastException
 	{
 		super(columnSet, values);
 	}

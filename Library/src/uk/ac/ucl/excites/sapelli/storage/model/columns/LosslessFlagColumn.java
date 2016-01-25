@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
 
 /**
  * Special column to keep track of the lossless/lossy-ness of {@link ValueSet}s/{@link Record}s.
@@ -89,11 +90,12 @@ public final class LosslessFlagColumn extends BooleanColumn
 	 *
 	 * @param valueSet the {@link ValueSet}
 	 * @return whether or not the valueSet is in a lossless state
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> boolean isLossless(VS valueSet) throws IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> boolean isLossless(VS valueSet) throws NullPointerException, InvalidColumnException
 	{
-		return this.retrieveValue(valueSet) == VALUE_LOSSLESS;
+		return retrieveValue(valueSet) == VALUE_LOSSLESS;
 	}
 	
 	/**
@@ -102,11 +104,12 @@ public final class LosslessFlagColumn extends BooleanColumn
 	 *
 	 * @param valueSet the {@link ValueSet}
 	 * @return whether or not the valueSet is in a lossy state
-	 * @throws IllegalArgumentException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
+	 * @throws NullPointerException if the given {@link ValueSet} is {@code null}
+	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 */
-	public <VS extends ValueSet<CS>, CS extends ColumnSet> boolean isLossy(VS valueSet) throws IllegalArgumentException
+	public <VS extends ValueSet<CS>, CS extends ColumnSet> boolean isLossy(VS valueSet) throws NullPointerException, InvalidColumnException
 	{
-		return this.retrieveValue(valueSet) == VALUE_LOSSY;
+		return retrieveValue(valueSet) == VALUE_LOSSY;
 	}
 
 	/* (non-Javadoc)

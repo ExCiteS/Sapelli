@@ -134,7 +134,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(byte[] value) throws IllegalArgumentException
+	protected void validate(byte[] value)
 	{
 		// does nothing
 	}

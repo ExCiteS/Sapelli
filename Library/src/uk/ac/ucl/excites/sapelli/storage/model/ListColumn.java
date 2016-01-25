@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -509,12 +510,12 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	}
 	
 	@Override
-	protected void validate(L values) throws IllegalArgumentException
+	protected void validate(L values) throws InvalidValueException
 	{
 		if(values.size() < getMinimumLength())
-			throw new IllegalArgumentException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + getMinimumLength() + ", given value has " + values.size() + ".");
+			throw new InvalidValueException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + getMinimumLength() + ", given value has " + values.size() + ".", this);
 		if(values.size() > getMaximumLength())
-			throw new IllegalArgumentException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + getMaximumLength() + ", given value has " + values.size() + ".");
+			throw new InvalidValueException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + getMaximumLength() + ", given value has " + values.size() + ".", this);
 		int v = 0;
 		for(T value : values)
 		{
@@ -526,7 +527,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 					valueString = singleColumn.valueToString(value);
 				}
 				catch(Exception ignore) {} 
-				throw new IllegalArgumentException("Element " + v + " (" + valueString + ") is invalid!");
+				throw new InvalidValueException("Element " + v + " (" + valueString + ") is invalid!", this);
 			}
 			v++;
 		}

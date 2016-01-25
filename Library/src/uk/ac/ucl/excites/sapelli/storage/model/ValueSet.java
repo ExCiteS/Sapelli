@@ -39,6 +39,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidColumnException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * An ordered set of values, each corresponding to a (non-virtual) {@link Column} of a {@link ColumnSet}.
@@ -85,11 +87,12 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param columnSet
 	 * @param values to initialise the ValueSet with, number of values must match number of (real) columns in the ColumnSet and each value must be valid for the corresponding Column
-	 * @throws IllegalArgumentException in case of an incorrect number of values or an invalid value
+	 * @throws IllegalArgumentException in case of an incorrect number of values
+	 * @throws InvalidValueException in case of an invalid value
 	 * @throws NullPointerException if a value is null on an non-optional column
 	 * @throws ClassCastException when a value cannot be converted/casted to the column's type {@code <T>}
 	 */
-	public ValueSet(CS columnSet, Object... values) throws IllegalArgumentException, NullPointerException, ClassCastException
+	public ValueSet(CS columnSet, Object... values) throws IllegalArgumentException, InvalidValueException, NullPointerException, ClassCastException
 	{
 		this(columnSet);
 		if(values != null)
@@ -164,9 +167,9 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param column
 	 * @param value the value to set (may be null, e.g. to clear earlier values)
-	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
+	 * @throws InvalidColumnException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected void setValue(Column<?> column, Object value) throws IllegalArgumentException
+	protected void setValue(Column<?> column, Object value) throws InvalidColumnException
 	{
 		values[getPosition(column)] = value; // set value in array
 	}
@@ -176,9 +179,9 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param column
 	 * @param the current value
-	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
+	 * @throws InvalidColumnException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected final Object getValue(Column<?> column) throws IllegalArgumentException
+	protected final Object getValue(Column<?> column) throws InvalidColumnException
 	{
 		return values[getPosition(column)]; // return value from array
 	}
@@ -212,9 +215,9 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param column
 	 * @return values array index
-	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
+	 * @throws InvalidColumnException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected final int getPosition(Column<?> column) throws IllegalArgumentException
+	protected final int getPosition(Column<?> column) throws InvalidColumnException
 	{
 		// Get column position by its name:
 		int position = columnSet.getColumnPosition(column.name);
@@ -222,14 +225,14 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 		if(position == Schema.UNKNOWN_COLUMN_POSITION)
 		{
 			if(column instanceof VirtualColumn)
-				throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen because VirtualColumn overrides Column#retrieveValue(Record) 
+				throw new InvalidColumnException("ValueSets do not hold values of virtual columns!", column); // this should never happen because VirtualColumn overrides Column#retrieveValue(Record) 
 			else
-				throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
+				throw new InvalidColumnException("The columnSet has no such column (" + (column != null ? "\"" + column.name + "\"" : "null") + ").", column);
 		}
 		// Compatibility check:
 		Column<?> schemaColumn = columnSet.getColumn(position);
 		if(column != schemaColumn && !column.isCompatible(schemaColumn))
-			throw new IllegalArgumentException("Schema mismatch: incompatible column.");
+			throw new InvalidColumnException("Schema mismatch: incompatible column.", column);
 		// All OK, return position:
 		return position;
 	}
@@ -293,11 +296,11 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * 
 	 * @param columnSet (subset of) the record's schema
 	 * @return whether all of the non-optional columns are filled
-	 * @throws IllegalArgumentException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
+	 * @throws InvalidColumnException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
 	 * 
 	 * @see {@link Column#isValuePresentOrOptional(ValueSet)}
 	 */
-	protected boolean isFilled(ColumnSet columnSet) throws IllegalStateException
+	protected boolean isFilled(ColumnSet columnSet) throws InvalidColumnException
 	{
 		return isFilled(columnSet, ColumnSet.SKIP_NONE, false); // don't recurse by default
 	}
@@ -311,11 +314,11 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	 * @param skipColumns a set of columns to ignore in this check
 	 * @param recurse whether or not to recursively check whether the non-optional subcolumns of composite columns also have a non-{@code null} value
 	 * @return whether all of the non-optional columns are filled
-	 * @throws IllegalArgumentException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
+	 * @throws InvalidColumnException when the given ColumnSet contains a column(s) which is not part of the ValueSet's ColumnSet
 	 * 
 	 * @see {@link Column#isValuePresentOrOptional(ValueSet,boolean)}
 	 */
-	protected boolean isFilled(ColumnSet columnSet, Set<? extends Column<?>> skipColumns, final boolean recurse) throws IllegalStateException
+	protected boolean isFilled(ColumnSet columnSet, Set<? extends Column<?>> skipColumns, final boolean recurse) throws InvalidColumnException
 	{
 		for(Column<?> col : columnSet.getColumns(false, skipColumns))
 			if(!col.isValuePresentOrOptional(this, recurse))

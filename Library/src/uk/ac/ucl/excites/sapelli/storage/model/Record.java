@@ -23,6 +23,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LosslessFlagColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.util.IncompletePrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * A class representing records of a certain Schema
@@ -54,8 +55,12 @@ public class Record extends RecordValueSet<Schema>
 	 * 
 	 * @param schema
 	 * @param values to initialise record, number and types of values must match number and types of (real) columns in the schema and each value must be valid for the corresponding column (the value for an auto-incrementing primary key is allowed to be null)
+	 * @throws IllegalArgumentException in case of an incorrect number of values
+	 * @throws InvalidValueException in case of an invalid value
+	 * @throws NullPointerException if a value is null on an non-optional column (we only allow this for an AutoIncrementingPrimaryKey column)
+	 * @throws ClassCastException when a value cannot be converted/casted to the column's type {@code <T>}
 	 */
-	protected Record(Schema schema, Object... values)
+	protected Record(Schema schema, Object... values) throws InvalidValueException
 	{
 		super(schema);
 		if(values != null)

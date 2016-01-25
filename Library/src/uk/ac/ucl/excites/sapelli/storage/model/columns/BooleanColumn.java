@@ -91,7 +91,7 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	 * @see uk.ac.ucl.excites.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(Boolean value) throws IllegalArgumentException
+	protected void validate(Boolean value)
 	{
 		//Does nothing because we allow all booleans (null check happens in super class)
 	}

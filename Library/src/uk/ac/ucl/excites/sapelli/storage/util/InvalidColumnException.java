@@ -16,31 +16,32 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
+package uk.ac.ucl.excites.sapelli.storage.util;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
-import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
  * @author mstevens
- *
- * @param <N>
  */
-public abstract class NumberColumn<N extends Number> extends ComparableColumn<N>
+public class InvalidColumnException extends IllegalArgumentException
 {
 
 	private static final long serialVersionUID = 2L;
-
-	/**
-	 * @param name
-	 * @param optional
-	 * @param defaultValue
-	 * @throws IllegalArgumentException in case the given name is invalid
-	 * @throws InvalidValueException in case the given defaultValue is invalid
-	 */
-	public NumberColumn(String name, boolean optional, N defaultValue) throws IllegalArgumentException, InvalidValueException
+	
+	private final Column<?> column;
+	
+	public InvalidColumnException(String reason, Column<?> column)
 	{
-		super(name, optional, defaultValue);
+		super(reason);
+		this.column = column;
 	}
 
+	/**
+	 * @return the column
+	 */
+	public Column<?> getColumn()
+	{
+		return column;
+	}
+	
 }

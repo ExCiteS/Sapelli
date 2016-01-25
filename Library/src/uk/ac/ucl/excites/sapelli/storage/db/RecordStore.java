@@ -88,17 +88,12 @@ public abstract class RecordStore extends Store
 	 * 
 	 * @throws DBException
 	 */
-	public void startTransaction() throws DBException
+	public final void startTransaction() throws DBException
 	{
-		try
-		{
-			doStartTransaction();
-		}
-		catch(DBException dbE)
-		{
-			throw dbE;
-		}
+		doStartTransaction(); // throws DBException
+		
 		openTransactions++; // !!!
+		
 		if(rollbackTasks != null)
 			rollbackTasks.push(Collections.<RollbackTask> emptyList()); // will be replaced by proper ArrayList when needed
 	}
@@ -113,7 +108,7 @@ public abstract class RecordStore extends Store
 	 * @param task
 	 * @throws DBException
 	 */
-	protected void addRollbackTask(RollbackTask task) throws DBException
+	protected final void addRollbackTask(RollbackTask task) throws DBException
 	{
 		if(rollbackTasks == null)
 			throw new DBException("This RecordStore implementation does not use rollback tasks.");
@@ -127,7 +122,7 @@ public abstract class RecordStore extends Store
 	/**
 	 * @param tasks to add to list for current transaction (assumed to be non-empty)
 	 */
-	private void addRollbackTasks(Collection<RollbackTask> tasks)
+	private final void addRollbackTasks(Collection<RollbackTask> tasks)
 	{
 		if(rollbackTasks.peek().isEmpty())
 		{	// Replace immutable empty list with ArrayList:
@@ -142,18 +137,12 @@ public abstract class RecordStore extends Store
 
 	 * @throws DBException
 	 */
-	public void commitTransaction() throws DBException
+	public final void commitTransaction() throws DBException
 	{
-		if(openTransactions > 0)
+		if(isInTransaction())
 		{
-			try
-			{
-				doCommitTransaction();
-			}
-			catch(DBException dbE)
-			{
-				throw dbE;
-			}
+			doCommitTransaction(); // throws DBException
+			
 			openTransactions--; // !!!
 			
 			// Deal with roll-back tasks if needed:
@@ -177,11 +166,11 @@ public abstract class RecordStore extends Store
 	 * 
 	 * @throws DBException
 	 */
-	public void rollbackTransactions() throws DBException
+	public final void rollbackTransactions() throws DBException
 	{
 		//if(openTransactions == 0)
 		//	System.err.println("Warning: there is no open transaction to roll back!");
-		while(openTransactions > 0)
+		while(isInTransaction())
 			rollbackTransaction();
 	}
 	
@@ -190,12 +179,12 @@ public abstract class RecordStore extends Store
 	 * 
 	 * @throws DBException
 	 */
-	private void rollbackTransaction() throws DBException
+	private final void rollbackTransaction() throws DBException
 	{
-		if(openTransactions <= 0)
+		if(!isInTransaction())
 			return; // System.err.println("Warning: there is no open transaction to roll back!");
 		// Perform actual roll-back:
-		doRollbackTransaction();
+		doRollbackTransaction(); // throws DBException
 		// Reduce number of open transactions:
 		openTransactions--;
 		// Run RollbackTasks associated with the rolled-back transaction:
@@ -204,21 +193,39 @@ public abstract class RecordStore extends Store
 				task.run();
 	}
 	
-	protected abstract void doRollbackTransaction() throws DBException;
+	protected abstract void doRollbackTransaction();
 
 	/**
 	 * @return whether or not there is an open transaction
 	 */
-	public boolean isInTransaction()
+	public final boolean isInTransaction()
 	{
+		// Check with subclass:
+		if(!_isInTransaction())
+			openTransactions = 0; // reset to 0
+		
 		return openTransactions > 0;
+	}
+	
+	/**
+	 * Subclasses may override this to check back-end database/driver for
+	 * open transactions, independent of the openTransactions counter.
+	 * 
+	 * @return
+	 */
+	public boolean _isInTransaction()
+	{
+		return true; // by default this doesn't make a difference to the result of isInTransaction()
 	}
 	
 	/**
 	 * @return the number of currently open (possibly simulated) transactions
 	 */
-	protected int numberOfOpenTransactions()
+	protected final int numberOfOpenTransactions()
 	{
+		// Check with subclass:
+		isInTransaction(); // this may reset the openTransactions count if it is out of sync with the subclass
+		
 		return openTransactions;
 	}
 	

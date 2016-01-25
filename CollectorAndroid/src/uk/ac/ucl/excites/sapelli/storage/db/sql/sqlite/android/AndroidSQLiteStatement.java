@@ -20,17 +20,18 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
-import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBConstraintException;
-import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBPrimaryKeyException;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDoneException;
+import android.database.sqlite.SQLiteFullException;
 import android.os.Build;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.storage.db.exceptions.DBPrimaryKeyException;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 
 /**
  * An Android-specific {@link SQLiteStatement} subclass. It is a thin wrapper around Android's {@link SQLiteStatement} class.
@@ -65,31 +66,31 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 	@Override
 	public void bindBlob(int paramIdx, byte[] value)
 	{
-		androidSQLiteSt.bindBlob(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes 
+		androidSQLiteSt.bindBlob(paramIdx, value);
 	}
 
 	@Override
 	public void bindLong(int paramIdx, Long value)
 	{
-		androidSQLiteSt.bindLong(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindLong(paramIdx, value);
 	}
 
 	@Override
 	public void bindDouble(int paramIdx, Double value)
 	{
-		androidSQLiteSt.bindDouble(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindDouble(paramIdx, value);
 	}
 
 	@Override
 	public void bindString(int paramIdx, String value)
 	{
-		androidSQLiteSt.bindString(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindString(paramIdx, value);
 	}
 
 	@Override
 	public void bindNull(int paramIdx)
 	{
-		androidSQLiteSt.bindNull(paramIdx + 1); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindNull(paramIdx);
 	}
 
 	@Override
@@ -98,19 +99,25 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 		androidSQLiteSt.clearBindings();
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert()
+	/**
+	 * Note:
+	 * 	{@link android.database.sqlite.SQLiteStatement#executeInsert()} supposedly returns -1 if nothing is inserted,
+	 * 	but looking at the implementation I think that's a documentation bug and it should have been 0.
+	 *
+	 * @see https://code.google.com/p/android/issues/detail?id=199493
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert(Long)
 	 */
 	@SuppressLint("DefaultLocale")
 	@Override
 	public long executeInsert() throws DBPrimaryKeyException, DBConstraintException, DBException
 	{
+		verifyLastInsert = false;
 		try
 		{
-			long rowID = androidSQLiteSt.executeInsert();
-			if(rowID == -1)
-				throw new DBException(formatMessageWithSQL("Execution of INSERT statement (%s) failed (returned ROWID = -1)"));
-			return rowID;
+			long lastRowID = androidSQLiteSt.executeInsert(); // return 0 (or -1??) if nothing is inserted
+			if(lastRowID == 0 || lastRowID == -1) // a ROWID of 0 or -1 can be valid in a number of cases, but executeInsert() also returns 0 (or -1??) if nothing was inserted... 
+				verifyLastInsert = true; // so this insert must be verified
+			return lastRowID;
 		}
 		catch(SQLiteConstraintException sqliteConstrE)
 		{
@@ -119,6 +126,10 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 				throw new DBPrimaryKeyException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to existing record with same primary key"), sqliteConstrE);
 			else
 				throw new DBConstraintException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to constraint violation"), sqliteConstrE);
+		}
+		catch(SQLiteFullException sqliteFullE)  // happens (among other cases) when an auto-incrementing PK has reached max value (9223372036854775807) in previous insert
+		{
+			throw new DBException(formatMessageWithSQL("Failed to execute INSERT statement (%s) due to table, database or storage medium being full"), sqliteFullE);	
 		}
 		catch(SQLException sqlE)
 		{

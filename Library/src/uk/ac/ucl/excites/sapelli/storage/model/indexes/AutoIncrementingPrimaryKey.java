@@ -28,7 +28,17 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 public class AutoIncrementingPrimaryKey extends PrimaryKey
 {
 
-	private static final long serialVersionUID = 2L;
+	// STATICS-------------------------------------------------------
+	static private final long serialVersionUID = 2L;
+	
+	// DYNAMICS------------------------------------------------------
+	/**
+	 * @param intColumn
+	 */
+	public AutoIncrementingPrimaryKey(IntegerColumn intColumn)
+	{
+		this(intColumn.name, intColumn);
+	}
 	
 	/**
 	 * @param name
