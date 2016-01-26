@@ -35,7 +35,8 @@ import org.joda.time.format.ISODateTimeFormat;
 public class TimeUtils
 {
 
-	public static final int ONE_HOUR_MS = 60 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
+	static public final int SEC_IN_MIN = 60;
+	public static final int ONE_HOUR_MS = 60 /* minutes */* SEC_IN_MIN /* seconds */* 1000 /* milliseconds */;
 	public static final int QUARTER_OF_AN_HOUR_MS = 15 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
 	
 	public static final DateTimeFormatter ISOWithMSFormatter = ISODateTimeFormat.dateTime();

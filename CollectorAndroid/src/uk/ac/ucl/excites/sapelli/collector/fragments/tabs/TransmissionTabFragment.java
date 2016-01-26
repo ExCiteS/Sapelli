@@ -35,6 +35,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.Checkable;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
@@ -48,6 +49,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
@@ -62,7 +64,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener
 {
 
-	public static final float SEC_IN_MIN = 60.0f;
+	static private final int RECEIVE_SWITCH_IDX = 1; 
 	
 	// Views
 	//	Sending...
@@ -75,7 +77,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	private LinearLayout receiveHeader;
 	private SwitchCompat switchReceive;
 	private LinearLayout receiveSettings;
-	private Set<SwitchCompat> receiveSwitches = new HashSet<SwitchCompat>();
+	private Set<ViewGroup> receiveSwitchGroups = new HashSet<ViewGroup>();
 	
 	// Adapter:
 	private SendScheduleAdapter listScheduleAdapter;
@@ -111,16 +113,29 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
 		switchReceive.setOnClickListener(this);
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
-		addReceiveSwitch(Transmission.Type.BINARY_SMS, (SwitchCompat) rootLayout.findViewById(R.id.switchReceiveBinSMS));
-		addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (SwitchCompat) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
+//		addReceiveSwitch(Transmission.Type.BINARY_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveBinSMS));
+//		addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
 	}
 	
-	private void addReceiveSwitch(Transmission.Type transmissionType, SwitchCompat receiveSwitch)
+//	private void addReceiveSwitch(Transmission.Type transmissionType, ViewGroup receiveSwitch)
+//	{
+//		receiveSwitch.setTag(transmissionType);
+//		receiveSwitch.setOnClickListener(this);
+//		receiveSwitchGroups.add(receiveSwitch);
+//	}
+	
+	private boolean setReceiveSwitch(ViewGroup receiveSwitchGroup, boolean enabled)
 	{
-		receiveSwitch.setTag(transmissionType);
-		receiveSwitch.setOnClickListener(this);
-		receiveSwitches.add(receiveSwitch);
+		((Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX)).setChecked(enabled);
+		return enabled;
 	}
+	
+//	private boolean toggleReceiveSwitch(ViewGroup receiveSwitchGroup)
+//	{
+//		Checkable receiveSwitch = (Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX); 
+//		receiveSwitch.toggle();
+//		return receiveSwitch.isChecked();
+//	}
 	
 	@Override
 	protected void refresh(Project project)
@@ -144,15 +159,12 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			}
 		toggleConfigGroup(true, sendingEnabled);
 		
-		// Update receiving config UI parts:
-		boolean receivingEnabled = false;
-		for(SwitchCompat receiveSwitch : receiveSwitches)
-		{
-			receiveSwitch.setChecked(getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitch.getTag()));
-			if(receiveSwitch.isChecked())
-				receivingEnabled = true;
-		}
-		toggleConfigGroup(false, receivingEnabled);
+//		// Update receiving config UI parts:
+//		boolean receivingEnabled = false;
+//		for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
+//			if(setReceiveSwitch(receiveSwitchGroup,	getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitchGroup.getTag())))
+//				receivingEnabled = true;
+//		toggleConfigGroup(false, receivingEnabled);
 	}
 	
 	private void toggleConfigGroup(boolean send, boolean enabled)
@@ -177,7 +189,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 					if(listScheduleAdapter.isEmpty()) // if there is no schedule make one...
 						SendScheduleFragment.ShowAddDialog(this);
 					//else
-						// TODO enable all schedules
+						// TODO enable all schedules?
 				}
 				else
 				{	// Sending is being switched off:
@@ -189,18 +201,20 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				break;
 			case R.id.switchReceive :
 				toggleConfigGroup(false, switchReceive.isChecked());
-				if(!switchReceive.isChecked())
-					// Disable receiving of all transmission types:
-					for(SwitchCompat receiveSwitch : receiveSwitches)
+				if(!switchReceive.isChecked()) // Disable receiving of all transmission types:
+					for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
 					{
-						receiveSwitch.setChecked(false);
-						getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitch.getTag(), false);
+						setReceiveSwitch(receiveSwitchGroup, false);
+						getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitchGroup.getTag(), false);
 					}
 				break;
-			case R.id.switchReceiveBinSMS :
-			case R.id.switchReceiveTxtSMS :
-				getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) view.getTag(), ((SwitchCompat) view).isChecked());
-				break;
+//			case R.id.switchReceiveBinSMS :
+//			case R.id.switchReceiveTxtSMS :
+//				getOwner().getProjectStore().setReceiving(
+//					getProject(false),
+//					(Transmission.Type) view.getTag(),
+//					toggleReceiveSwitch((ViewGroup) view));
+//				break;
 		}
 	}
 	
@@ -380,7 +394,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			// Set settings label:
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder("; ");
 			//	Send interval:
-			bldr.append(getString(R.string.interval) + " " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / SEC_IN_MIN).toString() + " minutes");
+			bldr.append(getString(R.string.interval) + " " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / (float) TimeUtils.SEC_IN_MIN).toString() + " minutes");
 			//	Airplane mode:
 			if(DeviceControl.canSetAirplaneMode() && sendSchedule.isAirplaneModeCycling())
 				bldr.append(getString(R.string.airplaneModeCycling));

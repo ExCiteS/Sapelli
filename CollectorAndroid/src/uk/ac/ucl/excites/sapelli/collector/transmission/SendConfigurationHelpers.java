@@ -90,8 +90,6 @@ public final class SendConfigurationHelpers
 	}
 	
 	/**
-	 * TODO
-	 * 
 	 * @param activity
 	 * @return
 	 */
@@ -199,30 +197,19 @@ public final class SendConfigurationHelpers
 	/**
 	 * @param activity
 	 * @param correspondent the correspondent to delete (if null nothing will happen)
-	 * @return null if nothing happened, true if correspondent was deleted, false if it was only hidden
 	 */
-	static public Boolean deleteCorrespondent(ProjectManagerActivity activity, Correspondent correspondent)
+	static public void deleteCorrespondent(ProjectManagerActivity activity, Correspondent correspondent)
 	{
 		if(correspondent == null)
-			return null;
+			return;
 		try
-		{	
-			if(!hasTransmissions(activity, correspondent))
-			{	// If the correspondent doesn't have transmissions we can really delete it:
-				activity.getTransmissionStore().deleteCorrespondent(correspondent); // TODO what to do with transmittable records for this receiver???
-				return true;
-			}
-			else
-			{	// Otherwise we only hide it:
-				correspondent.markAsUserDeleted();
-				saveCorrespondent(activity, correspondent);
-				return false;
-			}
+		{	// "Delete" by hiding:
+			correspondent.markAsUserDeleted();
+			saveCorrespondent(activity, correspondent);
 		}
 		catch(Exception e)
 		{
 			Log.e(SendConfigurationHelpers.class.getSimpleName(), ExceptionHelpers.getMessageAndCause(e), e);
-			return null;
 		}
 	}
 	
@@ -256,9 +243,9 @@ public final class SendConfigurationHelpers
 		
 		public void newReceiver(Correspondent newReceiver);
 		
-		public void editedReceiver(Correspondent newReceiver, Correspondent oldReceiver);
+		public void editedReceiver(Correspondent editedReceiver);
 		
-		public void deletedReceiver(Correspondent oldReceiver);
+		public void deletedReceiver(Correspondent deletedReceiver);
 		
 	}
 	
@@ -287,7 +274,7 @@ public final class SendConfigurationHelpers
 		});
 	}
 	
-	static private ReceiverDrawableProvider receiverDrawableProvider = new ReceiverDrawableProvider();
+	static private final ReceiverDrawableProvider receiverDrawableProvider = new ReceiverDrawableProvider();
 	
 	/**
 	 * @param receiver
@@ -365,7 +352,7 @@ public final class SendConfigurationHelpers
 		
 	}
 	
-	static private ReceiverAddressStringProvider receiverAddressStringProvider = new ReceiverAddressStringProvider();
+	static private final ReceiverAddressStringProvider receiverAddressStringProvider = new ReceiverAddressStringProvider();
 	
 	static public CharSequence getReceiverLabelText(Correspondent receiver, boolean multiLine)
 	{
@@ -409,4 +396,27 @@ public final class SendConfigurationHelpers
 		
 	}
 	
+//	/**
+//	 * @param project
+//	 * @return
+//	 */
+//	static public void setReceivingProject(ProjectManagerActivity activity, Transmission.Type transmissionType, boolean enabled)
+//	{
+//		// En/Disable receiving state for given project and transmission type:
+//		activity.getProjectStore().setReceiving(project, transmissionType, enabled);
+//		
+//		// TODO also run this at boot somehow...
+//		// Determine if we should (still) listen for incoming transmission of this type:
+//		boolean listen =
+//			// Are we receiving data via such transmission for *any* project?:
+//			activity.getProjectStore().isReceiving(transmissionType) ||
+//			// Do we have (valid, but not necessarily enabled) SendSchedules using this transmission type?:
+//			!activity.getProjectStore().retrieveSendSchedulesForTransmissionType(transmissionType, false /*include disabled*/).isEmpty();
+//			//	(we even include disabled SendSchedules here because we want any ACKs, or other responses, to be received even if the schedule is disabled)
+//		
+//		Log.d(SendConfigurationHelpers.class.getSimpleName(), "LISTENING FOR " + transmissionType.name() + ": " + listen);
+//		
+//		// TODO start/stop service/broadcast receiver
+//	}
+		
 }

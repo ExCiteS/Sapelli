@@ -27,12 +27,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyTasks;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyTasks.CheckResult;
+import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.AndroidGeoKeyClient;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
 
@@ -104,7 +106,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		if(isEditing())
 		{
 			txtGeoKeyServerURL.setText(editReceiver.getUrl());
-			txtEmail.setText(editReceiver.getEmail());
+			txtEmail.setText(editReceiver.getEmail()); // hint about anonymous use
 			txtPassword.setText(editReceiver.getPassword()); // TODO "click to change"
 			txtReceiverName.setText(editReceiver.getName());
 		}
@@ -115,6 +117,8 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			txtPassword.setText("");
 			txtReceiverName.setText("");
 		}
+		// Dis/enable editing of finals:
+		txtGeoKeyServerURL.setEnabled(!isEditing());
 	}
 	
 	@SuppressLint("InflateParams")
@@ -143,7 +147,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		switch(which)
 		{
 			case DialogInterface.BUTTON_POSITIVE :
-				saveChanges(dialog);
+				save(dialog);
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
 				break;
@@ -151,21 +155,21 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	}
 	
 	/**
-	 * @return whether or not to dismiss the dialog
+	 * @param dialog
 	 */
-	private void saveChanges(final DialogInterface dialog)
+	private void save(DialogInterface dialog)
 	{
 		// Input validation:
 		boolean valid = true;
 		//	URL:
-		String url = txtGeoKeyServerURL.getText().toString(); 
+		String url = txtGeoKeyServerURL.getText().toString().trim(); 
 		if(url.isEmpty() || !GeoKeyAccount.URL_VALIDATOR.isValid(url))
 		{
 			txtGeoKeyServerURL.setBackgroundResource(R.color.red25percent);
 			valid = false;
 		}
 		//	E-mail:
-		String email = txtEmail.getText().toString();
+		String email = txtEmail.getText().toString().trim();
 		if(email.isEmpty() || !GeoKeyAccount.EMAIL_VALIDATOR.isValid(email))
 		{
 			txtEmail.setBackgroundResource(R.color.red25percent);
@@ -179,36 +183,80 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			valid = false;
 		}
 		//	Name:
-		String name = txtReceiverName.getText().toString();
+		String name = txtReceiverName.getText().toString().trim();
 		if(!valid)
-			return;
+			dialog.dismiss();
 		
 		// Check if we are editing...
 		if(isEditing())
-		{	// We are, check if actual changes were made:
-			if(	!editReceiver.getName().equals(name) ||
-				!editReceiver.getUrl().equals(url) ||
-				!editReceiver.getEmail().equals(email) ||
-				!editReceiver.getPassword().equals(password))
-			{	// The receiver has been changed...
-				//	We cannot alter existing correspondents to instead we delete (or hide it), and replace it by a new one to be stored below.
-				SendConfigurationHelpers.deleteCorrespondent(getOwner(), editReceiver); // TODO what with transmittable records scheduled for this receiver??
-				// TODO what to do with other projects using the same receiver? --> update their schedules! (And transmittables?)				
+		{	// We are, check for changes:
+			boolean changed = false;
+			if(!editReceiver.getName().equals(name))
+			{
+				editReceiver.setName(name);
+				changed = true;
 			}
-			else
+			if(!editReceiver.getEmail().equals(email))
+			{
+				editReceiver.setEmail(email);
+				changed = true;
+			}
+			if(!editReceiver.getPassword().equals(password))
+			{
+				editReceiver.setPassword(password);
+				changed = true;
+			}
+			// Check if any changes were made:
+			if(!changed)
 				// No changes, we are done here...
 				dialog.dismiss();
 		}
 		
-		// Create correspondent:
-		final GeoKeyAccount toSave = GeoKeyAccount.CreateNew(name, url, email, password);
-		
-		// Verify it:
-		GeoKeyTasks.CheckServer(getOwner(), toSave, null /*TODO pass current project if receiver being made for a schedule*/, new GeoKeyTasks.CheckCallback()
+		// Verify & save account:
+		verifyAndSave(dialog, isEditing() ? editReceiver : GeoKeyAccount.CreateNew(name, url, email, password));
+	}
+	
+	static private enum CheckResult
+	{
+		NoInternet,
+		InvalidServer,
+		InvalidAccount,
+		OK
+	};
+	
+	private void verifyAndSave(final DialogInterface dialog, final GeoKeyAccount account)
+	{
+		final ProjectManagerActivity owner = getOwner();
+		new AsyncTaskWithWaitingDialog<BaseActivity, Void, CheckResult>(owner, R.string.verifyingServerAndAccount)
 		{
 			@Override
-			public void checkDone(CheckResult result)
+			protected CheckResult runInBackground(Void... params)
 			{
+				if(!DeviceControl.isOnline(owner))
+					return CheckResult.NoInternet;
+				
+				// We are online, perform actual checks:
+				AndroidGeoKeyClient client = new AndroidGeoKeyClient(owner.getCollectorApp());
+				
+				//	Check if server is reachable and run the right GeoKey & extension versions:
+				if(!client.verifyServer(account))
+					return CheckResult.InvalidServer;
+				
+				//	Check if user can login:
+				if(!client.login(account))
+					return CheckResult.InvalidAccount;
+				
+				// All OK!:
+				return CheckResult.OK;
+			}
+
+			@Override
+			protected void onPostExecute(CheckResult result)
+			{
+				// Dismiss waiting dialog:
+				super.onPostExecute(result);
+				
+				// Deal with result:
 				switch(result)
 				{
 					case NoInternet:
@@ -220,18 +268,15 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 					case InvalidServer:
 						// TODO
 						break;
-					case NoSuchProject:
-						// TODO
-						break;
 					case OK:
 						// Save correspondent:
-						SendConfigurationHelpers.saveCorrespondent(getOwner(), toSave);
+						SendConfigurationHelpers.saveCorrespondent(owner, account);
 						if(callback != null)
 						{
 							if(!isEditing())
-								callback.newReceiver(toSave);
+								callback.newReceiver(account);
 							else
-								callback.editedReceiver(toSave, editReceiver);
+								callback.editedReceiver(account);
 						}
 						// Close dialog:
 						dialog.dismiss();
@@ -239,8 +284,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 				
 				}
 			}
-		});
-
+		}.execute();
 	}
 		
 }

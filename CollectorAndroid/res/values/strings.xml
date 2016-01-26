@@ -16,7 +16,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
- <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collector</string>
@@ -38,7 +38,7 @@
     <string name="manageEtc">Manage&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string>
 	<string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
-	<string name="determiningDeviceID">Determining device ID…</string>
+	<string name="determiningDeviceID">Determining device ID …</string>
 	<string name="pleaseLeaveAirplaneMode">In order to initialise the application for first use, please take your device out of Airplane Mode.</string>
 	<string name="project_manager">Project Manager</string>
     <string name="switch_project">Switch to project:</string>
@@ -218,6 +218,10 @@
     <string name="editReceiver">Edit receiver</string>
     <string name="cycleInOutOfAirplaneMode">Cycle in &amp; out of airplane mode</string>
     <string name="airplaneModeCycling">Airplane mode cycling</string>
+    <string name="queryingReceiverAboutProject">Querying receiver about project \"%1$s\", this may take up to %2$d minutes …</string>
+    <string name="projectPresentOnReceiver">Receiver \"%1$s\" has project \"%2$s\"</string>
+    <string name="projectAbsentOnReceiver">Receiver \"%1$s\" has reported it does not have project \"%2$s\", data transmission will likely fail.\nDo you want to use this receiver anyway?</string>
+    <string name="pendingProjectQuery">We were unable to determine whether receiver \"%1$s\" has project \"%2$s\", perhaps this device (or the receiver) is not online.\nDo you want to use this receiver anyway?</string>
     <string name="chooseReceiverType">Choose receiver type</string>
     <string name="receiverName">Name:</string>
     <string name="pickOptionalName">Pick a name (optional):</string>

@@ -35,7 +35,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
@@ -77,12 +76,6 @@ public class AndroidTransmissionController extends TransmissionController
 		if(smsClient == null)
 			smsClient = new AndroidSMSClient(app);
 		return smsClient;
-	}
-
-	@Override
-	public HTTPClient getHTTPClient()
-	{
-		return null;
 	}
 
 	@Override

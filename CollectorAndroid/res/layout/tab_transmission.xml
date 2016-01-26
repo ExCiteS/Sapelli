@@ -15,7 +15,7 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- -->
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -46,57 +46,55 @@
         android:background="@drawable/drop_shadow_bottom"
         android:orientation="vertical"
         android:visibility="gone" >
-        
-		<LinearLayout
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:orientation="vertical"
-			android:paddingLeft="10dp"
-			android:paddingStart="10dp"
-			android:paddingRight="10dp"
-			android:paddingEnd="10dp"
-			android:paddingBottom="4dp" >
-	        
-	        <TextView
-	            android:layout_width="match_parent"
-	            android:layout_height="wrap_content"
-	            android:text="@string/scheduledReceivers" />
-	
-	        <ListView
-	            android:id="@+id/listSendSchedules"
-	            android:layout_width="match_parent"
-	            android:layout_height="fill_parent"
-	            android:background="@drawable/drop_shadow"
-	            android:choiceMode="none"
-	            android:divider="@color/dropShadowInnerOpaque"
-	            android:dividerHeight="1dp" />
-	        
-			<LinearLayout
-		        android:layout_width="fill_parent"
-		        android:layout_height="wrap_content"
-		        android:orientation="horizontal" >
-	
-				<TextView
-		            android:layout_weight="1"
-        			android:layout_width="0dp"
-		            android:layout_height="match_parent"
-		            android:paddingLeft="5dp"
-		            android:paddingStart="5dp"
-		            android:paddingRight="5dp"
-		            android:paddingEnd="5dp"
-		            android:text="@string/longClickFromEditDel" />
-			    
-		        <Button
-		            android:id="@+id/btnAddSchedule"
-		            style="?android:attr/buttonStyleSmall"
-		            android:layout_width="75dp"
-		            android:layout_height="40dp"
-		            android:text="@string/add" />
-		        
-			</LinearLayout>       
-	        
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="4dp"
+            android:paddingEnd="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:paddingStart="10dp" >
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/scheduledReceivers" />
+
+            <ListView
+                android:id="@+id/listSendSchedules"
+                android:layout_width="match_parent"
+                android:layout_height="fill_parent"
+                android:background="@drawable/drop_shadow"
+                android:choiceMode="none"
+                android:divider="@color/dropShadowInnerOpaque"
+                android:dividerHeight="1dp" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:paddingEnd="5dp"
+                    android:paddingLeft="5dp"
+                    android:paddingRight="5dp"
+                    android:paddingStart="5dp"
+                    android:text="@string/longClickFromEditDel" />
+
+                <Button
+                    android:id="@+id/btnAddSchedule"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="75dp"
+                    android:layout_height="40dp"
+                    android:text="@string/add" />
+            </LinearLayout>
+
         </LinearLayout>
-        
     </LinearLayout>
 
     <LinearLayout
@@ -106,7 +104,8 @@
         android:background="@drawable/drop_shadow"
         android:clickable="true"
         android:gravity="center_vertical"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:visibility="gone" ><!-- hidden (for now) -->
 
         <android.support.v7.widget.SwitchCompat
             android:id="@+id/switchReceive"
@@ -115,32 +114,16 @@
             android:padding="8dp"
             android:text="@string/receiveData" />
     </LinearLayout>
-    
-   <LinearLayout
+
+    <LinearLayout
         android:id="@+id/receiveSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/drop_shadow_bottom"
         android:orientation="vertical"
         android:visibility="gone" >
-
-        <android.support.v7.widget.SwitchCompat
-            android:id="@+id/switchReceiveBinSMS"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:layout_gravity="center"
-            android:focusable="false"
-            android:padding="4dp"
-            android:text="@string/receiveBinarySMS" />
-       
-        <android.support.v7.widget.SwitchCompat
-            android:id="@+id/switchReceiveTxtSMS"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:layout_gravity="center"
-            android:focusable="false"
-            android:padding="4dp"
-            android:text="@string/receiveTextualSMS" />
+        
+        <!-- add stuff here? button to open general settings? -->
 
     </LinearLayout>
 

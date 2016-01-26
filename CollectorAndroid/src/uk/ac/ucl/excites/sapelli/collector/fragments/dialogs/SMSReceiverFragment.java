@@ -122,6 +122,10 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 				txtReceiverPhoneNumber.setText("");
 			chkBinarySMS.setChecked(SMSCorrespondent.DEFAULT_BINARY_SMS);
 		}
+		
+		// Dis/enable editing of finals (only the name can be edited):
+		txtReceiverPhoneNumber.setEnabled(!isEditing());
+		chkBinarySMS.setEnabled(!isEditing());
 	}
 	
 	@SuppressLint("InflateParams")
@@ -185,44 +189,42 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		}
 		//	PhoneNumber:
 		PhoneNumber phoneNumber = null;
-		try
+		if(!isEditing())
 		{
-			phoneNumber = SMSCorrespondent.toPhoneNumber(txtReceiverPhoneNumber.getText().toString(), DeviceControl.getSimCountryISOCode(getOwner()));
-		}
-		catch(Exception e)
-		{
-			getOwner().showErrorDialog(R.string.invalidPhoneNumber);
-			txtReceiverPhoneNumber.requestFocus();
-			return false;
+			try
+			{
+				phoneNumber = SMSCorrespondent.toPhoneNumber(txtReceiverPhoneNumber.getText().toString(), DeviceControl.getSimCountryISOCode(getOwner()));
+			}
+			catch(Exception e)
+			{
+				getOwner().showErrorDialog(R.string.invalidPhoneNumber);
+				txtReceiverPhoneNumber.requestFocus();
+				return false;
+			}
 		}
 		//	Mode:
 		boolean binarySMS = chkBinarySMS.isChecked();
 		
 		// Check if we are editing...
 		if(isEditing())
-		{	// We are, check if actual changes were made:
-			if(	!editReceiver.getName().equals(name) ||
-				!editReceiver.getPhoneNumber().equals(phoneNumber) ||
-				(editReceiver.getTransmissionType() == Type.BINARY_SMS) != binarySMS)
-			{	// The receiver has been changed...
-				//	We cannot alter existing correspondents to instead we delete (or hide it), and replace it by a new one to be stored below.
-				SendConfigurationHelpers.deleteCorrespondent(getOwner(), editReceiver); // TODO what with transmittable records scheduled for this receiver??
-				// TODO what to do with other projects using the same receiver? --> update their schedules! (And transmittables?)				
-			}
+		{	// We are, check if actual changes were made (only name can be changed):
+			if(!editReceiver.getName().equals(name))
+				// Update name:
+				editReceiver.setName(name);
 			else
 				// No changes, we are done here...
 				return true;
 		}
 		
 		// Save correspondent:
-		SMSCorrespondent toSave = new SMSCorrespondent(name, phoneNumber, binarySMS);
+		SMSCorrespondent toSave = isEditing() ? editReceiver : new SMSCorrespondent(name, phoneNumber, binarySMS);
 		SendConfigurationHelpers.saveCorrespondent(getOwner(), toSave);
 		if(callback != null)
 		{
 			if(!isEditing())
 				callback.newReceiver(toSave);
 			else
-				callback.editedReceiver(toSave, editReceiver);
+				callback.editedReceiver(editReceiver);
 		}
 		
 		return true;

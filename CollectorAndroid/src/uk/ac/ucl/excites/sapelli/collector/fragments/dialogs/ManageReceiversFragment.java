@@ -142,7 +142,8 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		else if(v.getId() == R.id.btnEditReceiver || v.getId() == R.id.btnDeleteReceiver)
 		{
 			Correspondent receiver = listReceiversAdapter.getItem((Integer) v.getTag());
-			
+			if(receiver == null)
+				return;
 			Set<Project> projectsUsingReceiver = SendConfigurationHelpers.getProjectsUsingReceiver(getOwner(), receiver);
 			if(!projectsUsingReceiver.isEmpty())
 			{
@@ -166,8 +167,8 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 			else
 			{	// Delete...
 				// TODO confirm delete msg box
-				if(SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver) != null)
-					deletedReceiver(receiver);
+				SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver);
+				deletedReceiver(receiver);
 			}
 		}
 	}
@@ -182,23 +183,23 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	}
 	
 	@Override
-	public void editedReceiver(Correspondent newReceiver, Correspondent oldReceiver)
+	public void editedReceiver(Correspondent editedReceiver)
 	{
 		updateReceivers();
 		// Forward:
 		if(callback != null)
-			callback.editedReceiver(newReceiver, oldReceiver);
+			callback.editedReceiver(editedReceiver);
 		// Request TransmissionTab update:
 		getOwner().refreshTab(TransmissionTabFragment.class);
 	}
 	
 	@Override
-	public void deletedReceiver(Correspondent oldReceiver)
+	public void deletedReceiver(Correspondent deletedReceiver)
 	{
 		updateReceivers();
 		// Forward:
 		if(callback != null)
-			callback.deletedReceiver(oldReceiver);
+			callback.deletedReceiver(deletedReceiver);
 		// Request TransmissionTab update:		
 		getOwner().refreshTab(TransmissionTabFragment.class);
 	}
