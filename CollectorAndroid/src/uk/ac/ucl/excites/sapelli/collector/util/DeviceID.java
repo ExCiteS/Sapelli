@@ -22,12 +22,9 @@ import java.math.BigInteger;
 import java.util.zip.CRC32;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -36,6 +33,8 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
+import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
@@ -64,9 +63,9 @@ public class DeviceID
 
 	private static DeviceID INSTANCE = null;
 	
-	static public void Initialise(Activity activity, InitialisationCallback client)
+	static public void Initialise(BaseActivity activity, InitialisationCallback caller)
 	{
-		new Initialiser(activity, client); // may start async task!
+		new Initialiser(activity, caller); // may start async task!
 	}
 	
 	static public DeviceID GetInstanceOrNull()
@@ -277,7 +276,7 @@ public class DeviceID
 		
 	}
 	
-	private static class Initialiser extends AsyncTaskWithWaitingDialog<Activity, Void, Integer>
+	private static class Initialiser extends AsyncTaskWithWaitingDialog<BaseActivity, Void, Integer>
 	{
 
 		// Statics --------------------------------------------------
@@ -297,9 +296,11 @@ public class DeviceID
 		private BroadcastReceiver bluetoothBroadcastReceiver;
 		private boolean inAirplaneMode = false;
 		
-		public Initialiser(Activity activity, InitialisationCallback caller)
+		public Initialiser(BaseActivity activity, InitialisationCallback caller)
 		{
-			super(activity, "Determining device ID..."); //TODO multilang
+			super(activity, R.string.determiningDeviceID);
+			if(caller == null)
+				throw new NullPointerException("Please provide a non-null InitialisationCallback instance");
 			this.caller = caller;
 			this.id = new DeviceID(activity);
 
@@ -364,14 +365,23 @@ public class DeviceID
 		protected void onPostExecute(Integer result)
 		{
 			super.onPostExecute(result); // to dismiss waiting dialog
-			Context context = getContext();
+			
+			// Null check:
+			if(result == null) // (should resolve https://github.com/ExCiteS/Sapelli/issues/48)
+				caller.initialisationFailure(id);
+			
+			// Get & check context:
+			final BaseActivity activity = getContext();
+			if(activity == null)
+				return;
+			
 			switch(result)
 			{
 				case RESULT_OK:
 				{	
 					// Put the phone back in AirplaneMode (because it was in airplane mode before):
-					if(inAirplaneMode && context != null)
-						DeviceControl.enableAirplaneMode(context);
+					if(inAirplaneMode)
+						DeviceControl.enableAirplaneMode(activity);
 					
 					// Compute and save the Device ID
 					computeDeviceID();
@@ -390,8 +400,17 @@ public class DeviceID
 					break;
 				}
 				case RESULT_AIRPLANE_MODE:
-					if(context != null)
-						showAirplaneDialog(context);
+					activity.showOKDialog(activity.getString(R.string.sapelli) + " " + activity.getString(R.string.collector), R.string.pleaseLeaveAirplaneMode, true, new Runnable()
+					{
+						@Override
+						public void run()
+						{	// Close the app by going to HOME
+							Intent intent = new Intent(Intent.ACTION_MAIN);
+							intent.addCategory(Intent.CATEGORY_HOME);
+							intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+							activity.startActivity(intent);
+						}
+					});
 					break;
 			}
 		}
@@ -562,28 +581,6 @@ public class DeviceID
 				id.saveStingPreference(PREF_HARWARE_SERIAL, null);
 			else
 				id.saveStingPreference(PREF_HARWARE_SERIAL, serial);
-		}
-		
-		/**
-		 * @param context
-		 */
-		private void showAirplaneDialog(final Context context)
-		{
-			AlertDialog.Builder builder = new AlertDialog.Builder(context); // TODO multilang
-			builder.setMessage("In order for the Sapelli to be initialised for first use, please take your device out of Airplane Mode.").setCancelable(false)
-					.setPositiveButton("OK", new DialogInterface.OnClickListener()
-			{
-				public void onClick(DialogInterface dialog, int id)
-				{
-					// Close the app by going to HOME
-					Intent intent = new Intent(Intent.ACTION_MAIN);
-					intent.addCategory(Intent.CATEGORY_HOME);
-					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-					context.startActivity(intent);
-				}
-			});
-			AlertDialog alert = builder.create();
-			alert.show();
 		}
 		
 	}

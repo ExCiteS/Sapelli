@@ -38,6 +38,8 @@
     <string name="manageEtc">Manage&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string>
 	<string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
+	<string name="determiningDeviceID">Determining device ID…</string>
+	<string name="pleaseLeaveAirplaneMode">In order to initialise the application for first use, please take your device out of Airplane Mode.</string>
 	<string name="project_manager">Project Manager</string>
     <string name="switch_project">Switch to project:</string>
     <string name="no_projects">No projects loaded.</string>
