@@ -62,23 +62,21 @@ public class GeoKeyAccount extends Correspondent
 		if(!URL_VALIDATOR.isValid(url))
 			throw new IllegalArgumentException("Url is invalid: " + url);
 		
-		// TODO make user credentials optional?
-		if(email == null || email.isEmpty())
-			throw new IllegalArgumentException("Username cannot be null or empty!");
-		if(!EMAIL_VALIDATOR.isValid(email))
+		// Check email:
+		if("".equals(email))
+			email = null;
+		if(email != null && !EMAIL_VALIDATOR.isValid(email))
 			throw new IllegalArgumentException("E-mail address is invalid: " + email);
-		if(password == null)
-			throw new IllegalArgumentException("Password cannot be null!");
+		
+		// Check password:
+		if("".equals(password))
+			password = null;
 		
 		// Check name, use url as fallback:
 		if(name == null || name.isEmpty())
 			name = URLUtils.stripTrailingSlash(URLUtils.stripHTTP(url)); // get rid of "http[s]://" and trailing slash
 
-		return new GeoKeyAccount(
-			name,
-			url,
-			email,
-			password);
+		return new GeoKeyAccount(name, url, email, password);
 	}
 	
 	static private final ColumnSet ADDRESS_COLUMNS = new ColumnSet("Address", false);
