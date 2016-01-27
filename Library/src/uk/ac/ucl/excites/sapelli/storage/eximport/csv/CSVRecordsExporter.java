@@ -189,7 +189,7 @@ public class CSVRecordsExporter extends SimpleExporter
 		writer = new FileWriter(
 			exportFolder + File.separator +
 			FileHelpers.makeValidFileName(
-				"Records_" + (description != null && !description.isEmpty() ? description + "_" : "") +
+				"Records_" + description + "_" +
 				TimeUtils.getTimestampForFileName(timestamp) + "." + FILE_EXTENSION), Charsets.UTF_8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);	
 	}
@@ -255,7 +255,7 @@ public class CSVRecordsExporter extends SimpleExporter
 			try
 			{
 				Schema schema =  entry.getKey();
-				openWriter(description + "_" + schema.getName(), timestamp);
+				openWriter((description != null && !description.isEmpty() ? description + "_" : "") + schema.getName(), timestamp);
 
 				// Construct column list:
 				getColumnPointers(schema);
