@@ -49,6 +49,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelAccessUnauthorisedPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
@@ -85,7 +86,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		Pending,
 		ModelPresent,
-		ModelAbsent
+		ModelAbsent,
+		ModelAccessUnauthorised
 	};
 
 	// Client:
@@ -289,10 +291,22 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		if(!modelQueryT.hasResponse())
 			return ModelQueryStatus.Pending; // no response yet...
 		else
-			return
-				modelQueryT.getResponse().getPayloadType() == Payload.BuiltinType.Ack.ordinal() ?
-					ModelQueryStatus.ModelPresent :
-					ModelQueryStatus.ModelAbsent;
+		{
+			Payload.BuiltinType responseType = Payload.getBuiltinType(modelQueryT.getResponse().getPayloadType());
+			if(responseType == null)
+				return ModelQueryStatus.Pending;
+			switch(responseType)
+			{
+				case Ack :
+					return ModelQueryStatus.ModelPresent;
+				case ModelAccessUnauthorised :
+					return ModelQueryStatus.ModelAccessUnauthorised;
+				case ModelRequest :
+					return ModelQueryStatus.ModelAbsent;
+				default:
+					return ModelQueryStatus.Pending; 
+			}
+		}	
 	}
 	
 	/**
@@ -730,6 +744,14 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 		
 		@Override
+		public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception
+		{
+			handleResponse(modelAccessUnauthorisedPayload);
+			
+			// TODO show toast or tray alert on android?
+		}
+		
+		@Override
 		public void handle(ModelQueryPayload modelQueryPayload) throws Exception
 		{
 			// everything is done already in #receive(Payload) (see above)
@@ -778,13 +800,19 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(ModelQueryPayload modelQueryPayload) throws Exception
 		{
-			// TODO Auto-generated method stub
+			// nothing
 		}
 
 		@Override
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
 		{
-			// TODO ?
+			// never happens because ModelRequestPayload#acknowledgeReception() returns false.
+		}
+		
+		@Override
+		public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception
+		{
+			// never happens because ModelAccessUnauthorisedPayload#acknowledgeReception() returns false.
 		}
 
 		@Override

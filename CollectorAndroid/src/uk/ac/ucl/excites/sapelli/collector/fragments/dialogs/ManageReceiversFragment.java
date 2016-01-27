@@ -117,7 +117,39 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		
 		return dialog;
 	}
+	
+//	addReceiveSwitch(Transmission.Type.BINARY_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveBinSMS));
+//	addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
 
+//	private void addReceiveSwitch(Transmission.Type transmissionType, ViewGroup receiveSwitch)
+//	{
+//		receiveSwitch.setTag(transmissionType);
+//		receiveSwitch.setOnClickListener(this);
+//		receiveSwitchGroups.add(receiveSwitch);
+//	}
+	
+//	private boolean toggleReceiveSwitch(ViewGroup receiveSwitchGroup)
+//	{
+//		Checkable receiveSwitch = (Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX); 
+//		receiveSwitch.toggle();
+//		return receiveSwitch.isChecked();
+//	}
+	
+//	// Update receiving config UI parts:
+//	boolean receivingEnabled = false;
+//	for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
+//		if(setReceiveSwitch(receiveSwitchGroup,	getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitchGroup.getTag())))
+//			receivingEnabled = true;
+//	toggleConfigGroup(false, receivingEnabled);
+	
+//	case R.id.switchReceiveBinSMS :
+//	case R.id.switchReceiveTxtSMS :
+//		getOwner().getProjectStore().setReceiving(
+//			getProject(false),
+//			(Transmission.Type) view.getTag(),
+//			toggleReceiveSwitch((ViewGroup) view));
+//		break;
+	
 	@Override
 	public void onClick(DialogInterface dialog, int which)
 	{

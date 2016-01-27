@@ -32,6 +32,8 @@ public class SendSchedule
 	// STATICS --------------------------------------------------------------------------
 	static public final int DEFAULT_TRANSMIT_INTERVAL_SECONDS = 60 * 60; // = 1 hour
 	
+	static public final int MINIMUM_TRANSMIT_INTERVAL_SECONDS = 30;
+	
 	static public boolean isValidForTransmission(SendSchedule schedule)
 	{
 		return hasValidReceiver(schedule) && schedule.isEnabled() && schedule.isIDSet();
@@ -167,6 +169,8 @@ public class SendSchedule
 	 */
 	public SendSchedule setTransmitIntervalS(int transmitIntervalS)
 	{
+		if(transmitIntervalS < MINIMUM_TRANSMIT_INTERVAL_SECONDS)
+			transmitIntervalS = MINIMUM_TRANSMIT_INTERVAL_SECONDS;
 		this.transmitIntervalS = transmitIntervalS;
 		return this;
 	}

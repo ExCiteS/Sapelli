@@ -111,7 +111,7 @@ public final class SendConfigurationHelpers
 				usedReceivers.add(projSched.getReceiver());
 		List<Correspondent> selectableReceivers = new ArrayList<Correspondent>();
 		for(Correspondent receiver : getReceivers(activity))
-			if(receiver.equals(schedule.getReceiver()) || !usedReceivers.contains(receiver))
+			if((schedule.getReceiver() != null && receiver.getLocalID() == schedule.getReceiver().getLocalID()) || !usedReceivers.contains(receiver))
 				selectableReceivers.add(receiver);
 		return selectableReceivers;
 	}

@@ -113,29 +113,13 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
 		switchReceive.setOnClickListener(this);
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
-//		addReceiveSwitch(Transmission.Type.BINARY_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveBinSMS));
-//		addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
 	}
-	
-//	private void addReceiveSwitch(Transmission.Type transmissionType, ViewGroup receiveSwitch)
-//	{
-//		receiveSwitch.setTag(transmissionType);
-//		receiveSwitch.setOnClickListener(this);
-//		receiveSwitchGroups.add(receiveSwitch);
-//	}
 	
 	private boolean setReceiveSwitch(ViewGroup receiveSwitchGroup, boolean enabled)
 	{
 		((Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX)).setChecked(enabled);
 		return enabled;
 	}
-	
-//	private boolean toggleReceiveSwitch(ViewGroup receiveSwitchGroup)
-//	{
-//		Checkable receiveSwitch = (Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX); 
-//		receiveSwitch.toggle();
-//		return receiveSwitch.isChecked();
-//	}
 	
 	@Override
 	protected void refresh(Project project)
@@ -158,13 +142,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				break;
 			}
 		toggleConfigGroup(true, sendingEnabled);
-		
-//		// Update receiving config UI parts:
-//		boolean receivingEnabled = false;
-//		for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
-//			if(setReceiveSwitch(receiveSwitchGroup,	getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitchGroup.getTag())))
-//				receivingEnabled = true;
-//		toggleConfigGroup(false, receivingEnabled);
 	}
 	
 	private void toggleConfigGroup(boolean send, boolean enabled)
@@ -208,13 +185,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 						getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitchGroup.getTag(), false);
 					}
 				break;
-//			case R.id.switchReceiveBinSMS :
-//			case R.id.switchReceiveTxtSMS :
-//				getOwner().getProjectStore().setReceiving(
-//					getProject(false),
-//					(Transmission.Type) view.getTag(),
-//					toggleReceiveSwitch((ViewGroup) view));
-//				break;
 		}
 	}
 	

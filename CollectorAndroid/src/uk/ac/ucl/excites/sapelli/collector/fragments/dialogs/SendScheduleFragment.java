@@ -153,7 +153,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		groupReceiver = (ViewGroup) rootLayout.findViewById(R.id.groupReceiver);
 		spinReceiver = (Spinner) rootLayout.findViewById(R.id.spinSendReceiver);
 		spinReceiver.setOnItemSelectedListener(this);
-		updateReceivers(false); // !!!
+		updateReceivers(false, schedule.getReceiver()); // !!!
 		
 		btnNewReceiver = (Button) rootLayout.findViewById(R.id.btnNewScheduleReceiver);
 		btnNewReceiver.setOnClickListener(this);
@@ -189,36 +189,39 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		checkAirplaneModeCycle.setVisibility(DeviceControl.canSetAirplaneMode() ? View.VISIBLE : View.GONE);
 	}
 	
-	private void updateReceivers(boolean requery)
+	private void updateReceivers(boolean requery, Correspondent selectReceiver)
 	{
 		if(requery)
 			selectableReceivers = SendConfigurationHelpers.getSelectableCorrespondents(getOwner(), schedule);
-		
-		// Adapter:
-		spinReceiverAdapter = new AdvancedSpinnerAdapter<Correspondent>(	getOwner(),
+
+		if(requery || spinReceiverAdapter == null)
+		{
+			// Adapter:
+			spinReceiverAdapter = new AdvancedSpinnerAdapter<Correspondent>(getOwner(),
 																			R.layout.pick_receiver_item,
 																			R.layout.receiver_dropdown_item,
 																			AdvancedSpinnerAdapter.TEXTVIEW_RESOURCE_ID_WHOLE_LAYOUT,
 																			getString(R.string.lstPleaseSelect),
 																			null,
 																			selectableReceivers)
-		{
-			@Override
-			protected CharSequence getItemString(Correspondent receiver)
 			{
-				return SendConfigurationHelpers.getReceiverLabelText(receiver, false);
-			}
-	
-			@Override
-			protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
-			{
-				return receiver == null ? null : SendConfigurationHelpers.getReceiverDrawable(receiver, false);
-			}
-		};
-		spinReceiver.setAdapter(spinReceiverAdapter);
+				@Override
+				protected CharSequence getItemString(Correspondent receiver)
+				{
+					return SendConfigurationHelpers.getReceiverLabelText(receiver, false);
+				}
+		
+				@Override
+				protected Integer getItemDrawableResourceId(int position, Correspondent receiver)
+				{
+					return receiver == null ? null : SendConfigurationHelpers.getReceiverDrawable(receiver, false);
+				}
+			};
+			spinReceiver.setAdapter(spinReceiverAdapter);
+		}
 		
 		// Select current/"none" receiver:
-		spinReceiver.setSelection(spinReceiverAdapter.getPosition(schedule.getReceiver()));
+		spinReceiver.setSelection(spinReceiverAdapter.getPosition(selectReceiver));
 	}
 	
 	@SuppressLint("InflateParams")
@@ -273,11 +276,12 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 				createNewReceiver(getOwner(), this);
 				break;
 			case R.id.btnEditScheduleReceiver :
-				SendConfigurationHelpers.openEditReceiverDialog(getOwner(), this, getReceiver());
+				Correspondent r = getReceiver();
+				SendConfigurationHelpers.openEditReceiverDialog(getOwner(), this, r);
 				break;
 			case R.id.btnDeleteScheduleReceiver :
 				SendConfigurationHelpers.deleteCorrespondent(getOwner(), getReceiver());
-				updateReceivers(true);
+				updateReceivers(true, null);
 				break;
 		}
 	}
@@ -285,21 +289,19 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	@Override
 	public void newReceiver(Correspondent newReceiver)
 	{
-		schedule.setReceiver(newReceiver);
-		updateReceivers(true);
+		updateReceivers(true, newReceiver);
 	}
 	
 	@Override
 	public void editedReceiver(Correspondent editedReceiver)
 	{
-		updateReceivers(true);
+		updateReceivers(true, editedReceiver);
 	}
 	
 	@Override
 	public void deletedReceiver(Correspondent deletedReceiver)
 	{
-		schedule.setReceiver(null);
-		updateReceivers(true);
+		updateReceivers(true, null);
 	}
 	
 	@Override
@@ -317,6 +319,10 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		}
 	}
 	
+	/**
+	 * @param dialog
+	 * @param receiverQueryDone
+	 */
 	private void save(final DialogInterface dialog, boolean receiverQueryDone)
 	{
 		final ProjectManagerActivity activity = getOwner();
@@ -329,6 +335,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		// Input validation & change detection:
 		boolean valid = true;
 		boolean changed = false;
+		
 		//	Receiver:
 		final Correspondent selectedReceiver = getReceiver();
 		if(selectedReceiver == null)
@@ -342,55 +349,51 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		}
 		else if(!selectedReceiver.equals(schedule.getReceiver()))
 		{
+			// Check if we need to do a model query:
+			boolean requiresModelQuery = schedule.getReceiver() == null || !schedule.getReceiver().canBeSwappedWithoutNewModelQuery(selectedReceiver);
+			
 			// Change receiver on schedule:
 			schedule.setReceiver(selectedReceiver);
 			
-			// Contact receiver to check if it has this project:
-			new ProjectQueryTask(activity, new ProjectQueryTaskCallback()
+			if(requiresModelQuery)
 			{
-				@Override
-				public void projectQueryCallback(ModelQueryStatus mqs)
+				// Contact receiver to check if it has this project:
+				new ProjectQueryTask(activity, new ProjectQueryTaskCallback()
 				{
-					if(mqs == null)
-						mqs = ModelQueryStatus.Pending;
-					Log.d(getTag(), ProjectQueryTask.class.getSimpleName() + " result: " + mqs.name());
-					switch(mqs)
+					@Override
+					public void done(ModelQueryStatus mqs)
 					{
-						case Pending:
-						case ModelAbsent:
-							activity.showYesNoDialog(
-								R.string.schedule,
-								activity.getString(
-									mqs == ModelQueryStatus.Pending ? R.string.pendingProjectQuery : R.string.projectAbsentOnReceiver,
-									selectedReceiver.getName(),
-									schedule.getProject().toString(false)),
-								new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										groupReceiver.setBackgroundResource(R.color.amber25percent);
-									}
-								}, false,
-								new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										schedule.setReceiver(null);
-										updateReceivers(false);
-									}
-								}, false);
-							break;
-						case ModelPresent:
-							Toast.makeText(activity, R.string.projectPresentOnReceiver, Toast.LENGTH_LONG).show();
-							break;
+						if(mqs == null)
+							mqs = ModelQueryStatus.Pending;
+						Log.d(getTag(), ProjectQueryTask.class.getSimpleName() + " result: " + mqs.name());
+						switch(mqs)
+						{
+							case Pending:
+								showModelQueryErrorMsg(activity, selectedReceiver, dialog, R.string.pendingProjectQuery);
+								break;
+							case ModelAbsent:
+								showModelQueryErrorMsg(activity, selectedReceiver, dialog, R.string.projectAbsentOnReceiver);
+								break;
+							case ModelAccessUnauthorised:
+								showModelQueryErrorMsg(activity, selectedReceiver, dialog, R.string.projectUnauthorised);
+								break;
+							case ModelPresent:
+								Toast.makeText(
+									activity,
+									activity.getString(R.string.projectPresentOnReceiver, selectedReceiver.getName(), schedule.getProject().toString(false)),
+									Toast.LENGTH_LONG).show();
+								// Recursive call to save():
+								save(dialog, true);
+								break;
+						}
 					}
-					// Recursive call to save():
-					save(dialog, true);
-				}
-			}).execute(schedule);
+				}).execute(schedule);
+				return; // !!!
+			}
+			else
+				changed = true;
 		}
+		
 		//	Interval:
 		try
 		{
@@ -406,6 +409,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 			groupInterval.setBackgroundResource(R.color.red25percent);
 			valid = false;
 		}
+		
 		//	AirplaneModeCycle:
 		if(checkAirplaneModeCycle.getVisibility() == View.VISIBLE && schedule.isAirplaneModeCycling() != checkAirplaneModeCycle.isChecked())
 		{
@@ -426,6 +430,38 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 			dialog.dismiss();
 	}
 	
+	private void showModelQueryErrorMsg(final ProjectManagerActivity activity, final Correspondent selectedReceiver, final DialogInterface dialog, int msgID)
+	{
+		activity.showYesNoDialog(
+				R.string.schedule,
+				activity.getString(
+					msgID,
+					selectedReceiver.getName(),
+					schedule.getProject().toString(false)),
+				new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						try
+						{
+							groupReceiver.setBackgroundResource(R.color.amber25percent);
+						}
+						catch(Exception ignore) {}
+						// Recursive call to save():
+						save(dialog, true);
+					}
+				}, false,
+				new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						updateReceivers(false, null);
+					}
+				}, false);
+	}
+	
 	private class ProjectQueryTask extends AsyncTaskWithWaitingDialog<ProjectManagerActivity, SendSchedule, ModelQueryStatus>
 	{
 		
@@ -434,9 +470,9 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 
 		private final ProjectQueryTaskCallback callback;
 		
-		public ProjectQueryTask(ProjectManagerActivity context, ProjectQueryTaskCallback callback)
+		public ProjectQueryTask(ProjectManagerActivity activity, ProjectQueryTaskCallback callback)
 		{
-			super(context, true /*cancelable*/);
+			super(activity, true /*cancelable*/);
 			this.callback = callback;
 		}
 
@@ -453,7 +489,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 				SendSchedule schedule = params[0];
 				
 				// Set progress msg:
-				publishProgress(activity.getString(R.string.queryingReceiverAboutProject, schedule.getProject().toString(false), "" + (CYCLE_SLEEP_MS * TIMEOUT_CYCLES / 1000 / 60)));
+				publishProgress(activity.getString(R.string.queryingReceiverAboutProject, schedule.getProject().toString(false), (CYCLE_SLEEP_MS * TIMEOUT_CYCLES / 1000 / 60)));
 				
 				// Get transmission controller:
 				TransmissionController tc = new AndroidTransmissionController(activity.getCollectorApp());
@@ -481,7 +517,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		protected void onPostExecute(ModelQueryStatus result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			callback.projectQueryCallback(result);
+			callback.done(result);
 		}
 		
 		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -489,14 +525,14 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		protected void onCancelled(ModelQueryStatus result)
 		{
 			super.onCancelled(result); // dismiss dialog
-			callback.projectQueryCallback(result);
+			callback.done(result);
 		}
 
 		@Override
 		protected void onCancelled()
 		{
 			super.onCancelled(); // dismiss dialog
-			callback.projectQueryCallback(null);
+			callback.done(null);
 		}
 		
 	}
@@ -504,7 +540,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	private interface ProjectQueryTaskCallback
 	{
 		
-		public void projectQueryCallback(ModelQueryStatus mqs);
+		public void done(ModelQueryStatus mqs);
 		
 	}
 

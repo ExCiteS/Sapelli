@@ -35,6 +35,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelAccessUnauthorisedPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
@@ -49,8 +50,8 @@ public abstract class GeoKeyClient implements Payload.Handler
 	static protected final String PATH_API_GEOKEY = "api/";
 	static protected final String PATH_API_GEOKEY_SAPELLI = "api/sapelli/";
 	
-	static protected final String MINIMAL_GEOKEY_VERSION = "0.8.1"; // TODO change this
-	static protected final String MINIMAL_GEOKEY_SAPELLI_VERSION = "0.6.7"; // TODO change this
+	static public final String MINIMAL_GEOKEY_VERSION = "0.8.1"; // TODO change this
+	static public final String MINIMAL_GEOKEY_SAPELLI_VERSION = "0.6.7"; // TODO change this
 	static protected final String EXTENSION_GEOKEY_SAPELLI = "geokey_sapelli";
 	
 	static protected final String JSON_KEY_GEOKEY = "geokey";
@@ -160,6 +161,12 @@ public abstract class GeoKeyClient implements Payload.Handler
 			gkTransmission.getSentCallback().setMockResponse(new GeoKeyTransmission(new ModelRequestPayload(gkTransmission, ume.getModelID())));
 			return; // !!!
 		}
+		catch(IllegalAccessException iae)
+		{
+			// Send ModelAccessUnauthorisedPayload in mock response:
+			gkTransmission.getSentCallback().setMockResponse(new GeoKeyTransmission(new ModelAccessUnauthorisedPayload(gkTransmission)));
+			return; // !!!
+		}
 		catch(Exception e)
 		{
 			return; // !!!
@@ -177,8 +184,9 @@ public abstract class GeoKeyClient implements Payload.Handler
 	 * @param modelID
 	 * @return a {@link ModelSession} object or {@code null}
 	 * @throws UnknownModelException when the server knows no such model
+	 * @throws IllegalAccessException  when the device/user is not allowed to access/contribute records for the model
 	 */
-	protected abstract ModelSession getModelSession(long modelID) throws UnknownModelException;
+	protected abstract ModelSession getModelSession(long modelID) throws UnknownModelException, IllegalAccessException;
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload)
@@ -191,7 +199,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 		
 		// Open session:
 		ModelSession session = null;
-		session = getModelSession(recordsPayload.getModel().id); // throws UnknownModelException
+		session = getModelSession(recordsPayload.getModel().id); // throws UnknownModelException or IllegalAccessException
 		
 		// Check session:
 		if(session == null)
@@ -234,42 +242,36 @@ public abstract class GeoKeyClient implements Payload.Handler
 		getModelSession(modelQueryPayload.getModelID()); // throws UnknownModelException
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.Payload, int)
-	 */
 	@Override
 	public void handle(Payload customPayload, int type) throws Exception
 	{
 		// Does nothing (for now)
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload)
-	 */
 	@Override
 	public void handle(AckPayload ackPayload) throws Exception
 	{
 		// N/A
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload)
-	 */
 	@Override
 	public void handle(ResendRequestPayload resendRequestPayload) throws Exception
 	{
 		// N/A
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload)
-	 */
 	@Override
 	public void handle(ModelRequestPayload modelRequestPayload) throws Exception
 	{
 		// N/A
 	}
 	
+	@Override
+	public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception
+	{
+		// N/A
+	}
+
 	/**
 	 * @author mstevens
 	 */

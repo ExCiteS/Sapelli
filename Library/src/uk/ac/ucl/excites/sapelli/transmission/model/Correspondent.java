@@ -188,4 +188,6 @@ public abstract class Correspondent
 		return hash;
 	}
 	
+	public abstract boolean canBeSwappedWithoutNewModelQuery(Correspondent another);
+	
 }

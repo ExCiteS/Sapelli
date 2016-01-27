@@ -43,6 +43,15 @@ public class GeoKeyAccount extends Correspondent
 	
 	static public final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
 	
+	static public final String checkName(String name, String url)
+	{
+		// Check name, use url as fallback:
+		if(name == null || name.isEmpty())
+			return URLUtils.stripTrailingSlash(URLUtils.stripHTTP(url)); // get rid of "http[s]://" and trailing slash
+		else
+			return name;
+	}
+	
 	/**
 	 * Called to create a new GeoKeyAccount.
 	 * 
@@ -71,10 +80,11 @@ public class GeoKeyAccount extends Correspondent
 		// Check password:
 		if("".equals(password))
 			password = null;
+		if(password == null && email != null)
+			throw new IllegalArgumentException("Password is manadatory if email is provided");
 		
 		// Check name, use url as fallback:
-		if(name == null || name.isEmpty())
-			name = URLUtils.stripTrailingSlash(URLUtils.stripHTTP(url)); // get rid of "http[s]://" and trailing slash
+		name = checkName(name, url);
 
 		return new GeoKeyAccount(name, url, email, password);
 	}
@@ -147,6 +157,15 @@ public class GeoKeyAccount extends Correspondent
 		return new ValueSet<ColumnSet>(ADDRESS_COLUMNS, url, email, password, token, userDisplayName).serialise();
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Correspondent#setName(java.lang.String)
+	 */
+	@Override
+	public void setName(String name)
+	{
+		super.setName(checkName(name, url));
+	}
+
 	/**
 	 * @return the url
 	 */
@@ -186,6 +205,12 @@ public class GeoKeyAccount extends Correspondent
 	{
 		this.password = password;
 	}
+	
+	public boolean hasCredentials()
+	{
+		return email != null && password != null;
+	}
+	
 	/**
 	 * @return whether or not a userDisplayName has been set
 	 */
@@ -269,8 +294,8 @@ public class GeoKeyAccount extends Correspondent
 			GeoKeyAccount that = (GeoKeyAccount) obj;
 			return	super.equals(that) && // Correspondent#equals(Object)
 					this.url.equals(that.url) &&
-					this.email.equals(that.email) &&
-					this.password.equals(that.password) &&
+					Objects.equals(this.email, that.email) &&
+					Objects.equals(this.password, that.password) &&
 					Objects.equals(this.userDisplayName, that.userDisplayName);
 			// ignore token
 		}
@@ -282,11 +307,27 @@ public class GeoKeyAccount extends Correspondent
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + url.hashCode();
-		hash = 31 * hash + email.hashCode();
-		hash = 31 * hash + password.hashCode();
+		hash = 31 * hash + Objects.hashCode(email);
+		hash = 31 * hash + Objects.hashCode(password);
 		hash = 31 * hash + Objects.hashCode(userDisplayName);
 		// ignore token
 		return hash;
+	}
+
+	@Override
+	public boolean canBeSwappedWithoutNewModelQuery(Correspondent another)
+	{
+		if(this == another)
+			return true;
+		if(another instanceof GeoKeyAccount)
+		{
+			GeoKeyAccount that = (GeoKeyAccount) another;
+			return	this.url.equals(that.url) &&
+					Objects.equals(this.email, that.email) &&
+					Objects.equals(this.password, that.password);
+		}
+		else
+			return false;
 	}
 
 }

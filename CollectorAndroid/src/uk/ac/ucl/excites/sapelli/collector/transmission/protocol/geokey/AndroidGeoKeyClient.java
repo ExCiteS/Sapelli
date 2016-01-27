@@ -241,8 +241,14 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 		return account;
 	}
 	
+	/**
+	 * @param modelID
+	 * @return a {@link ProjectSession} instance, or {@code null} if the user is not or no longer logged in
+	 * @throws UnknownModelException when the server has no matching Sapelli project to which the logged-in user has contribution access
+	 * @throws IllegalAccessException when the user does not have access to the project in question
+	 */
 	@Override
-	protected ProjectSession getModelSession(long modelID) throws UnknownModelException
+	protected ProjectSession getModelSession(long modelID) throws UnknownModelException, IllegalAccessException
 	{
 		Project project = app.collectorClient.getProject(modelID);
 		if(project == null)
@@ -251,37 +257,6 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 			return null;
 		}
 		
-		return getProjectSession(project);
-	}
-	
-	/**
-	 * @param project should not be {@code null}
-	 * @return whether of not the server has a matching Sapelli project to which the logged-in user has contribution access
-	 * @throws IllegalStateException when the use r is not/no longer logged in
-	 */
-	public boolean doesServerHaveProjectForContribution(Project project) throws IllegalStateException
-	{
-		ProjectSession session = null;
-		try
-		{
-			session = getProjectSession(project);
-		}
-		catch(UnknownModelException ume)
-		{
-			return false;
-		}
-		if(session == null)
-			throw new IllegalStateException("User no longer logged in");
-		return true;
-	}
-	
-	/**
-	 * @param project
-	 * @return a {@link ProjectSession} instance, or {@code null} if the user is not or no longer logged in
-	 * @throws UnknownModelException when the server has no matching Sapelli project to which the logged-in user has contribution access
-	 */
-	protected ProjectSession getProjectSession(Project project) throws UnknownModelException
-	{
 		JSONObject token = getAccountToken(false, "Cannot open ProjectSession because user is not logged in.");
 		if(token == null)
 			return null;
@@ -300,8 +275,13 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 		{
 			if(handler.hasResponseObject() && JSON_VALUE_ERROR_NO_SUCH_PROJECT.equalsIgnoreCase(handler.getResponseObject().optString(JSON_KEY_ERROR)))
 				throw new UnknownModelException(project.getModel().id, project.getModel().name);
-			logError(handler, "Could not get project description");
-			return null;
+			else if(handler.hasResponseObject() && JSON_VALUE_ERROR_PROJECT_ACCESS_DENIED.equalsIgnoreCase(handler.getResponseObject().optString(JSON_KEY_ERROR)))
+				throw new IllegalAccessException(JSON_VALUE_ERROR_PROJECT_ACCESS_DENIED);
+			else
+			{
+				logError(handler, "Could not get project description");
+				return null;
+			}
 		}
 	}
 	

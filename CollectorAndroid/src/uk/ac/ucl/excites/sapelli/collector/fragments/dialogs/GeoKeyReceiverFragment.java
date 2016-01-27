@@ -26,8 +26,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.activities.BaseActivity;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 
 /**
  * @author mstevens
@@ -147,7 +148,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		switch(which)
 		{
 			case DialogInterface.BUTTON_POSITIVE :
-				save(dialog);
+				save(dialog, null);
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
 				break;
@@ -156,135 +157,191 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	
 	/**
 	 * @param dialog
+	 * @param toSave
 	 */
-	private void save(DialogInterface dialog)
+	private void save(final DialogInterface dialog, GeoKeyAccount toSave)
 	{
-		// Input validation:
-		boolean valid = true;
-		//	URL:
-		String url = txtGeoKeyServerURL.getText().toString().trim(); 
-		if(url.isEmpty() || !GeoKeyAccount.URL_VALIDATOR.isValid(url))
+		final ProjectManagerActivity activity = getOwner();
+		if(activity == null)
 		{
-			txtGeoKeyServerURL.setBackgroundResource(R.color.red25percent);
-			valid = false;
-		}
-		//	E-mail:
-		String email = txtEmail.getText().toString().trim();
-		if(email.isEmpty() || !GeoKeyAccount.EMAIL_VALIDATOR.isValid(email))
-		{
-			txtEmail.setBackgroundResource(R.color.red25percent);
-			valid = false;
-		}
-		//	Password:
-		String password = txtPassword.getText().toString(); 
-		if(password.isEmpty())
-		{
-			txtPassword.setBackgroundResource(R.color.red25percent);
-			valid = false;
-		}
-		//	Name:
-		String name = txtReceiverName.getText().toString().trim();
-		if(!valid)
 			dialog.dismiss();
-		
-		// Check if we are editing...
-		if(isEditing())
-		{	// We are, check for changes:
-			boolean changed = false;
-			if(!editReceiver.getName().equals(name))
-			{
-				editReceiver.setName(name);
-				changed = true;
-			}
-			if(!editReceiver.getEmail().equals(email))
-			{
-				editReceiver.setEmail(email);
-				changed = true;
-			}
-			if(!editReceiver.getPassword().equals(password))
-			{
-				editReceiver.setPassword(password);
-				changed = true;
-			}
-			// Check if any changes were made:
-			if(!changed)
-				// No changes, we are done here...
-				dialog.dismiss();
+			return;
 		}
 		
-		// Verify & save account:
-		verifyAndSave(dialog, isEditing() ? editReceiver : GeoKeyAccount.CreateNew(name, url, email, password));
+		if(toSave == null)
+		{
+			// Input validation:
+			boolean valid = true;
+			//	URL:
+			String url = txtGeoKeyServerURL.getText().toString().trim(); 
+			if(url.isEmpty() || !GeoKeyAccount.URL_VALIDATOR.isValid(url))
+			{
+				txtGeoKeyServerURL.setBackgroundResource(R.color.red25percent);
+				valid = false;
+			}
+			//	E-mail:
+			String email = txtEmail.getText().toString().trim();
+			if(!email.isEmpty() && !GeoKeyAccount.EMAIL_VALIDATOR.isValid(email))
+			{
+				txtEmail.setBackgroundResource(R.color.red25percent);
+				valid = false;
+			}
+			//	Password:
+			String password = txtPassword.getText().toString(); 
+			if(!email.isEmpty() && password.isEmpty())
+			{
+				txtPassword.setBackgroundResource(R.color.red25percent);
+				valid = false;
+			}
+			//	Name:
+			String name = txtReceiverName.getText().toString().trim();
+			if(!valid)
+				return; // !!!
+			
+			// Are we editing?
+			boolean credetialsChanged = false;
+			boolean changed = false;
+			if(isEditing())
+			{	// We are, check for changes:
+				if(!editReceiver.getName().equals(name))
+				{
+					editReceiver.setName(name);
+					changed = true;
+				}
+				if(!editReceiver.getEmail().equals(email))
+				{
+					editReceiver.setEmail(email);
+					credetialsChanged = changed = true;
+				}
+				if(!editReceiver.getPassword().equals(password))
+				{
+					editReceiver.setPassword(password);
+					credetialsChanged = changed = true;
+				}
+				// Check if any changes were made:
+				if(!changed)
+				{	// No changes, we are done here...
+					dialog.dismiss();
+					return; // !!!
+				}
+			}
+			
+			// Get account to save:
+			toSave = isEditing() ? editReceiver : GeoKeyAccount.CreateNew(name, url, email, password);
+			
+			// Verify by contacting server if needed...
+			if(!isEditing() || credetialsChanged)
+			{
+				final GeoKeyAccount toVerify = toSave;
+				new VerifierTask(activity, new VerifierCallback()
+				{
+					@Override
+					public void done(VerificationResult result)
+					{
+						switch(result)
+						{
+							case NoInternet:
+								getOwner().showErrorDialog(R.string.connectionError, false);
+								break;
+							case InvalidServer:
+								getOwner().showErrorDialog(activity.getString(R.string.geokeyInvalidServer, toVerify.getUrl(), GeoKeyClient.MINIMAL_GEOKEY_VERSION, GeoKeyClient.MINIMAL_GEOKEY_SAPELLI_VERSION), false);
+								txtGeoKeyServerURL.setBackgroundResource(R.color.red25percent);
+								break;
+							case InvalidAccount:
+								getOwner().showErrorDialog(R.string.geokeyInvalidAccount, false);
+								txtEmail.setBackgroundResource(R.color.red25percent);
+								txtPassword.setBackgroundResource(R.color.red25percent);
+								break;
+							case OK:
+								Toast.makeText(activity, R.string.verificationSuccessful, Toast.LENGTH_LONG).show();
+								save(dialog, toVerify);
+								break;
+						case Aborted:
+						default:
+							break;
+						}
+					}
+				}).execute(toVerify);
+				return; // !!!
+			}
+		}
+		
+		// Actually save the account:
+		SendConfigurationHelpers.saveCorrespondent(activity, toSave);
+		if(callback != null)
+		{
+			if(!isEditing())
+				callback.newReceiver(toSave);
+			else
+				callback.editedReceiver(toSave);
+		}
+		dialog.dismiss();
 	}
 	
-	static private enum CheckResult
+	static private enum VerificationResult
 	{
+		Aborted,
 		NoInternet,
 		InvalidServer,
 		InvalidAccount,
 		OK
 	};
 	
-	private void verifyAndSave(final DialogInterface dialog, final GeoKeyAccount account)
+	private class VerifierTask extends AsyncTaskWithWaitingDialog<ProjectManagerActivity, GeoKeyAccount, VerificationResult>
 	{
-		final ProjectManagerActivity owner = getOwner();
-		new AsyncTaskWithWaitingDialog<BaseActivity, Void, CheckResult>(owner, R.string.verifyingServerAndAccount)
+		
+		private final VerifierCallback verificationCallback;
+		
+		public VerifierTask(ProjectManagerActivity activity, VerifierCallback callback)
 		{
-			@Override
-			protected CheckResult runInBackground(Void... params)
-			{
-				if(!DeviceControl.isOnline(owner))
-					return CheckResult.NoInternet;
-				
-				// We are online, perform actual checks:
-				AndroidGeoKeyClient client = new AndroidGeoKeyClient(owner.getCollectorApp());
-				
-				//	Check if server is reachable and run the right GeoKey & extension versions:
-				if(!client.verifyServer(account))
-					return CheckResult.InvalidServer;
-				
-				//	Check if user can login:
-				if(!client.login(account))
-					return CheckResult.InvalidAccount;
-				
-				// All OK!:
-				return CheckResult.OK;
-			}
+			super(activity, R.string.verifyingServerAndAccount);
+			this.verificationCallback = callback;
+		}
+		
+		@Override
+		protected VerificationResult runInBackground(GeoKeyAccount... params)
+		{
+			ProjectManagerActivity activity = getContext();
+			if(activity == null)
+				return null;
+			
+			if(!DeviceControl.isOnline(activity))
+				return VerificationResult.NoInternet;
 
-			@Override
-			protected void onPostExecute(CheckResult result)
-			{
-				// Dismiss waiting dialog:
-				super.onPostExecute(result);
-				
-				// Deal with result:
-				switch(result)
-				{
-					case NoInternet:
-						getOwner().showErrorDialog(R.string.connectionError, false);
-						break;
-					case InvalidAccount:
-						// TODO
-						break;
-					case InvalidServer:
-						// TODO
-						break;
-					case OK:
-						// Save correspondent:
-						SendConfigurationHelpers.saveCorrespondent(owner, account);
-						if(callback != null)
-						{
-							if(!isEditing())
-								callback.newReceiver(account);
-							else
-								callback.editedReceiver(account);
-						}
-						// Close dialog:
-						dialog.dismiss();
-						break;
-				
-				}
-			}
-		}.execute();
+			// We are online, perform actual checks:
+			AndroidGeoKeyClient client = new AndroidGeoKeyClient(activity.getCollectorApp());
+
+			GeoKeyAccount account = params[0];
+			
+			//	Check if server is reachable and running the right GeoKey & extension versions:
+			if(!client.verifyServer(account))
+				return VerificationResult.InvalidServer;
+			
+			//	Check if user can login:
+			if(!client.login(account)) // TODO make optional
+				return VerificationResult.InvalidAccount;
+			
+			// All OK!:
+			return VerificationResult.OK;
+		}
+
+		@Override
+		protected void onPostExecute(VerificationResult result)
+		{
+			// Dismiss waiting dialog:
+			super.onPostExecute(result);
+			
+			if(result == null)
+				result = VerificationResult.Aborted;
+			verificationCallback.done(result);
+		}
+	}
+	
+	private interface VerifierCallback
+	{
+		
+		public void done(VerificationResult result);
+		
 	}
 		
 }

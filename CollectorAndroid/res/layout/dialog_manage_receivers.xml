@@ -46,34 +46,14 @@
 	        android:dividerHeight="1dip" >
 	        <requestFocus />
 	    </ListView>
-	    
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:orientation="horizontal" >
 
-            <Button
-                android:id="@+id/btnAddReceiver"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="80dp"
-                android:layout_height="40dp"
-                android:text="@string/neww" />
-
-            <Button
-                android:id="@+id/btnEditReceiver"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="80dp"
-                android:layout_height="40dp"
-                android:text="@string/editEtc" />
-            
-            <Button
-                android:id="@+id/btnDeleteReceiver"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="80dp"
-                android:layout_height="40dp"
-                android:text="@string/delete" />
-        </LinearLayout>
+       <Button
+           android:id="@+id/btnAddReceiver"
+           style="?android:attr/buttonStyleSmall"
+           android:layout_width="80dp"
+           android:layout_height="40dp"
+           android:layout_gravity="end"
+           android:text="@string/neww" />
 
     </LinearLayout>
 

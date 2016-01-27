@@ -243,5 +243,18 @@ public class SMSCorrespondent extends Correspondent
 		hash = 31 * hash + phoneNumber.hashCode();
 		return hash;
 	}
-
+	
+	@Override
+	public boolean canBeSwappedWithoutNewModelQuery(Correspondent another)
+	{
+		if(this == another)
+			return true;
+		if(another instanceof SMSCorrespondent)
+		{
+			SMSCorrespondent that = (SMSCorrespondent) another;
+			return this.phoneNumber.equals(that.phoneNumber);
+		}
+		return false;
+	}
+	
 }
