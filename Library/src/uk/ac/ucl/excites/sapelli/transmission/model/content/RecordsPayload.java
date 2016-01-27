@@ -563,6 +563,7 @@ public class RecordsPayload extends Payload
 	{
 		return	transmission.getMaxPayloadBits()
 				- FORMAT_VERSION_SIZE				// Format version
+				- 1									// Lossless flag
 				- Model.MODEL_ID_SIZE				// Model ID
 				- model.getNumberOfSchemata()		// Schema occurrence bits
 				- COMPRESSION_FLAG_FIELD.size();	// Compression flag
@@ -572,17 +573,19 @@ public class RecordsPayload extends Payload
 	 * Returns the field which we will use to write the number of records of a given schema are
 	 * contained in the payload. We do not attempt to compute the actual maximum number of records
 	 * that can be fitted because doing so is inherently inaccurate because the use of compression
-	 * could increase this number in unpredictable ways. Instead the field size is based on the
-	 * maximum payload size of the transmission (decreased by the space taken up by the header(s))
-	 * and the number of different schemata in the payload. This field is generously sized because
-	 * we want to avoid limiting the number of records we can fit before compression is applied.
+	 * could increase this number in unpredictable ways. Instead the maximum number of records per
+	 * schema is taken as the maximum payload size of the transmission (decreased by the space
+	 * taken up by the header(s)), divided by the number of different schemata in the payload.
+	 * The field is generously sized (effectively allowing for a compressed size of about 1 bit per
+	 * record) because we want to avoid limiting the number of records we can fit before compression
+	 * is applied.
 	 * 
 	 * @param numberOfSchemata
 	 * @return the field
 	 */
 	private IntegerRangeMapping getNumberOfRecordsPerSchemaField(int numberOfSchemata)
 	{
-		return new IntegerRangeMapping(1, getMaxUncompressedRecordsBits() * 2 / numberOfSchemata);
+		return new IntegerRangeMapping(1, (int) Math.ceil(getMaxUncompressedRecordsBits() / (double) numberOfSchemata));
 	}
 
 	@Override
