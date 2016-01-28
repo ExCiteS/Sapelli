@@ -89,6 +89,7 @@ public class DataSendingService extends SignalMonitoringService implements Store
 			if(!SendSchedule.isValidForTransmission(sendSchedule))
 			{	// Invalid schedule, cancel future alarms:
 				SchedulingHelpers.Cancel(getApplicationContext(), sendScheduleId);
+				return; // !!!
 			}
 			else
 			{
