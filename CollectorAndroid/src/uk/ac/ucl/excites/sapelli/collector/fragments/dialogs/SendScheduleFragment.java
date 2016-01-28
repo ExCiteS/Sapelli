@@ -45,6 +45,7 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
@@ -400,7 +401,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 			int intervalS = (int) (Float.valueOf(txtSendIntervalMin.getText().toString()) * (float) TimeUtils.SEC_IN_MIN);
 			if(intervalS != schedule.getTransmitIntervalS())
 			{
-				schedule.setTransmitIntervalS(intervalS);
+				schedule.setTransmitIntervalS(SchedulingHelpers.getEffectiveAlarmIntervalSeconds(intervalS));
 				changed = true;
 			}
 		}

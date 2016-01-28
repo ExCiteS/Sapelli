@@ -26,6 +26,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
@@ -39,6 +40,26 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
  */
 public final class SchedulingHelpers
 {
+	
+	static public final int ANDROID_22_MINIMAL_ALARM_INTERVAL_SECONDS = 60;
+	
+	/**
+	 * Checks if the interval is no too short.
+	 * Also accounts for the (undocumented!) change in Android_v5.1/API22 which enforces a minimum of 60 seconds.
+	 * 
+	 * @param transmitIntervalS the schedule interval as configured by the user (in seconds)
+	 * @return the effective interval as allowed on the device (also in seconds)
+	 * 
+	 * @see https://code.google.com/p/android/issues/detail?id=161244
+	 */
+	static public int getEffectiveAlarmIntervalSeconds(int transmitIntervalS)
+	{
+		if(transmitIntervalS < SendSchedule.MINIMUM_TRANSMIT_INTERVAL_SECONDS)
+			transmitIntervalS = SendSchedule.MINIMUM_TRANSMIT_INTERVAL_SECONDS;
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && transmitIntervalS < ANDROID_22_MINIMAL_ALARM_INTERVAL_SECONDS)
+			transmitIntervalS = ANDROID_22_MINIMAL_ALARM_INTERVAL_SECONDS;
+		return transmitIntervalS;
+	}
 	
 	private SchedulingHelpers() {}
 
@@ -112,7 +133,7 @@ public final class SchedulingHelpers
 		{
 			int intervalMillis = sendSchedule.getTransmitIntervalS() * 1000;
 			GetAlarmManager(context).setRepeating(
-				AlarmManager.ELAPSED_REALTIME_WAKEUP, // TODO should we really be waking up the device for this?
+				AlarmManager.ELAPSED_REALTIME,
 				SystemClock.elapsedRealtime() + triggerDelay,
 				intervalMillis,
 				GetDataSendingIntent(context, sendSchedule.getID()));
