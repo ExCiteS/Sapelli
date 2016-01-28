@@ -170,6 +170,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 		groupInterval = (ViewGroup) rootLayout.findViewById(R.id.groupInterval);
 		txtSendIntervalMin = (EditText) rootLayout.findViewById(R.id.txtSendIntervalMin);
 		txtSendIntervalMin.setText(Float.valueOf((float) schedule.getTransmitIntervalS() / (float) TimeUtils.SEC_IN_MIN).toString());
+		txtSendIntervalMin.setSelection(txtSendIntervalMin.getText().length());
 		txtSendIntervalMin.addTextChangedListener(new TextWatcher()
 		{
 			public void afterTextChanged(Editable editable)
