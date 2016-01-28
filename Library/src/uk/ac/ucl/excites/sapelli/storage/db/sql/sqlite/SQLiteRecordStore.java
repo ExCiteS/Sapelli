@@ -519,8 +519,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Execute:
 			long rowID = insertStatement.executeInsert();
 			
-			client.logInfo("TABLE " + this.sanitisedName + " INSERT ROWID: " + rowID + "; must verify: " + insertStatement.mustLastInsertBeVerified());
-			
 			// Perform various checks & set autoIncr PK value if needed:
 			if(boundROWID != null)
 			{
