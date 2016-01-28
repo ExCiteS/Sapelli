@@ -40,7 +40,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -354,24 +353,6 @@ public class DB4OProjectStore extends ProjectStore
 	public void deleteSendSchedulesForProject(Project project) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("Method not implemented for " + getClass().getSimpleName());
-	}
-	
-	@Override
-	public boolean isReceiving(Type transmissionType) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("isReceiving() not implemented");
-	}
-	
-	@Override
-	public boolean isReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("isReceiving() not implemented");
-	}
-
-	@Override
-	public void setReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType, boolean enabled) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("setReceiving() not implemented");
 	}
 	
 }

@@ -169,19 +169,6 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 		SEND_SCHEDULE_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", SEND_SCHEDULE_COLUMN_ID), true /*seal!*/);
 	}
 	
-	//	Record-receiving Schema
-	static final public Schema RECEIVING_PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "ReceivingProject", "ReceivingProjects");
-	//		Columns:
-	static final public ForeignKeyColumn RECEIVING_PROJECT_COLUMN_PROJECT = RECEIVING_PROJECT_SCHEMA.addColumn(new ForeignKeyColumn("Project", ProjectRecordStore.PROJECT_SCHEMA, false));
-	static final public IntegerColumn RECEIVING_PROJECT_COLUMN_TRANSMISSION_TYPE = RECEIVING_PROJECT_SCHEMA.addColumn(new IntegerColumn("TransmissionType", false));
-	static final public BooleanColumn RECEIVING_PROJECT_COLUMN_ENABLED = RECEIVING_PROJECT_SCHEMA.addColumn(new BooleanColumn("Enabled", false, false));
-	//		Set primary key & seal schema:
-	static
-	{
-		// Add index to enforce unique combination of project and correspondent:
-		RECEIVING_PROJECT_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(RECEIVING_PROJECT_COLUMN_PROJECT, RECEIVING_PROJECT_COLUMN_TRANSMISSION_TYPE), true /*seal!*/);
-	}
-	
 	// Seal the model itself:
 	static
 	{
@@ -510,7 +497,6 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 			rsWrapper.recordStore.delete(new RecordsQuery(FSI_SCHEMA, projectMatchConstraint));
 			rsWrapper.recordStore.delete(new RecordsQuery(HFK_SCHEMA, projectMatchConstraint));
 			rsWrapper.recordStore.delete(new RecordsQuery(SEND_SCHEDULE_SCHEMA, projectMatchConstraint));
-			rsWrapper.recordStore.delete(new RecordsQuery(RECEIVING_PROJECT_SCHEMA, projectMatchConstraint));
 			// Remove project from cache:
 			cache.remove(getCacheKey(projectDescriptor));
 		}
@@ -732,58 +718,6 @@ public class ProjectRecordStore extends ProjectStore implements FormSchemaInfoPr
 								SEND_SCHEDULE_COLUMN_ENABLED.retrieveValue(sendScheduleRecord),
 								SEND_SCHEDULE_COLUMN_HEARTBEAT_INTERVAL.retrieveValue(sendScheduleRecord).intValue(),
 								SEND_SCHEDULE_COLUMN_NO_DATA_COUNTER.retrieveValue(sendScheduleRecord).intValue());
-	}
-	
-	@Override
-	public boolean isReceiving(Transmission.Type transmissionType)
-	{
-		return !rsWrapper.recordStore.retrieveRecords(
-			new RecordsQuery(
-				RECEIVING_PROJECT_SCHEMA,
-				new EqualityConstraint(RECEIVING_PROJECT_COLUMN_TRANSMISSION_TYPE, transmissionType /*Enum will be converted to Long*/),
-				new EqualityConstraint(RECEIVING_PROJECT_COLUMN_ENABLED, Boolean.TRUE)))
-			.isEmpty();
-	}
-	
-	@Override
-	public boolean isReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType)
-	{
-		try
-		{
-			Record receivingRec = rsWrapper.recordStore.retrieveRecord(
-				RECEIVING_PROJECT_SCHEMA.createRecordReference(
-					getProjectRecordReference(projectDesc),
-					transmissionType.ordinal()).getRecordQuery());
-			if(receivingRec == null)
-				return false;
-			else
-				return RECEIVING_PROJECT_COLUMN_ENABLED.retrieveValue(receivingRec);
-		}
-		catch(Exception e)
-		{
-			client.logError("Error upon retrieving receiving state for project \"" + projectDesc.toString(false) + "\" and transmission type " + transmissionType.name(), e);
-			return false;
-		}
-	}
-
-	@Override
-	public void setReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType, boolean enabled)
-	{
-		try
-		{
-			// Get record representation:
-			Record rec = RECEIVING_PROJECT_SCHEMA.createRecord();
-			RECEIVING_PROJECT_COLUMN_PROJECT.storeValue(rec, getProjectRecordReference(projectDesc));
-			RECEIVING_PROJECT_COLUMN_TRANSMISSION_TYPE.storeValue(rec, transmissionType.ordinal());
-			RECEIVING_PROJECT_COLUMN_ENABLED.storeValue(rec, enabled);
-			
-			// Store/update the record in the db:
-			rsWrapper.recordStore.store(rec);
-		}
-		catch(DBException e)
-		{
-			client.logError("Error upon setting receiving state for project \"" + projectDesc.toString(false) + "\" and transmission type " + transmissionType.name(), e);
-		}
 	}
 
 	/* (non-Javadoc)

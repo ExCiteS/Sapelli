@@ -36,7 +36,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * Abstract super class for Project storage back-ends
@@ -290,26 +289,6 @@ public abstract class ProjectStore extends Store
 	 * @param project
 	 */
 	public abstract void deleteSendSchedulesForProject(Project project);
-	
-	/**
-	 * @param transmissionType
-	 * @return
-	 */
-	public abstract boolean isReceiving(Type transmissionType);
-	
-	/**
-	 * @param projectDesc
-	 * @param transmissionType
-	 * @return
-	 */
-	public abstract boolean isReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType);
-	
-	/**
-	 * @param projectDesc
-	 * @param transmissionType
-	 * @param enabled
-	 */
-	public abstract void setReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType, boolean enabled);
 	
 	/**
 	 * @return the transmissionStore instance which is used by this ProjectStore instance

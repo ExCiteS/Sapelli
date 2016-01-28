@@ -397,28 +397,5 @@ public final class SendConfigurationHelpers
 		}
 		
 	}
-	
-//	/**
-//	 * @param project
-//	 * @return
-//	 */
-//	static public void setReceivingProject(ProjectManagerActivity activity, Transmission.Type transmissionType, boolean enabled)
-//	{
-//		// En/Disable receiving state for given project and transmission type:
-//		activity.getProjectStore().setReceiving(project, transmissionType, enabled);
-//		
-//		// TODO also run this at boot somehow...
-//		// Determine if we should (still) listen for incoming transmission of this type:
-//		boolean listen =
-//			// Are we receiving data via such transmission for *any* project?:
-//			activity.getProjectStore().isReceiving(transmissionType) ||
-//			// Do we have (valid, but not necessarily enabled) SendSchedules using this transmission type?:
-//			!activity.getProjectStore().retrieveSendSchedulesForTransmissionType(transmissionType, false /*include disabled*/).isEmpty();
-//			//	(we even include disabled SendSchedules here because we want any ACKs, or other responses, to be received even if the schedule is disabled)
-//		
-//		Log.d(SendConfigurationHelpers.class.getSimpleName(), "LISTENING FOR " + transmissionType.name() + ": " + listen);
-//		
-//		// TODO start/stop service/broadcast receiver
-//	}
 		
 }
