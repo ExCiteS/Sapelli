@@ -40,7 +40,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 
 public abstract class GeoKeyClient implements Payload.Handler
@@ -59,6 +59,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 	static protected final String JSON_KEY_INSTALLED_EXTENSIONS = "installed_extensions";
 	static protected final String JSON_KEY_LOGGED_IN = "logged_in";
 	static protected final String JSON_KEY_ERROR = "error";
+	static protected final String JSON_KEY_ERROR_DESCRIPTION = "error_description";
 	static protected final String JSON_KEY_ACCESS_TOKEN = "access_token";
 	static protected final String JSON_KEY_TOKEN_TYPE = "token_type";
 	static protected final String JSON_KEY_GEOKEY_PROJECT_ID = "geokey_project_id";
@@ -70,6 +71,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 	static protected final String JSON_KEY_OBSERVATION_ID = "observation_id";
 	static protected final String JSON_KEY_NAME = "name";
 	
+	static protected final String JSON_VALUE_ERROR_DESCRIPTION_INVALID_CREDENTIALS = "Invalid credentials given.";
 	static protected final String JSON_VALUE_ERROR_NO_SUCH_PROJECT = "No such project";
 	static protected final String JSON_VALUE_ERROR_PROJECT_ACCESS_DENIED = "User cannot contribute to project";
 	
@@ -92,10 +94,17 @@ public abstract class GeoKeyClient implements Payload.Handler
 	}
 	
 	/**
-	 * @param account should not be {@code null}
-	 * @return whether or not log-in succeeded
+	 * Connects to given server and logs-in the user if there are user credentials.
+	 * 
+	 * @param server should not be {@code null}
+	 * @return whether or not connecting (and possibly log-in) succeeded
 	 */
-	public abstract boolean login(GeoKeyAccount account);
+	public abstract boolean connectAndLogin(GeoKeyServer server);
+	
+	/**
+	 * Disconnect from server.
+	 */
+	public abstract void disconnect();
 	
 	/**
 	 * Log-out current user.
@@ -105,12 +114,12 @@ public abstract class GeoKeyClient implements Payload.Handler
 	/**
 	 * @return whether or not there is a currently logged-in user
 	 */
-	public abstract boolean isLoggedIn();
+	public abstract boolean isUserLoggedIn();
 	
 	/**
-	 * @return the currently used {@link GeoKeyAccount} (or {@code null})
+	 * @return the currently used {@link GeoKeyServer} (or {@code null})
 	 */
-	public abstract GeoKeyAccount getAccount();
+	public abstract GeoKeyServer getServer();
 
 	/**
 	 * @return
@@ -123,22 +132,20 @@ public abstract class GeoKeyClient implements Payload.Handler
 	 */
 	public void send(GeoKeyTransmission gkTransmission)
 	{
-		// Register we are attempting to send the transmission now:
-		gkTransmission.getSentCallback().onSent();
-	
-		// Set mock remote ID as local ID (necessary for sending mock responses below):
-		gkTransmission.setRemoteID(gkTransmission.getLocalID());
-		
 		// Log sending attempt:
 		client.logInfo("Attempting sending of GeokeyTransmission (id: " + gkTransmission.getLocalID() + ")...");
+
+		// Register we are attempting to send the transmission now:
+		gkTransmission.getSentCallback().onSent();
 		
 		// Try to login on server:
-		final GeoKeyAccount account = gkTransmission.getCorrespondent();
-		if(account == null || !login(account))
+		final GeoKeyServer server = gkTransmission.getCorrespondent();
+		if(server == null || !connectAndLogin(server))
 		{
-			return; // !!! TODO mock response?
+			client.logError("Unable to connect to GeoKey server");
+			return; // !!!
 		}		
-		//else: we are now logged in...
+		//else: we are now connected/logged-in...
 		
 		// Save account (new access_token / display_name may have been set):
 		client.transmissionStoreHandle.executeNoEx(new StoreOperation<TransmissionStore, DBException>()
@@ -146,9 +153,12 @@ public abstract class GeoKeyClient implements Payload.Handler
 			@Override
 			public void execute(TransmissionStore store) throws DBException
 			{
-				store.store(account);
+				store.store(server);
 			}
 		});
+
+		// Set mock remote ID as local ID (necessary for sending mock responses below):
+		gkTransmission.setRemoteID(gkTransmission.getLocalID());
 		
 		// Handle payload:
 		try
@@ -169,6 +179,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 		}
 		catch(Exception e)
 		{
+			client.logError("Unexpected error while communicating with GeoKey server", e);
 			return; // !!!
 		}
 		

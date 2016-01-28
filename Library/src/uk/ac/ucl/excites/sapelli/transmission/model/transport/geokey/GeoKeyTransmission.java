@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
  * @author mstevens
  *
  */
-public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
+public class GeoKeyTransmission extends Transmission<GeoKeyServer>
 {
 	
 	private byte[] body;
@@ -46,7 +46,7 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	 * @param serverURL
 	 * @param payload
 	 */
-	public GeoKeyTransmission(TransmissionClient client, GeoKeyAccount server, Payload payload)
+	public GeoKeyTransmission(TransmissionClient client, GeoKeyServer server, Payload payload)
 	{
 		super(client, server, payload);
 	}
@@ -65,7 +65,7 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	 * Called when retrieving transmission from database
 	 * 
 	 * @param client
-	 * @param correspondent
+	 * @param server
 	 * @param received
 	 * @param localID
 	 * @param remoteID - may be null
@@ -75,9 +75,9 @@ public class GeoKeyTransmission extends Transmission<GeoKeyAccount>
 	 * @param response
 	 * @param body
 	 */
-	public GeoKeyTransmission(TransmissionClient client, GeoKeyAccount correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, GeoKeyTransmission response, byte[] body) 
+	public GeoKeyTransmission(TransmissionClient client, GeoKeyServer server, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, GeoKeyTransmission response, byte[] body) 
 	{
-		super(client, correspondent, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, response);
+		super(client, server, received, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, response);
 		this.body = body;
 	}
 	

@@ -33,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
  * @author mstevens
  *
  */
-public class GeoKeyAccount extends Correspondent
+public class GeoKeyServer extends Correspondent
 {
 	
 	// STATIC -----------------------------------------------------------------
@@ -57,11 +57,11 @@ public class GeoKeyAccount extends Correspondent
 	 * 
 	 * @param name
 	 * @param url
-	 * @param email
-	 * @param password
+	 * @param userEmail - may be null or empty
+	 * @param userPassword - may be null or empty if userEmail is too
 	 * @return
 	 */
-	static public GeoKeyAccount CreateNew(String name, String url, String email, String password)
+	static public GeoKeyServer CreateNew(String name, String url, String userEmail, String userPassword)
 	{		
 		// Check url:
 		if(url == null || url.isEmpty())
@@ -72,51 +72,53 @@ public class GeoKeyAccount extends Correspondent
 			throw new IllegalArgumentException("Url is invalid: " + url);
 		
 		// Check email:
-		if("".equals(email))
-			email = null;
-		if(email != null && !EMAIL_VALIDATOR.isValid(email))
-			throw new IllegalArgumentException("E-mail address is invalid: " + email);
+		if("".equals(userEmail))
+			userEmail = null;
+		if(userEmail != null && !EMAIL_VALIDATOR.isValid(userEmail))
+			throw new IllegalArgumentException("E-mail address is invalid: " + userEmail);
 		
 		// Check password:
-		if("".equals(password))
-			password = null;
-		if(password == null && email != null)
+		if("".equals(userPassword))
+			userPassword = null;
+		if(userPassword == null && userEmail != null)
 			throw new IllegalArgumentException("Password is manadatory if email is provided");
 		
 		// Check name, use url as fallback:
 		name = checkName(name, url);
 
-		return new GeoKeyAccount(name, url, email, password);
+		return new GeoKeyServer(name, url, userEmail, userPassword);
 	}
 	
 	static private final ColumnSet ADDRESS_COLUMNS = new ColumnSet("Address", false);
 	static private final StringColumn ADDRESS_COLUMN_URL = ADDRESS_COLUMNS.addColumn(new StringColumn("URL", false));
-	static private final StringColumn ADDRESS_COLUMN_EMAIL = ADDRESS_COLUMNS.addColumn(new StringColumn("Email", true));
-	static private final StringColumn ADDRESS_COLUMN_PASSWORD = ADDRESS_COLUMNS.addColumn(new StringColumn("Password", true));
-	static private final StringColumn ADDRESS_COLUMN_TOKEN = ADDRESS_COLUMNS.addColumn(new StringColumn("Token", true));
+	static private final StringColumn ADDRESS_COLUMN_USER_EMAIL = ADDRESS_COLUMNS.addColumn(new StringColumn("UserEmail", true));
+	static private final StringColumn ADDRESS_COLUMN_USER_PASSWORD = ADDRESS_COLUMNS.addColumn(new StringColumn("UserPassword", true));
+	static private final StringColumn ADDRESS_COLUMN_USER_TOKEN = ADDRESS_COLUMNS.addColumn(new StringColumn("UserToken", true));
 	static private final StringColumn ADDRESS_COLUMN_USER_DISPLAY_NAME = ADDRESS_COLUMNS.addColumn(new StringColumn("UserDisplayName", true), true);
+	
+	static public final String ANONYMOUS_USER = "Anonymous";
 	
 	// DYNAMIC ----------------------------------------------------------------
 	private final String url;
-	private String email;
-	private String password;
+	private String userEmail;
+	private String userPassword;
 	private String userDisplayName;
-	private String token;
+	private String userToken;
 	
 	/**
 	 * Called to create a new GeoKeyAccount.
 	 * 
 	 * @param name
 	 * @param url
-	 * @param email
-	 * @param password
+	 * @param userEmail
+	 * @param userPassword
 	 */
-	private GeoKeyAccount(String name, String url, String email, String password)
+	private GeoKeyServer(String name, String url, String userEmail, String userPassword)
 	{
 		super(null, name, Type.GeoKey);
 		this.url = url;
-		this.email = email;
-		this.password = password;
+		this.userEmail = userEmail;
+		this.userPassword = userPassword;
 	}
 	
 	/**
@@ -126,7 +128,7 @@ public class GeoKeyAccount extends Correspondent
 	 * @param name
 	 * @param address
 	 */
-	public GeoKeyAccount(int localID, String name, String address)
+	public GeoKeyServer(int localID, String name, String address)
 	{
 		super(localID, name, Type.GeoKey);
 		// Parse address string:
@@ -142,9 +144,9 @@ public class GeoKeyAccount extends Correspondent
 			return;
 		}
 		this.url = ADDRESS_COLUMN_URL.retrieveValue(addressValues);
-		this.email = ADDRESS_COLUMN_EMAIL.retrieveValue(addressValues);
-		this.password = ADDRESS_COLUMN_PASSWORD.retrieveValue(addressValues);
-		this.token = ADDRESS_COLUMN_TOKEN.retrieveValue(addressValues);
+		this.userEmail = ADDRESS_COLUMN_USER_EMAIL.retrieveValue(addressValues);
+		this.userPassword = ADDRESS_COLUMN_USER_PASSWORD.retrieveValue(addressValues);
+		this.userToken = ADDRESS_COLUMN_USER_TOKEN.retrieveValue(addressValues);
 		this.userDisplayName = ADDRESS_COLUMN_USER_DISPLAY_NAME.retrieveValue(addressValues);
 	}
 	
@@ -154,7 +156,7 @@ public class GeoKeyAccount extends Correspondent
 	@Override
 	public String getAddress()
 	{
-		return new ValueSet<ColumnSet>(ADDRESS_COLUMNS, url, email, password, token, userDisplayName).serialise();
+		return new ValueSet<ColumnSet>(ADDRESS_COLUMNS, url, userEmail, userPassword, userToken, userDisplayName).serialise();
 	}
 	
 	/* (non-Javadoc)
@@ -177,38 +179,40 @@ public class GeoKeyAccount extends Correspondent
 	/**
 	 * @return the email
 	 */
-	public String getEmail()
+	public String getUserEmail()
 	{
-		return email;
+		return userEmail;
 	}
 
 	/**
-	 * @param email the email to set
+	 * @param userEmail the e-mail address to set
 	 */
-	public void setEmail(String email)
+	public void setUserCredentials(String newUserEmail, String newUserPassword)
 	{
-		this.email = email;
+		if(!Objects.equals(this.userEmail, newUserEmail) || !Objects.equals(this.userPassword, newUserPassword))
+		{
+			this.userEmail = newUserEmail;
+			this.userPassword = newUserPassword;
+			// Wipe display name & token:
+			this.userDisplayName = null;
+			this.userToken = null;
+		}
 	}
 
 	/**
 	 * @return the password
 	 */
-	public String getPassword()
+	public String getUserPassword()
 	{
-		return password;
+		return userPassword;
 	}
 	
 	/**
-	 * @param password the password to set
+	 * @return whether or not we have user credentials (i.e. email & password)
 	 */
-	public void setPassword(String password)
+	public boolean hasUserCredentials()
 	{
-		this.password = password;
-	}
-	
-	public boolean hasCredentials()
-	{
-		return email != null && password != null;
+		return userEmail != null && userPassword != null;
 	}
 	
 	/**
@@ -240,17 +244,17 @@ public class GeoKeyAccount extends Correspondent
 	/**
 	 * @return whether or not a token has been set
 	 */
-	public boolean hasToken()
+	public boolean hasUserToken()
 	{
-		return token != null;
+		return hasUserCredentials() && userToken != null;
 	}
 
 	/**
 	 * @return the token
 	 */
-	public String getToken()
+	public String getUserToken()
 	{
-		return token;
+		return userToken;
 	}
 
 	/**
@@ -260,7 +264,7 @@ public class GeoKeyAccount extends Correspondent
 	{
 		if("".equals(token))
 			token = null;
-		this.token = token;
+		this.userToken = token;
 	}
 
 	@Override
@@ -281,7 +285,7 @@ public class GeoKeyAccount extends Correspondent
 	@Override
 	public String toString()
 	{
-		return getName() + " [" + email + "@" + url + "]";
+		return getName() + " [" + (hasUserCredentials() ? (hasUserDisplayName() ? userDisplayName : userEmail) : ANONYMOUS_USER) + "@" + url + "]";
 	}
 	
 	@Override
@@ -289,13 +293,13 @@ public class GeoKeyAccount extends Correspondent
 	{
 		if(this == obj)
 			return true;
-		if(obj instanceof GeoKeyAccount)
+		if(obj instanceof GeoKeyServer)
 		{
-			GeoKeyAccount that = (GeoKeyAccount) obj;
+			GeoKeyServer that = (GeoKeyServer) obj;
 			return	super.equals(that) && // Correspondent#equals(Object)
 					this.url.equals(that.url) &&
-					Objects.equals(this.email, that.email) &&
-					Objects.equals(this.password, that.password) &&
+					Objects.equals(this.userEmail, that.userEmail) &&
+					Objects.equals(this.userPassword, that.userPassword) &&
 					Objects.equals(this.userDisplayName, that.userDisplayName);
 			// ignore token
 		}
@@ -307,8 +311,8 @@ public class GeoKeyAccount extends Correspondent
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + url.hashCode();
-		hash = 31 * hash + Objects.hashCode(email);
-		hash = 31 * hash + Objects.hashCode(password);
+		hash = 31 * hash + Objects.hashCode(userEmail);
+		hash = 31 * hash + Objects.hashCode(userPassword);
 		hash = 31 * hash + Objects.hashCode(userDisplayName);
 		// ignore token
 		return hash;
@@ -319,12 +323,12 @@ public class GeoKeyAccount extends Correspondent
 	{
 		if(this == another)
 			return true;
-		if(another instanceof GeoKeyAccount)
+		if(another instanceof GeoKeyServer)
 		{
-			GeoKeyAccount that = (GeoKeyAccount) another;
+			GeoKeyServer that = (GeoKeyServer) another;
 			return	this.url.equals(that.url) &&
-					Objects.equals(this.email, that.email) &&
-					Objects.equals(this.password, that.password);
+					Objects.equals(this.userEmail, that.userEmail) &&
+					Objects.equals(this.userPassword, that.userPassword);
 		}
 		else
 			return false;

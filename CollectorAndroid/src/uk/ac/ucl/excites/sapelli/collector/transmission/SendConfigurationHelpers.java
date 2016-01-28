@@ -37,7 +37,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.CustomTypefaceSpan;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
@@ -267,7 +267,7 @@ public final class SendConfigurationHelpers
 			}
 
 			@Override
-			public void handle(GeoKeyAccount geokeyAccount)
+			public void handle(GeoKeyServer geokeyAccount)
 			{
 				GeoKeyReceiverFragment.ShowEditDialog(activity, callback, geokeyAccount);
 			}
@@ -345,7 +345,7 @@ public final class SendConfigurationHelpers
 		}
 
 		@Override
-		public void handle(GeoKeyAccount geokeyAccount)
+		public void handle(GeoKeyServer geokeyAccount)
 		{
 			drawableResourceId = getGeoKeyReceiverDrawable(big);
 		}
@@ -381,11 +381,13 @@ public final class SendConfigurationHelpers
 		public String addressStr = null;
 		
 		@Override
-		public void handle(GeoKeyAccount geokeyAccount)
+		public void handle(GeoKeyServer gkServer)
 		{
 			addressStr =
-				(geokeyAccount.hasUserDisplayName() ? geokeyAccount.getUserDisplayName() + "@" : "") +
-				URLUtils.stripTrailingSlash(URLUtils.stripHTTP(geokeyAccount.getUrl()));
+				(gkServer.hasUserCredentials() ? 
+					(gkServer.hasUserDisplayName() ? gkServer.getUserDisplayName() + "@" : "") :
+					GeoKeyServer.ANONYMOUS_USER + "@") +
+				URLUtils.stripTrailingSlash(URLUtils.stripHTTP(gkServer.getUrl()));
 		}
 		
 		@Override

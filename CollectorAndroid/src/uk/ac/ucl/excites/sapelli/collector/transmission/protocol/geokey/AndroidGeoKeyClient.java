@@ -49,7 +49,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.TimeStampUtils;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 
 /**
@@ -75,8 +75,8 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	
 	// DYNAMIC ----------------------------------------------------------------
 	private final CollectorApp app;
-		
-	private GeoKeyAccount account;
+	
+	private GeoKeyServer server;
 	
 	public AndroidGeoKeyClient(CollectorApp app)
 	{
@@ -91,25 +91,30 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	}
 	
 	/**
-	 * @param account only used to get server URL (no log-in is performed)
+	 * @param server only used to get server URL (no log-in is performed)
 	 * @return
 	 */
-	public boolean verifyServer(GeoKeyAccount account)
+	public boolean verifyServer(GeoKeyServer server)
 	{
+		if(server == null)
+			return false;
 		ResponseHandler handler = getWithJSONResponse(
-			getAbsoluteUrl(account, PATH_API_GEOKEY + "info/"),
+			getAbsoluteUrl(server, PATH_API_GEOKEY + "info/"),
 			null,
 			null);
 		if(!checkResponseObject(handler, JSON_KEY_GEOKEY))
 		{
-			logError(handler, "Could not verify server");
+			logError(handler, "Could not verify server (" + server.getUrl() + "). Possibly is it not a GeoKey server.");
 			return false;
 		}
 		//else:
 		JSONObject gkInfo = handler.getResponseObject().optJSONObject(JSON_KEY_GEOKEY);
 		// Check GK version:
 		if(!gkInfo.has(JSON_KEY_VERSION) || !VersionComparator.isAtLeast(gkInfo.optString(JSON_KEY_VERSION), MINIMAL_GEOKEY_VERSION))
+		{
+			Log.e(TAG, "GeoKey version on server (" + server.getUrl() + ") is unknown or too old (minimum is v" + MINIMAL_GEOKEY_VERSION + ")");
 			return false;
+		}
 		// Check extension presence & version:
 		JSONArray extensions = gkInfo.optJSONArray(JSON_KEY_INSTALLED_EXTENSIONS);
 		if(extensions != null)
@@ -119,56 +124,79 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 				if(extension == null)
 					continue;
 				if(EXTENSION_GEOKEY_SAPELLI.equals(extension.optString(JSON_KEY_NAME)))
-					return VersionComparator.isAtLeast(extension.optString(JSON_KEY_VERSION), MINIMAL_GEOKEY_SAPELLI_VERSION);
+				{
+					boolean gksapVersionOK = VersionComparator.isAtLeast(extension.optString(JSON_KEY_VERSION), MINIMAL_GEOKEY_SAPELLI_VERSION);
+					if(!gksapVersionOK)
+						Log.e(TAG, "GeoKey server (" + server.getUrl() + ") has an outdated version of the " + EXTENSION_GEOKEY_SAPELLI + " extension (minimum is v" + MINIMAL_GEOKEY_SAPELLI_VERSION + ")");
+					return gksapVersionOK;
+				}
 			}
+		Log.e(TAG, "GeoKey server (" + server.getUrl() + ") does not have the " + EXTENSION_GEOKEY_SAPELLI + " extension.");
 		return false;
 	}
 	
-	/**
-	 * @return
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient#connect(uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer)
 	 */
 	@Override
-	public boolean login(GeoKeyAccount account)
+	public boolean connectAndLogin(GeoKeyServer server)
 	{
-		if(account.equals(this.account) && isLoggedIn())
-			return true; // given user is still logged in
+		return connectAndLogin(server, true);
+	}
+	
+	public boolean connectAndLogin(GeoKeyServer server, boolean verifyServer)
+	{
+		// Check if we are still connected/logged-in:
+		if(server.equals(this.server) && (!server.hasUserCredentials() || isUserLoggedIn()))
+			return true; // still connected/logged-in
+
+		// Verify server if needed:
+		if(verifyServer && !verifyServer(server))
+			return false;
 		
-		// Perform new login...
-		this.account = account; // !!!
+		// Set server to "connect":
+		this.server = server; // !!!
+
+		if(!server.hasUserCredentials())
+			return true; // there's no user credentials so we cannot/don't have to log-in
+		//else: perform new login...
 		ResponseHandler handler = postWithJSONResponse(
-			getAbsoluteUrl(this.account, PATH_API_GEOKEY_SAPELLI + "login/"),
+			getAbsoluteUrl(server, PATH_API_GEOKEY_SAPELLI + "login/"),
 			null,
 			getNewRequestParams(null)
-				.putt("username", account.getEmail())
-				.putt("password", account.getPassword()));
+				.putt("username", server.getUserEmail())
+				.putt("password", server.getUserPassword()));
 		if(!checkResponseObject(handler, JSON_KEY_ACCESS_TOKEN))
 		{
-			logError(handler, "Failed to log in (username/email: " + account.getEmail() + ")"); 
+			if(handler.hasResponseObject() && JSON_VALUE_ERROR_DESCRIPTION_INVALID_CREDENTIALS.equalsIgnoreCase(handler.getResponseObject().optString(JSON_KEY_ERROR_DESCRIPTION)))
+				client.logError("Failed to log in due to incorrect user credentials");
+			else
+				logError(handler, "Failed to log in (email: " + server.getUserEmail() + ")");
 			return false;
 		}
 
 		// Store token in account:
 		JSONObject token = handler.getResponseObject();
-		account.setToken(token.toString());
+		server.setToken(token.toString()); // !!!
 		
 		// Get user display name:
 		handler = getWithJSONResponse(
-			getAbsoluteUrl(this.account, PATH_API_GEOKEY + "user/"), 
+			getAbsoluteUrl(this.server, PATH_API_GEOKEY + "user/"), 
 			getNewHeaders(token),
 			null);
 		if(!checkResponseObject(handler, JSON_KEY_USER_DISPLAY_NAME))
 			logError(handler, "Failed to get user info");
 		
 		// Store display name in account:
-		account.setUserDisplayName(handler.getResponseObject().optString(JSON_KEY_USER_DISPLAY_NAME, null));
+		server.setUserDisplayName(handler.getResponseObject().optString(JSON_KEY_USER_DISPLAY_NAME, null));
 		
 		return true;
 	}
 	
 	@Override
-	public boolean isLoggedIn()
+	public boolean isUserLoggedIn()
 	{
-		return getAccountToken(true, null) != null;
+		return server.hasUserCredentials() && getUserToken(true, null) != null;
 	}
 	
 	/**
@@ -176,15 +204,15 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	 * @param errorMsg may be null
 	 * @return a token or {@code null}
 	 */
-	protected JSONObject getAccountToken(boolean checkValidity, String errorMsg)
+	protected JSONObject getUserToken(boolean checkValidity, String errorMsg)
 	{
 		JSONObject token = null;
 		
 		// Try to get token from account:
-		if(account != null && account.hasToken())
+		if(server != null && server.hasUserCredentials() && server.hasUserToken())
 			try
 			{
-				token = new JSONObject(account.getToken());
+				token = new JSONObject(server.getUserToken());
 			}
 			catch(JSONException ignore) {}
 		
@@ -205,7 +233,7 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 		if(checkValidity && token != null)
 		{
 			ResponseHandler handler = getWithJSONResponse(
-				getAbsoluteUrl(account, PATH_API_GEOKEY_SAPELLI + "login/"),
+				getAbsoluteUrl(server, PATH_API_GEOKEY_SAPELLI + "login/"),
 				getNewHeaders(token),
 				null);
 			if(!checkResponseObject(handler, JSON_KEY_LOGGED_IN) || !handler.getResponseObject().optBoolean(JSON_KEY_LOGGED_IN, false))
@@ -227,18 +255,20 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	@Override
 	public void logout()
 	{
-		if(account != null)
-		{
-			if(account.hasToken())
-				account.setToken(null);
-			account = null;
-		}
+		if(server != null && server.hasUserToken())
+			server.setToken(null);
 	}
 	
 	@Override
-	public GeoKeyAccount getAccount()
+	public void disconnect()
 	{
-		return account;
+		server = null;
+	}
+	
+	@Override
+	public GeoKeyServer getServer()
+	{
+		return server;
 	}
 	
 	/**
@@ -257,19 +287,21 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 			return null;
 		}
 		
-		JSONObject token = getAccountToken(false, "Cannot open ProjectSession because user is not logged in.");
-		if(token == null)
+		if(server == null)
+			return null;
+		JSONObject token = getUserToken(false, server.hasUserCredentials() ? "Cannot open ProjectSession because user is not logged in." : null);
+		if(token == null && server.hasUserCredentials())
 			return null;
 		
 		// Request project description:
 		ResponseHandler handler = getWithJSONResponse(
-			getAbsoluteUrl(account, PATH_API_GEOKEY_SAPELLI + "projects/description/" + project.getID() + "/" + project.getFingerPrint() + "/"),
+			getAbsoluteUrl(server, PATH_API_GEOKEY_SAPELLI + "projects/description/" + project.getID() + "/" + project.getFingerPrint() + "/"),
 			getNewHeaders(token),
 			null);
 		if(checkResponseObject(handler, JSON_KEY_GEOKEY_PROJECT_ID))
 		{
 			//Log.d(TAG, "ProjectInfo: " + handler.getResponseObject().toString());
-			return new ProjectSession(project, handler.getResponseObject());
+			return new ProjectSession(project, handler.getResponseObject(), token);
 		}
 		else
 		{
@@ -315,12 +347,19 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	{
 		
 		public final Project project;
+		public final JSONObject token;
 		protected final int geokeyProjectID;
 		protected final Map<Form, Integer> form2gkCategoryID;
 		
-		public ProjectSession(Project project, JSONObject gksProjectInfo)
+		/**
+		 * @param project
+		 * @param gksProjectInfo
+		 * @param token - may be null when user does not have credentials and GeoKey project is public and allows anonymous contributions
+		 */
+		public ProjectSession(Project project, JSONObject gksProjectInfo, JSONObject token)
 		{
 			this.project = project;
+			this.token = token;
 			this.geokeyProjectID = gksProjectInfo.optInt(JSON_KEY_GEOKEY_PROJECT_ID);
 			this.form2gkCategoryID = new HashMap<Form, Integer>(project.getNumberOfForms());
 			JSONArray formMappings = gksProjectInfo.optJSONArray("sapelli_project_forms");
@@ -356,13 +395,8 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 		@Override
 		public boolean uploadCSV(File csvFile, boolean deleteUponSuccess, boolean deleteUponFailure)
 		{
-			// Check if we have an account & token:
-			JSONObject token = getAccountToken(false, "Cannot upload CSV because user is not logged in.");
-			if(token == null)
-				return false;
-			
 			ResponseHandler handler = postWithJSONResponse(
-					getAbsoluteUrl(account, getSapelliProjectURL() + "csv_upload/"),
+					getAbsoluteUrl(server, getSapelliProjectURL() + "csv_upload/"),
 					getNewHeaders(token),
 					getNewRequestParams(token).putt(PARAMETER_KEY_CVS_FILE, csvFile, "text/csv"));
 			if(checkResponseObject(handler, JSON_KEY_ADDED))
@@ -396,11 +430,6 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 		@Override
 		public boolean uploadAttachments(Record record, List<? extends Attachment> attachments)
 		{
-			// Check if we have an account & token:
-			JSONObject token = getAccountToken(false, "Cannot upload attachments because user is not logged in.");
-			if(token == null)
-				return false;
-			
 			// Arguments check:
 			if(record == null || attachments == null)
 				return false;
@@ -421,7 +450,7 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 				return false;
 			}
 			ResponseHandler handler = getWithJSONResponse(
-				getAbsoluteUrl(account, getSapelliProjectURL() + "find_observation/" + gkCategoryID.toString() + "/" + TimeStampUtils.getISOTimestamp(Form.GetStartTime(record), true) + "/" + Long.toString(Form.GetDeviceID(record)) + "/"),
+				getAbsoluteUrl(server, getSapelliProjectURL() + "find_observation/" + gkCategoryID.toString() + "/" + TimeStampUtils.getISOTimestamp(Form.GetStartTime(record), true) + "/" + Long.toString(Form.GetDeviceID(record)) + "/"),
 				getNewHeaders(token),
 				null);
 			if(!checkResponseObject(handler, JSON_KEY_OBSERVATION_ID))
@@ -431,7 +460,7 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 			}
 			//else:
 			int contribution_id = handler.getResponseObject().optInt(JSON_KEY_OBSERVATION_ID);
-			String contributionMediaURL = getAbsoluteUrl(account, getGeoKeyProjectURL() + "contributions/" + Integer.toString(contribution_id) + "/media/");
+			String contributionMediaURL = getAbsoluteUrl(server, getGeoKeyProjectURL() + "contributions/" + Integer.toString(contribution_id) + "/media/");
 			
 			// Get existing documents:
 			handler = getWithJSONResponse(contributionMediaURL, getNewHeaders(token), null);
@@ -509,9 +538,9 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 			Log.e(TAG, logMsg);
 	}
 	
-	private String getAbsoluteUrl(GeoKeyAccount account, String relativeUrl)
+	private String getAbsoluteUrl(GeoKeyServer server, String relativeUrl)
 	{
-		return account.getUrl() + relativeUrl;
+		return server.getUrl() + relativeUrl;
 	}
 	
 	private ChainableRequestParams getNewRequestParams(JSONObject token)

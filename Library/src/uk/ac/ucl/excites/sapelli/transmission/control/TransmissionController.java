@@ -55,7 +55,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -323,7 +323,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			case TEXTUAL_SMS:
 				return new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
 			case GeoKey:
-				return new GeoKeyTransmission(transmissionClient, (GeoKeyAccount) receiver, payload);
+				return new GeoKeyTransmission(transmissionClient, (GeoKeyServer) receiver, payload);
 			default:
 				System.err.println("Unsupported transmission type: " + receiver.getTransmissionType());
 				return null;

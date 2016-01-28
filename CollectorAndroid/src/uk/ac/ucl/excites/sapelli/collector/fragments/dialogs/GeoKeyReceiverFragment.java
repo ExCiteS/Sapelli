@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.AndroidG
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 
 /**
@@ -49,18 +49,18 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	// STATIC -------------------------------------------------------
 	static public void ShowAddDialog(AppCompatActivity owner, ReceiverUpdateCallback callback)
 	{
-		new GeoKeyReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + GeoKeyAccount.class.getSimpleName());
+		new GeoKeyReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + GeoKeyServer.class.getSimpleName());
 	}
 
-	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, GeoKeyAccount editCorrespondent)
+	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, GeoKeyServer editCorrespondent)
 	{
-		new GeoKeyReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + GeoKeyAccount.class.getSimpleName());
+		new GeoKeyReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + GeoKeyServer.class.getSimpleName());
 	}
 	
 	// DYNAMIC ------------------------------------------------------
 	private final ReceiverUpdateCallback callback;
 	
-	private GeoKeyAccount editReceiver;
+	private GeoKeyServer editReceiver;
 	
 	private EditText txtGeoKeyServerURL;
 	private EditText txtEmail;
@@ -72,7 +72,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		this(callback, null);
 	}
 	
-	public GeoKeyReceiverFragment(ReceiverUpdateCallback callback, GeoKeyAccount receiver)
+	public GeoKeyReceiverFragment(ReceiverUpdateCallback callback, GeoKeyServer receiver)
 	{
 		this.callback = callback;
 		this.editReceiver = receiver;
@@ -107,8 +107,8 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		if(isEditing())
 		{
 			txtGeoKeyServerURL.setText(editReceiver.getUrl());
-			txtEmail.setText(editReceiver.getEmail()); // hint about anonymous use
-			txtPassword.setText(editReceiver.getPassword()); // TODO "click to change"
+			txtEmail.setText(editReceiver.getUserEmail()); // hint about anonymous use
+			txtPassword.setText(editReceiver.getUserPassword()); // TODO "click to change"
 			txtReceiverName.setText(editReceiver.getName());
 		}
 		else
@@ -159,7 +159,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	 * @param dialog
 	 * @param toSave
 	 */
-	private void save(final DialogInterface dialog, GeoKeyAccount toSave)
+	private void save(final DialogInterface dialog, GeoKeyServer toSave)
 	{
 		final ProjectManagerActivity activity = getOwner();
 		if(activity == null)
@@ -174,14 +174,14 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			boolean valid = true;
 			//	URL:
 			String url = txtGeoKeyServerURL.getText().toString().trim(); 
-			if(url.isEmpty() || !GeoKeyAccount.URL_VALIDATOR.isValid(url))
+			if(url.isEmpty() || !GeoKeyServer.URL_VALIDATOR.isValid(url))
 			{
 				txtGeoKeyServerURL.setBackgroundResource(R.color.red25percent);
 				valid = false;
 			}
 			//	E-mail:
 			String email = txtEmail.getText().toString().trim();
-			if(!email.isEmpty() && !GeoKeyAccount.EMAIL_VALIDATOR.isValid(email))
+			if(!email.isEmpty() && !GeoKeyServer.EMAIL_VALIDATOR.isValid(email))
 			{
 				txtEmail.setBackgroundResource(R.color.red25percent);
 				valid = false;
@@ -208,14 +208,9 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 					editReceiver.setName(name);
 					changed = true;
 				}
-				if(!editReceiver.getEmail().equals(email))
+				if(!editReceiver.getUserEmail().equals(email) || !editReceiver.getUserPassword().equals(password)) 
 				{
-					editReceiver.setEmail(email);
-					credetialsChanged = changed = true;
-				}
-				if(!editReceiver.getPassword().equals(password))
-				{
-					editReceiver.setPassword(password);
+					editReceiver.setUserCredentials(email, password);
 					credetialsChanged = changed = true;
 				}
 				// Check if any changes were made:
@@ -227,12 +222,12 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			}
 			
 			// Get account to save:
-			toSave = isEditing() ? editReceiver : GeoKeyAccount.CreateNew(name, url, email, password);
+			toSave = isEditing() ? editReceiver : GeoKeyServer.CreateNew(name, url, email, password);
 			
 			// Verify by contacting server if needed...
 			if(!isEditing() || credetialsChanged)
 			{
-				final GeoKeyAccount toVerify = toSave;
+				final GeoKeyServer toVerify = toSave;
 				new VerifierTask(activity, new VerifierCallback()
 				{
 					@Override
@@ -287,7 +282,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		OK
 	};
 	
-	private class VerifierTask extends AsyncTaskWithWaitingDialog<ProjectManagerActivity, GeoKeyAccount, VerificationResult>
+	private class VerifierTask extends AsyncTaskWithWaitingDialog<ProjectManagerActivity, GeoKeyServer, VerificationResult>
 	{
 		
 		private final VerifierCallback verificationCallback;
@@ -299,7 +294,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		}
 		
 		@Override
-		protected VerificationResult runInBackground(GeoKeyAccount... params)
+		protected VerificationResult runInBackground(GeoKeyServer... params)
 		{
 			ProjectManagerActivity activity = getContext();
 			if(activity == null)
@@ -311,14 +306,14 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			// We are online, perform actual checks:
 			AndroidGeoKeyClient client = new AndroidGeoKeyClient(activity.getCollectorApp());
 
-			GeoKeyAccount account = params[0];
+			GeoKeyServer server = params[0];
 			
 			//	Check if server is reachable and running the right GeoKey & extension versions:
-			if(!client.verifyServer(account))
+			if(!client.verifyServer(server))
 				return VerificationResult.InvalidServer;
 			
 			//	Check if user can login:
-			if(!client.login(account)) // TODO make optional
+			if(!client.connectAndLogin(server, false /*already verified*/))
 				return VerificationResult.InvalidAccount;
 			
 			// All OK!:

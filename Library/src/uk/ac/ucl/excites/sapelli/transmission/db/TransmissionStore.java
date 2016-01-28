@@ -62,7 +62,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -349,7 +349,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 				corr = new SMSCorrespondent(localID, name, address, false);
 				break;
 			case GeoKey:
-				corr = new GeoKeyAccount(localID, name, address);
+				corr = new GeoKeyServer(localID, name, address);
 				break;
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
@@ -631,7 +631,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec))));
 				return textSMST;
 			case GeoKey:
-				return new GeoKeyTransmission(client, this.<GeoKeyAccount> correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, lastResendReqSentAt, receivedAt, (GeoKeyTransmission) response, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)));
+				return new GeoKeyTransmission(client, this.<GeoKeyServer> correspondentFromRecord(cRec), received, localID, remoteID, payloadType, payloadHash, lastResendReqSentAt, receivedAt, (GeoKeyTransmission) response, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)));
 			default:
 				throw new IllegalStateException("Unsupported transmission type");
 		}
@@ -1017,7 +1017,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		}
 
 		@Override
-		public void handle(GeoKeyAccount geokeyAccount)
+		public void handle(GeoKeyServer geokeyAccount)
 		{
 			// does nothing (for now)
 		}
