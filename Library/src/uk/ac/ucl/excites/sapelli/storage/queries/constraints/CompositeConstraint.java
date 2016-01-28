@@ -41,13 +41,13 @@ public abstract class CompositeConstraint extends Constraint
 				addConstraint(c);
 	}
 	
-	public void addConstraint(Constraint constraint)
+	public CompositeConstraint addConstraint(Constraint constraint)
 	{
 		// Reduce if possible:
 		constraint = Constraint.Reduce(constraint);
 		// Null check:
 		if(constraint == null)
-			return;
+			return this;
 		// Flatten instance of same CompositeConstraint subclass when associative:
 		else if(this.getClass().isInstance(constraint) && isAssociative())
 		{
@@ -61,6 +61,7 @@ public abstract class CompositeConstraint extends Constraint
 				constraints = new ArrayList<Constraint>();
 			constraints.add(constraint);
 		}
+		return this;
 	}
 
 	/**
