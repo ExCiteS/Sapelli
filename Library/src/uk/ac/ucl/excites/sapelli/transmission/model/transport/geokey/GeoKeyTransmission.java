@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
-import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
 
 /**
  * @author mstevens
@@ -82,7 +81,7 @@ public class GeoKeyTransmission extends Transmission<GeoKeyServer>
 	}
 	
 	@Override
-	protected void doSend(TransmissionController controller) throws TransmissionSendingException
+	protected void doSend(TransmissionController controller)
 	{
 		controller.getGeoKeyClient().send(this);
 	}

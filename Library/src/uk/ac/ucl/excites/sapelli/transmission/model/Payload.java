@@ -35,6 +35,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelAccessUnauthorisedPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -55,13 +56,12 @@ public abstract class Payload
 	static public enum BuiltinType
 	{
 		Records,
-		Files,
 		Ack,
 		ResendRequest,
 		ModelQuery,
 		ModelRequest,
 		ModelAccessUnauthorised,
-		Model,
+		NoSuchTransmission,
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
 	
@@ -81,8 +81,8 @@ public abstract class Payload
 				return new ModelQueryPayload();
 			case ModelRequest:
 				return new ModelRequestPayload();
-			case Model:
-			case Files:
+			case NoSuchTransmission:
+				return new NoSuchTransmissionPayload();
 			default:
 				throw new IllegalArgumentException("Unsupported/Unimplemented Payload type: " + type.name());
 		}
@@ -147,6 +147,8 @@ public abstract class Payload
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception;
 
 		public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception;
+		
+		public void handle(NoSuchTransmissionPayload noSuchTransmissionPayload) throws Exception;
 		
 		/**
 		 * Handle method for non-built-in payload types

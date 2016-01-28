@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelAccessUnauthorisedPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
@@ -279,6 +280,12 @@ public abstract class GeoKeyClient implements Payload.Handler
 	
 	@Override
 	public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception
+	{
+		// N/A
+	}
+	
+	@Override
+	public void handle(NoSuchTransmissionPayload noSuchTransmissionPayload) throws Exception
 	{
 		// N/A
 	}

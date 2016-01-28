@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreWrapper;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -124,6 +126,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	static final public ForeignKeyColumn TRANSMISSION_COLUMN_CORRESPONDENT = new ForeignKeyColumn(CORRESPONDENT_SCHEMA, true);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
 	static final public String TRANSMISSION_COLUMN_NAME_RESPONSE = "Response";
+	static final public BooleanColumn TRANSMISSION_COLUMN_DELETED = new BooleanColumn("Deleted", false, Boolean.FALSE);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT = new IntegerColumn("SentResendRequests", false, Integer.SIZE); // only used on receiving side
 	static final public TimeStampColumn TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT = TimeStampColumn.JavaMSTime("LastResendReqSentAt", true, false); // only used on receiving side
 	//	Columns shared with Transmission Part schema:
@@ -150,6 +153,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			schema.addColumn(COLUMN_RECEIVED_AT);
 			// Response FK:
 			schema.addColumn(new ForeignKeyColumn(TRANSMISSION_COLUMN_NAME_RESPONSE, schema == SENT_TRANSMISSION_SCHEMA ? RECEIVED_TRANSMISSION_SCHEMA : SENT_TRANSMISSION_SCHEMA, true));
+			schema.addColumn(TRANSMISSION_COLUMN_DELETED);
 			// Only for received transmissions:
 			if(schema == RECEIVED_TRANSMISSION_SCHEMA)
 			{
@@ -562,11 +566,11 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	{
 		List<Transmission<?>> transmissions = new ArrayList<Transmission<?>>();
 		for(Record record : recordStore.retrieveRecords(multiRecordQuery))
-			CollectionUtils.addIgnoreNull(transmissions, transmissionFromRecord(record)); // convert to Transmission objects
+			CollectionUtils.addIgnoreNull(transmissions, transmissionFromRecord(record, false)); // convert to Transmission objects (skipping "hidden" deleted transmissions)
 		return transmissions;
 	}
 	
-	private Transmission<?> transmissionFromRecord(Record tRec)
+	private Transmission<?> transmissionFromRecord(Record tRec, boolean includeDeleted)
 	{
 		// Null check:
 		if(tRec == null)
@@ -579,6 +583,10 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		// Check cache:
 		if(getCache(received).containsKey(localID))
 			return getCache(received).get(localID);
+		
+		// Check if transmission is not deleted by hiding:
+		if(TRANSMISSION_COLUMN_DELETED.retrieveValue(tRec) && !includeDeleted)
+			return null;
 		
 		// Other values:
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
@@ -647,19 +655,44 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 */
 	public synchronized Transmission<?> retrieveTransmission(boolean received, int localID)
 	{
+		return retrieveTransmission(received, localID, false);
+	}
+	
+	/**
+	 * Retrieve a sent or received transmission by its local ID.
+	 * 
+	 * @param received if {@code true} the transmission was received on the local device, if {@code false} it was created for sending from the local device to another one
+	 * @param localID
+	 * @param findDeleted whether or not to retrieve transmission which are deleted by hiding
+	 * 
+	 * @return the Transmission with the given {@code localID}, or {@code null} if no such transmission was found.
+	 */
+	public synchronized Transmission<?> retrieveTransmission(boolean received, int localID, boolean findDeleted)
+	{
 		try
 		{
 			// Check cache:
 			if(getCache(received).containsKey(localID))
 				return getCache(received).get(localID);
 			//else:
-			return transmissionFromRecord(recordStore.retrieveRecord(getTransmissionSchema(received).createRecordReference(localID)));
+			return transmissionFromRecord(recordStore.retrieveRecord(getTransmissionSchema(received).createRecordReference(localID)), findDeleted);
 		}
 		catch(Exception e)
 		{
 			client.logError("Error retrieving " + (received ? "received" : "sent") + " transmission with local ID = " + localID + ".", e);
 			return null;
 		}
+	}
+	
+	/**
+	 * @param transmissionRecordReference
+	 * @param findDeleted whether or not to retrieve transmission which are deleted by hiding
+	 * @return
+	 */
+	protected synchronized Transmission<?> retrieveTransmission(RecordReference transmissionRecordReference, boolean findDeleted)
+	{
+		return retrieveTransmission(transmissionRecordReference.getReferencedSchema() == RECEIVED_TRANSMISSION_SCHEMA,
+									TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecordReference).intValue());
 	}
 	
 	/**
@@ -755,7 +788,11 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		}
 	}
 
-	public void deleteTransmission(Transmission<?> transmission)
+	/**
+	 * @param transmission
+	 * @param byHiding if {@code true} the transmission will only be hidden (marked as deleted, but still in the db), if {@code false} it (and its parts) will be completely removed from the db
+	 */
+	public void deleteTransmission(Transmission<?> transmission, boolean byHiding)
 	{
 		if(!transmission.isLocalIDSet())
 			return; // the transmission was never stored
@@ -766,13 +803,26 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			// Get record reference:
 			RecordReference tRecRef = getTransmissionSchema(transmission.received).createRecordReference(transmission.getLocalID());
 			
-			// Delete transmission part records:
-			recordStore.delete(new RecordsQuery(Source.From(getTransmissionPartSchema(transmission.received)), tRecRef.getRecordQueryConstraint()));
-			
-			// Delete transmission record:
-			recordStore.delete(tRecRef);
+			if(byHiding)
+			{
+				Record tRec = generator.generate(transmission).get(0);
+				TRANSMISSION_COLUMN_DELETED.storeValue(tRec, Boolean.TRUE);
+				// Store the transmission record:
+				recordStore.store(tRec);
+			}
+			else
+			{	// Really delete from db:
+				//	Delete transmission part records:
+				recordStore.delete(new RecordsQuery(Source.From(getTransmissionPartSchema(transmission.received)), tRecRef.getRecordQueryConstraint()));
+				
+				//	Delete transmission record:
+				recordStore.delete(tRecRef);
+			}
 			
 			recordStore.commitTransaction();
+			
+			// Delete from cache:
+			getCache(transmission.received).remove(transmission.getLocalID());
 		}
 		catch(Exception e)
 		{
@@ -883,32 +933,42 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * @param timeOutS
 	 * @return
 	 */
-	public List<Record> retrieveTransmittableRecordsWithTimedOutTransmission(Correspondent correspondent, Model model, long timeOutS)
+	public List<Record> retrieveTransmittableRecordsForResending(Correspondent correspondent, Model model)
 	{
 		// Get all transmittables with an assigned transmission, ordered by the transmission:
 		List<Record> toSendRecs = retrieveTransmittableRecords(correspondent, model, Order.By(TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION), EqualityConstraint.IsNotNull(TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION));
 		
 		// Collection to return:
 		List<Record> userRecs = new ArrayList<Record>(toSendRecs.size());
-		
-		// Loop over all transmittables:
-		Transmission<?> transmission = null;
-		boolean timedOut = false;
+
+		// Group by transmission record reference:
+		Map<RecordReference, List<Record>> tRecRef2toSendRecs = new HashMap<RecordReference, List<Record>>();
+		RecordReference prevTRecRef = null;
 		for(Record toSendRec : toSendRecs)
 		{
-			int tID = ((Long) TRANSMITTABLE_RECORDS_CP_TRANSMISSION_ID.retrieveValue(toSendRec)).intValue();
-			if(transmission == null || transmission.getLocalID() != tID)
+			RecordReference tRefRec = TRANSMITTABLE_RECORDS_COLUMN_TRANSMISSION.retrieveValue(toSendRec);
+			if(!Objects.equals(prevTRecRef, tRefRec))
 			{
-				transmission = retrieveTransmission(false, tID);
-				timedOut =	// unknown transmission:
-							transmission == null ||
-							// never actually sent:
-							!transmission.isSent() ||
-							// never received (or no ACK received) and sent longer ago than timeoutS
-							(!transmission.isReceived() && transmission.getSentAt().shift(timeOutS * 1000).isBefore(TimeStamp.now()));
+				tRecRef2toSendRecs.put(tRefRec, new ArrayList<Record>());
+				prevTRecRef = tRefRec;
 			}
-			if(timedOut)
-				CollectionUtils.addIgnoreNull(userRecs, getUserRecordFromTransmittable(toSendRec, model));
+			tRecRef2toSendRecs.get(tRefRec).add(toSendRec);
+		}
+		
+		// Treat per transmission:
+		for(Map.Entry<RecordReference, List<Record>> entry : tRecRef2toSendRecs.entrySet())
+		{
+			Transmission<?> transmission = retrieveTransmission(entry.getKey(), false);
+			if(	//unknown transmission:
+				transmission == null ||
+				// transmission says it is appropriate to have its contents resent:
+				transmission.isResendAppropriate())
+			{
+				for(Record toSendRec : entry.getValue())
+					CollectionUtils.addIgnoreNull(userRecs, getUserRecordFromTransmittable(toSendRec, model));
+				if(transmission != null) // delete by hiding:
+					deleteTransmission(transmission, true);
+			}
 		}
 		
 		return userRecs;
@@ -1044,7 +1104,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			// Create new transmission record:
 			tRecord = getTransmissionSchema(transmission.received).createRecord();
 			
-			// wie part recs:
+			// wipe part recs:
 			tPartRecords.clear();
 			
 			// Set values of all columns will be set except for Correspondent & NumberOfParts:

@@ -236,6 +236,20 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	}
 	
 	/**
+	 * @return {@code true} if at least one part has been sent, {@code false} otherwise
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Transmission#isPartiallySent()
+	 */
+	@Override
+	public boolean isPartiallySent()
+	{
+		for(M m : parts)
+			if(m.isSent())
+				return true;
+		return false;
+	}
+	
+	/**
 	 * To be called on the receiving side.
 	 * 
 	 * @return whether all parts have been received
@@ -352,6 +366,18 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 		return prev.shift(GetResendDelayMS(numberOfSentResendRequests + 1));
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Transmission#getApproprateResentTimeout()
+	 */
+	@Override
+	public int getApproprateResentTimeoutMS()
+	{
+		if(getTotalNumberOfParts() > 1)
+			return 2 * GetResendDelayMS(1); // at least 2 twice the 1st resend delay (= 24 minutes)
+		else
+			return super.getApproprateResentTimeoutMS(); // use default
+	}
+	
 	/**
 	 * @author mstevens
 	 *
@@ -420,6 +446,11 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 			store(); // !!! (no else here!)
 		}
 		
+		/**
+		 * @param msg
+		 * @param delegate
+		 * @return the latest of the timestamps or null if not all timestamps have been set 
+		 */
 		private TimeStamp getLatest(M msg, TimeStampDelegate delegate)
 		{
 			// Just in case:

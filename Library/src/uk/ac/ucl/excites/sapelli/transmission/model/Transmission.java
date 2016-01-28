@@ -120,6 +120,8 @@ public abstract class Transmission<C extends Correspondent>
 	
 	static protected final int UNLIMITED_BODY_SIZE = -1;
 	
+	static public final int MINIMUM_RESEND_TIMEOUT_MS = 90 * 1000; // 90 seconds
+	
 	// DYNAMICS------------------------------------------------------
 	public final TransmissionClient client;
 	
@@ -719,6 +721,16 @@ public abstract class Transmission<C extends Correspondent>
 		return sentAt != null;
 	}
 	
+	/**
+	 * To be overridden.
+	 * 
+	 * @return
+	 */
+	public boolean isPartiallySent()
+	{
+		return isSent();
+	}
+	
 	protected void setSentAt(TimeStamp sentAt)
 	{
 		this.sentAt = sentAt;
@@ -768,6 +780,25 @@ public abstract class Transmission<C extends Correspondent>
 	}
 
 	/**
+	 * May be overridden.
+	 * 
+	 * @return whether it is appropriate to resend (the payload of) this transmission *now*
+	 */
+	public boolean isResendAppropriate()
+	{
+		return	// never actually sent (not even partially):
+				!isPartiallySent() ||
+				// never received (or no ACK received, nor any other response)
+				(	!isReceived() && !hasResponse() &&
+					sentAt.shift(getApproprateResentTimeoutMS()).isBefore(TimeStamp.now()));
+	}
+	
+	public int getApproprateResentTimeoutMS()
+	{
+		return MINIMUM_RESEND_TIMEOUT_MS;
+	}
+	
+	/**
 	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
 	 */
 	public abstract boolean canWrapIncreaseSize();
@@ -802,14 +833,21 @@ public abstract class Transmission<C extends Correspondent>
 		
 		public void onSent(TimeStamp sentAt)
 		{
-			setSentAt(sentAt);
-			
-			// Run payload callback if there is one:
-			if(payload != null /*just in case*/ && payload.getCallback() != null)
-				payload.getCallback().onSent(sentAt);
-			
-			// Store updated transmission:
-			store();
+			try
+			{
+				setSentAt(sentAt);
+				
+				// Run payload callback if there is one:
+				if(payload != null /*just in case*/ && payload.getCallback() != null)
+					payload.getCallback().onSent(sentAt);
+				
+				// Store updated transmission:
+				store();
+			}
+			catch(Exception e)
+			{
+				client.logError("Error in SentCallback#onSent()", e);
+			}
 		}
 		
 		public void onReceived()
