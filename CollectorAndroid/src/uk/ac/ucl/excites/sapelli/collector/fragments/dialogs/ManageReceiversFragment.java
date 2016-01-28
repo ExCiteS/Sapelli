@@ -118,6 +118,26 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		return dialog;
 	}
 	
+//	private Set<ViewGroup> receiveSwitchGroups = new HashSet<ViewGroup>();
+//	
+//	static private final int RECEIVE_SWITCH_IDX = 1;
+//	
+//	private boolean setReceiveSwitch(ViewGroup receiveSwitchGroup, boolean enabled)
+//	{
+//		((Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX)).setChecked(enabled);
+//		return enabled;
+//	}
+	
+//	case R.id.switchReceive :
+//		toggleConfigGroup(false, switchReceive.isChecked());
+//		if(!switchReceive.isChecked()) // Disable receiving of all transmission types:
+//			for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
+//			{
+//				setReceiveSwitch(receiveSwitchGroup, false);
+//				getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitchGroup.getTag(), false);
+//			}
+//		break;
+	
 //	addReceiveSwitch(Transmission.Type.BINARY_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveBinSMS));
 //	addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
 

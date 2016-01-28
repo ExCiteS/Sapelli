@@ -62,12 +62,12 @@
         </menu>
     </item>
     
-    <item
+    <!-- <item
 	    android:id="@+id/menuitem_manage_receivers"
 	    android:icon="@drawable/ic_transfer_white_36dp"
 	    android:onClick="manageReceivers"
 	    android:title="@string/manageReceivers"
-	    compat:showAsAction="never"/>
+	    compat:showAsAction="never"/> -->
     
 	<item
 	    android:id="@+id/about_menuitem"
