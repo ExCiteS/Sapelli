@@ -487,7 +487,10 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 					continue; // file does not exist or is not readable
 				String name = FileHelpers.trimFileExtensionAndDot(attachment.file.getName());
 				if(existingDocumentNames.contains(name))
+				{
+					client.logInfo("File \"" + name + "\" already exists on the server, no uploading needed.");
 					continue; // file already exists on server
+				}
 				// Upload file:
 				handler = postWithJSONResponse(
 					contributionMediaURL,
