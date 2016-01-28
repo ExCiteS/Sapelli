@@ -202,8 +202,8 @@
     <string name="scheduledReceivers">Scheduled receivers:</string>
     <string name="longClickFromEditDel">(long-click to edit, delete, or resend)</string>
     <string name="sendExistingDataQuestion">Do you wish to send all existing data (%1$d records, %2$d files) to %3$s now?</string>
-    <string name="editScheduleEtc">Edit send schedule&#8230;</string>
-    <string name="deleteSchedule">Delete send schedule</string>
+    <string name="editScheduleEtc">Edit schedule&#8230;</string>
+    <string name="deleteSchedule">Delete schedule</string>
     <string name="resendAllData">(Re)send all data now</string>
     <string name="receiveBinarySMS">By binary SMS</string>
     <string name="receiveTextualSMS">By textual SMS</string>

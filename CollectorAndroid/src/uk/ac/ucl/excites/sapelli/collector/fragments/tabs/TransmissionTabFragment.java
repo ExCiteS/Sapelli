@@ -18,9 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -35,7 +33,6 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.Checkable;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
@@ -55,7 +52,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
@@ -65,8 +61,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener
 {
 
-	static private final int RECEIVE_SWITCH_IDX = 1; 
-	
 	// Views
 	//	Sending...
 	private LinearLayout sendHeader;	
@@ -78,7 +72,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	private LinearLayout receiveHeader;
 	private SwitchCompat switchReceive;
 	private LinearLayout receiveSettings;
-	private Set<ViewGroup> receiveSwitchGroups = new HashSet<ViewGroup>();
 	
 	// Adapter:
 	private SendScheduleAdapter listScheduleAdapter;
@@ -114,12 +107,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
 		switchReceive.setOnClickListener(this);
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
-	}
-	
-	private boolean setReceiveSwitch(ViewGroup receiveSwitchGroup, boolean enabled)
-	{
-		((Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX)).setChecked(enabled);
-		return enabled;
 	}
 	
 	@Override
@@ -179,12 +166,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				break;
 			case R.id.switchReceive :
 				toggleConfigGroup(false, switchReceive.isChecked());
-				if(!switchReceive.isChecked()) // Disable receiving of all transmission types:
-					for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
-					{
-						setReceiveSwitch(receiveSwitchGroup, false);
-						getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitchGroup.getTag(), false);
-					}
+				// does nothing (for now)
 				break;
 		}
 	}
