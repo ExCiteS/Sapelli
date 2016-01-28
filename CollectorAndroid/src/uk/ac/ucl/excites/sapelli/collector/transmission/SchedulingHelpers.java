@@ -74,6 +74,15 @@ public final class SchedulingHelpers
 	 * @param context
 	 * @param sendSchedule
 	 */
+	public static void ScheduleForImmediateTransmission(Context context, SendSchedule sendSchedule)
+	{
+		context.startService(GetDataSendingServiceIntent(context, sendSchedule.getID()));
+	}
+	
+	/**
+	 * @param context
+	 * @param sendSchedule
+	 */
 	public static void ScheduleOrCancel(Context context, SendSchedule sendSchedule)
 	{
 		if(sendSchedule == null)
@@ -136,7 +145,7 @@ public final class SchedulingHelpers
 				AlarmManager.ELAPSED_REALTIME,
 				SystemClock.elapsedRealtime() + triggerDelay,
 				intervalMillis,
-				GetDataSendingIntent(context, sendSchedule.getID()));
+				GetDataSendingPendingIntent(context, sendSchedule.getID()));
 				
 			Log.d(TAG, "Set SendSchedule (id: " + sendSchedule.getID() + ") alarm for project \"" + sendSchedule.getProject().toString(false) + "\", and receiver \"" + sendSchedule.getReceiver().toString() + "\" to expire every " + intervalMillis + "ms after a delay of " + triggerDelay + "ms.");
 		}
@@ -177,7 +186,7 @@ public final class SchedulingHelpers
 	{
 		try
 		{
-			GetAlarmManager(context).cancel(GetDataSendingIntent(context, sendScheduleId));
+			GetAlarmManager(context).cancel(GetDataSendingPendingIntent(context, sendScheduleId));
 			Log.d(TAG, "Canceled alarm for SendSchedule with id " + sendScheduleId);
 		}
 		catch(Exception e)
@@ -195,16 +204,21 @@ public final class SchedulingHelpers
 		return (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 	}
 	
-	/**
-	 * @return PendingIntent to start DataSendingService to send data according to the SendSchedule with given id.
-	 */
-	private static PendingIntent GetDataSendingIntent(Context context, int sendScheduleID)
+	private static Intent GetDataSendingServiceIntent(Context context, int sendScheduleID)
 	{
 		// Create the PendingIntent for the DataSenderService:
 		Intent serviceIntent = new Intent(context, DataSendingService.class);
 		// Action (matched by Intent.filterEquals(Intent)):
 		serviceIntent.setAction(DataSendingService.getIntentAction(sendScheduleID));
-		return PendingIntent.getService(context, sendScheduleID, serviceIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+		return serviceIntent;
+	}
+	
+	/**
+	 * @return PendingIntent to start DataSendingService to send data according to the SendSchedule with given id.
+	 */
+	private static PendingIntent GetDataSendingPendingIntent(Context context, int sendScheduleID)
+	{
+		return PendingIntent.getService(context, sendScheduleID, GetDataSendingServiceIntent(context, sendScheduleID), PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 	
 	/**

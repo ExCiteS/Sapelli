@@ -47,6 +47,7 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.SendScheduleFragmen
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
@@ -196,7 +197,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			SendSchedule schedule = listScheduleAdapter.getItem(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
 			menu.setHeaderTitle(getString(R.string.schedule) + " for " + schedule.getReceiver().getName());
 			// Menu items: 
-			int[] menuItemTitles = new int[] { R.string.editEtc, R.string.delete };
+			int[] menuItemTitles = new int[] { R.string.editScheduleEtc, R.string.deleteSchedule, R.string.resendAllData };
 			for(int m = 0; m < menuItemTitles.length; m++)
 				menu.add(Menu.NONE, menuItemTitles[m], m, menuItemTitles[m]);
 		}
@@ -208,14 +209,16 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		SendSchedule schedule = listScheduleAdapter.getItem(((AdapterView.AdapterContextMenuInfo) item.getMenuInfo()).position);		
 		switch(item.getItemId())
 		{
-			case R.string.editEtc :
+			case R.string.editScheduleEtc :
 				SendScheduleFragment.ShowEditDialog(this, schedule); // TODO callback?
 				break;
-			case R.string.delete :
+			case R.string.deleteSchedule :
 				delete(schedule);
 				break;
+			case R.string.resendAllData :
+				sendDataNow(schedule, false);
+				break;
 		}
-		
 		return true;
 	}
 	
@@ -268,38 +271,60 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			// Refresh schedules:
 			listScheduleAdapter.add(schedule);
 			
-			// Query for currently existing project data & propose transmission: 
-			ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), true, new ProjectTasks.ProjectDataCallback()
-			{
-				@Override
-				public void projectDataQuerySuccess(final List<Record> records, List<MediaFile> mediaFiles)
-				{
-					if(!records.isEmpty())
-						getOwner().showYesNoDialog(
-							R.string.tab_transmission,
-							getString(R.string.sendExistingData, records.size(), mediaFiles.size(), schedule.getReceiver().getName()),
-							R.drawable.ic_transfer_black_36dp,
-							new Runnable()
-							{
-								@Override
-								public void run()
-								{
-									getOwner().getCollectorClient().scheduleSending(records, schedule.getReceiver());
-								}
-							},
-							false, null, false);
-				}
-
-				@Override
-				public void projectDataQueryFailure(Exception reason)
-				{
-					Log.e(TransmissionTabFragment.class.getSimpleName(), "Failed to query for records", reason);
-				}
-			});
+			// Query for existing data & ask if it need to be (re)sent:
+			sendDataNow(schedule, true);
 		}
 		else
 			// Open/close sending pane:
 			toggleConfigGroup(true, !listScheduleAdapter.isEmpty());
+	}
+	
+	public void sendDataNow(final SendSchedule schedule, final boolean askConfirmation)
+	{
+		
+		// Query for currently existing project data & propose transmission: 
+		ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), true, new ProjectTasks.ProjectDataCallback()
+		{
+			@Override
+			public void projectDataQuerySuccess(final List<Record> records, List<MediaFile> mediaFiles)
+			{
+				if(records.isEmpty())
+					return;
+				
+				final Runnable scheduleNowRunnable = new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						try
+						{
+							getOwner().getCollectorClient().scheduleSending(records, schedule.getReceiver());
+							SchedulingHelpers.ScheduleForImmediateTransmission(getOwner(), schedule);
+						}
+						catch(Exception e)
+						{
+							Log.e(TransmissionTabFragment.class.getSimpleName(), "Error upon sending existing data immediately", e);
+						}
+					}
+				};
+				
+				if(askConfirmation)
+					getOwner().showYesNoDialog(
+						R.string.tab_transmission,
+						getString(R.string.sendExistingDataQuestion, records.size(), mediaFiles.size(), schedule.getReceiver().getName()),
+						R.drawable.ic_transfer_black_36dp,
+						scheduleNowRunnable,
+						false, null, false);
+				else
+					scheduleNowRunnable.run();
+			}
+
+			@Override
+			public void projectDataQueryFailure(Exception reason)
+			{
+				Log.e(TransmissionTabFragment.class.getSimpleName(), "Failed to query for records", reason);
+			}
+		});
 	}
 	
 	public void delete(SendSchedule schedule)
