@@ -462,9 +462,10 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(VS record) throws InvalidValueException
+	protected void validate(VS valueSet) throws InvalidValueException
 	{
-		// does nothing
+		if(!valueSet.getColumnSet().equals(columnSet))
+			throw new InvalidValueException("ColumnSet mismatch (given valueSet is of " + valueSet.getColumnSet().toString() + "; expected: " + columnSet.toString() + ")", this);
 	}
 
 	@Override

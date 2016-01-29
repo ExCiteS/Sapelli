@@ -21,10 +21,12 @@ package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 import java.text.ParseException;
 
 import uk.ac.ucl.excites.sapelli.shared.util.Objects;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.ValueSet;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * Rule-based Constraint class
@@ -96,7 +98,7 @@ public class RuleConstraint extends Constraint
 	 * @throws NullPointerException
 	 * @throws ParseException
 	 */
-	public static <CC extends ComparableColumn<?>> RuleConstraint FromString(CC compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+	public static <CC extends ComparableColumn<?>> RuleConstraint FromString(CC compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, InvalidValueException, NullPointerException, ParseException
 	{
 		return FromString(new ColumnPointer<CC>(compareColumn), comparison, valueString);
 	}
@@ -110,7 +112,7 @@ public class RuleConstraint extends Constraint
 	 * @throws NullPointerException
 	 * @throws ParseException
 	 */
-	public static RuleConstraint FromString(ColumnPointer<? extends ComparableColumn<?>> columnPointer, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+	public static RuleConstraint FromString(ColumnPointer<? extends ComparableColumn<?>> columnPointer, Comparison comparison, String valueString) throws IllegalArgumentException, InvalidValueException, NullPointerException, ParseException
 	{
 		return new RuleConstraint(columnPointer, comparison, columnPointer.getColumn().parse(valueString));
 	}
@@ -126,7 +128,7 @@ public class RuleConstraint extends Constraint
 	 * @param comparison
 	 * @param rhsValue the value at the right-hand-side of the comparison
 	 */
-	public <CC extends ComparableColumn<?>> RuleConstraint(CC compareColumn, Comparison comparison, Object rhsValue)
+	public <CC extends ComparableColumn<?>> RuleConstraint(CC compareColumn, Comparison comparison, Object rhsValue) throws InvalidValueException
 	{
 		this(new ColumnPointer<CC>(compareColumn), comparison, rhsValue);
 	}
@@ -136,13 +138,41 @@ public class RuleConstraint extends Constraint
 	 * @param comparison
 	 * @param rhsValue the value at the right-hand-side of the comparison
 	 */
-	public RuleConstraint(ColumnPointer<? extends ComparableColumn<?>> lhsColumnPointer, Comparison comparison, Object rhsValue)
+	public RuleConstraint(ColumnPointer<? extends ComparableColumn<?>> lhsColumnPointer, Comparison comparison, Object rhsValue) throws InvalidValueException
 	{
-		if(rhsValue == null && comparison != Comparison.EQUAL && comparison != Comparison.NOT_EQUAL)
-			throw new NullPointerException("Value cannot be null unless comparison is equality or inequality.");
+		// Column null check:
+		if(lhsColumnPointer == null || /*not possible(?), but just in case:*/ lhsColumnPointer.getColumn() == null)
+			throw new NullPointerException("Please provide a non-null column(pointer)");
+		Column<?> lhsColumn = lhsColumnPointer.getColumn();
+		
+		// Further checks...
+		if(rhsValue == null)
+		{
+			// For null value allow only "==" or "!=" comparisons:
+			if(comparison != Comparison.EQUAL && comparison != Comparison.NOT_EQUAL)
+				throw new NullPointerException("Value cannot be null unless comparison is equality or inequality.");
+		}
+		else
+		{	// Check if value is valid for column:
+			try
+			{
+				if(!lhsColumn.isValidValueObject(rhsValue, true /*convert!*/))
+					throw new Exception();
+			}
+			catch(InvalidValueException ive)
+			{
+				throw ive; // re-throw
+			}
+			catch(Exception e)
+			{
+				throw new InvalidValueException(EqualityConstraint.class.getSimpleName() + ": value (" + rhsValue.toString() + ") is invalid for column " + lhsColumn.name, lhsColumn);
+			}	
+		}
+		
+		// Initialise:
 		this.lhsColumnPointer = lhsColumnPointer;
 		this.comparison = comparison;
-		this.rhsValue = lhsColumnPointer.getColumn().convert(rhsValue); // convert to column type!
+		this.rhsValue = lhsColumn.convert(rhsValue); // convert to column type!
 	}
 	
 	/**
@@ -159,6 +189,13 @@ public class RuleConstraint extends Constraint
 	
 	private <CC extends ComparableColumn<C>, C> RuleConstraint(ColumnPointer<? extends ComparableColumn<?>> lhsColumnPointer, ColumnPointer<? extends ComparableColumn<?>> rhsColumnPointer, Comparison comparison)
 	{
+		// Column null checks:
+		if(lhsColumnPointer == null || /*not possible(?), but just in case:*/ lhsColumnPointer.getColumn() == null)
+			throw new NullPointerException("Please provide a non-null column(pointer)");
+		if(rhsColumnPointer == null || /*not possible(?), but just in case:*/ rhsColumnPointer.getColumn() == null)
+			throw new NullPointerException("Please provide a non-null column(pointer)");
+		
+		// Initialise:
 		this.lhsColumnPointer = lhsColumnPointer;
 		this.comparison = comparison;
 		this.rhsColumnPointer = rhsColumnPointer;
