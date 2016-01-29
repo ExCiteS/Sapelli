@@ -591,7 +591,7 @@ public class RecordsPayload extends Payload
 	@Override
 	public boolean acknowledgeReception()
 	{
-		return true;
+		return true; // !!!
 	}
 	
 	@Override

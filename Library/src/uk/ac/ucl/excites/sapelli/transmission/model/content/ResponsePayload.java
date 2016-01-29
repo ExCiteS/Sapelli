@@ -59,7 +59,7 @@ public abstract class ResponsePayload extends Payload
 		this.subjectSenderSideID = subject.getRemoteID();
 		this.subjectPayloadHash = subject.getPayloadHash();
 		this.subjectReceiverSideID = subject.isLocalIDSet() ? subject.getLocalID() : null;
-		this.subjectReceivedAt = subject.getReceivedAt();
+		this.subjectReceivedAt = subject.getReceivedAt() != null ? subject.getReceivedAt() : TimeStamp.now(); // use *now* if no receiving time is set on subject!
 	}
 	
 	/**

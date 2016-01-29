@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.transmission.control;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -182,14 +180,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	public synchronized void sendRecords(Model model, Correspondent receiver)
 	{
-		List<Record> recsToSend = new ArrayList<Record>();
-		
-		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
-		CollectionUtils.addAllIgnoreNull(recsToSend, transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
-		
-		//Also include transmittable records which have a transmission which was never sent or for which we haven't received a response since the timeout:
-		CollectionUtils.addAllIgnoreNull(recsToSend, transmissionStore.retrieveTransmittableRecordsForResending(receiver, model));
-		
+		// Retrieve records of given model that need to be sent to given receiver:
+		List<Record> recsToSend = transmissionStore.retrieveRecordsToTransmitNow(receiver, model);
 		addLogLine("Records to send: " + recsToSend.size());
 
 		// Create RecordsPayloads & Transmissions (add as many records as possible to each):

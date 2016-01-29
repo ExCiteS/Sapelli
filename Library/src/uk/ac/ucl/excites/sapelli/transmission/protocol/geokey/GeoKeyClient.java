@@ -131,7 +131,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 	/**
 	 * @param gkTransmission
 	 */
-	public void send(GeoKeyTransmission gkTransmission)
+	public void send(final GeoKeyTransmission gkTransmission)
 	{
 		// Log sending attempt:
 		client.logInfo("Attempting sending of GeokeyTransmission (id: " + gkTransmission.getLocalID() + ")...");
@@ -148,18 +148,19 @@ public abstract class GeoKeyClient implements Payload.Handler
 		}		
 		//else: we are now connected/logged-in...
 		
-		// Save account (new access_token / display_name may have been set):
+		// Set mock remote ID as local ID (necessary for sending mock responses below):
+		gkTransmission.setRemoteID(gkTransmission.getLocalID());
+		
+		// Save transmission (for remoteID) & server (new access_token / display_name may have been set):
 		client.transmissionStoreHandle.executeNoEx(new StoreOperation<TransmissionStore, DBException>()
 		{
 			@Override
 			public void execute(TransmissionStore store) throws DBException
 			{
+				store.store(gkTransmission);
 				store.store(server);
 			}
 		});
-
-		// Set mock remote ID as local ID (necessary for sending mock responses below):
-		gkTransmission.setRemoteID(gkTransmission.getLocalID());
 		
 		// Handle payload:
 		try

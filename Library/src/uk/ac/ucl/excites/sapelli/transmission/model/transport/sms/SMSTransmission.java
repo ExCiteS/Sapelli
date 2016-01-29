@@ -144,11 +144,11 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 		if(!parts.isEmpty())
 		{	// Each message that's received after the first one must have a matching remote transmission id, payload hash, sender & total # of parts:
 			String error = null;
-			if((received ? getRemoteID() : getLocalID()) != msg.getSendingSideTransmissionID())
+			if((incoming ? getRemoteID() : getLocalID()) != msg.getSendingSideTransmissionID())
 				error = "sending-side ID mismatch";
 			else if(getPayloadHash() != msg.getPayloadHash())
 				error = "Payload hash mismatch";
-			else if(received && !correspondent.equals(msg.getSender()))
+			else if(incoming && !correspondent.equals(msg.getSender()))
 				error = "sender mismatch";
 			else if(parts.first().getTotalParts() != msg.getTotalParts())
 				error = "different total number of parts";

@@ -137,7 +137,7 @@ public abstract class Message<M extends Message<M, C>, C> implements Comparable<
 		this.deliveredAt = deliveredAt;
 		this.receivedAt = receivedAt;
 		this.payloadHash = transmission.getPayloadHash();
-		if(transmission.received) //Alternative: if(!isSent() && isReceived())
+		if(transmission.incoming) //Alternative: if(!isSent() && isReceived())
 		{	// if on receiving side:
 			this.sender = transmission.getCorrespondent();
 			this.sendingSideTransmissionID = transmission.getRemoteID();

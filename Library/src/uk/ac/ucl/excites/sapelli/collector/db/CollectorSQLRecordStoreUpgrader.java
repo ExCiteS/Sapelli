@@ -34,7 +34,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * @author mstevens
@@ -83,18 +82,7 @@ public class CollectorSQLRecordStoreUpgrader extends SQLRecordStoreUpgrader impl
 			if(schema == ProjectRecordStore.HFK_SCHEMA)
 				return "Relationship_HFKs";
 			// From old TransmissionClient:
-			if(schema == TransmissionStore.SENT_TRANSMISSION_SCHEMA)
-				return "Sent_Transmissions";
-			if(schema == TransmissionStore.SENT_TRANSMISSION_PART_SCHEMA)
-				return "Sent_Transmission_Parts";
-			if(schema == TransmissionStore.RECEIVED_TRANSMISSION_SCHEMA)
-				return "Received_Transmissions";
-			if(schema == TransmissionStore.RECEIVED_TRANSMISSION_PART_SCHEMA)
-				return "Received_Transmission_Parts";
-			if(schema == TransmissionStore.CORRESPONDENT_SCHEMA)
-				return "Correspondents";
-			if(schema == TransmissionStore.TRANSMITTABLE_RECORDS_SCHEMA)
-				return "TransmitableRecords";
+			// 	(nothing, we never released a version with transmission support prior to beta 17)
 			// From old StorageClient:
 			if(schema == Model.MODEL_SCHEMA)
 				return "Models";
