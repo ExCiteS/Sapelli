@@ -95,7 +95,7 @@ public final class CollectorAttachmentUtils
 						for(int i = 0; i < mf.getAttachmentCount(record); i++)
 						{
 							MediaFile attachment = mf.getAttachment(fsp, record, i);
-							if(!excludeNonExisting || FileHelpers.isReadableFile(attachment.file))
+							if(attachment != null && (!excludeNonExisting || FileHelpers.isReadableFile(attachment.file)))
 								attachments.add(attachment);
 						}
 					}
