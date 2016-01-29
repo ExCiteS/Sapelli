@@ -125,8 +125,10 @@
             android:enabled="true"
             android:exported="false" >
             <intent-filter>
-                <action android:name="@string/action_sms_sent" />
-                <action android:name="@string/action_sms_delivered" />
+                <!-- These *must* @string/action_sms_sent and @string/action_sms_delivered,
+                	 but sadly Google Play does not allow us to use String resources in intent-filters -->
+                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_SENT" />
+                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_DELIVERED" />
             </intent-filter>
         </receiver>
         
