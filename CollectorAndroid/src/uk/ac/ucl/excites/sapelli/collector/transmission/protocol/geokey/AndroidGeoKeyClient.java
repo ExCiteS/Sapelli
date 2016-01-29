@@ -478,7 +478,7 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 				if(document != null && document.has(JSON_KEY_NAME))
 					existingDocumentNames.add(document.optString(JSON_KEY_NAME));
 			}
-				
+			
 			// Upload files that don't exist on the server:
 			boolean failure = false;
 			for(Attachment attachment : attachments)
@@ -490,8 +490,9 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 				{
 					client.logInfo("File \"" + name + "\" already exists on the server, no uploading needed.");
 					continue; // file already exists on server
-				}
+				}				
 				// Upload file:
+				client.logInfo("Attempting to uploading file \"" + name + "\"...");
 				handler = postWithJSONResponse(
 					contributionMediaURL,
 					getNewHeaders(token),
