@@ -449,10 +449,12 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 				Log.e(TAG, "Server has no GeoKey category for form " + form.id);
 				return false;
 			}
-			ResponseHandler handler = getWithJSONResponse(
-				getAbsoluteUrl(server, getSapelliProjectURL() + "find_observation/" + gkCategoryID.toString() + "/" + TimeStampUtils.getISOTimestamp(Form.GetStartTime(record), true) + "/" + Long.toString(Form.GetDeviceID(record)) + "/"),
-				getNewHeaders(token),
-				null);
+			ResponseHandler handler = postWithJSONResponse(
+					getAbsoluteUrl(server, getSapelliProjectURL() + "find_observation/" + gkCategoryID.toString() + "/"),
+					getNewHeaders(token),
+					getNewRequestParams(token)
+						.putt("sap_rec_StartTime", TimeStampUtils.getISOTimestamp(Form.GetStartTime(record), true))
+						.putt("sap_rec_DeviceID", Long.toString(Form.GetDeviceID(record))));
 			if(!checkResponseObject(handler, JSON_KEY_OBSERVATION_ID))
 			{
 				logError(handler, "Could not get contribution ID for record (PK: " + record.getReference().toString() + ")"); // no such Project or observation
@@ -535,7 +537,8 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	{
 		String logMsg = msg +
 			(handler.hasResponseObject() && handler.getResponseObject().has(JSON_KEY_ERROR) ?
-				"; server response: " + handler.getResponseObject().optString(JSON_KEY_ERROR) : "");
+				"; server response: " + handler.getResponseObject().optString(JSON_KEY_ERROR) : "") +
+			" [URL: " + handler.getRequestURI() + "]";
 		if(handler.hasError())
 			Log.e(TAG, logMsg, handler.getError());
 		else
@@ -565,17 +568,21 @@ public class AndroidGeoKeyClient extends GeoKeyClient
 	
 	private ResponseHandler getWithJSONResponse(String absoluteUrl, List<Header> headers, RequestParams params)
 	{
-		ResponseHandler response = new ResponseHandler();
+		ResponseHandler handler = new ResponseHandler(absoluteUrl);
+		
 		// Blocking!:
-		HttpClient.get(app, absoluteUrl, toArray(headers), params, response);
-		return response;
+		HttpClient.get(app, absoluteUrl, toArray(headers), params, handler);
+		
+		return handler;
 	}
 
 	private ResponseHandler postWithJSONResponse(String absoluteUrl, List<Header> headers, RequestParams params)
 	{
-		ResponseHandler handler = new ResponseHandler();
+		ResponseHandler handler = new ResponseHandler(absoluteUrl);
+		
 		// Blocking!:
 		HttpClient.post(app, absoluteUrl, toArray(headers), params, null /*contentType*/, handler);
+		
 		return handler;
 	}
 	

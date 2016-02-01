@@ -52,7 +52,7 @@ public abstract class GeoKeyClient implements Payload.Handler
 	static protected final String PATH_API_GEOKEY_SAPELLI = "api/sapelli/";
 	
 	static public final String MINIMAL_GEOKEY_VERSION = "0.9";
-	static public final String MINIMAL_GEOKEY_SAPELLI_VERSION = "0.7.0";
+	static public final String MINIMAL_GEOKEY_SAPELLI_VERSION = "0.7.1";
 	static protected final String EXTENSION_GEOKEY_SAPELLI = "geokey_sapelli";
 	
 	static protected final String JSON_KEY_GEOKEY = "geokey";

@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.shared.util.android.http;
 
+import java.net.URI;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -36,6 +38,11 @@ public class ResponseHandler extends JsonHttpResponseHandler
 	private JSONArray responseArray;
 	private String responseString;
 	private Throwable error;
+
+	public ResponseHandler(String url)	
+	{
+		setRequestURI(URI.create(url).normalize());
+	}
 
 	public boolean hasResponseObject()
 	{
