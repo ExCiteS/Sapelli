@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.Helpers
  * 
  * @author Michalis Vitos, mstevens
  */
-public abstract class OutgoingSMSBroadcastReceiver extends BroadcastReceiver
+public class OutgoingSMSBroadcastReceiver extends BroadcastReceiver
 {
 	
 	/**
