@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -462,9 +462,10 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#validate(java.lang.Object)
 	 */
 	@Override
-	protected void validate(VS record) throws InvalidValueException
+	protected void validate(VS valueSet) throws InvalidValueException
 	{
-		// does nothing
+		if(!valueSet.getColumnSet().equals(columnSet))
+			throw new InvalidValueException("ColumnSet mismatch (given valueSet is of " + valueSet.getColumnSet().toString() + "; expected: " + columnSet.toString() + ")", this);
 	}
 
 	@Override

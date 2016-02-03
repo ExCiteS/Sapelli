@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ import org.joda.time.format.ISODateTimeFormat;
 public class TimeUtils
 {
 
-	public static final int ONE_HOUR_MS = 60 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
+	static public final int SEC_IN_MIN = 60;
+	public static final int ONE_HOUR_MS = 60 /* minutes */* SEC_IN_MIN /* seconds */* 1000 /* milliseconds */;
 	public static final int QUARTER_OF_AN_HOUR_MS = 15 /* minutes */* 60 /* seconds */* 1000 /* milliseconds */;
 	
 	public static final DateTimeFormatter ISOWithMSFormatter = ISODateTimeFormat.dateTime();

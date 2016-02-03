@@ -2,7 +2,7 @@
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
-	Copyright 2012-2014 University College London - ExCiteS group
+	Copyright 2012-2016 University College London - ExCiteS group
 	
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -21,26 +21,96 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <ListView
-        android:id="@+id/listReceivers"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginBottom="3dp"
-        android:cacheColorHint="#fff"
-        android:choiceMode="singleChoice"
-        android:background="@drawable/drop_shadow"
-        android:divider="@color/dropShadowInnerOpaque"
-        android:dividerHeight="1dip" >
-
-        <requestFocus />
-    </ListView>
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="4dp" >
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/receivers" />
     
-    <Button
-        android:id="@+id/btnAddReceiver"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:text="@string/add" />
+	    <ListView
+	        android:id="@+id/listReceivers"
+	        android:layout_width="match_parent"
+	        android:layout_height="0dp"
+	        android:layout_marginBottom="3dp"
+	        android:layout_weight="1"
+	        android:padding="4dp"
+	        android:background="@drawable/drop_shadow"
+	        android:cacheColorHint="#fff"
+	        android:choiceMode="singleChoice"
+	        android:divider="@color/dropShadowInnerOpaque"
+	        android:dividerHeight="1dip" >
+	        <requestFocus />
+	    </ListView>
+
+       <Button
+           android:id="@+id/btnAddReceiver"
+           style="?android:attr/buttonStyleSmall"
+           android:layout_width="80dp"
+           android:layout_height="40dp"
+           android:layout_gravity="end"
+           android:text="@string/neww" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/receiveData" />
+
+        <LinearLayout
+            android:id="@+id/switchReceiveBinSMS"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:orientation="horizontal"
+            android:padding="4dp" >
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/receiveBinarySMS"
+                android:padding="2dp"
+                android:src="@drawable/ic_sms_bin_black_24dp" />
+
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="fill_parent"
+                android:clickable="false"
+                android:text="@string/receiveBinarySMS" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/switchReceiveTxtSMS"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp" >
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/receiveTextualSMS"
+                android:padding="2dp"
+                android:src="@drawable/ic_sms_txt_black_24dp" />
+
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="fill_parent"
+                android:clickable="false"
+                android:text="@string/receiveTextualSMS" />
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

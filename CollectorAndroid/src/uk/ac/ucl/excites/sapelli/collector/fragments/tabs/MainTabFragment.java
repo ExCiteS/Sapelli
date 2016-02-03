@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
 import android.view.View;
@@ -94,14 +95,14 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 			imgShortcut.setImageDrawable(ProjectRunHelpers.getShortcutDrawable(getOwner(), getOwner().getFileStorageProvider(), project));
 			
 			// Query for project data:
-			ProjectTasks.RunProjectDataQueries(getOwner(), project, true, new ProjectTasks.ProjectDataCallback()
+			ProjectTasks.RunProjectDataQueries(getOwner(), project, true /*exclude non-existing media files*/, new ProjectTasks.ProjectDataCallback()
 			{
 				@Override
-				public void projectDataQuerySuccess(List<Record> records, List<MediaFile> mediaFiles)
+				public void projectDataQuerySuccess(List<Record> records, Map<Record, List<MediaFile>> mediaFilesByRecord, int mediaFileCount)
 				{
 					// Data stats:
 					lblNumberOfRecords.setText("" + records.size());
-					lblNumberOfMediaFiles.setText("" + mediaFiles.size());
+					lblNumberOfMediaFiles.setText("" + mediaFileCount);
 					
 					// Enable export/delete buttons if there is data:
 					btnExportData.setEnabled(!records.isEmpty());
@@ -160,14 +161,14 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 		ProjectTasks.RunProjectDataQueries(owner, project, true, new ProjectTasks.ProjectDataCallback()
 		{
 			@Override
-			public void projectDataQuerySuccess(final List<Record> records, final List<MediaFile> mediaFiles)
+			public void projectDataQuerySuccess(final List<Record> records, final Map<Record, List<MediaFile>> mediaFilesByRecord, int mediaFileCount)
 			{
 				// Confirm deletion ...
 				owner.showOKCancelDialog(
 					R.string.delete_data,
-					mediaFiles.isEmpty() ?
+					mediaFileCount == 0 ?
 						String.format(owner.getString(R.string.deleteRecordsConfirmation), records.size(), project.toString(false)) :
-						String.format(owner.getString(R.string.deleteRecordsAndMediaConfirmation), records.size(), mediaFiles.size(), project.toString(false)),
+						String.format(owner.getString(R.string.deleteRecordsAndMediaConfirmation), records.size(), mediaFileCount, project.toString(false)),
 					R.drawable.ic_delete_black_36dp,
 					false,
 					new Runnable()
@@ -183,8 +184,9 @@ public class MainTabFragment extends ProjectManagerTabFragment implements OnClic
 								public void deleteSuccess(List<Record> deletedRecords)
 								{
 									// ... and media files ...
-									for(MediaFile mediaFile : mediaFiles)
-										mediaFile.delete();
+									for(List<MediaFile> mediaFiles : mediaFilesByRecord.values())
+										for(MediaFile mediaFile : mediaFiles)
+											mediaFile.delete();
 									refresh();
 								}
 								

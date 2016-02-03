@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.BitFlagConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.CompositeConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.DummyConstraint;
@@ -2404,7 +2405,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				 */
 				if(sqlCol.isBoolColForAllOptionalValueSetCol() && sapValue != null)
 				{	// Equality constraint (but not a null comparison) on composite column represented by a boolean SColumn:
-					Constraint.Accept(new AndConstraint(EqualityConstraint.IsNotNull(cp), splitCompositeEquality(equalityConstr)).reduce(), this);
+					Constraint.Accept(
+						(equalityConstr.isEqual() ? new AndConstraint() : new OrConstraint())
+						.addConstraint(equalityConstr.isEqual() ? EqualityConstraint.IsNotNull(cp) : EqualityConstraint.IsNull(cp))
+						.addConstraint(splitCompositeEquality(equalityConstr))
+						.reduce(),
+						this);
 				}
 				else
 				{	// Equality constraint on non-composite (leaf) column (general case), or null comparison on a composite column represented by a boolean SColumn:
@@ -2439,12 +2445,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		private Constraint splitCompositeEquality(EqualityConstraint equalityConstr)
 		{
-			AndConstraint andConstr = new AndConstraint();
+			CompositeConstraint composite = equalityConstr.isEqual() ? new AndConstraint() : new OrConstraint();
 			List<SColumn> subSqlCols = table.getSQLColumns((ValueSetColumn<?, ?>) equalityConstr.getColumnPointer().getColumn());
 			ValueSet<?> valueSet = (ValueSet<?>) equalityConstr.getValue();
 			for(SColumn subSqlCol : subSqlCols)
-					andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, valueSet != null ? subSqlCol.sourceColumnPointer.retrieveValue(valueSet) : null));
-			return andConstr.reduce(); 
+				composite.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, valueSet != null ? subSqlCol.sourceColumnPointer.retrieveValue(valueSet) : null, equalityConstr.isEqual()));
+			return composite.reduce(); 
 		}
 
 		@Override

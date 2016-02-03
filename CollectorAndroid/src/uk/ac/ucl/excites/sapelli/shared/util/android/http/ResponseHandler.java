@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2015 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
  */
 
 package uk.ac.ucl.excites.sapelli.shared.util.android.http;
+
+import java.net.URI;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,6 +38,11 @@ public class ResponseHandler extends JsonHttpResponseHandler
 	private JSONArray responseArray;
 	private String responseString;
 	private Throwable error;
+
+	public ResponseHandler(String url)	
+	{
+		setRequestURI(URI.create(url).normalize());
+	}
 
 	public boolean hasResponseObject()
 	{

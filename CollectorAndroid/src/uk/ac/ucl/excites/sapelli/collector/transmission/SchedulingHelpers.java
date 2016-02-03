@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
@@ -40,6 +41,26 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 public final class SchedulingHelpers
 {
 	
+	static public final int ANDROID_22_MINIMAL_ALARM_INTERVAL_SECONDS = 60;
+	
+	/**
+	 * Checks if the interval is no too short.
+	 * Also accounts for the (undocumented!) change in Android_v5.1/API22 which enforces a minimum of 60 seconds.
+	 * 
+	 * @param transmitIntervalS the schedule interval as configured by the user (in seconds)
+	 * @return the effective interval as allowed on the device (also in seconds)
+	 * 
+	 * @see https://code.google.com/p/android/issues/detail?id=161244
+	 */
+	static public int getEffectiveAlarmIntervalSeconds(int transmitIntervalS)
+	{
+		if(transmitIntervalS < SendSchedule.MINIMUM_TRANSMIT_INTERVAL_SECONDS)
+			transmitIntervalS = SendSchedule.MINIMUM_TRANSMIT_INTERVAL_SECONDS;
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && transmitIntervalS < ANDROID_22_MINIMAL_ALARM_INTERVAL_SECONDS)
+			transmitIntervalS = ANDROID_22_MINIMAL_ALARM_INTERVAL_SECONDS;
+		return transmitIntervalS;
+	}
+	
 	private SchedulingHelpers() {}
 
 	private static final String TAG = SchedulingHelpers.class.getSimpleName();
@@ -48,6 +69,15 @@ public final class SchedulingHelpers
 	 * Default delay (of half a minute) between setting of alarm for a SendSchedule and the time it first goes off.
 	 */
 	private static final int DEFAULT_ALARM_DELAY_MS = 30 * 1000;
+	
+	/**
+	 * @param context
+	 * @param sendSchedule
+	 */
+	public static void ScheduleForImmediateTransmission(Context context, SendSchedule sendSchedule)
+	{
+		context.startService(GetDataSendingServiceIntent(context, sendSchedule.getID()));
+	}
 	
 	/**
 	 * @param context
@@ -112,10 +142,10 @@ public final class SchedulingHelpers
 		{
 			int intervalMillis = sendSchedule.getTransmitIntervalS() * 1000;
 			GetAlarmManager(context).setRepeating(
-				AlarmManager.ELAPSED_REALTIME_WAKEUP, // TODO should we really be waking up the device for this?
+				AlarmManager.ELAPSED_REALTIME,
 				SystemClock.elapsedRealtime() + triggerDelay,
 				intervalMillis,
-				GetDataSendingIntent(context, sendSchedule.getID()));
+				GetDataSendingPendingIntent(context, sendSchedule.getID()));
 				
 			Log.d(TAG, "Set SendSchedule (id: " + sendSchedule.getID() + ") alarm for project \"" + sendSchedule.getProject().toString(false) + "\", and receiver \"" + sendSchedule.getReceiver().toString() + "\" to expire every " + intervalMillis + "ms after a delay of " + triggerDelay + "ms.");
 		}
@@ -156,7 +186,7 @@ public final class SchedulingHelpers
 	{
 		try
 		{
-			GetAlarmManager(context).cancel(GetDataSendingIntent(context, sendScheduleId));
+			GetAlarmManager(context).cancel(GetDataSendingPendingIntent(context, sendScheduleId));
 			Log.d(TAG, "Canceled alarm for SendSchedule with id " + sendScheduleId);
 		}
 		catch(Exception e)
@@ -174,16 +204,21 @@ public final class SchedulingHelpers
 		return (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 	}
 	
-	/**
-	 * @return PendingIntent to start DataSendingService to send data according to the SendSchedule with given id.
-	 */
-	private static PendingIntent GetDataSendingIntent(Context context, int sendScheduleID)
+	private static Intent GetDataSendingServiceIntent(Context context, int sendScheduleID)
 	{
 		// Create the PendingIntent for the DataSenderService:
 		Intent serviceIntent = new Intent(context, DataSendingService.class);
 		// Action (matched by Intent.filterEquals(Intent)):
 		serviceIntent.setAction(DataSendingService.getIntentAction(sendScheduleID));
-		return PendingIntent.getService(context, sendScheduleID, serviceIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+		return serviceIntent;
+	}
+	
+	/**
+	 * @return PendingIntent to start DataSendingService to send data according to the SendSchedule with given id.
+	 */
+	private static PendingIntent GetDataSendingPendingIntent(Context context, int sendScheduleID)
+	{
+		return PendingIntent.getService(context, sendScheduleID, GetDataSendingServiceIntent(context, sendScheduleID), PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 	
 	/**

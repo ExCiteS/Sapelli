@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2015 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,11 @@ public final class CollectorAttachmentUtils
 	 */
 	static public List<MediaFile> getMediaFiles(Project project, Record record, FileStorageProvider fsp, boolean excludeNonExisting)
 	{
-		return getMediaFiles(Collections.singletonList(project), Collections.singletonList(record), fsp, excludeNonExisting);
+		Map<Record, List<MediaFile>> mediaFilesByRec = getMediaFiles(Collections.singletonList(project), Collections.singletonList(record), fsp, excludeNonExisting);
+		if(mediaFilesByRec == null || !mediaFilesByRec.containsKey(record))
+			return Collections.<MediaFile> emptyList();
+		else
+			return mediaFilesByRec.get(record);
 	}
 	
 	/**
@@ -62,7 +66,7 @@ public final class CollectorAttachmentUtils
 	 * @param excludeNonExisting whether or not to exclude non-existing MediaFiles
 	 * @return
 	 */
-	static public List<MediaFile> getMediaFiles(List<Project> projects, List<Record> records, FileStorageProvider fsp, boolean excludeNonExisting)
+	static public Map<Record, List<MediaFile>> getMediaFiles(List<Project> projects, List<Record> records, FileStorageProvider fsp, boolean excludeNonExisting)
 	{
 		// Populate schema->form map:
 		final Map<Schema, Form> schema2Form = new HashMap<Schema, Form>();
@@ -85,9 +89,11 @@ public final class CollectorAttachmentUtils
 			formRecs.add(r);
 		}
 		// Scan for attachments:
-		final List<MediaFile> attachments = new ArrayList<MediaFile>();
+		Map<Record, List<MediaFile>> record2attachments = new HashMap<Record, List<MediaFile>>(records.size());
 		for(Form form : recordsByForm.keySet())
 			for(Record record : recordsByForm.get(form))
+			{
+				List<MediaFile> attachments = new ArrayList<MediaFile>();
 				for(Field field : form.getFields())
 					if(field instanceof MediaField)
 					{
@@ -95,11 +101,14 @@ public final class CollectorAttachmentUtils
 						for(int i = 0; i < mf.getAttachmentCount(record); i++)
 						{
 							MediaFile attachment = mf.getAttachment(fsp, record, i);
-							if(!excludeNonExisting || FileHelpers.isReadableFile(attachment.file))
+							if(attachment != null && (!excludeNonExisting || FileHelpers.isReadableFile(attachment.file)))
 								attachments.add(attachment);
 						}
 					}
-		return attachments;
+				if(!attachments.isEmpty())
+					record2attachments.put(record, attachments);
+			}
+		return record2attachments;
 	}
 
 }

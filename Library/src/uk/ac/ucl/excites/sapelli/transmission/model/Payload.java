@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,10 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelAccessUnauthorisedPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -54,12 +56,12 @@ public abstract class Payload
 	static public enum BuiltinType
 	{
 		Records,
-		Files,
 		Ack,
 		ResendRequest,
 		ModelQuery,
 		ModelRequest,
-		Model,
+		ModelAccessUnauthorised,
+		NoSuchTransmission,
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
 	
@@ -79,10 +81,24 @@ public abstract class Payload
 				return new ModelQueryPayload();
 			case ModelRequest:
 				return new ModelRequestPayload();
-			case Model:
-			case Files:
+			case NoSuchTransmission:
+				return new NoSuchTransmissionPayload();
 			default:
 				throw new IllegalArgumentException("Unsupported/Unimplemented Payload type: " + type.name());
+		}
+	}
+	
+	static public BuiltinType getBuiltinType(int payloadType)
+	{
+		// Try to instantiate Payload object for the type: 
+		if(payloadType >= MAX_BUILTIN_TYPES)
+			return null;
+		else
+		{
+			if(payloadType >= 0 && payloadType < BuiltinType.values().length)
+				return BuiltinType.values()[payloadType];
+			else
+				return null;
 		}
 	}
 	
@@ -129,6 +145,10 @@ public abstract class Payload
 		public void handle(ModelQueryPayload modelQueryPayload) throws Exception;
 		
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception;
+
+		public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception;
+		
+		public void handle(NoSuchTransmissionPayload noSuchTransmissionPayload) throws Exception;
 		
 		/**
 		 * Handle method for non-built-in payload types
@@ -137,7 +157,7 @@ public abstract class Payload
 		 * @param type
 		 */
 		public void handle(Payload customPayload, int type) throws Exception;
-		
+
 	}
 	
 	static protected byte[][] Compress(BitArray data, Compression[] modes) throws IOException

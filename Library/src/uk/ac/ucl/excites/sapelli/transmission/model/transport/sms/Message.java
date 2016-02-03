@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ public abstract class Message<M extends Message<M, C>, C> implements Comparable<
 		this.deliveredAt = deliveredAt;
 		this.receivedAt = receivedAt;
 		this.payloadHash = transmission.getPayloadHash();
-		if(transmission.received) //Alternative: if(!isSent() && isReceived())
+		if(transmission.incoming) //Alternative: if(!isSent() && isReceived())
 		{	// if on receiving side:
 			this.sender = transmission.getCorrespondent();
 			this.sendingSideTransmissionID = transmission.getRemoteID();

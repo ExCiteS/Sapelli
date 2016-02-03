@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,5 +243,24 @@ public class SMSCorrespondent extends Correspondent
 		hash = 31 * hash + phoneNumber.hashCode();
 		return hash;
 	}
+	
+	@Override
+	public boolean canBeSwappedWithoutNewModelQuery(Correspondent another)
+	{
+		if(this == another)
+			return true;
+		if(another instanceof SMSCorrespondent)
+		{
+			SMSCorrespondent that = (SMSCorrespondent) another;
+			return this.phoneNumber.equals(that.phoneNumber);
+		}
+		return false;
+	}
 
+	@Override
+	public boolean receivesAttachments()
+	{
+		return false;
+	}
+	
 }

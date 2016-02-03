@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public abstract class ResponsePayload extends Payload
 		this.subjectSenderSideID = subject.getRemoteID();
 		this.subjectPayloadHash = subject.getPayloadHash();
 		this.subjectReceiverSideID = subject.isLocalIDSet() ? subject.getLocalID() : null;
-		this.subjectReceivedAt = subject.getReceivedAt();
+		this.subjectReceivedAt = subject.getReceivedAt() != null ? subject.getReceivedAt() : TimeStamp.now(); // use *now* if no receiving time is set on subject!
 	}
 	
 	/**

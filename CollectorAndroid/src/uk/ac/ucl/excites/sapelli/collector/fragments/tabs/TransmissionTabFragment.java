@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.tabs;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -41,18 +40,22 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.dialogs.SendScheduleFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.MediaFile;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.tasks.ProjectTasks;
+import uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendSchedule;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.shared.util.android.AdvancedSpinnerAdapter;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
 /**
  * Fragment that defines the project manager layout per project (tabs)
@@ -62,8 +65,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener
 {
 
-	public static final float SEC_IN_MIN = 60.0f;
-	
 	// Views
 	//	Sending...
 	private LinearLayout sendHeader;	
@@ -75,7 +76,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	private LinearLayout receiveHeader;
 	private SwitchCompat switchReceive;
 	private LinearLayout receiveSettings;
-	private Set<SwitchCompat> receiveSwitches = new HashSet<SwitchCompat>();
 	
 	// Adapter:
 	private SendScheduleAdapter listScheduleAdapter;
@@ -111,15 +111,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
 		switchReceive.setOnClickListener(this);
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
-		addReceiveSwitch(Transmission.Type.BINARY_SMS, (SwitchCompat) rootLayout.findViewById(R.id.switchReceiveBinSMS));
-		addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (SwitchCompat) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
-	}
-	
-	private void addReceiveSwitch(Transmission.Type transmissionType, SwitchCompat receiveSwitch)
-	{
-		receiveSwitch.setTag(transmissionType);
-		receiveSwitch.setOnClickListener(this);
-		receiveSwitches.add(receiveSwitch);
 	}
 	
 	@Override
@@ -143,16 +134,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				break;
 			}
 		toggleConfigGroup(true, sendingEnabled);
-		
-		// Update receiving config UI parts:
-		boolean receivingEnabled = false;
-		for(SwitchCompat receiveSwitch : receiveSwitches)
-		{
-			receiveSwitch.setChecked(getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitch.getTag()));
-			if(receiveSwitch.isChecked())
-				receivingEnabled = true;
-		}
-		toggleConfigGroup(false, receivingEnabled);
 	}
 	
 	private void toggleConfigGroup(boolean send, boolean enabled)
@@ -177,7 +158,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 					if(listScheduleAdapter.isEmpty()) // if there is no schedule make one...
 						SendScheduleFragment.ShowAddDialog(this);
 					//else
-						// TODO enable all schedules
+						// TODO enable all schedules?
 				}
 				else
 				{	// Sending is being switched off:
@@ -189,17 +170,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				break;
 			case R.id.switchReceive :
 				toggleConfigGroup(false, switchReceive.isChecked());
-				if(!switchReceive.isChecked())
-					// Disable receiving of all transmission types:
-					for(SwitchCompat receiveSwitch : receiveSwitches)
-					{
-						receiveSwitch.setChecked(false);
-						getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitch.getTag(), false);
-					}
-				break;
-			case R.id.switchReceiveBinSMS :
-			case R.id.switchReceiveTxtSMS :
-				getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) view.getTag(), ((SwitchCompat) view).isChecked());
+				// does nothing (for now)
 				break;
 		}
 	}
@@ -212,7 +183,13 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			SendSchedule schedule = listScheduleAdapter.getItem(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
 			menu.setHeaderTitle(getString(R.string.schedule) + " for " + schedule.getReceiver().getName());
 			// Menu items: 
-			int[] menuItemTitles = new int[] { R.string.editEtc, R.string.delete };
+			int[] menuItemTitles = new int[]
+			{
+				R.string.editScheduleEtc,
+				R.string.deleteSchedule,
+				R.string.resendAllData,
+				R.string.transmissionStatisticsEtc,
+			};
 			for(int m = 0; m < menuItemTitles.length; m++)
 				menu.add(Menu.NONE, menuItemTitles[m], m, menuItemTitles[m]);
 		}
@@ -224,15 +201,78 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		SendSchedule schedule = listScheduleAdapter.getItem(((AdapterView.AdapterContextMenuInfo) item.getMenuInfo()).position);		
 		switch(item.getItemId())
 		{
-			case R.string.editEtc :
+			case R.string.editScheduleEtc :
 				SendScheduleFragment.ShowEditDialog(this, schedule); // TODO callback?
 				break;
-			case R.string.delete :
+			case R.string.deleteSchedule :
 				delete(schedule);
 				break;
+			case R.string.resendAllData :
+				sendDataNow(schedule, false);
+				break;
+			case R.string.transmissionStatisticsEtc :
+				showStatistics(schedule);
+				break;
 		}
-		
 		return true;
+	}
+	
+	private void showStatistics(final SendSchedule schedule)
+	{
+		final ProjectManagerActivity activity = getOwner();
+		if(activity == null)
+			return;
+		ProjectTasks.RunProjectDataQueries(activity, schedule.getProject(), true /*exclude non-existing media files*/, new ProjectTasks.ProjectDataCallback()
+		{
+			@Override
+			public void projectDataQuerySuccess(final List<Record> records, final Map<Record, List<MediaFile>> mediaFilesByRecord, final int mediaFileCount)
+			{
+				new AsyncTaskWithWaitingDialog<ProjectManagerActivity, Void, int[]>(activity, R.string.retrievingTransmissionStatisticsEtc, true)
+				{
+					static private final int idxReceivedRecords = 0;
+					static private final int idxReceivedAttachments = 1;
+					
+					@Override
+					protected int[] runInBackground(Void... params)
+					{
+						List<RecordReference> receivedRecRefs = activity.getTransmissionStore().retrieveReceivedRecords(schedule.getReceiver(), schedule.getProject().getModel());
+						int[] result = new int[2];
+						for(Record record : records)
+							if(receivedRecRefs.contains(record.getReference()))
+							{
+								result[idxReceivedRecords]++;
+								if(schedule.getReceiver().receivesAttachments())
+								{
+									List<MediaFile> receivedMediaFiles = mediaFilesByRecord.get(record);
+									result[idxReceivedAttachments] += (receivedMediaFiles != null ? receivedMediaFiles.size() : 0);
+								}
+							}
+						return result;
+					}
+
+					@Override
+					protected void onPostExecute(int[] result)
+					{
+						super.onPostExecute(result);
+						activity.showOKDialog(
+								R.string.tab_transmission,
+								activity.getString(
+									R.string.transmissionStatisticsMsg,
+									schedule.getReceiver().getName(),
+									result[idxReceivedRecords] + "/" + records.size(),
+									result[idxReceivedAttachments] + "/" + mediaFileCount,
+									schedule.getProject().toString(false)),
+								R.drawable.ic_transfer_black_36dp);
+					}
+				}.execute();
+			}
+			
+			@Override
+			public void projectDataQueryFailure(Exception reason)
+			{
+				Log.e(getClass().getSimpleName(), "Error upon retrieving project data", reason);
+			}
+		});
 	}
 	
 	public void disableSending()
@@ -284,38 +324,59 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			// Refresh schedules:
 			listScheduleAdapter.add(schedule);
 			
-			// Query for currently existing project data & propose transmission: 
-			ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), true, new ProjectTasks.ProjectDataCallback()
-			{
-				@Override
-				public void projectDataQuerySuccess(final List<Record> records, List<MediaFile> mediaFiles)
-				{
-					if(!records.isEmpty())
-						getOwner().showYesNoDialog(
-							R.string.tab_transmission,
-							getString(R.string.sendExistingData, records.size(), mediaFiles.size(), schedule.getReceiver().getName()),
-							R.drawable.ic_transfer_black_36dp,
-							new Runnable()
-							{
-								@Override
-								public void run()
-								{
-									getOwner().getCollectorClient().scheduleSending(records, schedule.getReceiver());
-								}
-							},
-							false, null, false);
-				}
-
-				@Override
-				public void projectDataQueryFailure(Exception reason)
-				{
-					Log.e(TransmissionTabFragment.class.getSimpleName(), "Failed to query for records", reason);
-				}
-			});
+			// Query for existing data & ask if it need to be (re)sent:
+			sendDataNow(schedule, true);
 		}
 		else
-			// Open/close sending pane:
-			toggleConfigGroup(true, !listScheduleAdapter.isEmpty());
+			// Adding/editing was cancelled, make sure UI is still up-to-date (e.g. receiver may have been deleted):
+			refresh();
+	}
+	
+	public void sendDataNow(final SendSchedule schedule, final boolean askConfirmation)
+	{
+		// Query for currently existing project data & propose transmission: 
+		ProjectTasks.RunProjectDataQueries(getOwner(), getProject(false), true, new ProjectTasks.ProjectDataCallback()
+		{
+			@Override
+			public void projectDataQuerySuccess(final List<Record> records, Map<Record, List<MediaFile>> mediaFilesByRecord, int mediaFileCount)
+			{
+				if(records.isEmpty())
+					return;
+				
+				final Runnable scheduleNowRunnable = new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						try
+						{
+							getOwner().getCollectorClient().scheduleSending(records, schedule.getReceiver());
+							SchedulingHelpers.ScheduleForImmediateTransmission(getOwner(), schedule);
+						}
+						catch(Exception e)
+						{
+							Log.e(TransmissionTabFragment.class.getSimpleName(), "Error upon sending existing data immediately", e);
+						}
+					}
+				};
+				
+				if(askConfirmation)
+					getOwner().showYesNoDialog(
+						R.string.tab_transmission,
+						getString(R.string.sendExistingDataQuestion, records.size(), mediaFileCount, schedule.getReceiver().getName()),
+						R.drawable.ic_transfer_black_36dp,
+						scheduleNowRunnable,
+						false, null, false);
+				else
+					scheduleNowRunnable.run();
+			}
+
+			@Override
+			public void projectDataQueryFailure(Exception reason)
+			{
+				Log.e(TransmissionTabFragment.class.getSimpleName(), "Failed to query for records", reason);
+			}
+		});
 	}
 	
 	public void delete(SendSchedule schedule)
@@ -380,7 +441,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			// Set settings label:
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder("; ");
 			//	Send interval:
-			bldr.append(getString(R.string.interval) + " " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / SEC_IN_MIN).toString() + " minutes");
+			bldr.append(getString(R.string.interval) + " " + Float.valueOf((float) sendSchedule.getTransmitIntervalS() / (float) TimeUtils.SEC_IN_MIN).toString() + " minutes");
 			//	Airplane mode:
 			if(DeviceControl.canSetAirplaneMode() && sendSchedule.isAirplaneModeCycling())
 				bldr.append(getString(R.string.airplaneModeCycling));

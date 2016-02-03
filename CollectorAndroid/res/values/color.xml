@@ -11,6 +11,7 @@
     <color name="light">@color/primary_material_light</color>
     
     <color name="red25percent">#40ff0000</color>
+    <color name="amber25percent">#40ffc107</color>
     <color name="grey50percent">#80808080</color>
     
     <color name="dropShadowStack0">#10CCCCCC</color>

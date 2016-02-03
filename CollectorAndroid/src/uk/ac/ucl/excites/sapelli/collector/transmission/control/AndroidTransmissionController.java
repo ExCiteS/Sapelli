@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
@@ -77,12 +76,6 @@ public class AndroidTransmissionController extends TransmissionController
 		if(smsClient == null)
 			smsClient = new AndroidSMSClient(app);
 		return smsClient;
-	}
-
-	@Override
-	public HTTPClient getHTTPClient()
-	{
-		return null;
 	}
 
 	@Override

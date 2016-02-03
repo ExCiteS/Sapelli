@@ -2,7 +2,7 @@
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
-	Copyright 2012-2014 University College London - ExCiteS group
+	Copyright 2012-2016 University College London - ExCiteS group
 	
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -62,12 +62,12 @@
         </menu>
     </item>
     
-    <item
+    <!-- <item
 	    android:id="@+id/menuitem_manage_receivers"
 	    android:icon="@drawable/ic_transfer_white_36dp"
 	    android:onClick="manageReceivers"
 	    android:title="@string/manageReceivers"
-	    compat:showAsAction="never"/>
+	    compat:showAsAction="never"/> -->
     
 	<item
 	    android:id="@+id/about_menuitem"

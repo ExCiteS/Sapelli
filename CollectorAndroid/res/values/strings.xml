@@ -2,7 +2,7 @@
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
-	Copyright 2012-2014 University College London - ExCiteS group
+	Copyright 2012-2016 University College London - ExCiteS group
 	
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
- <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collector</string>
@@ -38,7 +38,7 @@
     <string name="manageEtc">Manage&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string>
 	<string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
-	<string name="determiningDeviceID">Determining device ID…</string>
+	<string name="determiningDeviceID">Determining device ID …</string>
 	<string name="pleaseLeaveAirplaneMode">In order to initialise the application for first use, please take your device out of Airplane Mode.</string>
 	<string name="project_manager">Project Manager</string>
     <string name="switch_project">Switch to project:</string>
@@ -84,7 +84,7 @@
     <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">These files could not be found</string>
     <string name="downloading">Downloading …</string>
-    <string name="connectionError">Connection error. Please check if you are connected to the Internet.</string>
+    <string name="connectionError">Connection error. Please check if you are connected to the Internet and try again.</string>
     <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
     <string name="downloadErrorWithCause">Download error: %s.\nPlease check if you are connected to the Internet.</string>
     <string name="photoCameraErrorFatal">Cannot detect camera to take mandatory picture; cancelling record and exiting project&#8230;</string>
@@ -200,8 +200,14 @@
     <string name="sendData">Send data</string>
     <string name="receiveData">Receive data</string>
     <string name="scheduledReceivers">Scheduled receivers:</string>
-    <string name="longClickFromEditDel">(long-click to edit or delete)</string>
-    <string name="sendExistingData">Do you wish to send all existing data (%1$d records, %2$d files) to receiver %3$s?</string>
+    <string name="longClickForMoreOptions">(long-click receiver for more options)</string>
+    <string name="sendExistingDataQuestion">Do you wish to send all existing data (%1$d records, %2$d files) to %3$s now?</string>
+    <string name="editScheduleEtc">Edit schedule&#8230;</string>
+    <string name="deleteSchedule">Delete schedule</string>
+    <string name="resendAllData">(Re)send all data now</string>
+    <string name="transmissionStatisticsEtc">Transmission statistics&#8230;</string>
+    <string name="retrievingTransmissionStatisticsEtc">Retrieving transmission statistics&#8230;</string>
+    <string name="transmissionStatisticsMsg">Scheduled receiver %1$s has received (at least) %2$s records and %3$s media files related to project %4$s.</string>
     <string name="receiveBinarySMS">By binary SMS</string>
     <string name="receiveTextualSMS">By textual SMS</string>
     <string name="receiver">Receiver:</string>
@@ -218,6 +224,11 @@
     <string name="editReceiver">Edit receiver</string>
     <string name="cycleInOutOfAirplaneMode">Cycle in &amp; out of airplane mode</string>
     <string name="airplaneModeCycling">Airplane mode cycling</string>
+    <string name="queryingReceiverAboutProject">Querying receiver about project %1$s, this may take up to %2$d minutes …</string>
+    <string name="projectPresentOnReceiver">%1$s has project %2$s</string>
+    <string name="projectAbsentOnReceiver">%1$s does not have project %2$s, data transmission will likely fail.\nDo you want to use this receiver anyway?</string>
+    <string name="projectUnauthorised">You are not allowed to contribute data to project %2$s on %1$s. Make sure you are using proper credentials or ask to be granted access.\nDo you want to use this receiver anyway?</string>
+    <string name="pendingProjectQuery">We were unable to determine whether %1$s has project %2$s, perhaps this device (or the receiver) is not online or the process was cancelled.\nDo you want to use this receiver anyway?</string>
     <string name="chooseReceiverType">Choose receiver type</string>
     <string name="receiverName">Name:</string>
     <string name="pickOptionalName">Pick a name (optional):</string>
@@ -225,13 +236,18 @@
     <string name="receiverPhoneNumber">Phone number:</string>
     <string name="useBinarySMS">Use binary SMS</string>
     <string name="GeoKeyServer">GeoKey server</string>
-    <string name="geokeyServerUrl">URL:</string>
+    <string name="url">URL:</string>
+    <string name="userCredentials">User credentials:</string>
+    <string name="userCredentialsOptional">Credentials optional if anonymous contributions allowed.</string>
     <string name="username">Username:</string>
     <string name="email">E-mail address:</string>
     <string name="password">Password:</string>
     <string name="url_protocol_http">http://</string>
     <string name="url_protocol_https">https://</string>
     <string name="verifyingServerAndAccount">Checking server &amp; user credentials.</string>
+    <string name="geokeyInvalidServer">The server (%1$s) was either unreachable or is not running GeoKey (v%2$s or higher) with the geokey-sapelli extension (v%3$s or higher).</string>
+    <string name="geokeyInvalidAccount">The server could not authenticate you. Please check your e-mail address and/or password.</string>
+    <string name="verificationSuccessful">Verification successful.</string>
     <string name="emptyReceiverName">Please enter a name.</string>
     <string name="invalidPhoneNumber">Please enter a valid phone number.</string>
     <string name="uploadedFromAt">Uploaded from %1$s at %2$s.</string>

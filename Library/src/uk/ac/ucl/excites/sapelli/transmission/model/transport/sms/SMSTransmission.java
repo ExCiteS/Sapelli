@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,11 +144,11 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 		if(!parts.isEmpty())
 		{	// Each message that's received after the first one must have a matching remote transmission id, payload hash, sender & total # of parts:
 			String error = null;
-			if((received ? getRemoteID() : getLocalID()) != msg.getSendingSideTransmissionID())
+			if((incoming ? getRemoteID() : getLocalID()) != msg.getSendingSideTransmissionID())
 				error = "sending-side ID mismatch";
 			else if(getPayloadHash() != msg.getPayloadHash())
 				error = "Payload hash mismatch";
-			else if(received && !correspondent.equals(msg.getSender()))
+			else if(incoming && !correspondent.equals(msg.getSender()))
 				error = "sender mismatch";
 			else if(parts.first().getTotalParts() != msg.getTotalParts())
 				error = "different total number of parts";
@@ -233,6 +233,20 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 		if(parts.isEmpty())
 			throw new IllegalStateException("Total number of parts not known yet");	// can only happen on sending side prior to calling of wrap(), or when database retrieval was not correctly performed
 		return parts.first().getTotalParts(); // Do not use parts.size() because that is not correct for incomplete transmissions on the receiving side
+	}
+	
+	/**
+	 * @return {@code true} if at least one part has been sent, {@code false} otherwise
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Transmission#isPartiallySent()
+	 */
+	@Override
+	public boolean isPartiallySent()
+	{
+		for(M m : parts)
+			if(m.isSent())
+				return true;
+		return false;
 	}
 	
 	/**
@@ -352,6 +366,18 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 		return prev.shift(GetResendDelayMS(numberOfSentResendRequests + 1));
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Transmission#getApproprateResentTimeout()
+	 */
+	@Override
+	public int getApproprateResentTimeoutMS()
+	{
+		if(getTotalNumberOfParts() > 1)
+			return 2 * GetResendDelayMS(1); // at least 2 twice the 1st resend delay (= 24 minutes)
+		else
+			return super.getApproprateResentTimeoutMS(); // use default
+	}
+	
 	/**
 	 * @author mstevens
 	 *
@@ -420,6 +446,11 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 			store(); // !!! (no else here!)
 		}
 		
+		/**
+		 * @param msg
+		 * @param delegate
+		 * @return the latest of the timestamps or null if not all timestamps have been set 
+		 */
 		private TimeStamp getLatest(M msg, TimeStampDelegate delegate)
 		{
 			// Just in case:

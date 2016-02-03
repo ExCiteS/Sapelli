@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.model;
 
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
@@ -40,9 +40,7 @@ public abstract class Correspondent
 		
 		public void handle(SMSCorrespondent smsCorrespondent);
 		
-		// TODO http server/client?
-		
-		public void handle(GeoKeyAccount geokeyAccount);
+		public void handle(GeoKeyServer geokeyAccount);
 		
 	}
 
@@ -133,6 +131,8 @@ public abstract class Correspondent
 	 * @return the address
 	 */
 	public abstract String getAddress();
+
+	public abstract boolean receivesAttachments();
 	
 	public abstract void handle(Handler handler);
 	
@@ -187,5 +187,7 @@ public abstract class Correspondent
 		hash = 31 * hash + (userDeleted ? 0 : 1);
 		return hash;
 	}
+	
+	public abstract boolean canBeSwappedWithoutNewModelQuery(Correspondent another);
 	
 }

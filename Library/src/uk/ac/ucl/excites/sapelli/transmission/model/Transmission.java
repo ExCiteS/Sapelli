@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,17 +120,19 @@ public abstract class Transmission<C extends Correspondent>
 	
 	static protected final int UNLIMITED_BODY_SIZE = -1;
 	
+	static public final int MINIMUM_RESEND_TIMEOUT_MS = 90 * 1000; // 90 seconds
+	
 	// DYNAMICS------------------------------------------------------
 	public final TransmissionClient client;
 	
 	/**
-	 * If {@code false} this Transmission was created on the current device for sending to another device,
-	 * if {@code true} it was received on the current device by means of transmission from another one.
+	 * If {@code true} this Transmission was received on the current device by means of transmission from another one.
+	 * If {@code false} it was created on the current device for sending to another device.
 	 * Or in other words, if {@code false} we are on the sending side, if {@code true} we are on the receiving side.
 	 * 
 	 * Not to be confused with {@link #isReceived()}!
 	 */
-	public final boolean received;
+	public final boolean incoming;
 	
 	/**
 	 * ID by which this transmission is identified in the context of the local device/server
@@ -176,7 +178,7 @@ public abstract class Transmission<C extends Correspondent>
 	private TimeStamp sentAt;
 	
 	/**
-	 * used on receiving side, and on sending side if an acknowledgement was received
+	 * used on receiving side, and on sending side if an acknowledgement was received (indicating successful reception & payload decoding!)
 	 */
 	private TimeStamp receivedAt;
 	
@@ -204,7 +206,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C receiver, Payload payload)
 	{
-		this(client, receiver, false); // !!!
+		this(client, receiver, false /*outgoing*/); // !!!
 		this.payload = payload;
 		this.payload.setTransmission(this); // !!!
 		this.payloadType = payload.getType();
@@ -220,7 +222,7 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public Transmission(TransmissionClient client, C sender, int sendingSideID, int payloadHash)
 	{
-		this(client, sender, true); // !!!
+		this(client, sender, true /*incoming*/); // !!!
 		this.remoteID = sendingSideID;
 		this.payloadHash = payloadHash;
 	}
@@ -230,7 +232,7 @@ public abstract class Transmission<C extends Correspondent>
 	 * 
 	 * @param client
 	 * @param correspondent
-	 * @param received
+	 * @param incoming
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadType - may be null
@@ -239,9 +241,9 @@ public abstract class Transmission<C extends Correspondent>
 	 * @param receivedAt - may be null
 	 * @param response - may be null
 	 */
-	protected Transmission(TransmissionClient client, C correspondent, boolean received, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, Transmission<C> response)
+	protected Transmission(TransmissionClient client, C correspondent, boolean incoming, int localID, Integer remoteID, Integer payloadType, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, Transmission<C> response)
 	{
-		this(client, correspondent, received); // !!!
+		this(client, correspondent, incoming); // !!!
 		this.localID = localID;
 		this.remoteID = remoteID; 
 		this.payloadType = payloadType;
@@ -259,13 +261,14 @@ public abstract class Transmission<C extends Correspondent>
 	@SuppressWarnings("unchecked")
 	protected Transmission(ResponsePayload responsePayload)
 	{
-		this(responsePayload.getSubject().client, (C) responsePayload.getSubject().correspondent, true); // !!!
+		this(responsePayload.getSubject().client, (C) responsePayload.getSubject().correspondent, true /*incoming*/); // !!!
+		
 		this.payload = responsePayload;
 		this.payload.setTransmission(this); // !!!
 		this.payloadType = payload.getType();
-		this.sentAt = TimeStamp.now();
-		this.receivedAt = this.sentAt;
-		this.response = null;
+		TimeStamp now = TimeStamp.now();
+		this.sentAt = now;
+		this.receivedAt = now;
 	}
 	
 	/**
@@ -281,12 +284,12 @@ public abstract class Transmission<C extends Correspondent>
 	 * 
 	 * @return the payloadBitsLengthField
 	 */
-	private Transmission(TransmissionClient client, C correspondent, boolean received)
+	private Transmission(TransmissionClient client, C correspondent, boolean incoming)
 	{
-		// Set client, correspondent & received:
+		// Set client, correspondent & incoming:
 		this.client = client;
 		this.correspondent = correspondent;
-		this.received = received;
+		this.incoming = incoming;
 		
 		// Set payloadBitsLengthField:
 		if(getMaxBodyBits() == UNLIMITED_BODY_SIZE)
@@ -719,6 +722,16 @@ public abstract class Transmission<C extends Correspondent>
 		return sentAt != null;
 	}
 	
+	/**
+	 * To be overridden.
+	 * 
+	 * @return
+	 */
+	public boolean isPartiallySent()
+	{
+		return isSent();
+	}
+	
 	protected void setSentAt(TimeStamp sentAt)
 	{
 		this.sentAt = sentAt;
@@ -729,16 +742,25 @@ public abstract class Transmission<C extends Correspondent>
 		return sentAt;
 	}
 
+	/**
+	 * @return whether or not the receiving side has successfully received, decoded (& usually acknowledged) this transmission
+	 */
 	public boolean isReceived()
 	{
 		return receivedAt != null;
 	}
 
+	/**
+	 * @return the time at which this transmission was received (and successfully decoded) by the receiving side
+	 */
 	public TimeStamp getReceivedAt()
 	{
 		return receivedAt;
 	}
 	
+	/**
+	 * @param receivedAt the time at which this transmission was received (and successfully decoded) by the receiving side
+	 */
 	public void setReceivedAt(TimeStamp receivedAt)
 	{
 		this.receivedAt = receivedAt;
@@ -767,6 +789,25 @@ public abstract class Transmission<C extends Correspondent>
 		return response != null;
 	}
 
+	/**
+	 * May be overridden.
+	 * 
+	 * @return whether or not it is appropriate to resend (the payload of) this transmission *now*
+	 */
+	public boolean isResendAppropriate()
+	{
+		return	// never actually sent (not even partially):
+				!isPartiallySent() ||
+				// never received (or no ACK received, nor any other response)
+				(	!isReceived() && !hasResponse() &&
+					sentAt.shift(getApproprateResentTimeoutMS()).isBefore(TimeStamp.now()));
+	}
+	
+	public int getApproprateResentTimeoutMS()
+	{
+		return MINIMUM_RESEND_TIMEOUT_MS;
+	}
+	
 	/**
 	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
 	 */
@@ -802,19 +843,41 @@ public abstract class Transmission<C extends Correspondent>
 		
 		public void onSent(TimeStamp sentAt)
 		{
-			setSentAt(sentAt);
-			
-			// Run payload callback if there is one:
-			if(payload != null /*just in case*/ && payload.getCallback() != null)
-				payload.getCallback().onSent(sentAt);
-			
-			// Store updated transmission:
-			store();
+			try
+			{
+				setSentAt(sentAt);
+				
+				// Run payload callback if there is one:
+				if(payload != null /*just in case*/ && payload.getCallback() != null)
+					payload.getCallback().onSent(sentAt);
+				
+				// Store updated transmission:
+				store();
+			}
+			catch(Exception e)
+			{
+				client.logError("Error in SentCallback#onSent()", e);
+			}
 		}
 		
 		public void onReceived()
 		{
-			onSent(TimeStamp.now());
+			onReceived(TimeStamp.now());
+		}
+		
+		public void onReceived(TimeStamp receivedAt)
+		{
+			try
+			{
+				setReceivedAt(receivedAt);
+				
+				// Store updated transmission:
+				store();
+			}
+			catch(Exception e)
+			{
+				client.logError("Error in SentCallback#onReceived()", e);
+			}
 		}
 		
 		/**

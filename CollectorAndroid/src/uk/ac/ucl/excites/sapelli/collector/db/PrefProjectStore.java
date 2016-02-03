@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 
 /**
  * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
@@ -416,24 +415,6 @@ public class PrefProjectStore extends ProjectStore
 	public ProjectDescriptor retrieveProjectOrDescriptor(int projectID, int projectFingerPrint)
 	{
 		return retrieveProject(projectID, projectFingerPrint);
-	}
-	
-	@Override
-	public boolean isReceiving(Type transmissionType) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("isReceiving() not implemented");
-	}
-	
-	@Override
-	public boolean isReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("isReceiving() not implemented");
-	}
-
-	@Override
-	public void setReceiving(ProjectDescriptor projectDesc, Transmission.Type transmissionType, boolean enabled) throws UnsupportedOperationException
-	{
-		throw new UnsupportedOperationException("setReceiving() not implemented");
 	}
 
 	@Override

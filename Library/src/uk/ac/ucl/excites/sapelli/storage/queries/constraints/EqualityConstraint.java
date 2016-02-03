@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.InvalidValueException;
 
 /**
  * Constraint that compares the values in a column using Object#equals()
@@ -56,25 +57,48 @@ public class EqualityConstraint extends Constraint
 	private final Object value;
 	private final boolean equal;
 	
-	public EqualityConstraint(Column<?> column, Object value)
+	public EqualityConstraint(Column<?> column, Object value) throws InvalidValueException
 	{
 		this(new ColumnPointer<Column<?>>(column), value);
 	}
 	
-	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value)
+	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value) throws InvalidValueException
 	{
 		this(columnPointer, value, true);
 	}
 	
-	public EqualityConstraint(Column<?> column, Object value, boolean equal)
+	public EqualityConstraint(Column<?> column, Object value, boolean equal) throws InvalidValueException
 	{
 		this(new ColumnPointer<Column<?>>(column), value, equal);
 	}
 	
-	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value, boolean equal)
+	public EqualityConstraint(ColumnPointer<?> columnPointer, Object value, boolean equal) throws InvalidValueException
 	{
+		// Column null check:
+		if(columnPointer == null || /*not possible(?), but just in case:*/ columnPointer.getColumn() == null)
+			throw new NullPointerException("Please provide a non-null column(pointer)");
+		Column<?> column = columnPointer.getColumn();
+		
+		if(value != null)
+		{	// Check if value is valid for column:
+			try
+			{
+				if(!column.isValidValueObject(value, true /*convert!*/))
+					throw new Exception();
+			}
+			catch(InvalidValueException ive)
+			{
+				throw ive; // re-throw
+			}
+			catch(Exception e)
+			{
+				throw new InvalidValueException(EqualityConstraint.class.getSimpleName() + ": value (" + value.toString() + ") is invalid for column " + column.name, column);
+			}
+		}
+
+		// Initialise:
 		this.columnPointer = columnPointer;
-		this.value = columnPointer.getColumn().convert(value); // convert to column type!
+		this.value = column.convert(value); // convert to column type!
 		this.equal = equal;
 	}
 

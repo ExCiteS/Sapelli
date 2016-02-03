@@ -2,7 +2,7 @@
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
-	Copyright 2012-2014 University College London - ExCiteS group
+	Copyright 2012-2016 University College London - ExCiteS group
 	
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
- <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:compat="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -26,7 +26,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="10dp"
-        android:text="@string/geokeyServerUrl" />
+        android:text="@string/url" />
 
     <android.support.v7.widget.AppCompatEditText
         android:id="@+id/txtGeoKeyServerURL"
@@ -36,32 +36,68 @@
         android:inputType="textUri">
         <requestFocus/>
     </android.support.v7.widget.AppCompatEditText>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingTop="10dp"
-        android:text="@string/email" />
-
-    <EditText
-        android:id="@+id/txtEmail"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textEmailAddress" />
     
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingTop="10dp"
-        android:text="@string/password" />
+	<LinearLayout
+	    android:layout_width="match_parent"
+	    android:layout_height="match_parent"
+	    android:orientation="vertical"
+	    android:paddingTop="10dp" >
+        
+	    <TextView
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/userCredentials" />
 
-    <EditText
-        android:id="@+id/txtPassword"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textWebPassword" />
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingTop="5dp"
+	        android:paddingStart="10dp"
+	        android:paddingLeft="10dp"
+	        android:paddingEnd="0dp"
+	        android:paddingRight="0dp"
+	        android:text="@string/email" />
+	
+	    <EditText
+	        android:id="@+id/txtEmail"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:paddingStart="10dp"
+	        android:paddingLeft="10dp"
+	        android:paddingEnd="0dp"
+	        android:paddingRight="0dp"
+	        android:ems="10"
+	        android:inputType="textEmailAddress" />
+	    
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingTop="5dp"
+	        android:paddingStart="10dp"
+	        android:paddingLeft="10dp"
+	        android:paddingEnd="0dp"
+	        android:paddingRight="0dp"
+	        android:text="@string/password" />
+	
+	    <EditText
+	        android:id="@+id/txtPassword"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:paddingStart="10dp"
+	        android:paddingLeft="10dp"
+	        android:paddingEnd="0dp"
+	        android:paddingRight="0dp"
+	        android:ems="10"
+	        android:inputType="textWebPassword" />
+	    
+	    <TextView
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/userCredentialsOptional"
+	        android:ems="10"
+	        android:gravity="end|top" />
+
+	</LinearLayout>
     
     <TextView
         android:layout_width="wrap_content"

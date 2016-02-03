@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.Helpers
  * 
  * @author Michalis Vitos, mstevens
  */
-public abstract class OutgoingSMSBroadcastReceiver extends BroadcastReceiver
+public class OutgoingSMSBroadcastReceiver extends BroadcastReceiver
 {
 	
 	/**

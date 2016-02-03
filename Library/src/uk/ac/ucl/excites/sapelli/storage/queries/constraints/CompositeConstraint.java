@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ public abstract class CompositeConstraint extends Constraint
 				addConstraint(c);
 	}
 	
-	public void addConstraint(Constraint constraint)
+	public CompositeConstraint addConstraint(Constraint constraint)
 	{
 		// Reduce if possible:
 		constraint = Constraint.Reduce(constraint);
 		// Null check:
 		if(constraint == null)
-			return;
+			return this;
 		// Flatten instance of same CompositeConstraint subclass when associative:
 		else if(this.getClass().isInstance(constraint) && isAssociative())
 		{
@@ -61,6 +61,7 @@ public abstract class CompositeConstraint extends Constraint
 				constraints = new ArrayList<Constraint>();
 			constraints.add(constraint);
 		}
+		return this;
 	}
 
 	/**

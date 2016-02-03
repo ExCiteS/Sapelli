@@ -22,62 +22,65 @@ import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
- * Payload that is sent to signify that the sender (of this payload) is unfamiliar with the model that the receiver has just sent records for.
+ * This Payload signifies that the transmission to which an incoming {@link ResponsePayload} referred
+ * could not be found (likely because it has already been deleted/hidden).
  * 
- * This is a ResponsePayload because a model request will be sent as a result of receiving records of an unknown model.
- * 
- * @author benelliott, mstevens
+ * @author mstevens
  */
-public class ModelRequestPayload extends ResponsePayload
+public class NoSuchTransmissionPayload extends ResponsePayload
 {
-
-	private long unknownModelID = -1;
 	
+	protected int originalSubjectSendingSideID;
+
 	/**
-	 * Called from sending side.
-	 * 
-	 * @param subject
-	 * @param unknownModelID
+	 * To be called from sending side (the side sending the reply to a response, i.e. sender of the supposed original transmission)
 	 */
-	public ModelRequestPayload(Transmission<?> subject, long unknownModelID)
+	public NoSuchTransmissionPayload(ResponsePayload receivedResponse)
 	{
-		super(subject);
-		this.unknownModelID = unknownModelID;
+		super(receivedResponse.getTransmission());
+		originalSubjectSendingSideID = receivedResponse.subjectSenderSideID;
 	}
 	
 	/**
-	 * Called from receiving side or upon db retrieval.
+	 * To be called from receiving side or upon db retrieval.
 	 */
-	public ModelRequestPayload()
+	public NoSuchTransmissionPayload()
 	{
 		super();
-	}
-	
-	@Override
-	public int getType()
-	{
-		return Payload.BuiltinType.ModelRequest.ordinal();
 	}
 
 	@Override
 	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
 		super.write(bitstream);
-		Model.MODEL_ID_FIELD.write(unknownModelID, bitstream);
+		Transmission.TRANSMISSION_ID_FIELD.write(originalSubjectSendingSideID, bitstream);
 	}
 
 	@Override
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
 		super.read(bitstream);
-		unknownModelID = Model.MODEL_ID_FIELD.readLong(bitstream);
+		originalSubjectSendingSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
+	}
+
+	/**
+	 * @return the originalSubjectSendingSideID
+	 */
+	public int getOriginalSubjectSendingSideID()
+	{
+		return originalSubjectSendingSideID;
+	}
+
+	@Override
+	public int getType()
+	{
+		return Payload.BuiltinType.NoSuchTransmission.ordinal();
 	}
 
 	@Override
@@ -85,12 +88,10 @@ public class ModelRequestPayload extends ResponsePayload
 	{
 		return false;
 	}
-	
-	public long getUnknownModelID()
-	{
-		return unknownModelID;
-	}
-	
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload#handle(uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler)
+	 */
 	@Override
 	public void handle(Handler handler) throws Exception
 	{

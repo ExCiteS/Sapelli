@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.transmission.control;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -49,12 +47,14 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelAccessUnauthorisedPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
@@ -85,7 +85,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		Pending,
 		ModelPresent,
-		ModelAbsent
+		ModelAbsent,
+		ModelAccessUnauthorised
 	};
 
 	// Client:
@@ -166,7 +167,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 * @param transmission
 	 * @return
 	 */
-	public boolean deleteTransmissionUponDecoding(Transmission<?> transmission)
+	public boolean deleteTransmissionUponReception(Transmission<?> transmission)
 	{
 		return false; // default
 	}
@@ -179,15 +180,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	public synchronized void sendRecords(Model model, Correspondent receiver)
 	{
-		List<Record> recsToSend = new ArrayList<Record>();
-		
-		// Query for unsent (as in, not associated with a transmission) records for the given receiver & model:
-		CollectionUtils.addAllIgnoreNull(recsToSend, transmissionStore.retrieveTransmittableRecordsWithoutTransmission(receiver, model));
-		
-		//Also include transmittable records which have a transmission which was never sent or not received since the timeout:
-		//CollectionUtils.addAllIgnoreNull(recsToSend, transmissionStore.retrieveTransmittableRecordsWithTimedOutTransmission(receiver, model, 5));
-		// TODO what is a good timeout??
-		
+		// Retrieve records of given model that need to be sent to given receiver:
+		List<Record> recsToSend = transmissionStore.retrieveRecordsToTransmitNow(receiver, model);
 		addLogLine("Records to send: " + recsToSend.size());
 
 		// Create RecordsPayloads & Transmissions (add as many records as possible to each):
@@ -289,10 +283,22 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		if(!modelQueryT.hasResponse())
 			return ModelQueryStatus.Pending; // no response yet...
 		else
-			return
-				modelQueryT.getResponse().getPayloadType() == Payload.BuiltinType.Ack.ordinal() ?
-					ModelQueryStatus.ModelPresent :
-					ModelQueryStatus.ModelAbsent;
+		{
+			Payload.BuiltinType responseType = Payload.getBuiltinType(modelQueryT.getResponse().getPayloadType());
+			if(responseType == null)
+				return ModelQueryStatus.Pending;
+			switch(responseType)
+			{
+				case Ack :
+					return ModelQueryStatus.ModelPresent;
+				case ModelAccessUnauthorised :
+					return ModelQueryStatus.ModelAccessUnauthorised;
+				case ModelRequest :
+					return ModelQueryStatus.ModelAbsent;
+				default:
+					return ModelQueryStatus.Pending; 
+			}
+		}	
 	}
 	
 	/**
@@ -309,7 +315,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			case TEXTUAL_SMS:
 				return new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
 			case GeoKey:
-				return new GeoKeyTransmission(transmissionClient, (GeoKeyAccount) receiver, payload);
+				return new GeoKeyTransmission(transmissionClient, (GeoKeyServer) receiver, payload);
 			default:
 				System.err.println("Unsupported transmission type: " + receiver.getTransmissionType());
 				return null;
@@ -346,9 +352,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 	}
 	
-	protected void storeAndSendResponse(ResponsePayload payload, Correspondent receiver)
+	protected void storeAndSendResponse(ResponsePayload payload)
 	{
-		Transmission<?> outgoing = createOutgoingTransmission(payload, receiver);
+		Transmission<?> outgoing = createOutgoingTransmission(payload, payload.getSubject().getCorrespondent());
 		
 		// Store & send:
 		if(storeAndSend(outgoing))
@@ -397,11 +403,11 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			
 		// Acknowledge reception if needed
 		if(transmission.getPayload().acknowledgeReception())
-			storeAndSendResponse(new AckPayload(transmission), transmission.getCorrespondent());
+			storeAndSendResponse(new AckPayload(transmission));
 			
 		// Delete transmission (and parts) from store if needed:
-		if(deleteTransmissionUponDecoding(transmission))
-			transmissionStore.deleteTransmission(transmission);
+		if(deleteTransmissionUponReception(transmission))
+			transmissionStore.deleteTransmission(transmission, true); // (delete by hiding)
 	}
 	
 	// ----- "handle"/"receive" methods for different transmission types:
@@ -483,7 +489,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		addLogLine("PREPARING", "Outgoing resend request for incomplete transmission with local ID: " + localID);
 		
 		// Send request:
-		storeAndSendResponse(new ResendRequestPayload(smsTrans, this), smsTrans.getCorrespondent());
+		storeAndSendResponse(new ResendRequestPayload(smsTrans, this));
 	}
 	
 	/**
@@ -617,7 +623,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				{
 					UnknownModelException ume = (UnknownModelException) exception.getCause();
 					// Send model request payload:
-					storeAndSendResponse(new ModelRequestPayload(payload.getTransmission(), ume.getModelID()), payload.getTransmission().getCorrespondent());
+					storeAndSendResponse(new ModelRequestPayload(payload.getTransmission(), ume.getModelID()));
 				}
 				
 				// re-throw:
@@ -667,66 +673,119 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			}
 		}
 		
-		private Transmission<?> handleResponse(ResponsePayload response) throws Exception
+		private void handleResponse(ResponsePayload response, ResponseSubjectHandler subjectHandler) throws Exception
 		{
 			Transmission<?> subject = transmissionStore.retrieveTransmission(false, response.getSubjectSenderSideID(), response.getSubjectPayloadHash());
 			
-			if(subject != null)
-				subject.getSentCallback().onResponse(response);
-			else
-				transmissionClient.logError("No matching transmission (ID " + response.getSubjectSenderSideID() + "; payload hash: " + response.getSubjectPayloadHash() + " ) found in the database for acknowledgement from sender " + response.getTransmission().getCorrespondent());
+			// Announce (to log):
+			subjectHandler.announce(subject);
 			
-			return subject;
-		}
-		
-		@Override
-		public void handle(AckPayload ack) throws Exception
-		{
-			// find the appropriate sent transmission (i.e. the subject of the ACK) and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
-			Transmission<?> subject = handleResponse(ack);
-			
-			addLogLine(	"INCOMING", "Payload", "ACK",
-						"Subject local ID: " + ack.getSubjectSenderSideID(),
-						"Subject hash: " + ack.getSubjectPayloadHash(),
-						"Subject found: " + (subject != null));
 			if(subject != null)
 			{
-				Payload subjectPayload = subject.getPayload();
-				if(subjectPayload != null)
-					subjectPayload.handle(payloadAckHandler); 	// Payload-specific ACK handling
+				// Register response:
+				subject.getSentCallback().onResponse(response);
+				
+				// Handle subject:
+				subjectHandler.handle(subject);
+			}
+			else
+			{
+				transmissionClient.logError("No matching transmission (ID " + response.getSubjectSenderSideID() + "; payload hash: " + response.getSubjectPayloadHash() + ") found in the database for acknowledgement from sender " + response.getTransmission().getCorrespondent());
+				// Reply with NoSuchTransmissionPayload:
+				storeAndSendResponse(new NoSuchTransmissionPayload(response));
 			}
 		}
 		
 		@Override
-		public void handle(ResendRequestPayload resendReq) throws Exception
+		public void handle(final AckPayload ack) throws Exception
 		{
-			// get the appropriate sent transmission (i.e. the subject of the request) - it will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
-			SMSTransmission<?> subject = (SMSTransmission<?>) handleResponse(resendReq);
-			
-			addLogLine(	"INCOMING", "Payload", "ResendReq",
-						"Subject local ID: " + resendReq.getSubjectSenderSideID(),
-						"Subject hash: " + resendReq.getSubjectPayloadHash(),
-						"Subject total parts: " + resendReq.getSubjectTotalParts(),
-						"Requested part numbers: " + StringUtils.join(resendReq.getRequestedPartNumbers(), ", "),
-						"Subject found: " + (subject != null));
-			if(subject != null) // subject is known ...
+			// find the appropriate sent transmission (i.e. the subject of the ACK) and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
+			handleResponse(ack, new ResponseSubjectHandler()
 			{
-				if(!subject.isReceived()) // ... and we haven't received a ACK yet (check just in case):
+				@Override
+				public void announce(Transmission<?> subject)
 				{
-					// Resend requested parts:
-					subject.resend(TransmissionController.this, resendReq.getRequestedPartNumbers());
+					addLogLine(	"INCOMING", "Payload", "ACK",
+							"Subject local ID: " + ack.getSubjectSenderSideID(),
+							"Subject hash: " + ack.getSubjectPayloadHash(),
+							"Subject found: " + (subject != null));
 				}
-			}			
+				
+				@Override
+				public void handle(Transmission<?> subject) throws Exception
+				{
+					Payload subjectPayload = subject.getPayload();
+					if(subjectPayload != null)
+						subjectPayload.handle(payloadAckHandler); 	// Payload-specific ACK handling
+				}
+			});
 		}
 		
 		@Override
-		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
+		public void handle(final ResendRequestPayload resendReq) throws Exception
 		{
-			handleResponse(modelRequestPayload);
-			
-			addLogLine("INCOMING MODEL REQUEST", "ID: " + modelRequestPayload.getUnknownModelID());
-			
-			// TODO somehow report that project is missing on receiver (tray alert?)
+			handleResponse(resendReq, new ResponseSubjectHandler()
+			{
+				@Override
+				public void announce(Transmission<?> responseSubject)
+				{
+					addLogLine(	"INCOMING", "Payload", "ResendReq",
+							"Subject local ID: " + resendReq.getSubjectSenderSideID(),
+							"Subject hash: " + resendReq.getSubjectPayloadHash(),
+							"Subject total parts: " + resendReq.getSubjectTotalParts(),
+							"Requested part numbers: " + StringUtils.join(resendReq.getRequestedPartNumbers(), ", "),
+							"Subject found: " + (responseSubject != null));
+				}
+				
+				@Override
+				public void handle(Transmission<?> responseSubject) throws Exception
+				{
+					SMSTransmission<?> smsTransmission = (SMSTransmission<?>) responseSubject;
+					if(!smsTransmission.isReceived()) // ... and we haven't received a ACK yet (check just in case):
+					{
+						// Resend requested parts:
+						smsTransmission.resend(TransmissionController.this, resendReq.getRequestedPartNumbers());
+					}
+				}
+			});		
+		}
+		
+		@Override
+		public void handle(final ModelRequestPayload modelRequestPayload) throws Exception
+		{
+			handleResponse(modelRequestPayload, new ResponseSubjectHandler()
+			{
+				@Override
+				public void announce(Transmission<?> responseSubject)
+				{
+					addLogLine("INCOMING", "Payload", "ModelRequest", "ModelID: " + modelRequestPayload.getUnknownModelID());
+				}
+				
+				@Override
+				public void handle(Transmission<?> responseSubject) throws Exception
+				{
+					// TODO somehow report that project is missing on receiver (tray alert?)	
+				}
+			});
+		}
+		
+		@Override
+		public void handle(final ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception
+		{
+			handleResponse(modelAccessUnauthorisedPayload, new ResponseSubjectHandler()
+			{
+				@Override
+				public void announce(Transmission<?> responseSubject)
+				{
+					addLogLine("INCOMING", "Payload", "ModelAccessUnauthorised");				
+				}
+				
+				@Override
+				public void handle(Transmission<?> responseSubject) throws Exception
+				{
+					// TODO show toast or tray alert on android?
+				}
+			});
 		}
 		
 		@Override
@@ -734,6 +793,51 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		{
 			// everything is done already in #receive(Payload) (see above)
 		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload.Handler#handle(uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload)
+		 */
+		@Override
+		public void handle(NoSuchTransmissionPayload noSuchTransmissionPayload) throws Exception
+		{
+			Transmission<?> subject = transmissionStore.retrieveTransmission(false, noSuchTransmissionPayload.getSubjectSenderSideID(), noSuchTransmissionPayload.getSubjectPayloadHash());
+			
+			addLogLine(	"INCOMING", "Payload", "NoSuchTransmission",
+						"Subject local ID: " + noSuchTransmissionPayload.getSubjectSenderSideID(),
+						"Subject hash: " + noSuchTransmissionPayload.getSubjectPayloadHash(),
+						"Subject found: " + (subject != null));
+			
+			if(subject != null && subject.getPayloadType() == Payload.BuiltinType.ResendRequest.ordinal())
+			{	// Stop future resend requests:
+				try
+				{
+					SMSTransmission<?> incompleteSMST = (SMSTransmission<?>) transmissionStore.retrieveTransmission(true, noSuchTransmissionPayload.getOriginalSubjectSendingSideID());
+					addLogLine("Canceling furter resend requests for received SMSTransmission (localID: " + incompleteSMST.getLocalID() + ")");
+					cancelSMSResendRequest(incompleteSMST.getLocalID());
+					incompleteSMST.setNumberOfSentResendRequests(SMSTransmission.MAX_RESEND_REQUESTS + 1);
+					transmissionStore.store(incompleteSMST);
+				}
+				catch(Exception e)
+				{
+					transmissionClient.logError("Error upon handling NoSuchTransmissionPayload reply to ResendRequestPayload", e);
+				}
+			}
+		}
+		
+	}
+	
+	private interface ResponseSubjectHandler
+	{
+		
+		/**
+		 * @param responseSubject - may be null
+		 */
+		public void announce(Transmission<?> responseSubject);
+		
+		/**
+		 * @param responseSubject - never null
+		 */
+		public void handle(Transmission<?> responseSubject) throws Exception;
 		
 	}
 	
@@ -778,15 +882,27 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(ModelQueryPayload modelQueryPayload) throws Exception
 		{
-			// TODO Auto-generated method stub
+			// nothing
 		}
 
 		@Override
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
 		{
-			// TODO ?
+			// never happens because ModelRequestPayload#acknowledgeReception() returns false.
 		}
-
+		
+		@Override
+		public void handle(ModelAccessUnauthorisedPayload modelAccessUnauthorisedPayload) throws Exception
+		{
+			// never happens because ModelAccessUnauthorisedPayload#acknowledgeReception() returns false.
+		}
+		
+		@Override
+		public void handle(NoSuchTransmissionPayload noSuchTransmissionPayload) throws Exception
+		{
+			// never happens because NoSuchTransmissionPayload#acknowledgeReception() returns false.
+		}
+		
 		@Override
 		public void handle(Payload customPayload, int type) throws Exception
 		{

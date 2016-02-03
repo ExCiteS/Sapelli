@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2015 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.CustomTypefaceSpan;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyAccount;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
@@ -90,8 +90,6 @@ public final class SendConfigurationHelpers
 	}
 	
 	/**
-	 * TODO
-	 * 
 	 * @param activity
 	 * @return
 	 */
@@ -113,7 +111,7 @@ public final class SendConfigurationHelpers
 				usedReceivers.add(projSched.getReceiver());
 		List<Correspondent> selectableReceivers = new ArrayList<Correspondent>();
 		for(Correspondent receiver : getReceivers(activity))
-			if(receiver.equals(schedule.getReceiver()) || !usedReceivers.contains(receiver))
+			if((schedule.getReceiver() != null && receiver.getLocalID() == schedule.getReceiver().getLocalID()) || !usedReceivers.contains(receiver))
 				selectableReceivers.add(receiver);
 		return selectableReceivers;
 	}
@@ -199,30 +197,19 @@ public final class SendConfigurationHelpers
 	/**
 	 * @param activity
 	 * @param correspondent the correspondent to delete (if null nothing will happen)
-	 * @return null if nothing happened, true if correspondent was deleted, false if it was only hidden
 	 */
-	static public Boolean deleteCorrespondent(ProjectManagerActivity activity, Correspondent correspondent)
+	static public void deleteCorrespondent(ProjectManagerActivity activity, Correspondent correspondent)
 	{
 		if(correspondent == null)
-			return null;
+			return;
 		try
-		{	
-			if(!hasTransmissions(activity, correspondent))
-			{	// If the correspondent doesn't have transmissions we can really delete it:
-				activity.getTransmissionStore().deleteCorrespondent(correspondent); // TODO what to do with transmittable records for this receiver???
-				return true;
-			}
-			else
-			{	// Otherwise we only hide it:
-				correspondent.markAsUserDeleted();
-				saveCorrespondent(activity, correspondent);
-				return false;
-			}
+		{	// "Delete" by hiding:
+			correspondent.markAsUserDeleted();
+			saveCorrespondent(activity, correspondent);
 		}
 		catch(Exception e)
 		{
 			Log.e(SendConfigurationHelpers.class.getSimpleName(), ExceptionHelpers.getMessageAndCause(e), e);
-			return null;
 		}
 	}
 	
@@ -254,11 +241,14 @@ public final class SendConfigurationHelpers
 	public interface ReceiverUpdateCallback
 	{
 		
+		/**
+		 * @param newReceiver the newly created receiving {@link Correspondent} instance, or {@code null} to signal that the creation of a new receiver was cancelled
+		 */
 		public void newReceiver(Correspondent newReceiver);
 		
-		public void editedReceiver(Correspondent newReceiver, Correspondent oldReceiver);
+		public void editedReceiver(Correspondent editedReceiver);
 		
-		public void deletedReceiver(Correspondent oldReceiver);
+		public void deletedReceiver(Correspondent deletedReceiver);
 		
 	}
 	
@@ -280,14 +270,14 @@ public final class SendConfigurationHelpers
 			}
 
 			@Override
-			public void handle(GeoKeyAccount geokeyAccount)
+			public void handle(GeoKeyServer geokeyAccount)
 			{
 				GeoKeyReceiverFragment.ShowEditDialog(activity, callback, geokeyAccount);
 			}
 		});
 	}
 	
-	static private ReceiverDrawableProvider receiverDrawableProvider = new ReceiverDrawableProvider();
+	static private final ReceiverDrawableProvider receiverDrawableProvider = new ReceiverDrawableProvider();
 	
 	/**
 	 * @param receiver
@@ -358,14 +348,14 @@ public final class SendConfigurationHelpers
 		}
 
 		@Override
-		public void handle(GeoKeyAccount geokeyAccount)
+		public void handle(GeoKeyServer geokeyAccount)
 		{
 			drawableResourceId = getGeoKeyReceiverDrawable(big);
 		}
 		
 	}
 	
-	static private ReceiverAddressStringProvider receiverAddressStringProvider = new ReceiverAddressStringProvider();
+	static private final ReceiverAddressStringProvider receiverAddressStringProvider = new ReceiverAddressStringProvider();
 	
 	static public CharSequence getReceiverLabelText(Correspondent receiver, boolean multiLine)
 	{
@@ -394,11 +384,13 @@ public final class SendConfigurationHelpers
 		public String addressStr = null;
 		
 		@Override
-		public void handle(GeoKeyAccount geokeyAccount)
+		public void handle(GeoKeyServer gkServer)
 		{
 			addressStr =
-				(geokeyAccount.hasUserDisplayName() ? geokeyAccount.getUserDisplayName() + "@" : "") +
-				URLUtils.stripTrailingSlash(URLUtils.stripHTTP(geokeyAccount.getUrl()));
+				(gkServer.hasUserCredentials() ? 
+					(gkServer.hasUserDisplayName() ? gkServer.getUserDisplayName() + "@" : "") :
+					GeoKeyServer.ANONYMOUS_USER + "@") +
+				URLUtils.stripTrailingSlash(URLUtils.stripHTTP(gkServer.getUrl()));
 		}
 		
 		@Override
@@ -408,5 +400,5 @@ public final class SendConfigurationHelpers
 		}
 		
 	}
-	
+		
 }

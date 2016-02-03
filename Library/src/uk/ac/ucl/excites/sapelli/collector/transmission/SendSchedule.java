@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ public class SendSchedule
 	
 	// STATICS --------------------------------------------------------------------------
 	static public final int DEFAULT_TRANSMIT_INTERVAL_SECONDS = 60 * 60; // = 1 hour
+	
+	static public final int MINIMUM_TRANSMIT_INTERVAL_SECONDS = 30;
 	
 	static public boolean isValidForTransmission(SendSchedule schedule)
 	{
@@ -167,6 +169,8 @@ public class SendSchedule
 	 */
 	public SendSchedule setTransmitIntervalS(int transmitIntervalS)
 	{
+		if(transmitIntervalS < MINIMUM_TRANSMIT_INTERVAL_SECONDS)
+			transmitIntervalS = MINIMUM_TRANSMIT_INTERVAL_SECONDS;
 		this.transmitIntervalS = transmitIntervalS;
 		return this;
 	}

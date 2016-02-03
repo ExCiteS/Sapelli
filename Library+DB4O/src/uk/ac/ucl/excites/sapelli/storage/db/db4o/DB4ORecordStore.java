@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
@@ -111,7 +112,7 @@ public class DB4ORecordStore extends RecordStore
 	}
 
 	@Override
-	protected void doRollbackTransaction() throws DBException
+	protected void doRollbackTransaction()
 	{
 		try
 		{
@@ -119,7 +120,7 @@ public class DB4ORecordStore extends RecordStore
 		}
 		catch(Exception e)
 		{
-			throw new DBException("Could not roll back changes to DB4O file", e);
+			client.logError("Could not roll-back changes to DB4O file: " + ExceptionHelpers.getMessageAndCause(e));
 		}
 	}
 	

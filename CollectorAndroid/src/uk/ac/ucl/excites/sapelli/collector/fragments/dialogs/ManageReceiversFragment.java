@@ -1,7 +1,7 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
  * 
- * Copyright 2012-2014 University College London - ExCiteS group
+ * Copyright 2012-2016 University College London - ExCiteS group
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,59 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		
 		return dialog;
 	}
+	
+//	private Set<ViewGroup> receiveSwitchGroups = new HashSet<ViewGroup>();
+//	
+//	static private final int RECEIVE_SWITCH_IDX = 1;
+//	
+//	private boolean setReceiveSwitch(ViewGroup receiveSwitchGroup, boolean enabled)
+//	{
+//		((Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX)).setChecked(enabled);
+//		return enabled;
+//	}
+	
+//	case R.id.switchReceive :
+//		toggleConfigGroup(false, switchReceive.isChecked());
+//		if(!switchReceive.isChecked()) // Disable receiving of all transmission types:
+//			for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
+//			{
+//				setReceiveSwitch(receiveSwitchGroup, false);
+//				getOwner().getProjectStore().setReceiving(getProject(false), (Transmission.Type) receiveSwitchGroup.getTag(), false);
+//			}
+//		break;
+	
+//	addReceiveSwitch(Transmission.Type.BINARY_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveBinSMS));
+//	addReceiveSwitch(Transmission.Type.TEXTUAL_SMS, (ViewGroup) rootLayout.findViewById(R.id.switchReceiveTxtSMS));
 
+//	private void addReceiveSwitch(Transmission.Type transmissionType, ViewGroup receiveSwitch)
+//	{
+//		receiveSwitch.setTag(transmissionType);
+//		receiveSwitch.setOnClickListener(this);
+//		receiveSwitchGroups.add(receiveSwitch);
+//	}
+	
+//	private boolean toggleReceiveSwitch(ViewGroup receiveSwitchGroup)
+//	{
+//		Checkable receiveSwitch = (Checkable) receiveSwitchGroup.getChildAt(RECEIVE_SWITCH_IDX); 
+//		receiveSwitch.toggle();
+//		return receiveSwitch.isChecked();
+//	}
+	
+//	// Update receiving config UI parts:
+//	boolean receivingEnabled = false;
+//	for(ViewGroup receiveSwitchGroup : receiveSwitchGroups)
+//		if(setReceiveSwitch(receiveSwitchGroup,	getOwner().getProjectStore().isReceiving(project, (Transmission.Type) receiveSwitchGroup.getTag())))
+//			receivingEnabled = true;
+//	toggleConfigGroup(false, receivingEnabled);
+	
+//	case R.id.switchReceiveBinSMS :
+//	case R.id.switchReceiveTxtSMS :
+//		getOwner().getProjectStore().setReceiving(
+//			getProject(false),
+//			(Transmission.Type) view.getTag(),
+//			toggleReceiveSwitch((ViewGroup) view));
+//		break;
+	
 	@Override
 	public void onClick(DialogInterface dialog, int which)
 	{
@@ -142,7 +194,8 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 		else if(v.getId() == R.id.btnEditReceiver || v.getId() == R.id.btnDeleteReceiver)
 		{
 			Correspondent receiver = listReceiversAdapter.getItem((Integer) v.getTag());
-			
+			if(receiver == null)
+				return;
 			Set<Project> projectsUsingReceiver = SendConfigurationHelpers.getProjectsUsingReceiver(getOwner(), receiver);
 			if(!projectsUsingReceiver.isEmpty())
 			{
@@ -166,8 +219,8 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 			else
 			{	// Delete...
 				// TODO confirm delete msg box
-				if(SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver) != null)
-					deletedReceiver(receiver);
+				SendConfigurationHelpers.deleteCorrespondent(getOwner(), receiver);
+				deletedReceiver(receiver);
 			}
 		}
 	}
@@ -182,23 +235,23 @@ public class ManageReceiversFragment extends ProjectManagerFragment implements O
 	}
 	
 	@Override
-	public void editedReceiver(Correspondent newReceiver, Correspondent oldReceiver)
+	public void editedReceiver(Correspondent editedReceiver)
 	{
 		updateReceivers();
 		// Forward:
 		if(callback != null)
-			callback.editedReceiver(newReceiver, oldReceiver);
+			callback.editedReceiver(editedReceiver);
 		// Request TransmissionTab update:
 		getOwner().refreshTab(TransmissionTabFragment.class);
 	}
 	
 	@Override
-	public void deletedReceiver(Correspondent oldReceiver)
+	public void deletedReceiver(Correspondent deletedReceiver)
 	{
 		updateReceivers();
 		// Forward:
 		if(callback != null)
-			callback.deletedReceiver(oldReceiver);
+			callback.deletedReceiver(deletedReceiver);
 		// Request TransmissionTab update:		
 		getOwner().refreshTab(TransmissionTabFragment.class);
 	}
