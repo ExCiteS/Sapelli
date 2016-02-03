@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.tasks;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 
@@ -75,9 +76,9 @@ public final class ProjectTasks
 				{
 					
 					@Override
-					public void mediaQuerySuccess(List<MediaFile> mediaFiles)
+					public void mediaQuerySuccess(Map<Record, List<MediaFile>> mediaFilesByRecord, int mediaFileCount)
 					{
-						callback.projectDataQuerySuccess(records, mediaFiles);
+						callback.projectDataQuerySuccess(records, mediaFilesByRecord, mediaFileCount);
 					}
 					
 					@Override
@@ -99,7 +100,7 @@ public final class ProjectTasks
 	static public interface ProjectDataCallback
 	{
 		
-		public void projectDataQuerySuccess(List<Record> records, List<MediaFile> mediaFiles);
+		public void projectDataQuerySuccess(List<Record> records, Map<Record, List<MediaFile>> mediaFilesByRecord, int mediaFileCount);
 		
 		public void projectDataQueryFailure(Exception reason);
 		
@@ -110,7 +111,7 @@ public final class ProjectTasks
 	 * 
 	 * @author mstevens
 	 */
-	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<BaseActivity, List<Record>, List<MediaFile>>
+	static public class MediaFilesQueryTask extends AsyncTaskWithWaitingDialog<BaseActivity, List<Record>, Map<Record, List<MediaFile>>>
 	{
 
 		private final MediaFilesQueryCallback callback;
@@ -145,7 +146,7 @@ public final class ProjectTasks
 
 		@Override
 		@SafeVarargs
-		protected final List<MediaFile> runInBackground(List<Record>... params)
+		protected final Map<Record, List<MediaFile>> runInBackground(List<Record>... params)
 		{
 			List<Record> records = params[0];
 			try
@@ -156,18 +157,23 @@ public final class ProjectTasks
 			{
 				Log.e(getClass().getName(), ExceptionHelpers.getMessageAndCause(e), e);
 				failure = e;
-				return Collections.<MediaFile> emptyList();
+				return Collections.<Record, List<MediaFile>> emptyMap();
 			}
 		}
 		
 		@Override
-		protected void onPostExecute(List<MediaFile> result)
+		protected void onPostExecute(Map<Record, List<MediaFile>> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
 			if(failure != null)
 				callback.mediaQueryFailure(failure);
 			else
-				callback.mediaQuerySuccess(result);
+			{
+				int mediaFileCount = 0;
+				for(List<MediaFile> mediaFiles : result.values())
+					mediaFileCount += mediaFiles.size();
+				callback.mediaQuerySuccess(result, mediaFileCount);
+			}
 		}
 		
 	}
@@ -175,7 +181,7 @@ public final class ProjectTasks
 	public interface MediaFilesQueryCallback
 	{
 		
-		public void mediaQuerySuccess(List<MediaFile> mediaFiles);
+		public void mediaQuerySuccess(Map<Record, List<MediaFile>> mediaFilesByRecord, int mediaFileCount);
 		
 		public void mediaQueryFailure(Exception reason);
 		

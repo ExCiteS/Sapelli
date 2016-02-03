@@ -84,7 +84,7 @@
                     android:paddingLeft="5dp"
                     android:paddingRight="5dp"
                     android:paddingStart="5dp"
-                    android:text="@string/longClickFromEditDel" />
+                    android:text="@string/longClickForMoreOptions" />
 
                 <Button
                     android:id="@+id/btnAddSchedule"

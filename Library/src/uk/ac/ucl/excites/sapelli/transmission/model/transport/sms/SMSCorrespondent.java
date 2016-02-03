@@ -256,5 +256,11 @@ public class SMSCorrespondent extends Correspondent
 		}
 		return false;
 	}
+
+	@Override
+	public boolean receivesAttachments()
+	{
+		return false;
+	}
 	
 }

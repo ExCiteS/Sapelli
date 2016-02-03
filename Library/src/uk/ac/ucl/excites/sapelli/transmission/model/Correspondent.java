@@ -40,8 +40,6 @@ public abstract class Correspondent
 		
 		public void handle(SMSCorrespondent smsCorrespondent);
 		
-		// TODO http server/client?
-		
 		public void handle(GeoKeyServer geokeyAccount);
 		
 	}
@@ -133,6 +131,8 @@ public abstract class Correspondent
 	 * @return the address
 	 */
 	public abstract String getAddress();
+
+	public abstract boolean receivesAttachments();
 	
 	public abstract void handle(Handler handler);
 	

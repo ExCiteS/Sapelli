@@ -213,8 +213,8 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	}
 	//		ColumnPointers (helpers):
 	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_TRANSMISSION_ID = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, TRANSMISSION_COLUMN_ID);
-	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.SCHEMA_SCHEMA_NUMBER_COLUMN);
 	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_MODEL_ID = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.MODEL_ID_COLUMN);
+	static public final ColumnPointer<IntegerColumn> TRANSMITTABLE_RECORDS_CP_SCHEMA_NUMBER = new ColumnPointer<IntegerColumn>(TRANSMITTABLE_RECORDS_SCHEMA, Model.SCHEMA_SCHEMA_NUMBER_COLUMN);
 	//	Seal the model:
 	static
 	{
@@ -1064,6 +1064,29 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	/**
 	 * @param correspondent
 	 * @param model
+	 * @return RecordReferences pointing to the Records of the given Model received by the given Correspondent
+	 */
+	public synchronized List<RecordReference> retrieveReceivedRecords(Correspondent correspondent, Model model)
+	{
+		// Updated received flags:
+		updateTransmittableReceivedState(correspondent, model);
+		
+		// Get all transmittables with received=true:
+		List<Record> toSendRecs = retrieveTransmittableRecords(
+				correspondent, model,
+				Order.UNDEFINED,
+				new EqualityConstraint(TRANSMITTABLE_RECORDS_COLUMN_RECEIVED, Boolean.TRUE));
+		
+		// Get and return user record references:
+		List<RecordReference> userRecRefs = new ArrayList<RecordReference>(toSendRecs.size());
+		for(Record toSendRec : toSendRecs)
+			CollectionUtils.addIgnoreNull(userRecRefs, getUserRecordReferenceFromTransmittable(toSendRec, model));
+		return userRecRefs;
+	}
+	
+	/**
+	 * @param correspondent
+	 * @param model
 	 * @param contraint - may be null
 	 * @return a possibly empty list of {@link #TRANSMITTABLE_RECORDS_SCHEMA} records
 	 */
@@ -1110,7 +1133,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		return userRecs;
 	}
 	
-	private Record getUserRecordFromTransmittable(Record toSendRecord, Model recycleModel)
+	private RecordReference getUserRecordReferenceFromTransmittable(Record toSendRecord, Model recycleModel)
 	{
 		try
 		{
@@ -1122,14 +1145,20 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 				(recycleModel != null && recycleModel.id == modelID) ?
 					recycleModel.getSchema(schemaNumber) :
 					client.getSchema(modelID, schemaNumber);
-			// Query for & return user record:
-			return recordStore.retrieveRecord(schema.createRecordReference(TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES.retrieveValue(toSendRecord)));	
+			// Return reference to user record:
+			return schema.createRecordReference(TRANSMITTABLE_RECORDS_COLUMN_PK_VALUES.retrieveValue(toSendRecord));	
 		}
 		catch(Exception e)
 		{
-			client.logError("Failed to retrieve user record for transmittable entry: " + toSendRecord.toString(false), e);
+			client.logError("Failed to retrieve user record reference for transmittable entry: " + toSendRecord.toString(false), e);
 			return null;
 		}
+	}
+	
+	private Record getUserRecordFromTransmittable(Record toSendRecord, Model recycleModel)
+	{
+		// Query for & return user record:
+		return recordStore.retrieveRecord(getUserRecordReferenceFromTransmittable(toSendRecord, recycleModel));
 	}
 	
 	/**

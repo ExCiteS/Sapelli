@@ -333,5 +333,11 @@ public class GeoKeyServer extends Correspondent
 		else
 			return false;
 	}
+	
+	@Override
+	public boolean receivesAttachments()
+	{
+		return true;
+	}
 
 }

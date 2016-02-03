@@ -334,7 +334,6 @@ public abstract class CollectorClient extends TransmissionClient
 		{
 			Project project = getProject(record.getSchema().model);
 			FileStorageProvider fsp = getFileStorageProvider();
-		
 			if(project != null && fsp != null)
 				return CollectorAttachmentUtils.getMediaFiles(project, record, fsp, false);
 		}
