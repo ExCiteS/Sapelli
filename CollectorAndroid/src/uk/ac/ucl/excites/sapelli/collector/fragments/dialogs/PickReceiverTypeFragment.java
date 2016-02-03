@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -33,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers
  * @author mstevens
  *
  */
-public class PickReceiverTypeFragment extends ProjectManagerFragment implements OnClickListener
+public class PickReceiverTypeFragment extends ProjectManagerFragment implements OnClickListener, DialogInterface.OnClickListener
 {
 
 	// STATIC -------------------------------------------------------
@@ -76,7 +77,7 @@ public class PickReceiverTypeFragment extends ProjectManagerFragment implements 
 		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
 		.setIcon(R.drawable.ic_transfer_black_36dp)
 		.setTitle(R.string.chooseReceiverType)
-		.setNegativeButton(android.R.string.cancel, null);
+		.setNegativeButton(android.R.string.cancel, this);
 		AlertDialog dialog = builder.create();
 		
 		// Set view:
@@ -100,6 +101,13 @@ public class PickReceiverTypeFragment extends ProjectManagerFragment implements 
 				GeoKeyReceiverFragment.ShowAddDialog(getOwner(), callback);
 				break;
 		}
+	}
+	
+	@Override
+	public void onClick(DialogInterface dialog, int which)
+	{
+		if(which == DialogInterface.BUTTON_NEGATIVE)
+			callback.newReceiver(null); // signal that adding new receiver was cancelled 
 	}
 	
 }

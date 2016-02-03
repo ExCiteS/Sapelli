@@ -241,6 +241,9 @@ public final class SendConfigurationHelpers
 	public interface ReceiverUpdateCallback
 	{
 		
+		/**
+		 * @param newReceiver the newly created receiving {@link Correspondent} instance, or {@code null} to signal that the creation of a new receiver was cancelled
+		 */
 		public void newReceiver(Correspondent newReceiver);
 		
 		public void editedReceiver(Correspondent editedReceiver);

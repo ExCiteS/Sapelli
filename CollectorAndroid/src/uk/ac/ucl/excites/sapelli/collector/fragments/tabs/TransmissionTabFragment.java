@@ -328,8 +328,8 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			sendDataNow(schedule, true);
 		}
 		else
-			// Open/close sending pane:
-			toggleConfigGroup(true, !listScheduleAdapter.isEmpty());
+			// Adding/editing was cancelled, make sure UI is still up-to-date (e.g. receiver may have been deleted):
+			refresh();
 	}
 	
 	public void sendDataNow(final SendSchedule schedule, final boolean askConfirmation)

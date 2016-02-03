@@ -91,8 +91,13 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 				@Override
 				public void newReceiver(Correspondent newReceiver)
 				{
-					schedule.setReceiver(newReceiver);
-					ShowDialog(transmissionTab, schedule, editing);
+					if(newReceiver != null)
+					{
+						schedule.setReceiver(newReceiver);
+						ShowDialog(transmissionTab, schedule, editing);
+					}
+					else
+						transmissionTab.addNew(null); // signal that adding schedule is cancelled
 				}
 				
 				@Override
@@ -291,7 +296,8 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	@Override
 	public void newReceiver(Correspondent newReceiver)
 	{
-		updateReceivers(true, newReceiver);
+		if(newReceiver != null)
+			updateReceivers(true, newReceiver);
 	}
 	
 	@Override
@@ -315,8 +321,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 				save(dialog, false);
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
-				if(!editing)
-					transmissionTab.addNew(null); // signals adding new schedule was cancelled
+				transmissionTab.addNew(null); // signals adding/editing schedule was cancelled 
 				break;
 		}
 	}
