@@ -24,6 +24,10 @@ package uk.ac.ucl.excites.sapelli.shared.util;
  */
 public final class URLUtils
 {
+	
+	static public final String PROTOCOL_HTTP = "http://";
+	
+	static public final String PROTOCOL_HTTPS = "https://";
 
 	private URLUtils() {}
 	
