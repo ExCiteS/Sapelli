@@ -27,7 +27,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.util.SparseArray;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.Window;
+import android.view.WindowManager;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
@@ -45,21 +61,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.ActivityHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.KeyEventUtils;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.graphics.Color;
-import android.net.Uri;
-import android.os.Bundle;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.util.SparseArray;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.Window;
-import android.view.WindowManager;
 
 /**
  * Main Collector activity
@@ -597,21 +598,55 @@ public class CollectorActivity extends ProjectActivity
 		for(Trigger t : keyPressTriggers)
 			for(Key k : t.getKeys())
 			{
-				int keyCode = -1;
-				switch(k) // map Trigger.Key enum values onto the KEYCODE's of Android's KeyEvent class 
-				{
-					case ANY : anyKeyTrigger = t; break;
-					case BACK : keyCode = KeyEvent.KEYCODE_BACK; break;
-					case SEARCH : keyCode = KeyEvent.KEYCODE_SEARCH; break;
-					case HOME : keyCode = KeyEvent.KEYCODE_HOME; break;
-					case VOLUME_DOWN : keyCode = KeyEvent.KEYCODE_VOLUME_DOWN; break;
-					//case VOLUME_MUTE : keyCode = KeyEvent.KEYCODE_VOLUME_MUTE; break;
-					case VOLUME_UP : keyCode = KeyEvent.KEYCODE_VOLUME_UP; break;
-					default: break;
-				}
-				if(keyCode != -1)
+				int keyCode = getKeyCode(k);
+				if(keyCode == Integer.MIN_VALUE)
+					anyKeyTrigger = t;
+				else if(keyCode != -1)
 					keyCodeToTrigger.put(keyCode, t);
 			}
+	}
+	
+	/**
+	 * Map {@link Trigger.Key} enum values onto the KEYCODE's of Android's {@link KeyEvent} class
+	 * 
+	 * @param key
+	 * @return a KEYCODE's of Android's {@link KeyEvent} class, or {@link Integer#MIN_VALUE} representing "any" key
+	 */
+	protected int getKeyCode(Trigger.Key key)
+	{
+		switch(key) 
+		{
+			case ANY : return Integer.MIN_VALUE; 
+			case BACK : return KeyEvent.KEYCODE_BACK;
+			case SEARCH : return KeyEvent.KEYCODE_SEARCH;
+			case HOME : return KeyEvent.KEYCODE_HOME;
+			case VOLUME_DOWN : return KeyEvent.KEYCODE_VOLUME_DOWN;
+			case VOLUME_UP : return KeyEvent.KEYCODE_VOLUME_UP;
+			case CAMERA : return KeyEvent.KEYCODE_CAMERA;
+			case MENU : return KeyEvent.KEYCODE_MENU;
+			default:
+				if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB /* = 11 */)
+					return getKeyCodeAPI11(key);
+				else
+					return -1;
+		}	
+	}
+	
+	/**
+	 * Additional KEYCODEs only support in Honeycomb and later.
+	 * 
+	 * @param key
+	 * @return
+	 */
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	protected int getKeyCodeAPI11(Trigger.Key key)
+	{
+		switch(key) 
+		{
+			case VOLUME_MUTE : return KeyEvent.KEYCODE_VOLUME_MUTE;
+			case APP_SWITCH : return KeyEvent.KEYCODE_APP_SWITCH;
+			default : return -1;
+		}
 	}
 	
 }

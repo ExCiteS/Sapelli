@@ -42,6 +42,9 @@ public class Trigger extends JumpSource
 		VOLUME_DOWN,
 		VOLUME_MUTE,
 		VOLUME_UP,
+		CAMERA,
+		APP_SWITCH,
+		MENU,
 		// more later?
 	}
 	
