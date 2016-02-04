@@ -487,7 +487,7 @@ public class ExportFragment extends ProjectManagerFragment implements OnClickLis
 		public void querySuccess(List<Record> result)
 		{
 			if(result == null || result.isEmpty())
-				activity.showOKDialog(R.string.title_activity_export, R.string.exportNoRecordsFound, R.drawable.ic_export_black_36dp);
+				activity.showOKDialog(R.string.export, R.string.exportNoRecordsFound, R.drawable.ic_export_black_36dp);
 			else
 			{
 				// TODO Generate selection description String:

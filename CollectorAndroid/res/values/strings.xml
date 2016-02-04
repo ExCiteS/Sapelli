@@ -58,8 +58,6 @@
     <string name="software_and_device_info">App &amp; device info</string>
     <string name="shortcut">Shortcut</string>
     <string name="take_photo">Take photo</string>
-    <string name="transmission_settings">Transmission Settings</string>
-    <string name="copy_db_menuitem">Dump databases</string>
     <string name="about">About</string>
     <string name="statistics">Statistics</string>
     <string name="export_records">Export records</string>
@@ -122,7 +120,7 @@
     <string name="enableLocationProvider">Please enable location provider (%s) in device settings.</string>
     <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>
     <string name="selectProject">Please select a project.</string>
-    <string name="removeProjectConfirm">Are you sure you want to remove project \"%s\"?\nNo collected data will be deleted.</string>
+    <string name="removeProjectConfirm">Are you sure you want to remove project %s?\nNo collected data will be deleted.</string>
     <string name="demoLoadFail">Could not load demo project.</string>
     <string name="chooseSapelliFile">Choose a .sapelli or .sap  file</string>
     <string name="projectLoadFailure">Could not find project %1$s[id: %2$d; fingerprint: %3$d].</string>
@@ -136,7 +134,6 @@
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
     <string name="load_projects">Loading projects</string>
-    <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
     <string name="exportEtc">Export…</string>
     <string name="exportSelection">Select records to export:</string>
@@ -242,8 +239,6 @@
     <string name="username">Username:</string>
     <string name="email">E-mail address:</string>
     <string name="password">Password:</string>
-    <string name="url_protocol_http">http://</string>
-    <string name="url_protocol_https">https://</string>
     <string name="verifyingServerAndAccount">Checking server &amp; user credentials.</string>
     <string name="geokeyInvalidServer">The server (%1$s) was either unreachable or is not running GeoKey (v%2$s or higher) with the geokey-sapelli extension (v%3$s or higher).</string>
     <string name="geokeyInvalidAccount">The server could not authenticate you. Please check your e-mail address and/or password.</string>

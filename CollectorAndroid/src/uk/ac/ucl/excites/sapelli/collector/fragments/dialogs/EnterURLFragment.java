@@ -27,6 +27,7 @@ import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
+import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
 
 /**
  * @author mstevens
@@ -49,7 +50,7 @@ public class EnterURLFragment extends ProjectManagerFragment
 		txtURL.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
 		txtURL.setTextAppearance(getOwner(), android.R.style.TextAppearance_Small);
 		txtURL.setTypeface(ProjectManagerActivity.FONT_SANS_SERIF_CONDENSED);
-		txtURL.setText(R.string.url_protocol_http);
+		txtURL.setText(URLUtils.PROTOCOL_HTTP);
 		int lrSpacingPx = getDialogLeftRightPaddingPx();
 		dialog.setView(txtURL, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
 		

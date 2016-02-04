@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.AndroidGeoKeyClient;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
@@ -113,7 +114,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		}
 		else
 		{
-			txtGeoKeyServerURL.setText(R.string.url_protocol_https);
+			txtGeoKeyServerURL.setText(URLUtils.PROTOCOL_HTTPS);
 			txtEmail.setText("");
 			txtPassword.setText("");
 			txtReceiverName.setText("");
