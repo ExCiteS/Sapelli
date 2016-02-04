@@ -19,7 +19,7 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
-    <string name="collector">Coletor</string>
+    <string name="collector">Collector</string><!-- this is the app name, I'd rather not translate it (for now) -->
     <string name="yes">Sim</string>
     <string name="no">Não</string>
     <string name="done">Feito</string>
@@ -36,11 +36,11 @@
     <string name="delete">Apagar</string>
     <string name="manage">Gerenciar</string>
     <string name="manageEtc">manage&#8230;</string>
-    <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string>
-	<string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
-	<string name="determiningDeviceID">Determinando o ID do dispositivo …</string>
-	<string name="pleaseLeaveAirplaneMode">Para a inicializar a aplicação pela primeira vez, por favor, desative o modo avião.</string>
-	<string name="project_manager">Gerenciador do projeto</string>
+    <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string><!-- TODO -->
+    <string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string><!-- TODO -->
+    <string name="determiningDeviceID">Determinando o ID do dispositivo …</string>
+    <string name="pleaseLeaveAirplaneMode">Para a inicializar a aplicação pela primeira vez, por favor, desative o modo avião.</string>
+    <string name="project_manager">Gerenciador do projeto</string>
     <string name="switch_project">Mudar para o projeto:</string>
     <string name="no_projects">Nenhum projeto carregado.</string>
     <string name="tab_main">Principal</string>
@@ -58,8 +58,6 @@
     <string name="software_and_device_info">App &amp; info do dispositivo</string>
     <string name="shortcut">Atalho</string>
     <string name="take_photo">Tirar foto</string>
-    <string name="transmission_settings">Ajustes de Envio</string>
-    <string name="copy_db_menuitem">Dump databases</string>
     <string name="about">Sobre</string>
     <string name="statistics">Estatística</string>
     <string name="export_records">Exportar registros</string>
@@ -80,10 +78,10 @@
     <string name="projectLoading">Carregando projeto …</string>
     <string name="projectRemoving">Removendo projeto …</string>
     <string name="sapelliFileLoadFailure">Falha de carregamento ou armazenamento de projeto Sapelli (source: %1$s).\nCause: %2$s</string>
-    <string name="parsingWarnings">Parsing issues</string>
+    <string name="parsingWarnings">Parsing issues</string><!-- TODO -->
     <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">Este aquivo não pôde ser encontrado</string>
-    <string name="downloading">Downloading …</string>
+    <string name="downloading">Downloading …</string><!-- TODO ? -->
     <string name="connectionError">Erro de conexão. Por favor, verifique se você está conectdo à Internet e tente novamente.</string>
     <string name="downloadError">Erro de Download. Por favor, verifique se você está conectdo à Internet.</string>
     <string name="downloadErrorWithCause">Erro de Download: %s.\nPor favor, verifique se você está conectdo à Internet.</string>
@@ -122,7 +120,7 @@
     <string name="enableLocationProvider">Por favor, habilite a função de localização (%s) nos ajustes do dispositivo.</string>
     <string name="noDeviceID">Falha ao gerar um identificador único para o seu dispositivo.</string>
     <string name="selectProject">Por favor, selecione um projeto.</string>
-    <string name="removeProjectConfirm">Você tem certeza que deseja remover o projeto \"%s\"?\nDados não coletados serão apagados.</string>
+    <string name="removeProjectConfirm">Você tem certeza que deseja remover o projeto %s?\nDados não coletados serão apagados.</string>
     <string name="demoLoadFail">Não foi possível carregar o projeto Demo.</string>
     <string name="chooseSapelliFile">Escolha um arquivo .sapelli ou .sap </string>
     <string name="projectLoadFailure">Não foi possível encontrar um projeto %1$s[id: %2$d; fingerprint: %3$d].</string>
@@ -136,7 +134,6 @@
     <string name="drawer_open">Abrir a caixa de navegação</string>
     <string name="drawer_close">Fechar a caixa de navegação</string>
     <string name="load_projects">Carregando projetos</string>
-    <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Exportar</string>
     <string name="exportEtc">Exportar…</string>
     <string name="exportSelection">Selecione os registros a exportar:</string>
@@ -200,11 +197,14 @@
     <string name="sendData">Dados enviados</string>
     <string name="receiveData">Dados recebidos</string>
     <string name="scheduledReceivers">Destino agendados:</string>
-    <string name="longClickFromEditDel">(Click longo para editar, apagar ou reenviar)</string>
-    <string name="sendExistingDataQuestion">Você deseja enviar agora todos os dados existentes (%1$d registros, %2$d arquivos) para %3$s?</string>
+    <string name="longClickForMoreOptions">(long-click receiver for more options)</string><!-- TODO -->
+    <string name="sendExistingDataQuestion">Você deseja enviar agora todos os dados existentes (%1$d registros, %2$d arquivos) para %3$s?</string><!-- add "now", En version now reads as: "Do you wish to send all existing data (%1$d records, %2$d files) to %3$s now?" -->
     <string name="editScheduleEtc">Editar agendamento&#8230;</string>
     <string name="deleteSchedule">Apagar agendamento</string>
     <string name="resendAllData">(Re)enviar agora todos os dados</string>
+    <string name="transmissionStatisticsEtc">Transmission statistics&#8230;</string><!-- TODO -->
+    <string name="retrievingTransmissionStatisticsEtc">Retrieving transmission statistics&#8230;</string><!-- TODO -->
+    <string name="transmissionStatisticsMsg">Scheduled receiver %1$s has received (at least) %2$s records and %3$s media files related to project %4$s.</string><!-- TODO -->
     <string name="receiveBinarySMS">Por SMS binário</string>
     <string name="receiveTextualSMS">Por SMS texto</string>
     <string name="receiver">Destinatário:</string>
@@ -221,11 +221,11 @@
     <string name="editReceiver">Editar destinatário</string>
     <string name="cycleInOutOfAirplaneMode">Ciclo em &amp; fora do modo avião</string>
     <string name="airplaneModeCycling">Ciclo em modo avião</string>
-    <string name="queryingReceiverAboutProject">Consultando destinatário sobre o projeto \"%1$s\", isto por levar %2$d minutos …</string>
-    <string name="projectPresentOnReceiver">%1$s tem projeto \"%2$s\"</string>
-    <string name="projectAbsentOnReceiver">%1$s não tem projeto \"%2$s\", transmissão de dados irá provavelmente  falhar.\nVocê ainda quer utilizar este destinatário?</string>
-    <string name="projectUnauthorised">Você não está autorizado a contribuir com dados para o projeto \"%2$s\" em %1$s. Tenha certeza que está usando credenciais adequadas ou peça o acesso adequado. \n Você ainda quer usar esse destinatário?</string>
-    <string name="pendingProjectQuery">Não conseguimos determinar se %1$s tem um projeto \"%2$s\", talvez este dispositivo (ou o destinatário) não está online ou o processo foi cancelado.\nVocê ainda quer usar este dispositivo?</string>
+    <string name="queryingReceiverAboutProject">Consultando destinatário sobre o projeto %1$s, isto por levar %2$d minutos …</string>
+    <string name="projectPresentOnReceiver">%1$s tem projeto %2$s</string>
+    <string name="projectAbsentOnReceiver">%1$s não tem projeto %2$s, transmissão de dados irá provavelmente  falhar.\nVocê ainda quer utilizar este destinatário?</string>
+    <string name="projectUnauthorised">Você não está autorizado a contribuir com dados para o projeto %2$s em %1$s. Tenha certeza que está usando credenciais adequadas ou peça o acesso adequado. \n Você ainda quer usar esse destinatário?</string>
+    <string name="pendingProjectQuery">Não conseguimos determinar se %1$s tem um projeto %2$s, talvez este dispositivo (ou o destinatário) não está online ou o processo foi cancelado.\nVocê ainda quer usar este destinatário?</string>
     <string name="chooseReceiverType">Escolha o tipo de destinatário</string>
     <string name="receiverName">Nome:</string>
     <string name="pickOptionalName">Escolha um nome (opcional):</string>
@@ -239,8 +239,6 @@
     <string name="username">Username(usuário):</string>
     <string name="email">E-mail :</string>
     <string name="password">Password(senha):</string>
-    <string name="url_protocol_http">http://</string>
-    <string name="url_protocol_https">https://</string>
     <string name="verifyingServerAndAccount">Verificando servidor &amp; credenciais do usuário.</string>
     <string name="geokeyInvalidServer">O servidor (%1$s) estava inacessível ou não estava executando GeoKey (v%2$s ou maior) com  a extensão geokey-sapelli (v%3$s ou maior).</string>
     <string name="geokeyInvalidAccount">O servidor não pode identificá-lo. Por favor, verifique seu endereço de e-mail e/ou senha.</string>
