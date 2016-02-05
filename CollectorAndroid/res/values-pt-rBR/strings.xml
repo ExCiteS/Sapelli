@@ -19,7 +19,7 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
-    <string name="collector">Collector</string><!-- this is the app name, I'd rather not translate it (for now) -->
+    <string name="collector">Collector</string>
     <string name="yes">Sim</string>
     <string name="no">Não</string>
     <string name="done">Feito</string>
@@ -36,8 +36,8 @@
     <string name="delete">Apagar</string>
     <string name="manage">Gerenciar</string>
     <string name="manageEtc">manage&#8230;</string>
-    <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string><!-- TODO -->
-    <string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string><!-- TODO -->
+    <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> é um projeto de <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; colaboradores.]]></string>
+    <string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Código fonte disponível </a> sob os termos de <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
     <string name="determiningDeviceID">Determinando o ID do dispositivo …</string>
     <string name="pleaseLeaveAirplaneMode">Para a inicializar a aplicação pela primeira vez, por favor, desative o modo avião.</string>
     <string name="project_manager">Gerenciador do projeto</string>
@@ -78,10 +78,10 @@
     <string name="projectLoading">Carregando projeto …</string>
     <string name="projectRemoving">Removendo projeto …</string>
     <string name="sapelliFileLoadFailure">Falha de carregamento ou armazenamento de projeto Sapelli (source: %1$s).\nCause: %2$s</string>
-    <string name="parsingWarnings">Parsing issues</string><!-- TODO -->
+    <string name="parsingWarnings">Analisando falhas</string>
     <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">Este aquivo não pôde ser encontrado</string>
-    <string name="downloading">Downloading …</string><!-- TODO ? -->
+    <string name="downloading">Baixando …</string>
     <string name="connectionError">Erro de conexão. Por favor, verifique se você está conectdo à Internet e tente novamente.</string>
     <string name="downloadError">Erro de Download. Por favor, verifique se você está conectdo à Internet.</string>
     <string name="downloadErrorWithCause">Erro de Download: %s.\nPor favor, verifique se você está conectdo à Internet.</string>
@@ -197,14 +197,14 @@
     <string name="sendData">Dados enviados</string>
     <string name="receiveData">Dados recebidos</string>
     <string name="scheduledReceivers">Destino agendados:</string>
-    <string name="longClickForMoreOptions">(long-click receiver for more options)</string><!-- TODO -->
-    <string name="sendExistingDataQuestion">Você deseja enviar agora todos os dados existentes (%1$d registros, %2$d arquivos) para %3$s?</string><!-- add "now", En version now reads as: "Do you wish to send all existing data (%1$d records, %2$d files) to %3$s now?" -->
+    <string name="longClickForMoreOptions">(Click longo em destinatário para mais opções)</string>
+    <string name="sendExistingDataQuestion">Você deseja enviar agora todos os dados existentes (%1$d registros, %2$d arquivos) para %3$s?</string> 
     <string name="editScheduleEtc">Editar agendamento&#8230;</string>
     <string name="deleteSchedule">Apagar agendamento</string>
     <string name="resendAllData">(Re)enviar agora todos os dados</string>
-    <string name="transmissionStatisticsEtc">Transmission statistics&#8230;</string><!-- TODO -->
-    <string name="retrievingTransmissionStatisticsEtc">Retrieving transmission statistics&#8230;</string><!-- TODO -->
-    <string name="transmissionStatisticsMsg">Scheduled receiver %1$s has received (at least) %2$s records and %3$s media files related to project %4$s.</string><!-- TODO -->
+    <string name="transmissionStatisticsEtc">Estatística do envio&#8230;</string>
+    <string name="retrievingTransmissionStatisticsEtc">Recuperando estatísticas de envio&#8230;</string>
+    <string name="transmissionStatisticsMsg">Destinatários agendados %1$s receberam (ao menos) %2$s registros e %3$s arquivos de midia relacionados ao projeto %4$s.</string>
     <string name="receiveBinarySMS">Por SMS binário</string>
     <string name="receiveTextualSMS">Por SMS texto</string>
     <string name="receiver">Destinatário:</string>
