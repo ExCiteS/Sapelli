@@ -55,14 +55,14 @@
 	            <Button
 	                android:id="@+id/btnAddShortcut"
 	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="85dp"
+	                android:layout_width="@dimen/tab_main_button_width"
 	                android:layout_height="wrap_content"
 	                android:text="@string/add" />
 	
 	            <Button
 	                android:id="@+id/btnRemoveShortcut"
 	                style="?android:attr/buttonStyleSmall"
-	                android:layout_width="85dp"
+	                android:layout_width="@dimen/tab_main_button_width"
 	                android:layout_height="wrap_content"
 	                android:text="@string/remove" />
 	        </LinearLayout>
@@ -135,14 +135,14 @@
 					<Button
 		                android:id="@+id/btnExportData"
 		                style="?android:attr/buttonStyleSmall"
-		                android:layout_width="85dp"
+		                android:layout_width="@dimen/tab_main_button_width"
 		                android:layout_height="wrap_content"
 		                android:text="@string/exportEtc" />
 		            
 		            <Button
 		                android:id="@+id/btnDeleteData"
 		                style="?android:attr/buttonStyleSmall"
-		                android:layout_width="85dp"
+		                android:layout_width="@dimen/tab_main_button_width"
 		                android:layout_height="wrap_content"
 		                android:text="@string/delete" />
 		
