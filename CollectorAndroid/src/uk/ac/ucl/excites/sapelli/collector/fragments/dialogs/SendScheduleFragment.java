@@ -123,7 +123,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private TransmissionTabFragment transmissionTab;
+	final private TransmissionTabFragment transmissionTab;
 	
 	// Views
 	private ViewGroup groupReceiver;

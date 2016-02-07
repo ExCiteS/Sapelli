@@ -39,6 +39,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
@@ -155,10 +156,10 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 				toggleConfigGroup(true, switchSend.isChecked());
 				if(switchSend.isChecked())
 				{	// Sending is being switched on...
-					if(listScheduleAdapter.isEmpty()) // if there is no schedule make one...
+					if(listScheduleAdapter.isEmpty()) // if there is no schedule so make one...
 						SendScheduleFragment.ShowAddDialog(this);
-					//else
-						// TODO enable all schedules?
+					else
+						Toast.makeText(getOwner(), getString(R.string.enableScheduledReceivers), Toast.LENGTH_LONG).show();
 				}
 				else
 				{	// Sending is being switched off:
@@ -202,7 +203,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switch(item.getItemId())
 		{
 			case R.string.editScheduleEtc :
-				SendScheduleFragment.ShowEditDialog(this, schedule); // TODO callback?
+				SendScheduleFragment.ShowEditDialog(this, schedule);
 				break;
 			case R.string.deleteSchedule :
 				delete(schedule);
@@ -476,5 +477,5 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		}
 		
 	}
-		
+
 }

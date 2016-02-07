@@ -195,6 +195,7 @@
     <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
     <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
     <string name="sendData">Send data</string>
+    <string name="enableScheduledReceivers">Please enable scheduled receiver(s)</string>
     <string name="receiveData">Receive data</string>
     <string name="scheduledReceivers">Scheduled receivers:</string>
     <string name="longClickForMoreOptions">(long-click receiver for more options)</string>
