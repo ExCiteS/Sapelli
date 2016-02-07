@@ -18,25 +18,18 @@
 
 package uk.ac.ucl.excites.sapelli.collector.fragments.dialogs;
 
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.DialogInterface;
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.AndroidGeoKeyClient;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.URLUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
 
@@ -44,25 +37,21 @@ import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
  * @author mstevens
  *
  */
-public class GeoKeyReceiverFragment extends ProjectManagerFragment implements DialogInterface.OnClickListener
+public class GeoKeyReceiverFragment extends AbstractReceiverFragment<GeoKeyServer> implements DialogInterface.OnClickListener
 {
 	
 	// STATIC -------------------------------------------------------
-	static public void ShowAddDialog(AppCompatActivity owner, ReceiverUpdateCallback callback)
+	static public void ShowAddDialog(ProjectManagerActivity owner, ReceiverUpdateCallback callback)
 	{
 		new GeoKeyReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + GeoKeyServer.class.getSimpleName());
 	}
 
-	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, GeoKeyServer editCorrespondent)
+	static public void ShowEditDialog(ProjectManagerActivity owner, ReceiverUpdateCallback callback, GeoKeyServer editCorrespondent)
 	{
 		new GeoKeyReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + GeoKeyServer.class.getSimpleName());
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private final ReceiverUpdateCallback callback;
-	
-	private GeoKeyServer editReceiver;
-	
 	private EditText txtGeoKeyServerURL;
 	private EditText txtEmail;
 	private EditText txtPassword;
@@ -75,8 +64,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	
 	public GeoKeyReceiverFragment(ReceiverUpdateCallback callback, GeoKeyServer receiver)
 	{
-		this.callback = callback;
-		this.editReceiver = receiver;
+		super(callback, receiver);
 	}
 	
 	/* (non-Javadoc)
@@ -86,11 +74,6 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 	protected Integer getLayoutID()
 	{
 		return R.layout.dialog_geokey_receiver;
-	}
-	
-	public boolean isEditing()
-	{
-		return editReceiver != null;
 	}
 	
 	/* (non-Javadoc)
@@ -123,46 +106,18 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		txtGeoKeyServerURL.setEnabled(!isEditing());
 	}
 	
-	@SuppressLint("InflateParams")
 	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState)
+	protected int getIconId()
 	{
-		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(SendConfigurationHelpers.getGeoKeyReceiverDrawable(true))
-		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
-		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
-		.setNegativeButton(android.R.string.cancel, this);
-		final AlertDialog dialog = builder.create();
-		
-		DialogHelpers.MakeNonDismissing(dialog, this, DialogInterface.BUTTON_POSITIVE);
-		
-		// Set view:
-		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		dialog.setView(getRootLayout(), lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
-		
-		return dialog;
+		return SendConfigurationHelpers.getGeoKeyReceiverDrawable(true);
 	}
 
-	@Override
-	public void onClick(DialogInterface dialog, int which)
-	{
-		switch(which)
-		{
-			case DialogInterface.BUTTON_POSITIVE :
-				save(dialog, null);
-				break;
-			case DialogInterface.BUTTON_NEGATIVE :
-				if(!isEditing())
-					callback.newReceiver(null); // signal that adding new receiver was cancelled
-				break;
-		}
-	}
-	
 	/**
 	 * @param dialog
 	 * @param toSave
 	 */
-	private void save(final DialogInterface dialog, GeoKeyServer toSave)
+	@Override
+	protected void validateAndSave(final DialogInterface dialog, GeoKeyServer toSave)
 	{
 		final ProjectManagerActivity activity = getOwner();
 		if(activity == null)
@@ -252,7 +207,7 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 								break;
 							case OK:
 								Toast.makeText(activity, R.string.verificationSuccessful, Toast.LENGTH_LONG).show();
-								save(dialog, toVerify);
+								validateAndSave(dialog, toVerify);
 								break;
 						case Aborted:
 						default:
@@ -264,15 +219,8 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 			}
 		}
 		
-		// Actually save the account:
-		SendConfigurationHelpers.saveCorrespondent(activity, toSave);
-		if(callback != null)
-		{
-			if(!isEditing())
-				callback.newReceiver(toSave);
-			else
-				callback.editedReceiver(toSave);
-		}
+		// Save account & dismiss dialog:
+		doSave(toSave);
 		dialog.dismiss();
 	}
 	
@@ -341,5 +289,5 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 		public void done(VerificationResult result);
 		
 	}
-		
+
 }
