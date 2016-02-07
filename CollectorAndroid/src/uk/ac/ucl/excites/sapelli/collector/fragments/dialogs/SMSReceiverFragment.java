@@ -169,6 +169,8 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 					dialog.dismiss();
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
+				if(!isEditing())
+					callback.newReceiver(null); // signal that adding new receiver was cancelled
 				break;
 		}
 	}

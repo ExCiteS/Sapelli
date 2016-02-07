@@ -152,6 +152,8 @@ public class GeoKeyReceiverFragment extends ProjectManagerFragment implements Di
 				save(dialog, null);
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
+				if(!isEditing())
+					callback.newReceiver(null); // signal that adding new receiver was cancelled
 				break;
 		}
 	}
