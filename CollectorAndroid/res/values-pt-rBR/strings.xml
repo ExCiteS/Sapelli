@@ -16,7 +16,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="pt_BR">
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collector</string>
@@ -77,7 +77,7 @@
     <string name="unsupportedExtension">Extensão de projeto Sapelli não suportado (%1$s), as extensões suportadas são %2$s. Você ainda quer tentar carregar um projeto desse arquivo?</string>
     <string name="projectLoading">Carregando projeto …</string>
     <string name="projectRemoving">Removendo projeto …</string>
-    <string name="sapelliFileLoadFailure">Falha de carregamento ou armazenamento de projeto Sapelli (source: %1$s).\nCause: %2$s</string>
+    <string name="sapelliFileLoadFailure">Falha de carregamento ou armazenamento de projeto Sapelli (Fonte: %1$s).\nCausa: %2$s</string>
     <string name="parsingWarnings">Analisando falhas</string>
     <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">Este aquivo não pôde ser encontrado</string>
@@ -161,7 +161,7 @@
     <string name="exportDeleteConfirm">Você quer apagar os registros exportados?</string>
     <string name="exportFailureTitle">Falha</string>
     <string name="exportFailureMsg">Falha ao exportar quaisquer registros para %1$s, devido à: %2$s.</string>
-    <string name="exportDeleteFailureMsg">Falha ao apagar (alguns dos) regstros, devido à: %s.</string>
+    <string name="exportDeleteFailureMsg">Falha ao apagar (alguns dos) registros, devido à: %s.</string>
     <string name="exportNothing">Não há nada para exportar.</string>
     <string name="exporting_data">Exportando dados …</string>
     <string name="unknownExportExtension">Extensão de arquivo invalida ou desconhecida: %s</string>
@@ -170,20 +170,20 @@
     <string name="deletingXRecords">Apagando %d registros …</string>
     <string name="mediaScanning">Procurando por arquivos de mídia</string>
     <string name="deleteNoRecordsFound">Nenhum registro encontrado.</string>
-    <string name="deleteRecordsConfirmation">Você está seguro em apagar os %1$d registos associados ao projeto %2$s?</string>
-    <string name="deleteAttachmentsConfirmation">Você também deseja apagar os %d arquivos de mídia (fotos, audio ou vídeo ) associados aos registros?</string>
-    <string name="deleteRecordsAndMediaConfirmation">Você está seguro em apagar todos os %1$d registros e %2$d arquivos de mídia associados (foto, audio ou vídeo) coletados usando o projeto %3$s?</string>
+    <string name="deleteRecordsConfirmation">Você está seguro em apagar o(s) %1$d registo(s) associado(s) ao projeto %2$s?</string>
+    <string name="deleteAttachmentsConfirmation">Você também deseja apagar o(s) %d arquivo(s) de mídia (fotos, audio ou vídeo) associado(s) ao(s) registro(s)?</string>
+    <string name="deleteRecordsAndMediaConfirmation">Você está seguro em apagar todo(s) o(s) %1$d registro(s) e %2$d arquivo(s) de mídia (foto, audio ou vídeo) coletados usando o projeto %3$s?</string>
     <string name="backup">Backup</string>
-    <string name="selectForBackup">Isto fará uma cópia de segurança do banco de dados, assim como os diretórios selecionados abaixo:</string>
+    <string name="selectForBackup">Isto fará uma cópia de segurança do banco de dados, assim como dos diretórios selecionados abaixo:</string>
     <string name="folderCrashes">Relatório de falhas</string>
     <string name="folderExports">Dados exportados</string>
     <string name="folderLogs">Arquivos de log</string>
     <string name="folderAttachments">Anexos</string>
     <string name="folderProjects">Arquivos de projeto</string>
     <string name="preBackupExportTitle">Exportar para backup</string>
-    <string name="preBackupExportMsg">Você escolheu executar o backup um diretório com dados exportados. Você deseja incluir uma nova exportação de todos os dados do projeto, ou apenas as exportações anteriores?</string>
+    <string name="preBackupExportMsg">Você escolheu executar o backup de um diretório com dados já exportados. Você deseja incluir uma nova exportação com todos os dados do projeto ou apenas as exportações anteriores?</string>
     <string name="preBackupExportFormatMsg">Encontrados %d registros para exportar.\nPor favor, especifique o formato de exportação:</string>
-    <string name="preBackupExportYes">Sim, inclua a nova exportação</string>
+    <string name="preBackupExportYes">Sim</string>
     <string name="backup_continue">O processo de backup continuará …</string>
     <string name="backup_progress_init">Preparando para o backup …</string>
     <string name="backup_progress_db">Fazendo backup do(s) banco(s) de dados …</string>
