@@ -123,7 +123,7 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private TransmissionTabFragment transmissionTab;
+	final private TransmissionTabFragment transmissionTab;
 	
 	// Views
 	private ViewGroup groupReceiver;
@@ -330,9 +330,16 @@ public class SendScheduleFragment extends ProjectManagerFragment implements OnCl
 				save(dialog, false);
 				break;
 			case DialogInterface.BUTTON_NEGATIVE :
-				transmissionTab.addNew(null); // signals adding/editing schedule was cancelled 
+				dialog.cancel();
 				break;
 		}
+	}
+	
+	@Override
+	public void onCancel(DialogInterface dialog)
+	{
+		super.onCancel(dialog);
+		transmissionTab.addNew(null); // signals adding/editing schedule was cancelled
 	}
 	
 	/**

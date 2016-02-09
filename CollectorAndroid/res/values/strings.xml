@@ -37,10 +37,10 @@
     <string name="manage">Manage</string>
     <string name="manageEtc">Manage&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> is a project by <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborators.]]></string>
-	<string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
-	<string name="determiningDeviceID">Determining device ID …</string>
-	<string name="pleaseLeaveAirplaneMode">In order to initialise the application for first use, please take your device out of Airplane Mode.</string>
-	<string name="project_manager">Project Manager</string>
+    <string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Source code available</a> under the terms of the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
+    <string name="determiningDeviceID">Determining device ID …</string>
+    <string name="pleaseLeaveAirplaneMode">In order to initialise the application for first use, please take your device out of Airplane Mode.</string>
+    <string name="project_manager">Project Manager</string>
     <string name="switch_project">Switch to project:</string>
     <string name="no_projects">No projects loaded.</string>
     <string name="tab_main">Main</string>
@@ -195,6 +195,7 @@
     <string name="dbUpgrade">The Sapelli Collector database has been upgraded (from v%1$d to v%2$d). A copy of the old database has been kept.\nIn case of problems please use the \"Back-up\" feature and send the resulting file to the Sapelli team.</string>
     <string name="dbUpgradeWarningsTitle">Warnings during upgrade</string>
     <string name="sendData">Send data</string>
+    <string name="enableScheduledReceivers">Please enable scheduled receiver(s)</string>
     <string name="receiveData">Receive data</string>
     <string name="scheduledReceivers">Scheduled receivers:</string>
     <string name="longClickForMoreOptions">(long-click receiver for more options)</string>

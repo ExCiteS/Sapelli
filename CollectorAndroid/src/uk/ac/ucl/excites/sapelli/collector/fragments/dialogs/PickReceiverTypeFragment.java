@@ -23,10 +23,10 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 
@@ -38,7 +38,7 @@ public class PickReceiverTypeFragment extends ProjectManagerFragment implements 
 {
 
 	// STATIC -------------------------------------------------------
-	static public void ShowDialog(AppCompatActivity owner, ReceiverUpdateCallback callback)
+	static public void ShowDialog(ProjectManagerActivity owner, ReceiverUpdateCallback callback)
 	{
 		new PickReceiverTypeFragment(callback).show(owner.getSupportFragmentManager(), PickReceiverTypeFragment.class.getSimpleName());
 	}
@@ -107,7 +107,14 @@ public class PickReceiverTypeFragment extends ProjectManagerFragment implements 
 	public void onClick(DialogInterface dialog, int which)
 	{
 		if(which == DialogInterface.BUTTON_NEGATIVE)
-			callback.newReceiver(null); // signal that adding new receiver was cancelled 
+			dialog.cancel();
+	}
+
+	@Override
+	public void onCancel(DialogInterface dialog)
+	{
+		super.onCancel(dialog);
+		callback.newReceiver(null); // signal that adding new receiver was cancelled
 	}
 	
 }

@@ -387,7 +387,7 @@ public abstract class BaseActivity extends AppCompatActivity
 						finish();
 				}
 			} : null);
-		// set cancelable (only true if there no effects):
+		// set cancelable (only true if there are no effects):
 		bldr.setCancelable(!finishOnPositive && positiveTask == null && (negativeButtonId == HIDE_BUTTON || (!finishOnNegative && negativeTask == null)));
 		// create & show
 		bldr.create().show();

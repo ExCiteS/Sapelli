@@ -39,6 +39,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerTabFragment;
@@ -62,7 +63,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
  * 
  * @author Julia, mstevens
  */
-public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener
+public class TransmissionTabFragment extends ProjectManagerTabFragment implements OnClickListener, OnCheckedChangeListener
 {
 
 	// Views
@@ -98,7 +99,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		// Sending config...
 		sendHeader = (LinearLayout) rootLayout.findViewById(R.id.sendHeader);
 		switchSend = (SwitchCompat) rootLayout.findViewById(R.id.switchSend);
-		switchSend.setOnClickListener(this);
+		switchSend.setOnCheckedChangeListener(this);
 		sendSettings = (LinearLayout) rootLayout.findViewById(R.id.sendSettings);
 		listSchedules = (ListView) rootLayout.findViewById(R.id.listSendSchedules);
 		registerForContextMenu(listSchedules);
@@ -109,7 +110,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		// Receiving config...
 		receiveHeader = (LinearLayout) rootLayout.findViewById(R.id.receiveHeader);
 		switchReceive = (SwitchCompat) rootLayout.findViewById(R.id.switchReceive);
-		switchReceive.setOnClickListener(this);
+		switchReceive.setOnCheckedChangeListener(this);
 		receiveSettings = (LinearLayout) rootLayout.findViewById(R.id.receiveSettings);
 	}
 	
@@ -138,8 +139,9 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	
 	private void toggleConfigGroup(boolean send, boolean enabled)
 	{
-		// Switch state:
-		(send ? switchSend : switchReceive).setChecked(enabled);
+		// Set switch state (if needed):
+		if((send ? switchSend : switchReceive).isChecked() != enabled)
+			(send ? switchSend : switchReceive).setChecked(enabled);
 		// Header background:
 		(send ? sendHeader : receiveHeader).setBackgroundResource(enabled ? R.drawable.drop_shadow_top : R.drawable.drop_shadow);
 		// Settings pane:
@@ -149,27 +151,49 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 	@Override
 	public void onClick(View view)
 	{
+		if(view.getId() == R.id.btnAddSchedule)
+			SendScheduleFragment.ShowAddDialog(this);
+	}
+
+	@Override
+	public void onCheckedChanged(CompoundButton view, boolean isChecked)
+	{
 		switch(view.getId())
 		{
 			case R.id.switchSend :
-				toggleConfigGroup(true, switchSend.isChecked());
-				if(switchSend.isChecked())
+				if(listScheduleAdapter == null)
+					return;
+				if(isChecked)
 				{	// Sending is being switched on...
-					if(listScheduleAdapter.isEmpty()) // if there is no schedule make one...
+					if(listScheduleAdapter.isEmpty()) // if there is no schedule so make one..
 						SendScheduleFragment.ShowAddDialog(this);
-					//else
-						// TODO enable all schedules?
+					else
+					{
+						Toast.makeText(getOwner(), getString(R.string.enableScheduledReceivers), Toast.LENGTH_LONG).show();
+						toggleConfigGroup(true, true); // open sending pane
+					}
 				}
 				else
-				{	// Sending is being switched off:
-					disableSending(); // disable all schedules
+				{	// Sending is being switched off: disable all schedules...
+					boolean changed = false;
+					for(int s = 0; s < listScheduleAdapter.getCount(); s++)
+					{
+						SendSchedule schedule = listScheduleAdapter.getItem(s);
+						if(schedule != null && schedule.isEnabled())
+						{	// disable & save schedule:
+							schedule.setEnabled(false);
+							save(schedule);
+							changed = true;
+						}
+					}
+					if(changed)
+						listScheduleAdapter.notifyDataSetChanged(); // update schedule list
+					else
+						toggleConfigGroup(true, false); // close sending pane
 				}
 				break;
-			case R.id.btnAddSchedule :
-				SendScheduleFragment.ShowAddDialog(this);
-				break;
 			case R.id.switchReceive :
-				toggleConfigGroup(false, switchReceive.isChecked());
+				toggleConfigGroup(false, isChecked); // open/close receiving pane
 				// does nothing (for now)
 				break;
 		}
@@ -202,7 +226,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		switch(item.getItemId())
 		{
 			case R.string.editScheduleEtc :
-				SendScheduleFragment.ShowEditDialog(this, schedule); // TODO callback?
+				SendScheduleFragment.ShowEditDialog(this, schedule);
 				break;
 			case R.string.deleteSchedule :
 				delete(schedule);
@@ -275,25 +299,6 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		});
 	}
 	
-	public void disableSending()
-	{
-		if(listScheduleAdapter == null)
-			return;
-		boolean changed = false;
-		for(int s = 0; s < listScheduleAdapter.getCount(); s++)
-		{
-			SendSchedule schedule = listScheduleAdapter.getItem(s);
-			if(schedule != null && schedule.isEnabled())
-			{
-				schedule.setEnabled(false);
-				save(schedule);
-				changed = true;
-			}
-		}
-		if(changed)
-			listScheduleAdapter.notifyDataSetChanged();
-	}
-	
 	private void save(SendSchedule schedule)
 	{
 		SendConfigurationHelpers.saveSchedule(getOwner(), schedule);
@@ -321,8 +326,9 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			// Store the new schedule:
 			save(schedule);
 		
-			// Refresh schedules:
+			// UI update:
 			listScheduleAdapter.add(schedule);
+			toggleConfigGroup(true, true); // at least one schedule is enabled
 			
 			// Query for existing data & ask if it need to be (re)sent:
 			sendDataNow(schedule, true);
@@ -434,7 +440,7 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 			
 			// Set-up switch:
 			SwitchCompat switchEnabled = (SwitchCompat) layout.findViewById(R.id.switchEnabled);
-			switchEnabled.setTag(position); // we'll use this to get the correct schedule in onCheckedChanged() below
+			switchEnabled.setTag(sendSchedule); // store schedule as tag, we'll use this in onCheckedChanged() below
 			switchEnabled.setChecked(sendSchedule.isEnabled());
 			switchEnabled.setOnCheckedChangeListener(this);
 			
@@ -459,14 +465,14 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		{
 			try
 			{
-				SendSchedule sendSchedule = getItem((Integer) buttonView.getTag()); // get schedule using tag
+				SendSchedule sendSchedule = (SendSchedule) buttonView.getTag(); // get schedule using tag
 				if(sendSchedule.isEnabled() != isChecked)
 				{
 					// dis/enable schedule:
 					sendSchedule.setEnabled(isChecked);
 					
 					// Save settings:
-					save(sendSchedule);	
+					save(sendSchedule);
 				}
 			}
 			catch(Exception e)
@@ -476,5 +482,5 @@ public class TransmissionTabFragment extends ProjectManagerTabFragment implement
 		}
 		
 	}
-		
+
 }

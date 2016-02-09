@@ -22,10 +22,8 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -33,11 +31,9 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectManagerFragment;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers;
 import uk.ac.ucl.excites.sapelli.collector.transmission.SendConfigurationHelpers.ReceiverUpdateCallback;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DialogHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
@@ -45,25 +41,21 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorresponde
  * @author mstevens
  *
  */
-public class SMSReceiverFragment extends ProjectManagerFragment implements DialogInterface.OnClickListener
+public class SMSReceiverFragment extends AbstractReceiverFragment<SMSCorrespondent> implements DialogInterface.OnClickListener
 {
 	
 	// STATIC -------------------------------------------------------
-	static public void ShowAddDialog(AppCompatActivity owner, ReceiverUpdateCallback callback)
+	static public void ShowAddDialog(ProjectManagerActivity owner, ReceiverUpdateCallback callback)
 	{
 		new SMSReceiverFragment(callback).show(owner.getSupportFragmentManager(), R.string.add + SMSCorrespondent.class.getSimpleName());
 	}
 
-	static public void ShowEditDialog(AppCompatActivity owner, ReceiverUpdateCallback callback, SMSCorrespondent editCorrespondent)
+	static public void ShowEditDialog(ProjectManagerActivity owner, ReceiverUpdateCallback callback, SMSCorrespondent editCorrespondent)
 	{
 		new SMSReceiverFragment(callback, editCorrespondent).show(owner.getSupportFragmentManager(), R.string.edit + SMSCorrespondent.class.getSimpleName());
 	}
 	
 	// DYNAMIC ------------------------------------------------------
-	private final ReceiverUpdateCallback callback;
-	
-	private SMSCorrespondent editReceiver;
-	
 	private EditText txtReceiverName;
 	private EditText txtReceiverPhoneNumber;
 	private CheckBox chkBinarySMS;
@@ -75,8 +67,7 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	
 	public SMSReceiverFragment(ReceiverUpdateCallback callback, SMSCorrespondent receiver)
 	{
-		this.callback = callback;
-		this.editReceiver = receiver;
+		super(callback, receiver);
 	}
 	
 	/* (non-Javadoc)
@@ -86,11 +77,6 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	protected Integer getLayoutID()
 	{
 		return R.layout.dialog_sms_receiver;
-	}
-	
-	public boolean isEditing()
-	{
-		return editReceiver != null;
 	}
 	
 	/* (non-Javadoc)
@@ -130,24 +116,12 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 	
 	@SuppressLint("InflateParams")
 	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState)
+	public AlertDialog onCreateDialog(Bundle savedInstanceState)
 	{
-		AlertDialog.Builder builder = new AlertDialog.Builder(getOwner())
-		.setIcon(SendConfigurationHelpers.getSMSReceiverDrawable(isEditing() ? editReceiver.isBinary() : SMSCorrespondent.DEFAULT_BINARY_SMS, true))
-		.setTitle(isEditing() ? R.string.editReceiver : R.string.addReceiver)
-		.setPositiveButton(android.R.string.ok, null) // listener will be set through the MakeNonDismission() call below
-		.setNegativeButton(android.R.string.cancel, this);
-		final AlertDialog dialog = builder.create();
-		
-		DialogHelpers.MakeNonDismissing(dialog, this, DialogInterface.BUTTON_POSITIVE);
-		
-		// Set view:
-		int lrSpacingPx = getDialogLeftRightPaddingPx();
-		View layout = getRootLayout();
-		dialog.setView(layout, lrSpacingPx, getDialogMessageToViewSpacingPx(), lrSpacingPx, 0);
+		final AlertDialog dialog = super.onCreateDialog(savedInstanceState);
 		
 		// Switch dialog icon based on chkBinarySMS state:
-		((CheckBox) layout.findViewById(R.id.chkBinarySMS)).setOnCheckedChangeListener(new OnCheckedChangeListener()
+		chkBinarySMS.setOnCheckedChangeListener(new OnCheckedChangeListener()
 		{
 			@Override
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
@@ -158,76 +132,65 @@ public class SMSReceiverFragment extends ProjectManagerFragment implements Dialo
 		
 		return dialog;
 	}
+	
+	@Override
+	protected int getIconId()
+	{
+		return SendConfigurationHelpers.getSMSReceiverDrawable(isEditing() ? editReceiver.isBinary() : SMSCorrespondent.DEFAULT_BINARY_SMS, true);
+	}
 
 	@Override
-	public void onClick(DialogInterface dialog, int which)
+	protected void validateAndSave(DialogInterface dialog, SMSCorrespondent toSave)
 	{
-		switch(which)
+		if(toSave == null)
 		{
-			case DialogInterface.BUTTON_POSITIVE :
-				if(saveChanges())
-					dialog.dismiss();
-				break;
-			case DialogInterface.BUTTON_NEGATIVE :
-				break;
-		}
-	}
-	
-	/**
-	 * @return whether or not to dismiss the dialog
-	 */
-	private boolean saveChanges()
-	{
-		// Input validation:
-		//	Name:
-		String name = txtReceiverName.getText().toString();
-		if(name.isEmpty())
-		{
-			getOwner().showErrorDialog(R.string.emptyReceiverName);
-			txtReceiverName.requestFocus();
-			return false;
-		}
-		//	PhoneNumber:
-		PhoneNumber phoneNumber = null;
-		if(!isEditing())
-		{
-			try
+			// Input validation:
+			//	Name:
+			String name = txtReceiverName.getText().toString();
+			if(name.isEmpty())
 			{
-				phoneNumber = SMSCorrespondent.toPhoneNumber(txtReceiverPhoneNumber.getText().toString(), DeviceControl.getSimCountryISOCode(getOwner()));
+				getOwner().showErrorDialog(R.string.emptyReceiverName);
+				txtReceiverName.requestFocus();
+				return;
 			}
-			catch(Exception e)
-			{
-				getOwner().showErrorDialog(R.string.invalidPhoneNumber);
-				txtReceiverPhoneNumber.requestFocus();
-				return false;
-			}
-		}
-		//	Mode:
-		boolean binarySMS = chkBinarySMS.isChecked();
-		
-		// Check if we are editing...
-		if(isEditing())
-		{	// We are, check if actual changes were made (only name can be changed):
-			if(!editReceiver.getName().equals(name))
-				// Update name:
-				editReceiver.setName(name);
-			else
-				// No changes, we are done here...
-				return true;
-		}
-		
-		// Save correspondent:
-		SMSCorrespondent toSave = isEditing() ? editReceiver : new SMSCorrespondent(name, phoneNumber, binarySMS);
-		SendConfigurationHelpers.saveCorrespondent(getOwner(), toSave);
-		if(callback != null)
-		{
+			//	PhoneNumber:
+			PhoneNumber phoneNumber = null;
 			if(!isEditing())
-				callback.newReceiver(toSave);
-			else
-				callback.editedReceiver(editReceiver);
+			{
+				try
+				{
+					phoneNumber = SMSCorrespondent.toPhoneNumber(txtReceiverPhoneNumber.getText().toString(), DeviceControl.getSimCountryISOCode(getOwner()));
+				}
+				catch(Exception e)
+				{
+					getOwner().showErrorDialog(R.string.invalidPhoneNumber);
+					txtReceiverPhoneNumber.requestFocus();
+					return;
+				}
+			}
+			//	Mode:
+			boolean binarySMS = chkBinarySMS.isChecked();
+		
+			// Check if we are editing...
+			if(isEditing())
+			{	// We are, check if actual changes were made (only name can be changed):
+				if(!editReceiver.getName().equals(name))
+					// Update name:
+					editReceiver.setName(name);
+				else
+				{	// No changes, we are done here...
+					dialog.dismiss();
+					return;
+				}
+			}
+			
+			// set/create SMSCorrespondent to save:
+			toSave = isEditing() ? editReceiver : new SMSCorrespondent(name, phoneNumber, binarySMS);
 		}
 		
-		return true;
+		// Save correspondent & dismiss dialog:
+		doSave(toSave);
+		dialog.dismiss();
 	}
-		
+
 }

@@ -16,7 +16,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="pt_PT">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collector</string>
@@ -195,7 +195,7 @@
     <string name="dbUpgrade">A base de dados do Sapelli Collector foi atualizada (de v%1$d à v%2$d). Uma cópia da base de dados antigo foi mantida.\nNo caso de problemas, por favor, utilize a função \"Back-up\" e envie o arquivo resultante para a equipa Sapelli.</string>
     <string name="dbUpgradeWarningsTitle">Avisos durante a atualização</string>
     <string name="sendData">Dados enviados</string>
-	<string name="enableScheduledReceivers">Por favor, ative o(s) destinatário(s) agendado(s)</string>
+    <string name="enableScheduledReceivers">Por favor, ative o(s) destinatário(s) agendado(s)</string>
     <string name="receiveData">Dados recebidos</string>
     <string name="scheduledReceivers">Destino agendados:</string>
     <string name="longClickForMoreOptions">(Click longo em destinatário para mais opções)</string>
