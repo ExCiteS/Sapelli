@@ -181,7 +181,7 @@
     <string name="folderAttachments">Attachments</string>
     <string name="folderProjects">Project files</string>
     <string name="preBackupExportTitle">Export for back-up</string>
-    <string name="preBackupExportMsg">You have chosen to back-up the folder with exported data. Do you which to include a new export of all project data, or only previous exports?</string>
+    <string name="preBackupExportMsg">You have chosen to back-up the folder with exported data. Do you wish to include a new export of all project data, or only previous exports?</string>
     <string name="preBackupExportFormatMsg">Found %d records to export.\nPlease specify the export format:</string>
     <string name="preBackupExportYes">Yes, include new export</string>
     <string name="backup_continue">Back-up process will continue …</string>
