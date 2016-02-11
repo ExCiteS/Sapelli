@@ -19,14 +19,12 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -41,8 +39,7 @@ public class Page extends Field
 {
 	
 	private final List<Field> fields;
-	private List<Trigger> triggers;
-
+	
 	/**
 	 * Create a	new page
 	 * Note: pages never have captions, form designers should user labels for that.
@@ -83,21 +80,6 @@ public class Page extends Field
 		return fields;
 	}
 	
-	public void addTrigger(Trigger trigger)
-	{
-		if(triggers == null)
-			triggers = new ArrayList<Trigger>();
-		triggers.add(trigger);
-	}
-
-	/**
-	 * @return the triggers
-	 */
-	public List<Trigger> getTriggers()
-	{
-		return triggers != null ? triggers : Collections.<Trigger> emptyList();
-	}
-
 	/**
 	 * Overrides method of Field to ensure that the columns of fields contained
 	 * by this Page get created and added to the Schema of the Form, even though

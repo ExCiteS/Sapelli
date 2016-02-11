@@ -19,6 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -129,6 +131,8 @@ public abstract class Field extends JumpSource
 	
 	// Buttons:
 	private boolean[][] showControlByMode;
+
+	protected List<Trigger> triggers;
 	
 	/**
 	 * @param form the form the field belongs to
@@ -402,6 +406,21 @@ public abstract class Field extends JumpSource
 	public void setShowForward(boolean showForward)
 	{
 		setShowControl(Control.Type.Forward, showForward);
+	}
+	
+	public void addTrigger(Trigger trigger)
+	{
+		if(triggers == null)
+			triggers = new ArrayList<Trigger>();
+		triggers.add(trigger);
+	}
+
+	/**
+	 * @return the triggers
+	 */
+	public List<Trigger> getTriggers()
+	{
+		return triggers != null ? Collections.unmodifiableList(triggers) : Collections.<Trigger> emptyList();
 	}
 
 	public Column<?> getColumn()
