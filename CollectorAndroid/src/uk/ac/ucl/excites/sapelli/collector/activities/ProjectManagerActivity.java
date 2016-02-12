@@ -811,8 +811,13 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	
 	public void scanQR(MenuItem item)
 	{
-		// Start the Intent to Scan a QR code
-		new IntentIntegrator(this).initiateScan(IntentIntegrator.QR_CODE_TYPES);
+		// Start the Intent to Scan a QR code:
+		IntentIntegrator qrIntentIntegrator = new IntentIntegrator(this);
+		qrIntentIntegrator.setTitleByID(R.string.qrInstallScannerTtl);
+		qrIntentIntegrator.setMessageByID(R.string.qrInstallScannerMsg);
+		qrIntentIntegrator.setButtonYesByID(R.string.yes);
+		qrIntentIntegrator.setButtonNoByID(R.string.no);
+		qrIntentIntegrator.initiateScan(IntentIntegrator.QR_CODE_TYPES);
 		
 		closeDrawer(null);
 	}

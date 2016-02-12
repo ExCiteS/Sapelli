@@ -247,4 +247,6 @@
     <string name="emptyReceiverName">Please enter a name.</string>
     <string name="invalidPhoneNumber">Please enter a valid phone number.</string>
     <string name="uploadedFromAt">Uploaded from %1$s at %2$s.</string>
+    <string name="qrInstallScannerTtl">Install Barcode Scanner?</string>
+    <string name="qrInstallScannerMsg">This application requires Barcode Scanner. Would you like to install it?</string>
 </resources>
