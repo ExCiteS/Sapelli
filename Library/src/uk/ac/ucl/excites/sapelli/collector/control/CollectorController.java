@@ -434,7 +434,12 @@ public abstract class CollectorController<CUI extends CollectorUI<?, ?>> impleme
 		if(currFormSession.getCurrentField() == currField)
 		{	// If the current field hasn't changed as a result of the enter() call...
 			if(needsUIUpdate)
-				setFieldInUI(currField); // update UI if needed
+			{
+				// Update UI if needed
+				setFieldInUI(currField);
+				// Setup triggers:
+				setupTriggers(currField.getTriggers());
+			}
 			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
 		}
 		//else: when the current field *has* changed as part of the entering then we are done here
@@ -617,9 +622,6 @@ public abstract class CollectorController<CUI extends CollectorUI<?, ?>> impleme
 			else
 				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 		}
-		
-		// Setup the triggers
-		setupTriggers(page.getTriggers());
 
 		return true;
 	}
