@@ -247,4 +247,6 @@
     <string name="emptyReceiverName">Por favor, insira um nome.</string>
     <string name="invalidPhoneNumber">Por favor, insira telefone válido.</string>
     <string name="uploadedFromAt">Carregado de %1$s à %2$s.</string>
+    <string name="qrInstallScannerTtl">Instalar o leitor de Código de Barras?</string>
+    <string name="qrInstallScannerMsg"> Esta aplicação requer um leitor de Código de Barras.Você gostaria de instalá-lo?</string>
 </resources>
