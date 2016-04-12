@@ -20,6 +20,9 @@ Currently the core Sapelli team consists of:
   * [Dr Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: co-director of UCL ExCiteS
   * [Prof Muki Haklay](http://www.ucl.ac.uk/excites/people/academic-staff/muki-haklay), UCL: co-director of UCL ExCiteS
 
+Former contributors:
+  * [Ben Elliott](http://benjaminelliott.co.uk), intern: developer
+
 ### Legal disclaimer ###
 Copyright 2012-2016 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
 
