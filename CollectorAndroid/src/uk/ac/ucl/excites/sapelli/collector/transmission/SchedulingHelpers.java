@@ -80,6 +80,8 @@ public final class SchedulingHelpers
 	}
 	
 	/**
+	 * Sets or cancels an alarm for the given SendSchedule depending on whether it is enabled or not.
+	 * 
 	 * @param context
 	 * @param sendSchedule
 	 */
@@ -239,22 +241,22 @@ public final class SchedulingHelpers
 	 */
 	public static void ScheduleAll(Context context)
 	{
-		context.startService(new Intent(context, SchedulingHelpers.ScheduleService.class));
+		context.startService(new Intent(context, SchedulingHelpers.SchedulingService.class));
 	}
 	
 	/**
 	 * @author mstevens
 	 *
 	 */
-	static public class ScheduleService extends IntentService implements StoreHandle.StoreUser
+	static public class SchedulingService extends IntentService implements StoreHandle.StoreUser
 	{
 
 		/**
 		 * A constructor is required, and must call the super IntentService(String) constructor with a name for the worker thread.
 		 */
-		public ScheduleService()
+		public SchedulingService()
 		{
-			super(SchedulingHelpers.ScheduleService.class.getSimpleName());
+			super(SchedulingHelpers.SchedulingService.class.getSimpleName());
 		}
 
 		/**
@@ -308,7 +310,7 @@ public final class SchedulingHelpers
 		@Override
 		public void onReceive(Context context, Intent intent)
 		{
-			Log.d(getClass().getSimpleName(), "Boot event received, starting " + SchedulingHelpers.ScheduleService.class.getSimpleName() + " to schedule sending for all projects...");
+			Log.d(getClass().getSimpleName(), "Boot event received, starting " + SchedulingService.class.getSimpleName() + " to schedule sending for all projects...");
 			ScheduleAll(context);
 		}
 
