@@ -26,7 +26,6 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
@@ -34,9 +33,8 @@ import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQuery;
 import android.os.Build;
-import android.util.Log;
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
@@ -79,12 +77,12 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		{
 			this.db = helper.getWritableDatabase();
 		}
-		catch(SQLiteException sqliteE)
+		catch(Exception e)
 		{
-			throw new DBException("Failed to open writable SQLite database", sqliteE);
+			throw new DBException("Failed to open writable SQLite database", e);
 		}
-		if(loggingEnabled)
-			Log.d(TAG, "Opened SQLite database: " + db.getPath());
+		if(loggingEnabled || BuildConfig.DEBUG)
+			client.logInfo(TAG + "> Opened SQLite database: " + db.getPath());
 		
 		// Set initialisation args:
 		setInitialisationArguments(helper.newDB, targetVersion, upgrader);
@@ -102,17 +100,17 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void executeSQL(String sql) throws DBException
+	protected void executeSQL(final String sql) throws DBException
 	{
-		if(loggingEnabled)
-			Log.d(TAG, "Raw execute: " + sql);
+		if(loggingEnabled || BuildConfig.DEBUG)
+			client.logInfo(TAG + "> Raw execute: " + sql);
 		try
 		{
 			db.execSQL(sql);
 		}
-		catch(SQLException sqlE)
+		catch(Exception e)
 		{
-			throw new DBException("Exception upon executing SQL: " + sql, sqlE);
+			throw new DBException("Exception upon executing SQL: " + sql, e);
 		}
 	}
 
@@ -126,7 +124,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	public boolean _isInTransaction()
 	{
-		return db.inTransaction();
+		try
+		{
+			return db.inTransaction();
+		}
+		catch(Exception e)
+		{
+			client.logError(TAG + "> Error upon calling " + SQLiteDatabase.class.getName() + "#inTransaction()", e);
+			return false;
+		}
 	}
 
 	/**
@@ -152,9 +158,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			{
 				db.beginTransaction();
 			}
-			catch(Exception ex)
+			catch(Exception e)
 			{
-				throw new DBException("Could not open SQLite transaction", ex);
+				throw new DBException("Could not open SQLite transaction", e);
 			}
 	}
 
@@ -167,9 +173,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 				db.setTransactionSuccessful();
 				db.endTransaction();
 			}
-			catch(Exception ex)
+			catch(Exception e)
 			{
-				throw new DBException("Could not commit SQLite transaction", ex);
+				throw new DBException("Could not commit SQLite transaction", e);
 			}
 	}
 
@@ -181,9 +187,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			{
 				db.endTransaction();
 			}
-			catch(SQLiteException sqliteE)
+			catch(Exception e)
 			{
-				client.logError("Could not roll-back SQLite transaction: " + ExceptionHelpers.getMessageAndCause(sqliteE));
+				client.logError(TAG + "> Could not roll-back SQLite transaction", e);
 			}
 	}
 
@@ -201,15 +207,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 				argStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), false);
 			
 			// Log query & arguments:
-			if(isLoggingEnabled())
-				Log.d(TAG, getQueryLogMessage(sql, paramCols, sapArguments));
+			if(isLoggingEnabled() || BuildConfig.DEBUG)
+				client.logInfo(TAG + "> " + getQueryLogMessage(sql, paramCols, sapArguments));
 			
 			// Execute:
 			return (AndroidSQLiteCursor) db.rawQuery(sql, argStrings);
 		}
-		catch(SQLException e)
+		catch(Exception e)
 		{
-			Log.d(TAG, "Error: Failed to execute raw SQLite query (" + sql + ").", e);
+			client.logError(TAG + "> Failed to execute raw SQLite query (" + sql + ").", e);
 			throw new DBException("Failed to execute SQLite selection query: " + sql, e);
 		}
 	}
@@ -221,22 +227,25 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		{
 			return db.getVersion();
 		}
-		catch(Exception ex)
+		catch(Exception e)
 		{
-			throw new DBException("Could not get database version.", ex);
+			throw new DBException("Could not get database version.", e);
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#setVersion(int)
+	 */
 	@Override
-	protected void setVersion(int version) throws DBException
+	protected void setVersion(final int version) throws DBException
 	{
 		try
 		{
 			db.setVersion(version);
 		}
-		catch(Exception ex)
+		catch(Exception e)
 		{
-			throw new DBException("Could not set database version.", ex);
+			throw new DBException("Could not set database version.", e);
 		}
 	}
 	
@@ -258,7 +267,14 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void closeConnection()
 	{
-		db.close();
+		try
+		{
+			db.close();
+		}
+		catch(Exception e)
+		{
+			client.logError(TAG + "> Exception upon closing the database", e);
+		}
 	}
 	
 	@Override
@@ -270,15 +286,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected AndroidSQLiteStatement generateStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
-		if(loggingEnabled)
-			Log.d(TAG, "Compile statement: " + sql);
+		if(loggingEnabled || BuildConfig.DEBUG)
+			client.logInfo(TAG + "> Compile statement: " + sql);
 		try
 		{
 			return new AndroidSQLiteStatement(this, db.compileStatement(sql), paramCols);
 		}
-		catch(SQLException sqlE)
+		catch(Exception e)
 		{
-			throw new DBException("Exception upon compiling SQL: " + sql, sqlE);
+			throw new DBException("Exception upon compiling SQL: " + sql, e);
 		}
 	}
 	

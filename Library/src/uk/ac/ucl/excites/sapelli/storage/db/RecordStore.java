@@ -59,7 +59,7 @@ public abstract class RecordStore extends Store
 	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
 	
 	// DYNAMIC ----------------------------------------------------------------
-	protected StorageClient client;
+	protected final StorageClient client;
 	protected boolean loggingEnabled = false;
 	
 	/**
@@ -77,8 +77,10 @@ public abstract class RecordStore extends Store
 	 * @param client
 	 * @param useRollbackTasks whether or not the subclass will/might make use of roll-back tasks 
 	 */
-	public RecordStore(StorageClient client, boolean useRollbackTasks)
+	public RecordStore(final StorageClient client, final boolean useRollbackTasks)
 	{
+		if(client == null)
+			throw new NullPointerException("client cannot be null!");
 		this.client = client;
 		rollbackTasks = useRollbackTasks ? new Stack<List<RollbackTask>>() : null;
 	}

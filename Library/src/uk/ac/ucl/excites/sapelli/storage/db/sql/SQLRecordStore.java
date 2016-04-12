@@ -267,7 +267,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * Sets the current version of the database (persistently stored).
 	 * 
-	 * @param version
+	 * @param version the version to set
 	 * @throws DBException
 	 */
 	protected abstract void setVersion(int version) throws DBException;
