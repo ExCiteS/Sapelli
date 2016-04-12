@@ -62,7 +62,7 @@ public class DeflateCompressor extends Compressor
 	@Override
 	protected OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes) throws IOException
 	{
-		return new DeflaterOutputStream(sink, new Deflater(Deflater.BEST_COMPRESSION, headerless)); // best compression & no header)
+		return new DeflaterOutputStream(sink, new Deflater(Deflater.BEST_COMPRESSION, headerless)); // best compression
 	}
 
 	@Override
