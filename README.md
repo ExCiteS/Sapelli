@@ -17,7 +17,7 @@ Currently the core Sapelli team consists of:
   * [Ben Elliott](http://benjaminelliott.co.uk), intern: developer
   * [Gillian Conquest](http://gillconquest.co.uk), UCL: anthropologist, field tester
   * Carolina Comandulli, UCL: anthropologist, field tester
-  * [Péricles Luiz Picanço Junior](https://github.com/periclesjr), [UFPR](http://www.ufpr.br)/UCL: translator
+  * [Péricles Luiz Picanço Junior](https://github.com/periclesjr), [UFPR](http://www.ufpr.br)/UCL: cartographer, translator
   * [Dr Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: co-director of UCL ExCiteS
   * [Prof Muki Haklay](http://www.ucl.ac.uk/excites/people/academic-staff/muki-haklay), UCL: co-director of UCL ExCiteS
 
