@@ -14,7 +14,6 @@ Currently the core Sapelli team consists of:
   * [Dr Matthias Stevens](https://github.com/mstevens83), [UCL](http://iris.ucl.ac.uk/iris/browse/profile?upi=MLLST21): lead architect/developer
   * [Michalis Vitos](https://github.com/michalis-vitos), UCL: developer
   * [Julia Altenbuchner](https://github.com/julia-altenbuchner), UCL: developer
-  * [Ben Elliott](http://benjaminelliott.co.uk), intern: developer
   * [Gillian Conquest](http://gillconquest.co.uk), UCL: anthropologist, field tester
   * Carolina Comandulli, UCL: anthropologist, field tester
   * [Péricles Luiz Picanço Junior](https://github.com/periclesjr), [UFPR](http://www.ufpr.br)/UCL: cartographer, translator
