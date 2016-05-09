@@ -23,6 +23,7 @@ Currently the core Sapelli team consists of:
 
 Former contributors:
   * [Ben Elliott](http://benjaminelliott.co.uk), intern: developer
+  * [JP de Vooght](https://github.com/jdevoo), contributor: French translation
 
 ### Legal disclaimer ###
 Copyright 2012-2016 [University College London](http://ucl.ac.uk) – [ExCiteS group](http://ucl.ac.uk/excites)
