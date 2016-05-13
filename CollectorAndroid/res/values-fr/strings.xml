@@ -38,8 +38,8 @@
     <string name="manageEtc">Gérer&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> est un projet réalisé par <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; collaborateurs.]]></string>
     <string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Code source disponible</a> sous les termes de la license <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
-    <string name="determiningDeviceID">Lecture de l'identifiant d'appareil …</string>
-    <string name="pleaseLeaveAirplaneMode">En vue d'initialiser l'application, veillez désactiver le mode avion de l'appareil.</string>
+    <string name="determiningDeviceID">Lecture de l\'identifiant d\'appareil …</string>
+    <string name="pleaseLeaveAirplaneMode">En vue d\'initialiser l\'application, veillez désactiver le mode avion de l\'appareil.</string>
     <string name="project_manager">Chef de Projet</string>
     <string name="switch_project">Sélectionner un projet:</string>
     <string name="no_projects">Pas de projet chargé.</string>
@@ -54,7 +54,7 @@
     <string name="scan_qr_code">Lire code QR</string>
     <string name="enter_url">Entrer URL</string>
     <string name="enter_url_title">Charger projet depuis URL</string>
-    <string name="enterURLMsg">Veuillez entrer l'URL (or chemin local) où se trouve le fichier de projet Sapelli:</string>
+    <string name="enterURLMsg">Veuillez entrer l\'URL (or chemin local) où se trouve le fichier de projet Sapelli:</string>
     <string name="software_and_device_info">Infos App &amp; Appareil</string>
     <string name="shortcut">Raccourci</string>
     <string name="take_photo">Prendre photo</string>
@@ -62,10 +62,10 @@
     <string name="statistics">Statistiques</string>
     <string name="export_records">Exporter enregistrements</string>
     <string name="import_records_menuitem">Importer enregistrements</string>
-    <string name="importStartFailed">Échec à l'import de l'enregistrement à partir de: %s</string>
-    <string name="importFailed">Échec à l'import des enregistrements: %s</string>
+    <string name="importStartFailed">Échec à l\'import de l\'enregistrement à partir de: %s</string>
+    <string name="importFailed">Échec à l\'import des enregistrements: %s</string>
     <string name="importSuccess">Enregistrements importés. Ajoutés: %1$s, Mis à jour: %2$s, et %3$s doublons ignorés.</string>
-    <string name="importStoreFailed">Erreur de sauvegarde à l'import des enregistrements: %s</string>
+    <string name="importStoreFailed">Erreur de sauvegarde à l\'import des enregistrements: %s</string>
     <string name="schemaFormNotFound">Pas trouvé de formulaire pour le projet (Projet:Formulaire = %s)</string>
     <string name="delete_data">Effacer données</string>
     <string name="in_export">In- &amp; export</string>
@@ -73,7 +73,7 @@
     <string name="settings">Paramètres</string>
     <string name="pleaseSelect">Veuillez sélectionner un fichier Sapelli</string>
     <string name="invalidFile">Fichier manquant ou endommagé.</string>
-    <string name="noBareXMLProjects">Chargement de fichiers au format XML n'est plus supporté. Veuillez soumettre le projet au format .sap.</string>
+    <string name="noBareXMLProjects">Chargement de fichiers au format XML n\'est plus supporté. Veuillez soumettre le projet au format .sap.</string>
     <string name="unsupportedExtension">Extension de projet Sapelli non supportée (%1$s). Extensions valides sont %2$s. Ignorer et procéder au chargement du fichier?</string>
     <string name="projectLoading">Chargement du projet …</string>
     <string name="projectRemoving">Suppression du projet …</string>
@@ -100,8 +100,8 @@
     <string name="numForms">Nombre de formulaires</string>
     <string name="modelID">ID Modèle</string>
     <string name="storageError">Erreur de stockage: %s</string>
-    <string name="needsStorageAccess">accès en écriture à la carte SD externe requis. Veuillez introduire une carte SD et redémarrez l'application.</string>
-    <string name="unavailableStorageAccess">Le support de stockage n'est plus accessible (retrait de la carte SD ou déconnexion PC).\nL'application va quitter maintenant.\nQue souhaitez-vous au redémarrage? Sélectionner un nouveau support ou ré-essayer le support actuel? Dans le second cas, veuillez réintroduire la carte SD ou déconnecter du PC.</string>
+    <string name="needsStorageAccess">accès en écriture à la carte SD externe requis. Veuillez introduire une carte SD et redémarrez l\'application.</string>
+    <string name="unavailableStorageAccess">Le support de stockage n\'est plus accessible (retrait de la carte SD ou déconnexion PC).\nL\'application va quitter maintenant.\nQue souhaitez-vous au redémarrage? Sélectionner un nouveau support ou ré-essayer le support actuel? Dans le second cas, veuillez réintroduire la carte SD ou déconnecter du PC.</string>
     <string name="useAlternativeStorage">Essayez un autre …</string>
     <string name="insertSDcard">Réessayez …</string>
     <string name="txtNullModeCreate">— Toucher pour sélectionner —</string>
@@ -113,12 +113,12 @@
     <string name="txtValidationErrorrPattern">Erreur de motif</string>
     <string name="txtValidationErrorInvalid">Saisie invalide.</string>
     <string name="txtValidationErrorInvalidNumber">Saisie numérique invalide.</string>
-    <string name="txtValidationOptionalHint">Pour laisser vide, appuyer sur espace arrière jusqu'à l'apparition de la croix.</string>
+    <string name="txtValidationOptionalHint">Pour laisser vide, appuyer sur espace arrière jusqu\'à l\'apparition de la croix.</string>
     <string name="lstPleaseSelect">— Sélectionnez —</string>
     <string name="lstUndoSelection">— Pas de sélection —</string>
-    <string name="storageAccessFail">Échec d'accès au stockage projet ou transmission dû à: %s.</string>
+    <string name="storageAccessFail">Échec d\'accès au stockage projet ou transmission dû à: %s.</string>
     <string name="enableLocationProvider">Veuillez activer la localisation (%s) de votre appareil sous Paramètres.</string>
-    <string name="noDeviceID">Échec à la génération d'un identifiant unique pour votre appareil.</string>
+    <string name="noDeviceID">Échec à la génération d\'un identifiant unique pour votre appareil.</string>
     <string name="selectProject">Veuillez sélectionner un projet.</string>
     <string name="removeProjectConfirm">Voulez-vous réellement supprimer le projet %s?\nLes données collectées ne seront pas effacées.</string>
     <string name="demoLoadFail">Échec au chargement du projet démo.</string>
@@ -129,7 +129,7 @@
     <string name="criteria">Critères</string>
     <string name="output">Sortie</string>
     <string name="expand_transmission">Etendre paramètres de transmission</string>
-    <string name="expand_export">Etendre paramètres d'export</string>
+    <string name="expand_export">Etendre paramètres d\'export</string>
     <string name="add_project">Ajoutez un projet en sélectionnant \"＋\" en haut…</string>
     <string name="drawer_open">Ouvrir tiroir de navigation</string>
     <string name="drawer_close">Fermer tiroir de navigation</string>
@@ -143,7 +143,7 @@
     <string name="exportDateRange">Intervalle de date:</string>
     <string name="exportDateRangeFrom">Du %s</string>
     <string name="exportDateRangeTo">Au %s</string>
-    <string name="exportDateRangeAnytime">n'import quand</string>
+    <string name="exportDateRangeAnytime">n\'import quand</string>
     <string name="exportDestination">Destination:</string>
     <string name="exportFormat">Format de sortie:</string>
     <string name="exportXMLMode">Colonnes composées:</string>
@@ -152,7 +152,7 @@
     <string name="exportFetching">Lecture des enregistrements …</string>
     <string name="exportQueryFailed">Échec à la consultation des enregistrements. Raison: %s.</string>
     <string name="exportNoOutputFolder">Export échoué: dossier de destination non défini.</string>
-    <string name="exportNoRecordsFound">Aucun enregistrement ne satisfait les critères d'export définis.</string>
+    <string name="exportNoRecordsFound">Aucun enregistrement ne satisfait les critères d\'export définis.</string>
     <string name="exportXRecords">Export de %d enregistrements en cours …</string>
     <string name="exportSuccessTitle">Succès</string>
     <string name="exportSuccessMsg">%1$d enregistrements exportés avec succès vers %2$s.</string>
@@ -175,24 +175,24 @@
     <string name="deleteRecordsAndMediaConfirmation">Désirez-vois réellement effacer tous les %1$d enregistrements ainsi que les %2$d fichiers multimédia (vidéo, audio ou image) collectés sous le projet %3$s?</string>
     <string name="backup">Sauvegarde</string>
     <string name="selectForBackup">Ceci crée une sauvegarde de la base de données ainsi que les dossiers sélectionnés ci-dessous:</string>
-    <string name="folderCrashes">Rapports d'échec</string>
+    <string name="folderCrashes">Rapports d\'échec</string>
     <string name="folderExports">Données exportées</string>
     <string name="folderLogs">Fichiers journaux</string>
     <string name="folderAttachments">Pièces jointes</string>
     <string name="folderProjects">Fichiers projet</string>
     <string name="preBackupExportTitle">Export pour sauvegarde</string>
     <string name="preBackupExportMsg">Dossier de données exportées sélectionné. Inclure un nouvel export de données ou conserver les données actuelles?</string>
-    <string name="preBackupExportFormatMsg">%d enregistrements à exporter trouvés.\nSelectionnez le format d'export:</string>
+    <string name="preBackupExportFormatMsg">%d enregistrements à exporter trouvés.\nSelectionnez le format d\'export:</string>
     <string name="preBackupExportYes">Oui, inclure un nouvel export</string>
     <string name="backup_continue">Continuer avec la sauvegarde …</string>
     <string name="backup_progress_init">Préparation à la sauvegarde …</string>
     <string name="backup_progress_db">Sauvegarde des bases de données …</string>
-    <string name="backup_progress_zipping">Création de l'archive de sauvegarde …</string>
+    <string name="backup_progress_zipping">Création de l\'archive de sauvegarde …</string>
     <string name="successful_backup">Sauvegarde réussie</string>
     <string name="backup_in">Votre suavegarde se trouve dans:</string>
     <string name="backupFailDueTo">Échec à la sauvegarde des bases de données. Raison: %s</string>
     <string name="share">Partager …</string>
-    <string name="dbUpgrade">Mise à jour de la base de données Sapelli Collector (de v%1$d vers v%2$d). Une copie de la base de données antérieure a été conservée.\nEn cas de problèmes, utilisez la fonctionalité de \"Sauvegarde\" et envoyez l'archive à l'équipe Sapelli.</string>
+    <string name="dbUpgrade">Mise à jour de la base de données Sapelli Collector (de v%1$d vers v%2$d). Une copie de la base de données antérieure a été conservée.\nEn cas de problèmes, utilisez la fonctionalité de \"Sauvegarde\" et envoyez l\'archive à l\'équipe Sapelli.</string>
     <string name="dbUpgradeWarningsTitle">Alertes lors de la mise à jour</string>
     <string name="sendData">Envoyer données</string>
     <string name="enableScheduledReceivers">Veuillez activer un ou plusieurs récepteurs planifiés</string>
@@ -225,7 +225,7 @@
     <string name="queryingReceiverAboutProject">Consultation du projet %1$s sur le récepteur, ceci peut durer %2$d minutes …</string>
     <string name="projectPresentOnReceiver">projet %2$s sur %1$s</string>
     <string name="projectAbsentOnReceiver">Projet %2$s absent de %1$s. Échec probable de la transmission de données.\nContinuer avec ce récepteur?</string>
-    <string name="projectUnauthorised">Non-autorisé à contribuer des données au projet %2$s sur %1$s. Vérifiez votre nom d'utilisateur ou mot de passe ou demandez l'accès.\nContinuer avec ce récepteur?</string>
+    <string name="projectUnauthorised">Non-autorisé à contribuer des données au projet %2$s sur %1$s. Vérifiez votre nom d\'utilisateur ou mot de passe ou demandez l\'accès.\nContinuer avec ce récepteur?</string>
     <string name="pendingProjectQuery">Échec à la consultation du projet %2$s sur %1$s. Appareil (ou récepteur) peut être hors ligne ou processus interrompu.\nContinuer avec ce récepteur?</string>
     <string name="chooseReceiverType">Sélectionner type de récepteur</string>
     <string name="receiverName">Nom:</string>
@@ -235,18 +235,18 @@
     <string name="useBinarySMS">Utiliser SMS binaire</string>
     <string name="GeoKeyServer">Serveur GeoKey</string>
     <string name="url">URL:</string>
-    <string name="userCredentials">Paramètres d'identification:</string>
-    <string name="userCredentialsOptional">Paramètres d'identification optionnels si contribution anonyme permise.</string>
-    <string name="username">Nom d'utilisateur:</string>
+    <string name="userCredentials">Paramètres d\'identification:</string>
+    <string name="userCredentialsOptional">Paramètres d\'identification optionnels si contribution anonyme permise.</string>
+    <string name="username">Nom d\'utilisateur:</string>
     <string name="email">Adresse e-mail:</string>
     <string name="password">Mot de passe:</string>
-    <string name="verifyingServerAndAccount">Vérification des paramètres d'identification &amp; serveur.</string>
-    <string name="geokeyInvalidServer">Serveur (%1$s) inaccessible ou pas configuré avec GeoKey (v%2$s ou plus) ainsi que l'extension geokey-sapelli (v%3$s ou plus).</string>
-    <string name="geokeyInvalidAccount">Échec d'authentification. Vérifier votre e-mail et/ou votre mot de passe.</string>
+    <string name="verifyingServerAndAccount">Vérification des paramètres d\'identification &amp; serveur.</string>
+    <string name="geokeyInvalidServer">Serveur (%1$s) inaccessible ou pas configuré avec GeoKey (v%2$s ou plus) ainsi que l\'extension geokey-sapelli (v%3$s ou plus).</string>
+    <string name="geokeyInvalidAccount">Échec d\'authentification. Vérifier votre e-mail et/ou votre mot de passe.</string>
     <string name="verificationSuccessful">Vérification réussie.</string>
     <string name="emptyReceiverName">Veuillez entrer un nom.</string>
     <string name="invalidPhoneNumber">Veuillez entrer un numéro de téléphone valide.</string>
     <string name="uploadedFromAt">Téléchargé de %1$s à %2$s.</string>
     <string name="qrInstallScannerTtl">Installer Barcode Scanner?</string>
-    <string name="qrInstallScannerMsg">Cette application requièrt l'app Barcode Scanner. Installer maintenant?</string>
+    <string name="qrInstallScannerMsg">Cette application requièrt l\'app Barcode Scanner. Installer maintenant?</string>
 </resources>
