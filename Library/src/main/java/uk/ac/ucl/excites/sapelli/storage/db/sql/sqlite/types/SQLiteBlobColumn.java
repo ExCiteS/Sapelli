@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
-import shaded.org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.binary.Hex;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteCursor;
