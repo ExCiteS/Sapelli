@@ -1,0 +1,109 @@
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+// TODO Warnings?
+// TODO validator classes ?
+// TODO charset mac bytes script ?
+// TODO commons-codec-shaded --> does it work? as separate module?
+
+
+def thirdPartySrc = new File(project.buildDir, 'third-party-src')
+
+//gradle.projectsEvaluated {
+//    preBuild.dependsOn extractXercesClasses, extractValidatorClasses
+//}
+
+
+configurations {
+    // For copying source code from dependencies:
+    xerces
+    //validator
+}
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = "1.7"
+    targetCompatibility = "1.7"
+}
+
+dependencies {
+    compileOnly localGroovy()
+
+    // Source:
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Joda:
+    compile 'joda-time:joda-time:2.9.4'
+
+    // Apache:
+    compile 'commons-io:commons-io:2.4'
+    compile 'org.apache.commons:commons-lang3:3.4'
+    compile 'commons-codec:commons-codec:1.10'
+    compile 'org.apache.commons:commons-collections4:4.1'
+    compile 'org.apache.commons:commons-compress:1.12'
+    //validator 'commons-validator:commons-validator:1.5.1:sources@jar'
+    compile 'commons-validator:commons-validator:1.5.1'
+    xerces 'xerces:xercesImpl:2.11.0:sources@jar'
+
+    // Non-Apache compression libs:
+    compile 'org.tukaani:xz:1.5'
+    compile 'com.github.jponge:lzma-java:1.3'
+
+    // Google:
+    compile 'com.googlecode.libphonenumber:libphonenumber:7.4.5'
+}
+
+task runScript(type: JavaExec) {
+//    description 'Run Groovy script'
+//
+//    // Set main property to name of Groovy script class.
+//    main = 'com.mrhaki.CurrentDate'
+//
+//    // Set classpath for running the Groovy script.
+//    classpath = sourceSets.main.runtimeClasspath
+//
+//    if (project.hasProperty('custom')) {
+//        // Pass command-line argument to script.
+//        args project.getProperty('custom')
+//    }
+}
+
+//import uk.ac.ucl.excites.sapelli.shared.io.text.CharsetHelpers
+//
+//task updateCMMBPCProperties {
+//    updated = CharsetHelpers.GeneratePropertiesFile(project.properties['charsetinfo-folder'], project.properties['resources-folder'], false);
+//    println CharsetHelpers.CMMBPC_PROPERTIES_FILE_NAME + "." + CharsetHelpers.PROPERTIES_FILE_EXTENSION + " " + (updated ? "updated" : "unchanged") + ".";
+//}
+
+shadowJar {
+    relocate 'org.apache.commons.codec', 'shaded.org.apache.commons.codec'
+}
+
+task extractXercesClasses(type: Copy) {
+    from zipTree(configurations.xerces.singleFile)
+    into thirdPartySrc
+    include (
+            'org/apache/xerces/util/XMLChar.java',
+            'org/apache/xerces/util/XML11Char.java')
+}
+
+//task extractValidatorClasses(type: Copy) {
+//    from zipTree(configurations.validator.singleFile)
+//    into thirdPartySrc
+//    include (
+//            'org/apache/commons/validator/routines/DomainValidator.java',
+//            'org/apache/commons/validator/routines/EmailValidator.java',
+//            'org/apache/commons/validator/routines/InetAddressValidator.java',
+//            'org/apache/commons/validator/routines/RegexValidator.java',
+//            'org/apache/commons/validator/routines/UrlValidator.java')
+//}
+
+compileJava.dependsOn extractXercesClasses//, extractValidatorClasses
+
+sourceSets {
+    main {
+        java {
+            srcDir thirdPartySrc
+        }
+    }
+}
