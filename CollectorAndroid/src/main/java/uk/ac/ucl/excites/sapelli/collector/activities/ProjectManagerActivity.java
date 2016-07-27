@@ -208,7 +208,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		drawerToolbar.setTitle(getString(R.string.add_new_project) + ":");
 		drawerToolbar.inflateMenu(R.menu.projectload);
 		// 	Force displaying of icons in overflow menu:
-		MenuHelpers.forceMenuIcons(drawerToolbar.getMenu());
+		//MenuHelpers.forceMenuIcons(drawerToolbar.getMenu());
 	}
 		
 	@Override
@@ -224,7 +224,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		menu.findItem(R.id.action_remove).setVisible(currentProject != null);
 
 		// Force displaying of icons in overflow menu:
-		MenuHelpers.forceMenuIcons(menu);
+		//MenuHelpers.forceMenuIcons(menu);
 		
 		return true;
 	}
@@ -503,7 +503,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		try
 		{
 			// Use the GET_CONTENT intent from the utility class
-			Intent target = FileUtils.createGetContentIntent();
+			Intent target = FileUtils.createGetContentIntent(null);
 			
 			// Create the chooser Intent
 			Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
@@ -634,7 +634,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	public boolean importRecords(MenuItem item)
 	{
 		// Use the GET_CONTENT intent from the utility class
-		Intent target = FileUtils.createGetContentIntent();
+		Intent target = FileUtils.createGetContentIntent(null);
 		// Create the chooser Intent
 		Intent intent = Intent.createChooser(target, "Choose an XML or CSV file");
 		try

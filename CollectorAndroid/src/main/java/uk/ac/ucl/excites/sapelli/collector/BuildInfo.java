@@ -77,7 +77,7 @@ public class BuildInfo
 	
 	public String getUsername()
 	{
-		return res.getString(R.buildinfo.username);
+		return "";
 	}
 	
 	public DateTime getTimeStamp()
@@ -90,7 +90,7 @@ public class BuildInfo
 		}
 		catch(Exception e)
 		{
-			return TimeUtils.ISOWithoutMSFormatter.withOffsetParsed().parseDateTime(res.getString(R.buildinfo.timestamp));
+			return DateTime.now();
 		}
 		finally
 		{
@@ -111,27 +111,27 @@ public class BuildInfo
 	
 	public String getBranch()
 	{
-		return res.getString(R.buildinfo.branch);
+		return "";
 	}
 	
 	public String getLastCommitHash()
 	{
-		return res.getString(R.buildinfo.lastCommitHash);
+		return "";
 	}
 	
 	public String getLastCommitTag()
 	{
-		return res.getString(R.buildinfo.lastCommitTag);
+		return "";
 	}
 	
 	public boolean isChangesSinceLastCommit()
 	{
-		return res.getBoolean(R.buildinfo.changesSinceLastCommit);
+		return false;
 	}
 	
 	public boolean isDemoBuild()
 	{
-		return res.getBoolean(R.buildinfo.demoBuild);
+		return false;
 	}
 	
 	public String getNameAndVersion()

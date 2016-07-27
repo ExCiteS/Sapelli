@@ -1,0 +1,55 @@
+apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
+
+repositories {
+    maven { url 'https://maven.fabric.io/public' }
+    maven { url "https://jitpack.io" }
+}
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "24.0.1"
+
+    defaultConfig {
+        applicationId "uk.ac.ucl.excites.sapelli.collector"
+        minSdkVersion 10
+        targetSdkVersion 22
+
+        // TODO versioning
+        versionCode 1
+        versionName "1.0"
+
+        vectorDrawables.useSupportLibrary = true
+
+        manifestPlaceholders = [fabricApiKey: "d4cd414cf1f34965f9373c71749e234360eaa421"]
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    //testCompile 'junit:junit:4.12'
+    // Sapelli Library:
+    compile project(':Library')
+    // Google:
+    compile 'com.android.support:support-v4:24.1.1'
+    compile 'com.android.support:appcompat-v7:24.1.1'
+    // Other dependencies:
+    compile 'com.github.michalis-vitos:aFileChooser:e359025948'
+    compile 'com.caverock:androidsvg:1.2.2-beta-1'
+    compile 'com.jpardogo.materialtabstrip:library:1.1.0'
+    compile 'com.loopj.android:android-async-http:1.4.9'
+    // Crashlytics Kit
+    compile('com.crashlytics.sdk.android:crashlytics:2.6.1@aar') {
+        transitive = true
+    }
+}
