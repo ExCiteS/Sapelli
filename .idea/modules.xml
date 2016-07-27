@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/CollectorAndroid/CollectorAndroid.iml" filepath="$PROJECT_DIR$/CollectorAndroid/CollectorAndroid.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CollectorCmdLn/CollectorCmdLn.iml" filepath="$PROJECT_DIR$/CollectorCmdLn/CollectorCmdLn.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Library/Library.iml" filepath="$PROJECT_DIR$/Library/Library.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SapelliAS.iml" filepath="$PROJECT_DIR$/SapelliAS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/commons-codec-shaded/commons-codec-shaded.iml" filepath="$PROJECT_DIR$/commons-codec-shaded/commons-codec-shaded.iml" />
+    </modules>
+  </component>
+</project>
