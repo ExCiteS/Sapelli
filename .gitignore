@@ -67,3 +67,4 @@ release.properties
 .dropbox.attr
 /linecount.bat
 /CollectorAndroid/*.log
+/CollectorAndroid/src/main/assets/paperwork.json
