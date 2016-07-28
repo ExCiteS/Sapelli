@@ -1,8 +1,8 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ *
  * Copyright 2012-2016 University College London - ExCiteS group
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,10 +62,10 @@ public class AboutFragment extends ProjectManagerFragment
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
 				"<p><b>" + app.getBuildInfo().getNameAndVersion() + "</b><br/>[" + app.getBuildInfo().getExtraVersionInfo() + "]</p>" +
-				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
+				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" +
 				"<p>" + getString(R.string.license)  + "</p>" +
-				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>") +
-				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>");
+				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
+				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));
 	}
 
 	@SuppressLint("InflateParams")
