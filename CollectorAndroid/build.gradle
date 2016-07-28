@@ -67,4 +67,7 @@ dependencies {
     }
     // Paperwork
     compile 'hu.supercluster:paperwork:1.2.7'
+
+    // Timber for logging
+    compile 'com.jakewharton.timber:timber:4.1.2'
 }

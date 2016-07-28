@@ -16,7 +16,8 @@
 	limitations under the License.
 -->
 <manifest package="uk.ac.ucl.excites.sapelli.collector"
-          xmlns:android="http://schemas.android.com/apk/res/android">
+          xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
 
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
@@ -51,6 +52,8 @@
     <uses-feature android:name="android.hardware.camera.any"/>
     <uses-feature android:name="android.hardware.camera.autofocus"/>
     <uses-feature android:name="android.hardware.camera.flash"/>
+
+    <uses-sdk tools:overrideLibrary="timber.log"/>
 
     <application
         android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp"
