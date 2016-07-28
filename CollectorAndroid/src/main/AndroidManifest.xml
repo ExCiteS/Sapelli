@@ -15,49 +15,42 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.ucl.excites.sapelli.collector"
-    android:versionCode="0"
-    android:versionName="x.x.x" >
-	<!-- Please do *NOT* change versionName & versionCode manually in this file. Instead change the version in the pom.xml file(s). -->
+<manifest package="uk.ac.ucl.excites.sapelli.collector"
+          xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-sdk
-        android:minSdkVersion="10"
-        android:targetSdkVersion="22" />
-		<!-- Note: keep target SDK version in sync with version targeted in pom.xml/Eclipse -->
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <!-- <uses-permission android:name="android.permission.BROADCAST_SMS" /> -->
-    <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.WRITE_SMS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
-    <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.ACCESS_GPS" />
-    <uses-permission android:name="android.permission.ACCESS_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_ASSISTED_GPS" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.WRITE_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+    <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.ACCESS_GPS"/>
+    <uses-permission android:name="android.permission.ACCESS_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_ASSISTED_GPS"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
 
-    <uses-feature android:name="android.hardware.camera" />
-    <uses-feature android:name="android.hardware.camera.front" />
-    <uses-feature android:name="android.hardware.camera.any" />
-    <uses-feature android:name="android.hardware.camera.autofocus" />
-    <uses-feature android:name="android.hardware.camera.flash" />
+    <uses-feature android:name="android.hardware.camera"/>
+    <uses-feature android:name="android.hardware.camera.front"/>
+    <uses-feature android:name="android.hardware.camera.any"/>
+    <uses-feature android:name="android.hardware.camera.autofocus"/>
+    <uses-feature android:name="android.hardware.camera.flash"/>
 
     <application
         android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp"
@@ -65,24 +58,24 @@
         android:icon="@drawable/ic_sapelli_logo"
         android:label="@string/app_name"
         android:largeHeap="true"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:icon="@drawable/ic_sapelli_logo"
             android:label="@string/app_name"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:configChanges="keyboardHidden|orientation|screenSize" >
+            android:screenOrientation="portrait">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity"
-            android:launchMode="singleInstance" >
+            android:launchMode="singleInstance">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
             </intent-filter>
         </activity>
         <activity
@@ -90,92 +83,94 @@
             android:enabled="true"
             android:exported="true"
             android:icon="@drawable/ic_menu_archive"
-            android:label="File Manager" >
+            android:label="File Manager">
             <intent-filter>
-                <action android:name="android.intent.action.GET_CONTENT" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.OPENABLE" />
+                <action android:name="android.intent.action.GET_CONTENT"/>
 
-                <data android:mimeType="*/*" />
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.OPENABLE"/>
+
+                <data android:mimeType="*/*"/>
             </intent-filter>
         </activity>
-        
+
         <service
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers$SchedulingService"
             android:icon="@drawable/ic_sapelli_logo"
-            android:label="DataSendingSchedulingService" >
+            android:label="DataSendingSchedulingService">
         </service>
-        
+
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers$BootListener"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
-        
+
         <service
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.DataSendingService"
             android:icon="@drawable/ic_sapelli_logo"
-            android:label="CollectorDataSendingService" >
+            android:label="CollectorDataSendingService">
         </service>
 
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.OutgoingSMSBroadcastReceiver"
             android:enabled="true"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
                 <!-- These *must* @string/action_sms_sent and @string/action_sms_delivered,
                 	 but sadly Google Play does not allow us to use String resources in intent-filters -->
-                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_SENT" />
-                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_DELIVERED" />
+                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_SENT"/>
+                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_DELIVERED"/>
             </intent-filter>
         </receiver>
-        
+
         <service
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.OutgoingSMSCallbackService"
             android:icon="@drawable/ic_sapelli_logo"
-            android:label="OutgoingSMSCallbackService" >
+            android:label="OutgoingSMSCallbackService">
         </service>
-        
-		<receiver
+
+        <receiver
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService$BootListener"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
-        
+
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Text"
             android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS" >
+            android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
             </intent-filter>
         </receiver>
-        
+
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Binary"
             android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS" >
+            android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
-                <action android:name="android.intent.action.DATA_SMS_RECEIVED" />
-                <data android:scheme="sms" /> 
-                <data android:port="@integer/binary_sms_port" /> 
+                <action android:name="android.intent.action.DATA_SMS_RECEIVED"/>
+
+                <data android:scheme="sms"/>
+                <data android:port="@integer/binary_sms_port"/>
             </intent-filter>
         </receiver>
 
         <service
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService"
             android:icon="@drawable/ic_sapelli_logo"
-            android:label="IncomingSMSReceiverService" >
+            android:label="IncomingSMSReceiverService">
         </service>
-        
+
         <meta-data
             android:name="com.crashlytics.ApiKey"
-            android:value="d4cd414cf1f34965f9373c71749e234360eaa421" />
-        
+            android:value="d4cd414cf1f34965f9373c71749e234360eaa421"/>
+
     </application>
 
 </manifest>
