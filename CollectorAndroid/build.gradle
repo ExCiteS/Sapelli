@@ -9,12 +9,21 @@ repositories {
 
 ext {
     // Read private/external fabric.properties file:
-    fabricProperties = new Properties()
-    fabricProperties.load(new FileInputStream(file('../../Keys/fabric.properties')))
+    fabric = new Properties();
+    try
+    {
+        fabric.load(new FileInputStream(file('../../Keys/fabric.properties')));
+    }
+    catch(Exception e)
+    {
+        println('Using dummy fabric apiKey/Secret');
+        fabric.setProperty('apiKey', '0000000000000000000000000000000000000000');
+        fabric.setProperty('apiSecret', '0000000000000000000000000000000000000000000000000000000000000000');
+    }
 
     // Update local fabric.properties file:
     ant.propertyfile(file: 'fabric.properties') {
-        entry( key: "apiSecret", value: fabricProperties['apiSecret'])
+        entry( key: "apiSecret", value: fabric['apiSecret'])
     }
 
     // TODO Read private/external release signing key:
@@ -39,7 +48,7 @@ paperwork {
             gitTag      : gitTag(),
             gitInfo     : gitInfo(),
             gitBranch   : gitBranch(),
-            userName    : env("USERNAME") // Windows user
+            userName    : System.getProperty("user.name") // OS user
     ]
 }
 
@@ -57,7 +66,7 @@ android {
 
         vectorDrawables.useSupportLibrary = true
 
-        manifestPlaceholders = [fabricApiKey: fabricProperties['apiKey']]
+        manifestPlaceholders = [fabricApiKey: fabric['apiKey']]
     }
     buildTypes {
         release {
