@@ -8,6 +8,17 @@ repositories {
 }
 
 ext {
+    // Read private/external fabric.properties file:
+    fabricProperties = new Properties()
+    fabricProperties.load(new FileInputStream(file('../../Keys/fabric.properties')))
+
+    // Update local fabric.properties file:
+    ant.propertyfile(file: 'fabric.properties') {
+        entry( key: "apiSecret", value: fabricProperties['apiSecret'])
+    }
+
+    // TODO Read private/external release signing key:
+
     // We use the number of hours since 2012-01-01T00:00:00.000Z as the versionCode
     buildTimeBasedVersionCode = {
         def c = Calendar.instance;
@@ -18,6 +29,8 @@ ext {
     }
 }
 
+// Generates paperwork.json asset file containing build information
+// (which we read from in the BuildInfo class of the app):
 paperwork {
     set = [
             //simpleKey  : variant.buildType,
@@ -44,7 +57,7 @@ android {
 
         vectorDrawables.useSupportLibrary = true
 
-        manifestPlaceholders = [fabricApiKey: "d4cd414cf1f34965f9373c71749e234360eaa421"]
+        manifestPlaceholders = [fabricApiKey: fabricProperties['apiKey']]
     }
     buildTypes {
         release {

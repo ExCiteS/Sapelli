@@ -29,8 +29,9 @@ temp/**
 local.properties
 ant.properties
 release.properties
-/CollectorAndroid/assets/crashlytics-build.properties
-/CollectorAndroid/crashlytics.properties
+crashlytics-build.properties
+crashlytics.properties
+fabric.properties
 /CollectorAndroid/res/values/com_crashlytics_export_strings.xml
 
 # Demo/test Sapelli projects
