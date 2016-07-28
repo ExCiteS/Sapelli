@@ -17,7 +17,12 @@ ext {
         entry( key: "apiSecret", value: fabricProperties['apiSecret'])
     }
 
-    // TODO Read private/external release signing key:
+    // Read private/external release signing key:
+    signingKeyReleaseProperties = new Properties()
+    signingKeyReleaseProperties.load(new FileInputStream(file('../../Keys/release.properties')))
+
+    signingKeyDebugProperties = new Properties()
+    signingKeyDebugProperties.load(new FileInputStream(file('../../Keys/debug.properties')))
 
     // We use the number of hours since 2012-01-01T00:00:00.000Z as the versionCode
     buildTimeBasedVersionCode = {
@@ -33,7 +38,6 @@ ext {
 // (which we read from in the BuildInfo class of the app):
 paperwork {
     set = [
-            //simpleKey  : variant.buildType,
             buildTimeUTC: buildTime("yyyy-MM-dd'T'HH:mm:ss", "UTC"),
             gitSha      : gitSha(),
             gitTag      : gitTag(),
@@ -47,6 +51,20 @@ android {
     compileSdkVersion 24
     buildToolsVersion "24.0.1"
 
+    signingConfigs {
+        release {
+            storeFile file("../../Keys/" + signingKeyReleaseProperties['keystore-path'])
+            storePassword signingKeyReleaseProperties['keystore-passwd']
+            keyAlias signingKeyReleaseProperties['key-alias']
+            keyPassword signingKeyReleaseProperties['key-passwd']
+        }
+        debug {
+            storeFile file("../../Keys/" + signingKeyDebugProperties['keystore-path'])
+            storePassword signingKeyDebugProperties['keystore-passwd']
+            keyAlias signingKeyDebugProperties['key-alias']
+            keyPassword signingKeyDebugProperties['key-passwd']
+        }
+    }
     defaultConfig {
         applicationId "uk.ac.ucl.excites.sapelli.collector"
         minSdkVersion 10 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1)
@@ -64,11 +82,20 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
-            // TODO signing key
+            // Signing the app
+            signingConfig signingConfigs.release
+        }
+        releaseTest {
+            initWith(buildTypes.release)
+            debuggable true
         }
         debug {
+            debuggable true
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
+
+            // Signing the app
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
