@@ -208,7 +208,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		drawerToolbar.setTitle(getString(R.string.add_new_project) + ":");
 		drawerToolbar.inflateMenu(R.menu.projectload);
 		// 	Force displaying of icons in overflow menu:
-		//MenuHelpers.forceMenuIcons(drawerToolbar.getMenu());
+		MenuHelpers.forceMenuIcons(drawerToolbar.getMenu());
 	}
 		
 	@Override
@@ -224,7 +224,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 		menu.findItem(R.id.action_remove).setVisible(currentProject != null);
 
 		// Force displaying of icons in overflow menu:
-		//MenuHelpers.forceMenuIcons(menu);
+		MenuHelpers.forceMenuIcons(menu);
 		
 		return true;
 	}
@@ -946,7 +946,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	/**
 	 * Menu action which removes project if user confirms this is what he/she wants.
 	 * 
-	 * @param view
+	 * @param item
 	 */
 	public void removeProject(MenuItem item)
 	{
