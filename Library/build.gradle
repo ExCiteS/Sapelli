@@ -7,27 +7,20 @@ apply plugin: 'groovy'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 // TODO Warnings?
-// TODO validator classes ?
 // TODO charset mac bytes script ?
 // TODO commons-codec-shaded --> does it work? as separate module?
-
-
-def thirdPartySrc = new File(project.buildDir, 'third-party-src')
-
-//gradle.projectsEvaluated {
-//    preBuild.dependsOn extractXercesClasses, extractValidatorClasses
-//}
-
-
-configurations {
-    // For copying source code from dependencies:
-    xerces
-    //validator
-}
+// TODO commons-logging also needs shading?
 
 tasks.withType(JavaCompile) {
     sourceCompatibility = "1.7"
     targetCompatibility = "1.7"
+}
+
+def thirdPartySrc = new File(project.buildDir, 'third-party-src')
+
+configurations {
+    // For copying source code from dependencies:
+    xerces
 }
 
 dependencies {
@@ -45,7 +38,6 @@ dependencies {
     compile 'commons-codec:commons-codec:1.10'
     compile 'org.apache.commons:commons-collections4:4.1'
     compile 'org.apache.commons:commons-compress:1.12'
-    //validator 'commons-validator:commons-validator:1.5.1:sources@jar'
     compile 'commons-validator:commons-validator:1.5.1'
     xerces 'xerces:xercesImpl:2.11.0:sources@jar'
 
@@ -91,18 +83,7 @@ task extractXercesClasses(type: Copy) {
             'org/apache/xerces/util/XML11Char.java')
 }
 
-//task extractValidatorClasses(type: Copy) {
-//    from zipTree(configurations.validator.singleFile)
-//    into thirdPartySrc
-//    include (
-//            'org/apache/commons/validator/routines/DomainValidator.java',
-//            'org/apache/commons/validator/routines/EmailValidator.java',
-//            'org/apache/commons/validator/routines/InetAddressValidator.java',
-//            'org/apache/commons/validator/routines/RegexValidator.java',
-//            'org/apache/commons/validator/routines/UrlValidator.java')
-//}
-
-compileJava.dependsOn extractXercesClasses//, extractValidatorClasses
+compileJava.dependsOn extractXercesClasses
 
 sourceSets {
     main {
