@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -33,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.fabric.sdk.android.Fabric;
+import timber.log.Timber;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
@@ -109,6 +111,9 @@ public class CollectorApp extends Application
 		// Start Fabric
 		setFabric();
 
+		// Set Timber for logging
+		setTimber();
+
 		// Get collector preferences:
 		preferences = new CollectorPreferences(getApplicationContext());
 
@@ -150,6 +155,29 @@ public class CollectorApp extends Application
 
 		Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getNameAndVersion() + " [" + buildInfo.getExtraVersionInfo() + "]");
 		Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
+	}
+
+	/**
+	 * Set up Timber for logging
+	 */
+	private void setTimber()
+	{
+		// Enable Timber
+		if (!BuildConfig.DEBUG)
+			return;
+
+		Timber.plant(new Timber.DebugTree()
+		{
+			@SuppressLint("StringFormatInTimber")
+			@Override
+			protected String createStackElementTag(StackTraceElement element)
+			{
+				return String.format("%s.%s(%s)",
+				                     super.createStackElementTag(element),
+				                     element.getMethodName(),
+				                     element.getLineNumber());
+			}
+		});
 	}
 
 	/**
