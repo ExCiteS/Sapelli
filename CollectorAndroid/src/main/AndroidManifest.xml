@@ -16,15 +16,7 @@
 	limitations under the License.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.ucl.excites.sapelli.collector"
-    android:versionCode="0"
-    android:versionName="x.x.x" >
-	<!-- Please do *NOT* change versionName & versionCode manually in this file. Instead change the version in the pom.xml file(s). -->
-
-    <uses-sdk
-        android:minSdkVersion="10"
-        android:targetSdkVersion="22" />
-		<!-- Note: keep target SDK version in sync with version targeted in pom.xml/Eclipse -->
+    package="uk.ac.ucl.excites.sapelli.collector">
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
@@ -138,7 +130,7 @@
             android:label="OutgoingSMSCallbackService" >
         </service>
         
-		<receiver
+        <receiver
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService$BootListener"
             android:exported="false" >
             <intent-filter>
@@ -173,8 +165,8 @@
         </service>
         
         <meta-data
-            android:name="com.crashlytics.ApiKey"
-            android:value="d4cd414cf1f34965f9373c71749e234360eaa421" />
+            android:name="io.fabric.ApiKey"
+            android:value="${fabricApiKey}" />
         
     </application>
 
