@@ -1,35 +1,38 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ *
  * Copyright 2012-2016 University College London - ExCiteS group
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
 package uk.ac.ucl.excites.sapelli.collector;
 
-import io.fabric.sdk.android.Fabric;
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import com.crashlytics.android.Crashlytics;
-
 import android.app.Application;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Environment;
 import android.support.v4.os.EnvironmentCompat;
 import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
+import com.crashlytics.android.core.CrashlyticsCore;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+
+import io.fabric.sdk.android.Fabric;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
@@ -54,41 +57,41 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteReco
 
 /**
  * Application App to keep the db4o object throughout the life-cycle of the Collector
- * 
+ *
  * @author Michalis Vitos, mstevens
- * 
+ *
  */
 public class CollectorApp extends Application
 {
 
 	// STATICS------------------------------------------------------------
 	static protected final String TAG = "CollectorApp";
-	
+
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
-	
+
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
-	
+
 	/**
 	 * Used as a System property as well as on Crashlytics.
 	 */
 	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT";
-	
+
 	public static enum StorageStatus
 	{
 		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
 	}
-	
+
 	// DYNAMICS-----------------------------------------------------------
 	private BuildInfo buildInfo;
-	
+
 	private CollectorPreferences preferences;
-	
+
 	public final AndroidCollectorClient collectorClient = new AndroidCollectorClient();
-	
+
 	// Files storage:
 	private FileStorageProvider fileStorageProvider;
 	private FileStorageException fileStorageException = null;
@@ -97,23 +100,18 @@ public class CollectorApp extends Application
 	public void onCreate()
 	{
 		super.onCreate();
-		
+
 		// Build info:
 		this.buildInfo = BuildInfo.GetInstance(getApplicationContext());
-		
+
 		Debug.d("CollectorApp started.\nBuild info:\n" + buildInfo.getAllInfo());
 
-		// Start Crashlytics for bugs reporting
-		if(!BuildConfig.DEBUG)
-		{
-			Fabric.with(this, new Crashlytics());
-			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getNameAndVersion() + " [" + buildInfo.getExtraVersionInfo() + "]");
-			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
-		}
-		
+		// Start Fabric
+		setFabric();
+
 		// Get collector preferences:
 		preferences = new CollectorPreferences(getApplicationContext());
-		
+
 		// Initialise file storage:
 		try
 		{
@@ -123,7 +121,7 @@ public class CollectorApp extends Application
 		{
 			this.fileStorageException = fse; // postpone throwing until getFileStorageProvider() is called!
 		}
-		
+
 		// Set up a CrashReporter (will use dumps folder):
 		if(fileStorageProvider != null)
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
@@ -137,7 +135,23 @@ public class CollectorApp extends Application
 			preferences.setFirstInstallation(false);
 		}
 	}
-	
+
+	/**
+	 * Set up Fabric
+	 */
+	private void setFabric()
+	{
+		final Context context = getApplicationContext();
+
+		// Set up Crashlytics, disabled for debug builds
+		final CrashlyticsCore crashlyticsCore = new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build();
+		final Crashlytics crashlyticsKit = new Crashlytics.Builder().core(crashlyticsCore).build();
+		Fabric.with(this, crashlyticsKit);
+
+		Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getNameAndVersion() + " [" + buildInfo.getExtraVersionInfo() + "]");
+		Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
+	}
+
 	/**
 	 * @return
 	 * @throws FileStorageException
@@ -145,7 +159,7 @@ public class CollectorApp extends Application
 	private FileStorageProvider initialiseFileStorage() throws FileStorageException
 	{
 		File sapelliFolder = null;
-		
+
 		// Try to get Sapelli folder path from preferences:
 		try
 		{
@@ -156,7 +170,7 @@ public class CollectorApp extends Application
 		// Did we get the folder path from preferences? ...
 		if(sapelliFolder == null)
 		{	// No: first installation or reset
-			
+
 			// Find appropriate files dir (using application-specific folder, which is removed upon app uninstall!):
 			File[] paths = DeviceControl.getExternalFilesDirs(this, null);
 			if(paths != null && paths.length != 0)
@@ -186,20 +200,20 @@ public class CollectorApp extends Application
 		}
 
 		// If we get here this means we have a non-null sapelliFolder object representing an accessible path...
-		
+
 		// Try to get the Android Downloads folder...
 		File downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
 		if(!isMountedReadableWritableDir(downloadsFolder)) // check if we can access it (will also attempt to create the directory if it doesn't exist)
 			// No :-(
 			throw new FileStorageException("Cannot access downloads folder: " + downloadsFolder.getAbsolutePath());
-		
+
 		// Return path provider
 		return new AndroidFileStorageProvider(sapelliFolder, downloadsFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
 	}
-	
+
 	/**
 	 * Returns a FileStorageProvider when file storage is available or throws an FileStorageUnavailableException or an FileStorageRemovedException if it is not
-	 * 
+	 *
 	 * @return a PathProvider object
 	 * @throws FileStorageException
 	 */
@@ -212,7 +226,7 @@ public class CollectorApp extends Application
 		else //if(fileStorageProvider == null && fileStorageException == null
 			throw new FileStorageUnavailableException("FileStorageProvider has not been initialised yet, please call initialiseFileStorage() first."); // this shouldn't happen
 	}
-	
+
 	/**
 	 * @return the preferences
 	 */
@@ -223,7 +237,7 @@ public class CollectorApp extends Application
 
 	/**
 	 * Check if a directory is on a mounted storage and writable/readable
-	 * 
+	 *
 	 * @param dir
 	 * @return
 	 * @throws FileStorageException
@@ -255,7 +269,7 @@ public class CollectorApp extends Application
 		super.onConfigurationChanged(newConfig);
 		// Debug.d(newConfig.toString());
 	}
-	
+
 	public BuildInfo getBuildInfo()
 	{
 		return buildInfo;
@@ -265,7 +279,7 @@ public class CollectorApp extends Application
 	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
 	 * (if not in demo mode the prefix is empty).
 	 * The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
-	 * 
+	 *
 	 * @return
 	 */
 	public String getDemoPrefix()
@@ -299,7 +313,7 @@ public class CollectorApp extends Application
 									collectorClient.transmissionStoreHandle,
 									collectorClient.projectStoreHandle };
 	}
-	
+
 	/**
 	 * @author mstevens
 	 *
@@ -309,13 +323,13 @@ public class CollectorApp extends Application
 
 		private int oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
 		private List<String> upgradeWarnings = Collections.<String> emptyList();
-		
+
 		@Override
 		public FileStorageProvider getFileStorageProvider()
 		{
 			return fileStorageProvider;
 		}
-		
+
 		@Override
 		protected void createAndSetRecordStore(StoreSetter<RecordStore> setter) throws DBException
 		{
@@ -323,7 +337,7 @@ public class CollectorApp extends Application
 			RecordStore recordStore = new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME, CURRENT_COLLECTOR_RECORDSTORE_VERSION, new CollectorSQLRecordStoreUpgrader(this, this, getFileStorageProvider()));
 			//RecordStore recordStore = new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			setter.setAndInitialise(recordStore);
-			
+
 			// Enable logging if in debug mode (will display SQL statements being executed):
 			if(BuildConfig.DEBUG)
 				recordStore.setLoggingEnabled(true);
@@ -336,14 +350,14 @@ public class CollectorApp extends Application
 			//setter.setAndInitialise(new PrefProjectStore(CollectorApp.this, getFileStorageProvider(), getDemoPrefix()));
 			//setter.setAndInitialise(new DB4OProjectStore(getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + "ProjectStore"));
 		}
-		
+
 		@Override
 		public void upgradePerformed(int fromVersion, int toVersion, List<String> warnings)
 		{
 			oldDatabaseVersion = fromVersion;
 			upgradeWarnings = warnings;
 		}
-		
+
 		public boolean hasDatabaseBeenUpgraded()
 		{
 			return oldDatabaseVersion != CURRENT_COLLECTOR_RECORDSTORE_VERSION;
@@ -356,7 +370,7 @@ public class CollectorApp extends Application
 		{
 			return oldDatabaseVersion;
 		}
-		
+
 		/**
 		 * @return the upgradeWarnings
 		 */
@@ -364,7 +378,7 @@ public class CollectorApp extends Application
 		{
 			return upgradeWarnings;
 		}
-		
+
 		public final void forgetAboutUpgrade()
 		{
 			oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
@@ -393,5 +407,5 @@ public class CollectorApp extends Application
 		}
 
 	}
-	
+
 }
