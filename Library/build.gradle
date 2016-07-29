@@ -1,31 +1,18 @@
-plugins {
-    id 'com.github.johnrengelman.shadow' version '1.2.3'
-}
-
 apply plugin: 'java'
-apply plugin: 'groovy'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 // TODO Warnings?
-// TODO charset mac bytes script ?
-// TODO commons-codec-shaded --> does it work? as separate module?
-// TODO commons-logging also needs shading?
 
-tasks.withType(JavaCompile) {
-    sourceCompatibility = "1.7"
-    targetCompatibility = "1.7"
+repositories {
+    maven { url "https://jitpack.io" }
 }
-
-def thirdPartySrc = new File(project.buildDir, 'third-party-src')
 
 configurations {
     // For copying source code from dependencies:
     xerces
+    validator
 }
 
 dependencies {
-    compileOnly localGroovy()
-
     // Source:
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
@@ -35,11 +22,12 @@ dependencies {
     // Apache:
     compile 'commons-io:commons-io:2.4'
     compile 'org.apache.commons:commons-lang3:3.4'
-    compile 'commons-codec:commons-codec:1.10'
+    compile 'com.github.ExCiteS:apache-commons-codec-shaded:1.10' // See https://github.com/ExCiteS/apache-commons-codec-shaded
+
     compile 'org.apache.commons:commons-collections4:4.1'
     compile 'org.apache.commons:commons-compress:1.12'
-    compile 'commons-validator:commons-validator:1.5.1'
     xerces 'xerces:xercesImpl:2.11.0:sources@jar'
+    validator 'commons-validator:commons-validator:1.5.1:sources@jar'
 
     // Non-Apache compression libs:
     compile 'org.tukaani:xz:1.5'
@@ -49,46 +37,50 @@ dependencies {
     compile 'com.googlecode.libphonenumber:libphonenumber:7.4.5'
 }
 
-task runScript(type: JavaExec) {
-//    description 'Run Groovy script'
-//
-//    // Set main property to name of Groovy script class.
-//    main = 'com.mrhaki.CurrentDate'
-//
-//    // Set classpath for running the Groovy script.
-//    classpath = sourceSets.main.runtimeClasspath
-//
-//    if (project.hasProperty('custom')) {
-//        // Pass command-line argument to script.
-//        args project.getProperty('custom')
-//    }
-}
-
-//import uk.ac.ucl.excites.sapelli.shared.io.text.CharsetHelpers
-//
-//task updateCMMBPCProperties {
-//    updated = CharsetHelpers.GeneratePropertiesFile(project.properties['charsetinfo-folder'], project.properties['resources-folder'], false);
-//    println CharsetHelpers.CMMBPC_PROPERTIES_FILE_NAME + "." + CharsetHelpers.PROPERTIES_FILE_EXTENSION + " " + (updated ? "updated" : "unchanged") + ".";
-//}
-
-shadowJar {
-    relocate 'org.apache.commons.codec', 'shaded.org.apache.commons.codec'
-}
+def thirdPartySrcFolder = new File(project.buildDir, 'third-party-src')
 
 task extractXercesClasses(type: Copy) {
     from zipTree(configurations.xerces.singleFile)
-    into thirdPartySrc
+    into thirdPartySrcFolder
     include (
             'org/apache/xerces/util/XMLChar.java',
             'org/apache/xerces/util/XML11Char.java')
 }
 
-compileJava.dependsOn extractXercesClasses
+task extractValidatorClasses(type: Copy) {
+    from zipTree(configurations.validator.singleFile)
+    into thirdPartySrcFolder
+    include (
+            'org/apache/commons/validator/routines/DomainValidator.java',
+            'org/apache/commons/validator/routines/EmailValidator.java',
+            'org/apache/commons/validator/routines/InetAddressValidator.java',
+            'org/apache/commons/validator/routines/RegexValidator.java',
+            'org/apache/commons/validator/routines/UrlValidator.java')
+}
+
+compileJava.dependsOn extractXercesClasses, extractValidatorClasses
 
 sourceSets {
     main {
         java {
-            srcDir thirdPartySrc
+            // in addition to the default source folder (src/main/java/) we add this one:
+            srcDir thirdPartySrcFolder
+
         }
     }
 }
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = '1.7'
+    targetCompatibility = '1.7'
+}
+
+task updateCMMBPCProperties(type: JavaExec, dependsOn: classes) {
+    println 'Running UpdateCMMBPCProperties ...'
+    main = 'uk.ac.ucl.excites.sapelli.shared.io.text.UpdateCMMBPCProperties'
+    classpath = sourceSets.main.runtimeClasspath
+    args new File(projectDir, 'charsetinfo').absolutePath, sourceSets.main.resources.srcDirs.first().absolutePath
+}
+
+// TODO make update... run at right time(s)
