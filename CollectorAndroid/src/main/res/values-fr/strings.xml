@@ -16,7 +16,8 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+<resources xmlns:tools="http://schemas.android.com/tools"
+           tools:ignore="ExtraTranslation" tools:locale="en">
     <string name="app_name">Collecteur Sapelli</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collecteur</string>

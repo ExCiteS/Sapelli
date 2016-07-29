@@ -16,7 +16,8 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  -->
-<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="pt_PT">
+<resources xmlns:tools="http://schemas.android.com/tools"
+           tools:ignore="ExtraTranslation" tools:locale="pt_PT">
     <string name="app_name">Sapelli Collector</string>
     <string name="sapelli">Sapelli</string>
     <string name="collector">Collector</string>
@@ -199,7 +200,7 @@
     <string name="receiveData">Dados recebidos</string>
     <string name="scheduledReceivers">Destino agendados:</string>
     <string name="longClickForMoreOptions">(Click longo em destinatário para mais opções)</string>
-    <string name="sendExistingDataQuestion">Você deseja enviar agora todos os dados existentes (%1$d registos, %2$d ficheiros) para %3$s?</string> 
+    <string name="sendExistingDataQuestion">Você deseja enviar agora todos os dados existentes (%1$d registos, %2$d ficheiros) para %3$s?</string>
     <string name="editScheduleEtc">Editar agendamento&#8230;</string>
     <string name="deleteSchedule">Apagar agendamento</string>
     <string name="resendAllData">(Re)enviar agora todos os dados</string>
