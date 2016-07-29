@@ -18,14 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import com.astuetz.PagerSlidingTabStrip;
-import com.crashlytics.android.Crashlytics;
-import com.ipaulpro.afilechooser.utils.FileUtils;
-
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -48,7 +40,15 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
+
+import com.astuetz.PagerSlidingTabStrip;
+import com.crashlytics.android.Crashlytics;
+import com.ipaulpro.afilechooser.utils.FileUtils;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp.AndroidCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
@@ -295,11 +295,10 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 	public void initialisationSuccess(DeviceID deviceID)
 	{
 		this.deviceID = deviceID;
-		if(!BuildConfig.DEBUG)
-		{
-			Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
-			Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
-		}
+
+		// Fabric info
+		Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
+		Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
 	}
 
 	@Override
