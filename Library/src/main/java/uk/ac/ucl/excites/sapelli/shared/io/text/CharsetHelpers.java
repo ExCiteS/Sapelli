@@ -106,7 +106,7 @@ public final class CharsetHelpers
 		}
 		catch(Exception e)
 		{
-			//e.printStackTrace(System.err);
+			e.printStackTrace(System.err);
 			System.err.println("Could not load resource bundle (" + CMMBPC_PROPERTIES_FILE_NAME + ".properties" + ")");
 		}
 		CharsetMaxMaxBytesPerCharBundle = bundle;

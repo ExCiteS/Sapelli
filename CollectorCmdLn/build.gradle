@@ -1,0 +1,66 @@
+/**
+ * Sapelli data collection platform: http://sapelli.org
+ *
+ * Copyright 2012-2016 University College London - ExCiteS group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java'
+apply plugin: 'maven'
+
+defaultTasks 'clean', 'install'
+
+def artifactId = 'sapelli-collector-cmdln'
+
+dependencies {
+    // Local libs:
+    //compile fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Sapelli Library:
+    compile project(':Library')
+
+    // Other dependencies:
+    compile 'commons-cli:commons-cli:1.3.1'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.7.6'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.6'
+}
+
+compileJava {
+    options.encoding 'UTF-8'
+    sourceCompatibility JavaVersion.VERSION_1_7
+    targetCompatibility JavaVersion.VERSION_1_7
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'uk.ac.ucl.excites.sapelli.collector.SapColCmdLn'
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    baseName = artifactId
+    version = project.version
+    classifier = 'with-dependencies'
+}
+
+install {
+    println project.group
+    println project.version
+    repositories.mavenInstaller {
+        pom.groupId = project.group
+        pom.artifactId = artifactId
+        pom.version = project.version
+        pom.packaging = 'jar'
+    }
+}
