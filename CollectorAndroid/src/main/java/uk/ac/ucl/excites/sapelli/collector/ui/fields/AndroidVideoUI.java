@@ -86,7 +86,7 @@ public class AndroidVideoUI extends AndroidCameraUI<VideoField>
 	@Override
 	protected ImageItem generateCaptureButton(Context context)
 	{
-		if(!cameraController.isRecording())
+		if(cameraController == null || !cameraController.isRecording())
 			// recording hasn't started yet, so present "record" button
 			return collectorUI.getImageItemFromProjectFileOrResource(field.getStartRecImageRelativePath(), R.drawable.button_video_capture);
 		else
