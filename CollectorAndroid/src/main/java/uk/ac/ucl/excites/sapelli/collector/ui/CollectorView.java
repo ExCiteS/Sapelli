@@ -519,6 +519,8 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	public int getFieldUIPartWidthPx(int availableWidth, int numCols)
 	{
+		if(numCols == 0) // avoid division by 0
+			return 0;
 		return Math.max((availableWidth - ((numCols - 1) * getSpacingPx())) / numCols, 0); // We use Math(x, 0) to avoid negative pixel counts
 	}
 
@@ -534,6 +536,8 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	public int getFieldUIPartHeightPx(int availableHeight, int numRows)
 	{
+		if(numRows == 0) // avoid division by 0
+			return 0;
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
 	
