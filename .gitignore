@@ -29,8 +29,9 @@ temp/**
 local.properties
 ant.properties
 release.properties
-/CollectorAndroid/assets/crashlytics-build.properties
-/CollectorAndroid/crashlytics.properties
+crashlytics-build.properties
+crashlytics.properties
+fabric.properties
 /CollectorAndroid/res/values/com_crashlytics_export_strings.xml
 
 # Demo/test Sapelli projects
@@ -57,3 +58,25 @@ release.properties
 .dropbox.attr
 /linecount.bat
 /CollectorAndroid/*.log
+/CollectorAndroid/src/main/assets/paperwork.json
+
+
+# gradle and Android Studio
+# Intellij IDEA (see https://intellij-support.jetbrains.com/entries/23393067)
+# User-specific configurations
+.idea/libraries/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/compiler.xml
+.idea/copyright/profiles_settings.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/scope_settings.xml
+.idea/vcs.xml
+*.iml
+.gradle
+/local.properties
+.DS_Store
+/build
+/captures

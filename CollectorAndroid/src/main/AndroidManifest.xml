@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	Sapelli data collection platform: http://sapelli.org
+	
+	Copyright 2012-2016 University College London - ExCiteS group
+	
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
+          package="uk.ac.ucl.excites.sapelli.collector">
+
+    <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <!-- <uses-permission android:name="android.permission.BROADCAST_SMS" /> -->
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.WRITE_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+    <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.ACCESS_GPS"/>
+    <uses-permission android:name="android.permission.ACCESS_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_ASSISTED_GPS"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+
+    <uses-feature android:name="android.hardware.camera"/>
+    <uses-feature android:name="android.hardware.camera.front"/>
+    <uses-feature android:name="android.hardware.camera.any"/>
+    <uses-feature android:name="android.hardware.camera.autofocus"/>
+    <uses-feature android:name="android.hardware.camera.flash"/>
+
+    <!-- Refer to build.gradle dependencies for more info -->
+    <uses-sdk tools:overrideLibrary="timber.log"/>
+
+    <application
+        android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_sapelli_logo"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity"
+            android:launchMode="singleInstance">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.ipaulpro.afilechooser.FileChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_menu_archive"
+            android:label="File Manager">
+            <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.OPENABLE"/>
+
+                <data android:mimeType="*/*"/>
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers$SchedulingService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="DataSendingSchedulingService">
+        </service>
+
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.SchedulingHelpers$BootListener"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.DataSendingService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="CollectorDataSendingService">
+        </service>
+
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.OutgoingSMSBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <!-- These *must* @string/action_sms_sent and @string/action_sms_delivered,
+                	 but sadly Google Play does not allow us to use String resources in intent-filters -->
+                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_SENT"/>
+                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_DELIVERED"/>
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.OutgoingSMSCallbackService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="OutgoingSMSCallbackService">
+        </service>
+
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService$BootListener"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Text"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Binary"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.intent.action.DATA_SMS_RECEIVED"/>
+
+                <data android:scheme="sms"/>
+                <data android:port="@integer/binary_sms_port"/>
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService"
+            android:icon="@drawable/ic_sapelli_logo"
+            android:label="IncomingSMSReceiverService">
+        </service>
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="${fabricApiKey}" />
+
+    </application>
+
+</manifest>

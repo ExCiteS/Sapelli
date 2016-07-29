@@ -1,6 +1,3 @@
 [submodule "Launcher"]
 	path = Launcher
 	url = git@bitbucket.org:excites/launcher.git
-[submodule "Dev/Tools/maven-android-sdk-deployer"]
-	path = Dev/Tools/maven-android-sdk-deployer
-	url = git@github.com:mosabua/maven-android-sdk-deployer.git

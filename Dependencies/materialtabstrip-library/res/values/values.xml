@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- From: file:/Users/Javier/Documents/workspace/PagerSlidingTabStrip/library/res/values/colors.xml -->
-    <eat-comment/>
-    <color name="psts_background_tab_pressed">#1AFFFFFF</color>
-    <color name="psts_background_tab_pressed_ripple">#AAFFFFFF</color>
-    <declare-styleable name="PagerSlidingTabStrip"><attr format="color" name="pstsIndicatorColor"/><attr format="dimension" name="pstsIndicatorHeight"/><attr format="color" name="pstsUnderlineColor"/><attr format="dimension" name="pstsUnderlineHeight"/><attr format="color" name="pstsDividerColor"/><attr format="dimension" name="pstsDividerWidth"/><attr format="dimension" name="pstsDividerPadding"/><attr format="dimension" name="pstsScrollOffset"/><attr format="boolean" name="pstsShouldExpand"/><attr format="boolean" name="pstsPaddingMiddle"/><attr format="dimension" name="pstsTabPaddingLeftRight"/><attr format="reference" name="pstsTabBackground"/><attr format="dimension" name="pstsTabTextSize"/><attr format="reference" name="pstsTabTextColor"/><attr format="reference" name="pstsTabTextStyle"><flag name="normal" value="0x0"/><flag name="bold" value="0x1"/><flag name="italic" value="0x2"/></attr><attr format="boolean" name="pstsTabTextAllCaps"/><attr format="integer" name="pstsTabTextAlpha"/><attr format="string" name="pstsTabTextFontFamily"/></declare-styleable>
-</resources>
