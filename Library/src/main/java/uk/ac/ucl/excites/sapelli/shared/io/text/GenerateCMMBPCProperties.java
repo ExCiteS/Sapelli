@@ -8,7 +8,7 @@ import static uk.ac.ucl.excites.sapelli.shared.io.text.CharsetHelpers.PROPERTIES
 /**
  * @author mstevens
  */
-public class UpdateCMMBPCProperties
+public class GenerateCMMBPCProperties
 {
 
     /**
@@ -17,7 +17,7 @@ public class UpdateCMMBPCProperties
      */
     public static void main(String[] args) throws IOException
     {
-        boolean updated = CharsetHelpers.GeneratePropertiesFile(args[0], args[1], true);
+        boolean updated = CharsetHelpers.GeneratePropertiesFile(args[0], args[1], false);
         System.out.println(CMMBPC_PROPERTIES_FILE_NAME + "." + PROPERTIES_FILE_EXTENSION + " " + (updated ? "updated" : "unchanged") + ".");
     }
 

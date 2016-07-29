@@ -23,7 +23,6 @@ dependencies {
     compile 'commons-io:commons-io:2.4'
     compile 'org.apache.commons:commons-lang3:3.4'
     compile 'com.github.ExCiteS:apache-commons-codec-shaded:1.10' // See https://github.com/ExCiteS/apache-commons-codec-shaded
-
     compile 'org.apache.commons:commons-collections4:4.1'
     compile 'org.apache.commons:commons-compress:1.12'
     xerces 'xerces:xercesImpl:2.11.0:sources@jar'
@@ -58,29 +57,31 @@ task extractValidatorClasses(type: Copy) {
             'org/apache/commons/validator/routines/UrlValidator.java')
 }
 
-compileJava.dependsOn extractXercesClasses, extractValidatorClasses
-
 sourceSets {
     main {
         java {
             // in addition to the default source folder (src/main/java/) we add this one:
             srcDir thirdPartySrcFolder
-
         }
     }
 }
 
-tasks.withType(JavaCompile) {
+compileJava {
+    dependsOn extractXercesClasses, extractValidatorClasses
     options.encoding = 'UTF-8'
     sourceCompatibility = '1.7'
     targetCompatibility = '1.7'
 }
 
-task updateCMMBPCProperties(type: JavaExec, dependsOn: classes) {
-    println 'Running UpdateCMMBPCProperties ...'
-    main = 'uk.ac.ucl.excites.sapelli.shared.io.text.UpdateCMMBPCProperties'
-    classpath = sourceSets.main.runtimeClasspath
-    args new File(projectDir, 'charsetinfo').absolutePath, sourceSets.main.resources.srcDirs.first().absolutePath
+task generateCMMBPCProperties(dependsOn: processResources) << {
+    //def os = new ByteArrayOutputStream()
+    javaexec {
+        main = 'uk.ac.ucl.excites.sapelli.shared.io.text.GenerateCMMBPCProperties'
+        classpath = sourceSets.main.runtimeClasspath
+        args new File(projectDir, 'charsetinfo').absolutePath, sourceSets.main.output.resourcesDir.absolutePath
+        //standardOutput = os
+    }
+    //def buildString = os.toString()
 }
 
-// TODO make update... run at right time(s)
+processResources.finalizedBy(generateCMMBPCProperties)

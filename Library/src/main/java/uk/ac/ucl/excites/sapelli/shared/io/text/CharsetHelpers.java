@@ -207,7 +207,7 @@ public final class CharsetHelpers
 	 * 
 	 * @param inputFolderPath path of a directory containing CharsetInfo files (with *.charsetinfo extension!) to process
 	 * @param outputFolderPath path of a (resource) directory in which to create the new/updated CharsetMaxMaxBytesPerChar.properties file
-	 * @param force when {@code true} a new CharsetMaxMaxBytesPerChar.properties file will always be generated
+	 * @param force when {@code true} a new CharsetMaxMaxBytesPerChar.properties file will always be (re)generated
 	 * @return whether or not a new or updated CharsetMaxMaxBytesPerChar.properties file was created
 	 * @throws IOException
 	 */
