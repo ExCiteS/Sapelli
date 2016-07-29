@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.AndroidCollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
@@ -305,11 +306,17 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 */
 	public void clickView(final View clickedView, final Runnable action, final boolean unblock)
 	{
+		final Form currentForm = controller.getCurrentForm();
+
+		// Check if there is an active session/form:
+		if(currentForm == null)
+			return;
+
 		// Block the UI so other events are ignored until we are done:
 		controller.blockUI();
 		
 		// Execute the "press" animation if allowed, then perform the action:
-		if(controller.getCurrentForm().isClickAnimation())
+		if(currentForm.isClickAnimation())
 			// Execute animation and the action afterwards:
 			ViewAnimator.Click(	clickedView,
 								null,
