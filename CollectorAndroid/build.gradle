@@ -2,6 +2,8 @@ apply plugin: 'com.android.application'
 apply plugin: 'io.fabric'
 apply plugin: 'hu.supercluster.paperwork'
 
+def keysFolder = file('../../Keys/') // location of signing keys and other private credentials
+
 repositories {
     maven { url 'https://maven.fabric.io/public' }
     maven { url "https://jitpack.io" }
@@ -11,7 +13,7 @@ ext {
     // Read private/external fabric.properties file:
     fabric = new Properties();
     try {
-        fabric.load(new FileInputStream(file('../../Keys/fabric.properties')));
+        fabric.load(new FileInputStream(new File(keysFolder, 'fabric.properties')));
     }
     catch (Exception e) {
         println('Using dummy fabric apiKey/Secret\nError message: ' + e.getLocalizedMessage());
@@ -24,24 +26,24 @@ ext {
         entry(key: "apiSecret", value: fabric['apiSecret'])
     }
 
-    // Read private/external release signing key:
-    signingKeyReleaseProperties = new Properties()
-    signingKeyDebugProperties = new Properties()
-
+    // Read private/external signing properties:
+    //  Release:
+    releaseSigning = new Properties()
     try {
-        signingKeyReleaseProperties.load(new FileInputStream(file('../../Keys/release.properties')))
+        releaseSigning.load(new FileInputStream(new File(keysFolder, 'release.properties')));
     }
     catch (Exception e) {
         println('Cannot find file release.properties that contaings the release signing key information.\nError ' +
                 'message: ' + e.getLocalizedMessage());
     }
-
+    //  Debug:
+    debugSigning = new Properties()
     try {
-        signingKeyDebugProperties.load(new FileInputStream(file('../../Keys/debug.properties')))
+        debugSigning.load(new FileInputStream(new File(keysFolder, 'debug.properties')));
     }
     catch (Exception e) {
         println('Cannot find file debug.properties that contaings the debug signing key information.\nError message: ' +
-                '' + e.getLocalizedMessage());
+                e.getLocalizedMessage());
     }
 
     // We use the number of hours since 2012-01-01T00:00:00.000Z as the versionCode
@@ -73,19 +75,19 @@ android {
 
     signingConfigs {
         release {
-            if (signingKeyReleaseProperties['keystore-path'] != null) {
-                storeFile file("../../Keys/" + signingKeyReleaseProperties['keystore-path'])
-                storePassword signingKeyReleaseProperties['keystore-passwd']
-                keyAlias signingKeyReleaseProperties['key-alias']
-                keyPassword signingKeyReleaseProperties['key-passwd']
+            if (releaseSigning['keystore-path'] != null) {
+                storeFile new File(keysFolder, "" + releaseSigning['keystore-path'])
+                storePassword releaseSigning['keystore-passwd']
+                keyAlias releaseSigning['key-alias']
+                keyPassword releaseSigning['key-passwd']
             }
         }
         debug {
-            if (signingKeyDebugProperties['keystore-path'] != null) {
-                storeFile file("../../Keys/" + signingKeyDebugProperties['keystore-path'])
-                storePassword signingKeyDebugProperties['keystore-passwd']
-                keyAlias signingKeyDebugProperties['key-alias']
-                keyPassword signingKeyDebugProperties['key-passwd']
+            if (debugSigning['keystore-path'] != null) {
+                storeFile new File(keysFolder, "" + debugSigning['keystore-path'])
+                storePassword debugSigning['keystore-passwd']
+                keyAlias debugSigning['key-alias']
+                keyPassword debugSigning['key-passwd']
             }
         }
     }

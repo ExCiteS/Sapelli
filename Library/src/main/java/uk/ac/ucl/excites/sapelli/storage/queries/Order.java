@@ -309,11 +309,12 @@ public class Order implements Comparator<Record>
 					return Integer.MAX_VALUE;
 				else
 				{
-					int modelComp = Long.compare(r1.getSchema().model.id, r2.getSchema().model.id);
+					int modelComp = Long.valueOf(r1.getSchema().model.id).compareTo(r2.getSchema().model.id);
 					if(modelComp != 0)
 						return modelComp;
 					else
-						return Integer.compare(r1.getSchema().modelSchemaNumber, r2.getSchema().modelSchemaNumber); 
+						return Integer.valueOf(r1.getSchema().modelSchemaNumber)
+						              .compareTo(r2.getSchema().modelSchemaNumber);
 				}
 			}
 		};

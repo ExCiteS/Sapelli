@@ -82,17 +82,17 @@ public final class CharsetHelpers
 	
 	private static final Charset CHARSETINFO_FILE_CHARSET = Charsets.UTF_8;
 	
-	private static final String CHARSETINFO_FILE_EXTENSION = "charsetinfo";
+	public static final String CHARSETINFO_FILE_EXTENSION = "charsetinfo";
 	
 	private static final Charset PROPERTIES_FILE_CHARSET = Charsets.ISO_8859_1;
 	
-	private static final String PROPERTIES_FILE_EXTENSION = "properties";
+	public static final String PROPERTIES_FILE_EXTENSION = "properties";
 	
 	private static final char COMMENT_LINE_MARKER = '#';
 	
 	private static final String EOL = System.getProperty("line.separator");
 	
-	private static final String CMMBPC_PROPERTIES_FILE_NAME = "CharsetMaxMaxBytesPerChar";
+	public static final String CMMBPC_PROPERTIES_FILE_NAME = "CharsetMaxMaxBytesPerChar";
 	
 	private static final ResourceBundle CharsetMaxMaxBytesPerCharBundle;
 	static
@@ -207,7 +207,7 @@ public final class CharsetHelpers
 	 * 
 	 * @param inputFolderPath path of a directory containing CharsetInfo files (with *.charsetinfo extension!) to process
 	 * @param outputFolderPath path of a (resource) directory in which to create the new/updated CharsetMaxMaxBytesPerChar.properties file
-	 * @param force when {@code true} a new CharsetMaxMaxBytesPerChar.properties file will always be generated
+	 * @param force when {@code true} a new CharsetMaxMaxBytesPerChar.properties file will always be (re)generated
 	 * @return whether or not a new or updated CharsetMaxMaxBytesPerChar.properties file was created
 	 * @throws IOException
 	 */
@@ -263,12 +263,15 @@ public final class CharsetHelpers
 					break;
 				}
 		
-		// If the information is different...
-		if(different)
+		// Get output file:
+		File outputFolder = new File(new File(outputFolderPath), ClassHelpers.classPackageAsResourcePath(CharsetHelpers.class));
+		FileHelpers.createDirectory(outputFolder);
+		File outputFile = new File(outputFolder, CMMBPC_PROPERTIES_FILE_NAME + "." + PROPERTIES_FILE_EXTENSION);
+
+		// If the information is different or there is no properties file yet...
+		if(different || !outputFile.exists())
 		{	// Write new properties file (in package-specific subfolder of the given output folder):
-			File outputFolder = new File(new File(outputFolderPath), ClassHelpers.classPackageAsResourcePath(CharsetHelpers.class));
-			FileHelpers.createDirectory(outputFolder);
-			try(FileOutputStream fos = new FileOutputStream(new File(outputFolder, CMMBPC_PROPERTIES_FILE_NAME + "." + PROPERTIES_FILE_EXTENSION));
+			try(FileOutputStream fos = new FileOutputStream(outputFile);
 				BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fos, PROPERTIES_FILE_CHARSET)))
 			{
 				// Header:
@@ -310,7 +313,6 @@ public final class CharsetHelpers
 		
 		/**
 		 * @param charset
-		 * @param maxBytesPerChar
 		 */
 		public CharsetInfo(Charset charset)
 		{

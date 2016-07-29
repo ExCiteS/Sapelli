@@ -459,7 +459,7 @@ public class Schema extends ColumnSet implements Serializable
 	/**
 	 * Create an initialised reference to a record of this schema
 	 * 
-	 * @param serialiseKeyPartValues
+	 * @param serialisedKeyPartValues
 	 * @return
 	 * @throws Exception 
 	 * @throws NullPointerException 
@@ -472,7 +472,7 @@ public class Schema extends ColumnSet implements Serializable
 	/**
 	 * Create an initialised reference to a record of this schema
 	 * 
-	 * @param serialiseKeyPartValues
+	 * @param serialisedKeyPartValues
 	 * @return
 	 * @throws NullPointerException
 	 * @throws IOException 
@@ -611,7 +611,7 @@ public class Schema extends ColumnSet implements Serializable
 	{
 		
 		/**
-		 * @param Schema
+		 * @param schema
 		 * @return unsigned 60 bit integer
 		 */
 		public long getSortCode(Schema schema)
@@ -623,7 +623,7 @@ public class Schema extends ColumnSet implements Serializable
 		@Override
 		public int compare(Schema s1, Schema s2)
 		{
-			return Long.compare(getSortCode(s1), getSortCode(s2));
+			return Long.valueOf(getSortCode(s1)).compareTo(getSortCode(s2));
 		}
 		
 	}
