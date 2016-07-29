@@ -717,10 +717,21 @@ public class FormParser extends SubtreeParser<ProjectParser>
 							"A");
 		
 		// Other attributes:
-		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
-		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
+		choice.setCols(checkColRows(attributes, ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
+		choice.setRows(checkColRows(attributes, ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
 		choice.setCrossed(attributes.getBoolean(ATTRIBUTE_CHOICE_CROSSED, ChoiceField.DEFAULT_CROSSED));
 		choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, choice.isRoot() ? ChoiceField.DEFAULT_CROSS_COLOR : parent.getCrossColor(), true, false));
+	}
+
+	private int checkColRows(XMLAttributes attributes, String attribute, int defaultValue)
+	{
+		int value = attributes.getInteger(attribute, defaultValue);
+		if(value < 1)
+		{
+			addWarning(attribute + " must be >1 (forced to 1; was " + value + ")");
+			value = 1;
+		}
+		return value;
 	}
 	
 	/**

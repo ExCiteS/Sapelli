@@ -942,19 +942,19 @@ public abstract class CollectorController<CUI extends CollectorUI<?, ?>> impleme
 	}
 
 	/**
-	 * @return the currentRecord
+	 * @return the currentRecord (or null)
 	 */
 	public Record getCurrentRecord()
 	{
-		return currFormSession.record;
+		return currFormSession != null ? currFormSession.record : null;
 	}
 	
 	/**
-	 * @return the current Form
+	 * @return the current Form (or null)
 	 */
 	public Form getCurrentForm()
 	{
-		return currFormSession.form;
+		return currFormSession != null ? currFormSession.form : null;
 	}
 	
 	/**
