@@ -11,7 +11,7 @@ It supports the creation of surveys (called "projects"), composed of 1 or more f
 Sapelli is being developed by the [Extreme Citizen Science (ExCiteS) research group](http://ucl.ac.uk/excites) at [University College London (UCL)](http://ucl.ac.uk), with help from outside partners & contributors.
 
 Currently the core Sapelli team consists of:
-  * [Dr Matthias Stevens](https://github.com/mstevens83), [UCL](http://iris.ucl.ac.uk/iris/browse/profile?upi=MLLST21): lead architect/developer
+  * [Dr Matthias Stevens](https://github.com/mstevens83), [UCL](https://www.ucl.ac.uk/excites/people/affiliated-staff/matthias)/[iMinds](http://www.iminds.be/en/profiles/2016/07/12/matthias-stevens): lead architect/developer
   * [Michalis Vitos](https://github.com/michalis-vitos), UCL: developer
   * [Julia Altenbuchner](https://github.com/julia-altenbuchner), UCL: developer
   * [Gillian Conquest](http://gillconquest.co.uk), UCL: anthropologist, field tester
