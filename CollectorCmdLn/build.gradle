@@ -31,9 +31,11 @@ dependencies {
     compile project(':Library')
 
     // Other dependencies:
+    //  For command line interaction:
     compile 'commons-cli:commons-cli:1.3.1'
-    compile 'com.fasterxml.jackson.core:jackson-core:2.7.6'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.6'
+    //  For JSON handling:
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.1'
+    //      jackson-databind also pulls in jackson-core & jackson-annotations
 }
 
 compileJava {
@@ -42,10 +44,12 @@ compileJava {
     targetCompatibility = JavaVersion.VERSION_1_7
 }
 
+// Assembles jar file:
 jar {
     manifest {
         attributes 'Main-Class': 'uk.ac.ucl.excites.sapelli.collector.SapColCmdLn'
     }
+    // Include all dependencies in jar:
     from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
@@ -54,6 +58,7 @@ jar {
     classifier = 'with-dependencies'
 }
 
+// Installs jar to local Maven repository:
 install {
     println project.group
     println project.version

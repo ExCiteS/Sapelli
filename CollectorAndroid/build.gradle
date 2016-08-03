@@ -110,7 +110,7 @@ android {
     }
     defaultConfig {
         applicationId project.group + '.sapelli.collector'
-        minSdkVersion 10 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1)
+        minSdkVersion 10 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1))
         targetSdkVersion 22 // = LOLLIPOP_MR1 (for now we do not target 23 or higher, this is to avoid the run-time/revokable permissions of Android 6.0 and higher)
 
         versionName project.version // defined in root build.gradle file
