@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.CollectorAttachmentUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
@@ -292,7 +293,7 @@ public final class ProjectTasks
 					ProjectRunHelpers.removeShortcut(owner, projDescr);
 				
 					// Remove as active project
-					if(owner.getPreferences().getActiveProjectSignature().equals(projDescr.getSignatureString()))
+					if(Objects.equals(owner.getPreferences().getActiveProjectSignature(), projDescr.getSignatureString()))
 						owner.getPreferences().clearActiveProjectSignature();
 				}
 			}
