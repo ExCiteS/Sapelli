@@ -40,12 +40,11 @@ public final class Hashing
 	{
 		md.reset();
 		byte[] bff = new byte[4096];
-		int count = 0;
-		while(input.available() > 0)
+		int count = 0, bytesRead = 0;
+		while ((bytesRead = input.read(bff)) != -1)
 		{
-			int read = input.read(bff, 0, input.available());
-			md.update(bff, 0, read);
-			count += read;
+			md.update(bff, 0, bytesRead);
+			count += bytesRead;
 		}
 		return new HashResult(md.digest(), count);
 	}
