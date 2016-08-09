@@ -684,8 +684,6 @@ public abstract class MediaField extends Field
 		 * 
 		 * @param record
 		 * @param attachmentIdentifier
-		 * @param obfuscateFilename
-		 * @param obfuscateExtension
 		 * @return
 		 */
 		public abstract String generateFilename(ValueSet<?> record, N attachmentIdentifier);
@@ -735,9 +733,7 @@ public abstract class MediaField extends Field
 		 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
 		 * 
 		 * @param record
-		 * @param attachmentIdentifier
-		 * @param obfuscateFilename
-		 * @param obfuscateExtension
+		 * @param creationTimeOffset
 		 * @return
 		 */
 		@Override
@@ -801,9 +797,7 @@ public abstract class MediaField extends Field
 		 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
 		 * 
 		 * @param record
-		 * @param attachmentIdentifier
-		 * @param obfuscateFilename
-		 * @param obfuscateExtension
+		 * @param attachmentNumber
 		 * @return
 		 */
 		@Override
