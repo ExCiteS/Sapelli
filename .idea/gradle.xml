@@ -13,14 +13,7 @@
             <option value="$PROJECT_DIR$/Library" />
           </set>
         </option>
-        <option name="myModules">
-          <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/CollectorAndroid" />
-            <option value="$PROJECT_DIR$/CollectorCmdLn" />
-            <option value="$PROJECT_DIR$/Library" />
-          </set>
-        </option>
+        <option name="resolveModulePerSourceSet" value="false" />
       </GradleProjectSettings>
     </option>
   </component>
