@@ -181,4 +181,7 @@ dependencies {
     //  of the app (currently 10) in AndroidManifest.xml, seemingly without problems. If we
     //  switch to a newer release of timber we must re-evaluate whether this is still needed
     //  and still does not cause problems.
+
+    // Stetho debugging
+    compile 'com.facebook.stetho:stetho:1.4.1'
 }
