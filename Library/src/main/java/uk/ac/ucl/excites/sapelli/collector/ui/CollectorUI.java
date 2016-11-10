@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
@@ -36,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.HtmlUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
@@ -60,7 +62,9 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	public LocationUI<V, UI> createLocationUI(LocationField lf);
 	
 	public OrientationUI<V, UI> createOrientationUI(OrientationField of);
-	
+
+	public HtmlUI<V, UI> createHtmlUI(HtmlField of);
+
 	public LabelUI<V, UI> createLabelUI(LabelField lf);
 	
 	public ButtonUI<V, UI> createButtonUI(ButtonField bf);

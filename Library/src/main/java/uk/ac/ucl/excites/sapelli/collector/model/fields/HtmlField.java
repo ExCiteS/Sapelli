@@ -23,7 +23,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.HtmlUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
@@ -60,7 +60,6 @@ public class HtmlField extends Field
 		return null;
 	}
 
-
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
 	 */
@@ -74,10 +73,8 @@ public class HtmlField extends Field
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI)
 	 */
 	@Override
-	public <V, UI extends CollectorUI<V, UI>> TextBoxUI<V, UI> createUI(UI collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> HtmlUI<V, UI> createUI(UI collectorUI)
 	{
-		// TODO: 10/11/2016 Fix this
-		return null;
-		//		return collectorUI.createTextFieldUI(this);
+		return collectorUI.createHtmlUI(this);
 	}
 }

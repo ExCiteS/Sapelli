@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -609,6 +610,12 @@ public abstract class CollectorController<CUI extends CollectorUI<?, ?>> impleme
 			startOrientationListener();
 		return true;
 		// update UI (even though the orientation values are typically received instantaneously and the UI might never actually be seen by the user)
+	}
+
+	@Override
+	public boolean enterHtmlField(HtmlField hf, FieldParameters arguments, boolean withPage)
+	{
+		return true;
 	}
 	
 	@Override
