@@ -57,7 +57,7 @@ public class HtmlField extends Field
 	@Override
 	protected Column<?> createColumn(String name)
 	{
-		// TODO: 10/11/2016 This should return the correct column
+		// An Html field is always noColumn, so that it does not store any info
 		return null;
 	}
 

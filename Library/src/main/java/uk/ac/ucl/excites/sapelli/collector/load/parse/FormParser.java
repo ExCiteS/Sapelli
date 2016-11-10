@@ -448,6 +448,10 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				HtmlField htmlField = new HtmlField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_HTML, false));
 				newField(htmlField, attributes);
 				htmlField.setUrl(attributes.getString(ATTRIBUTE_HTML_URL, null, true, false));
+				// An Html field is always optional, so that forward button is showed
+				htmlField.setOptional(true);
+				// An Html field is always noColumn, so that it does not store any info
+				htmlField.setNoColumn(true);
 			}
 			// <BelongsTo>
 			else if(qName.equals(TAG_BELONGS_TO))
