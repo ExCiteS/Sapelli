@@ -1,0 +1,36 @@
+@startuml
+
+package "uk.ac.ucl.excites.sapelli.collector.model" {
+abstract class JumpSource
+abstract class Field
+abstract class MediaField
+abstract class AVField
+abstract class UILessField
+abstract class Relationship
+
+JumpSource <|-- Field
+Field <|-- Page
+Field <|-- CheckBoxField
+Field <|-- TextBoxField
+Field <|-- ChoiceField
+Field <|-- LabelField
+Field <|-- ButtonField
+Field <|-- MediaField
+MediaField <|-- PhotoField
+MediaField <|-- AVField
+AVField <|-- VideoField
+AVField <|-- AudioField
+Field <|-- UILessField
+UILessField  <|-- EndField
+UILessField  <|-- Relationship
+Relationship <|-- LinksToField
+Relationship <|-- BelongsToField
+Field <|-- LocationField
+Field <|-- OrientationField
+Field <|-- MultiListField
+
+JumpSource <|-- Trigger
+
+}
+
+@enduml
