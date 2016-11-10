@@ -40,6 +40,7 @@ public class HtmlField extends Field
 
 
 	// Dynamics
+	private String url;
 
 	/**
 	 * @param form
@@ -76,5 +77,21 @@ public class HtmlField extends Field
 	public <V, UI extends CollectorUI<V, UI>> HtmlUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createHtmlUI(this);
+	}
+
+	/**
+	 * @return the URL of the HtmlField
+	 */
+	public String getUrl()
+	{
+		return url;
+	}
+
+	/**
+	 * @param url - the URL of the HtmlField
+	 */
+	public void setUrl(String url)
+	{
+		this.url = url;
 	}
 }

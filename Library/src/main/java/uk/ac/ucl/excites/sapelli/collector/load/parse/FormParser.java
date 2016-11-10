@@ -185,6 +185,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LOCATION_STORE_SPEED = "storeSpeed";
 	static private final String ATTRIBUTE_LOCATION_STORE_ACCURACY = "storeAccuracy";
 	static private final String ATTRIBUTE_LOCATION_STORE_PROVIDER = "storeProvider";
+	static private final String ATTRIBUTE_HTML_URL = "url";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
@@ -446,6 +447,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				// TODO: 10/11/2016 Parse the rest of the arguments here
 				HtmlField htmlField = new HtmlField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_HTML, false));
 				newField(htmlField, attributes);
+				htmlField.setUrl(attributes.getString(ATTRIBUTE_HTML_URL, null, true, false));
 			}
 			// <BelongsTo>
 			else if(qName.equals(TAG_BELONGS_TO))
