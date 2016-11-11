@@ -21,13 +21,14 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.support.v4.content.ContextCompat;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
 import org.apache.commons.validator.routines.UrlValidator;
@@ -49,6 +50,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 {
 	private RelativeLayout backgroundView;
 	private WebView webView;
+	private ProgressBar progressBar;
 
 	public AndroidHtmlUI(HtmlField htmlField, AndroidCollectorController controller, CollectorView collectorView)
 	{
@@ -62,19 +64,16 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		if(backgroundView == null)
 		{
 			final Context context = collectorUI.getContext();
-			final int COLOUR_WHITE = ContextCompat.getColor(context, R.color.white);
-			backgroundView = new RelativeLayout(context);
-			backgroundView.setBackgroundColor(COLOUR_WHITE);
+			final LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-			// Set parameters
-			RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-			params.addRule(RelativeLayout.CENTER_IN_PARENT);
+			// Get views
+			backgroundView = (RelativeLayout) inflater.inflate(R.layout.field_html_ui, null);
+			webView = (WebView) backgroundView.findViewById(R.id.webview);
+			progressBar = (ProgressBar) backgroundView.findViewById(R.id.webview_progressbar);
 
 			// Webview
-			webView = new WebView(context);
 			webView.getSettings().setJavaScriptEnabled(true);
 			webView.setWebViewClient(new WebClient());
-			webView.setBackgroundColor(COLOUR_WHITE);
 			webView.getSettings().setDomStorageEnabled(true);
 			webView.getSettings().setDatabaseEnabled(true);
 			webView.getSettings().setAppCacheEnabled(true);
@@ -107,11 +106,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 				Timber.e(e, "Error in URL builder: ");
 			}
 
-			Timber.d("URL: %s", url);
-
 			webView.loadUrl(url);
-
-			backgroundView.addView(webView, params);
 		}
 
 		return backgroundView;
@@ -144,6 +139,11 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		{
 			this.url = url;
 			Timber.d("Started loading URL: %s", url);
+
+			// Show progressbar
+			if(progressBar != null)
+				progressBar.setVisibility(View.VISIBLE);
+
 			super.onPageStarted(view, url, favicon);
 		}
 
@@ -158,6 +158,11 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		public void onPageFinished(WebView webview, String url)
 		{
 			Timber.d("Finished loading URL: %s", url);
+
+			// Show progressbar
+			if(progressBar != null)
+				progressBar.setVisibility(View.GONE);
+
 			super.onPageFinished(webview, url);
 		}
 
@@ -165,6 +170,11 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error)
 		{
 			Timber.d("Error loading URL: %s", url);
+
+			// Show progressbar
+			if(progressBar != null)
+				progressBar.setVisibility(View.GONE);
+
 			super.onReceivedError(view, request, error);
 		}
 	}
