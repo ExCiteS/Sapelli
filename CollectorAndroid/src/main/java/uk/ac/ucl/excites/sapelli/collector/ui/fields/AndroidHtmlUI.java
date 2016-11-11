@@ -19,8 +19,13 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.WebResourceError;
@@ -30,6 +35,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import org.apache.commons.validator.routines.UrlValidator;
 
@@ -73,7 +79,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 
 			// Webview
 			webView.getSettings().setJavaScriptEnabled(true);
-			webView.setWebViewClient(new WebClient());
+			webView.setWebViewClient(new WebClient(context));
 			webView.getSettings().setDomStorageEnabled(true);
 			webView.getSettings().setDatabaseEnabled(true);
 			webView.getSettings().setAppCacheEnabled(true);
@@ -132,12 +138,16 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 	 */
 	private class WebClient extends WebViewClient
 	{
-		private String url;
+		private Context context;
+
+		public WebClient(Context context)
+		{
+			this.context = context;
+		}
 
 		@Override
 		public void onPageStarted(WebView view, String url, Bitmap favicon)
 		{
-			this.url = url;
 			Timber.d("Started loading URL: %s", url);
 
 			// Show progressbar
@@ -147,11 +157,49 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 			super.onPageStarted(view, url, favicon);
 		}
 
+		@SuppressWarnings("deprecation")
+		@Override
+		public boolean shouldOverrideUrlLoading(WebView view, String url)
+		{
+			final Uri uri = Uri.parse(url);
+			return handleUri(uri);
+		}
+
+		@TargetApi(Build.VERSION_CODES.N)
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
 		{
-			Timber.d("Override request: %s", request);
-			return super.shouldOverrideUrlLoading(view, request);
+			final Uri uri = request.getUrl();
+			return handleUri(uri);
+		}
+
+		private boolean handleUri(final Uri uri)
+		{
+			Timber.d("Override Uri: %s", uri);
+
+			if(uri.toString().endsWith(".pdf"))
+			{
+				Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
+				pdfIntent.setDataAndType(uri, "application/pdf");
+				pdfIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+				try
+				{
+					context.startActivity(pdfIntent);
+				}
+				catch(ActivityNotFoundException e)
+				{
+					Toast.makeText(context, "No PDF application found", Toast.LENGTH_SHORT).show();
+				}
+				catch(Exception otherException)
+				{
+					Toast.makeText(context, "Unknown error", Toast.LENGTH_SHORT).show();
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 
 		@Override
@@ -169,7 +217,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		@Override
 		public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error)
 		{
-			Timber.d("Error loading URL: %s", url);
+			Timber.d("Error loading URL: %s", request.toString());
 
 			// Show progressbar
 			if(progressBar != null)
