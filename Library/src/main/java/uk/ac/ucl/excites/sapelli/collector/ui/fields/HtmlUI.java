@@ -24,7 +24,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 
 /**
  * @author Michalis Vitos
- *
  */
 public abstract class HtmlUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<HtmlField, V, UI>
 {
@@ -33,5 +32,15 @@ public abstract class HtmlUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavi
 	{
 		super(field, controller, collectorUI);
 	}
+
+	/**
+	 * Go back in the history of this WebView.
+	 */
+	public abstract void goBack();
+
+	/**
+	 * Check if web view can go back
+	 */
+	public abstract boolean canGoBack();
 
 }

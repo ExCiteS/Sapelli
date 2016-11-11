@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
@@ -44,12 +45,14 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 {
 	private RelativeLayout backgroundView;
+	private WebView webView;
 
 	public AndroidHtmlUI(HtmlField htmlField, AndroidCollectorController controller, CollectorView collectorView)
 	{
 		super(htmlField, controller, collectorView);
 	}
 
+	@SuppressLint("SetJavaScriptEnabled")
 	@Override
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
@@ -65,7 +68,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 			params.addRule(RelativeLayout.CENTER_IN_PARENT);
 
 			// Webview
-			WebView webView = new WebView(context);
+			webView = new WebView(context);
 			webView.getSettings().setJavaScriptEnabled(true);
 			webView.setWebViewClient(new WebViewClient());
 			webView.setBackgroundColor(COLOUR_WHITE);
@@ -111,4 +114,16 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		return backgroundView;
 	}
 
+	@Override
+	public void goBack()
+	{
+		if(webView != null)
+			webView.goBack();
+	}
+
+	@Override
+	public boolean canGoBack()
+	{
+		return webView != null && webView.canGoBack();
+	}
 }

@@ -48,6 +48,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.HtmlUI;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -342,7 +344,15 @@ public abstract class CollectorController<CUI extends CollectorUI<?, ?>> impleme
 		
 		// Try to go to previous field...
 		if(currFormSession.canGoBack())
-			goTo(currFormSession.getPrevious(true), LeaveRule.UNCONDITIONAL_WITH_STORAGE); // force leaving but allow storage (if valid)
+		{
+			// Get current Field UI
+			FieldUI fieldUI = ui.getCurrentFieldUI();
+
+			if(fieldUI instanceof HtmlUI && ((HtmlUI) fieldUI).canGoBack())
+				((HtmlUI) fieldUI).goBack();
+			else
+				goTo(currFormSession.getPrevious(true), LeaveRule.UNCONDITIONAL_WITH_STORAGE); // force leaving but allow storage (if valid)
+		}
 		else
 			// Try to go to previous form...
 			goToPreviousForm();
