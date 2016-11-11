@@ -53,7 +53,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 	@Override
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
-		if (backgroundView == null)
+		if(backgroundView == null)
 		{
 			final Context context = collectorUI.getContext();
 			final int COLOUR_WHITE = ContextCompat.getColor(context, R.color.white);
@@ -74,30 +74,29 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 			webView.getSettings().setAppCacheEnabled(true);
 			webView.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
 
-			//final String url = "file:///storage/emulated/0/Download/planted.html";
-			//final String url = "file://" + controller.getFileStorageProvider().getProjectResFile(controller.getCurrentForm().getProject(), "planted.html");
+			// Build URL
 			UrlValidator urlValidator = new UrlValidator();
 			String url = "";
 			try
 			{
-				if (urlValidator.isValid(field.getUrl()))
+				if(urlValidator.isValid(field.getUrl()))
 				{
 					url = field.getUrl();
 				}
 				else
 				{
 					String localFile = controller.getFileStorageProvider()
-							.getProjectResFile(
-									controller.getCurrentForm().getProject(),
-									field.getUrl()
-							)
-							.toString();
+					  .getProjectResFile(
+						controller.getCurrentForm().getProject(),
+						field.getUrl()
+					  )
+					  .toString();
 
 					// file://local_file
 					url = String.format(Locale.getDefault(), "file://%s", localFile);
 				}
 			}
-			catch (Exception e)
+			catch(Exception e)
 			{
 				Timber.e(e, "Error in URL builder: ");
 			}
