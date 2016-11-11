@@ -20,8 +20,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -70,7 +73,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 			// Webview
 			webView = new WebView(context);
 			webView.getSettings().setJavaScriptEnabled(true);
-			webView.setWebViewClient(new WebViewClient());
+			webView.setWebViewClient(new WebClient());
 			webView.setBackgroundColor(COLOUR_WHITE);
 			webView.getSettings().setDomStorageEnabled(true);
 			webView.getSettings().setDatabaseEnabled(true);
@@ -125,5 +128,44 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 	public boolean canGoBack()
 	{
 		return webView != null && webView.canGoBack();
+	}
+
+	/**
+	 * Custom WebView client
+	 *
+	 * @author Michalis Vitos
+	 */
+	private class WebClient extends WebViewClient
+	{
+		private String url;
+
+		@Override
+		public void onPageStarted(WebView view, String url, Bitmap favicon)
+		{
+			this.url = url;
+			Timber.d("Started loading URL: %s", url);
+			super.onPageStarted(view, url, favicon);
+		}
+
+		@Override
+		public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
+		{
+			Timber.d("Override request: %s", request);
+			return super.shouldOverrideUrlLoading(view, request);
+		}
+
+		@Override
+		public void onPageFinished(WebView webview, String url)
+		{
+			Timber.d("Finished loading URL: %s", url);
+			super.onPageFinished(webview, url);
+		}
+
+		@Override
+		public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error)
+		{
+			Timber.d("Error loading URL: %s", url);
+			super.onReceivedError(view, request, error);
+		}
 	}
 }
