@@ -108,7 +108,24 @@ public class Model implements Serializable
 	{
 		META_MODEL.seal();
 	}
+
+	/**
+	 * The default default Schema flags. Only defines records as exportable.
+	 */
+	static public final int DEFAULT_DEFAULT_SCHEMA_FLAGS = StorageClient.SCHEMA_FLAG_EXPORTABLE;
 	
+	/**
+	 * Returns a new Model instance with an id based on the hashcode of the name and has all-0 default schema flags.
+	 * This helper method serves scenarios where the model id and schema flags do not matter.
+	 *
+	 * @param name
+	 * @return the Model
+	 */
+	static public Model CreateSimpleModel(String name)
+	{
+		return new Model(Math.abs(name.hashCode()), name, DEFAULT_DEFAULT_SCHEMA_FLAGS);
+	}
+
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
 	 * 
