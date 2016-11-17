@@ -32,11 +32,11 @@ dependencies {
     //compile fileTree(dir: 'libs', include: ['*.jar'])
 
     // Joda:
-    compile 'joda-time:joda-time:2.9.4'
+    compile 'joda-time:joda-time:2.9.6'
 
     // Apache:
     compile 'commons-io:commons-io:2.5'
-    compile 'org.apache.commons:commons-lang3:3.4'
+    compile 'org.apache.commons:commons-lang3:3.5'
     compile 'com.github.ExCiteS:apache-commons-codec-shaded:1.10' // See https://github.com/ExCiteS/apache-commons-codec-shaded
     compile 'org.apache.commons:commons-collections4:4.1'
     compile 'org.apache.commons:commons-compress:1.12'
