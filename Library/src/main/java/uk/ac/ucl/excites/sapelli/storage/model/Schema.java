@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKe
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.util.DuplicateColumnException;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
@@ -261,6 +262,49 @@ public class Schema extends ColumnSet implements Serializable
 		return index;
 	}
 	
+	/**
+	 * Add a new, non-virtual Column to the Schema and sets it as the primary key.
+	 *
+	 * @param column the column to add, cannot be a {@link VirtualColumn}
+	 * @return the added column
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
+	 * @throws IllegalStateException when the Schema already has a primary key or is already sealed
+	 */
+	public final <C extends Column<T>, T> C addPrimaryKeyColumn(C column) throws DuplicateColumnException, IllegalArgumentException
+	{
+		return addPrimaryKeyColumn(column, false); // don't seal
+	}
+
+	/**
+	 * Add a new, non-virtual Column to the Schema and sets it as the primary key.
+	 *
+	 * @param column the column to add, cannot be a {@link VirtualColumn}
+	 * @param seal if {@code true} the Schema will be sealed after adding the column (i.e. this is the last column to be added)
+	 * @return the added column
+	 * @throws DuplicateColumnException in case of a name-clash
+	 * @throws IllegalArgumentException
+	 * @throws IllegalStateException when the Schema already has a primary key or is already sealed
+	 */
+	public final <C extends Column<T>, T> C addPrimaryKeyColumn(C column, boolean seal) throws DuplicateColumnException, IllegalArgumentException
+	{
+		if(hasPrimaryKey())
+			throw new IllegalStateException("This schema already has a primary key!");
+
+		// Add column:
+		addColumn(column, false); // don't seal yet!
+
+		// Set PK:
+		setPrimaryKey(PrimaryKey.WithColumnNames(column));
+
+		// Seal if needed:
+		if(seal)
+			seal();
+
+		// Return added column:
+		return column;
+	}
+
 	/**
 	 * @param primaryKey
 	 */
@@ -494,6 +538,63 @@ public class Schema extends ColumnSet implements Serializable
 		return new RecordReference(this).getRecordQueryConstraint(true);
 	}
 	
+	/**
+	 * Returns a {@link RecordColumn} defined from this Schema.
+	 * It can be used to store Records of this Schema.
+	 *
+	 * @param optional whether the column is option or not
+	 * @return the RecordColumn
+	 */
+	public RecordColumn asRecordColumn(boolean optional)
+	{
+		return new RecordColumn(name, this, optional);
+	}
+
+	/**
+	 * Returns a {@link ListColumn} defined from thos Schema.
+	 * It can be used to store Lists of Records of this Schema.
+	 * The {@link #tableName} is used as the name of the column.
+	 *
+	 * @param optional whether the column as a whole is optional (i.e. it will take {@code null} Lists})
+	 * @param elementOptional whether {@code null} records will be accepted
+	 * @return the ListColumn
+	 */
+	public ListColumn<List<Record>, Record> asListRecordColumn(boolean optional, boolean elementOptional)
+	{
+		return asListRecordColumn(optional, elementOptional, ListColumn.DEFAULT_MAXIMUM_LENGTH);
+	}
+
+	/**
+	 * Returns a {@link ListColumn} defined from thos Schema.
+	 * It can be used to store Lists of Records of this Schema.
+	 * The {@link #tableName} is used as the name of the column.
+	 *
+	 * @param optional whether the column as a whole is optional (i.e. it will take {@code null} Lists})
+	 * @param elementOptional whether {@code null} records will be accepted
+	 * @param maxLength the maximum length a of a valid List of Records
+	 * @return the ListColumn
+	 */
+	public ListColumn<List<Record>, Record> asListRecordColumn(boolean optional, boolean elementOptional, int maxLength)
+	{
+		return asListRecordColumn(optional, elementOptional, ListColumn.DEFAULT_MINIMUM_LENGTH, maxLength);
+	}
+
+	/**
+	 * Returns a {@link ListColumn} defined from thos Schema.
+	 * It can be used to store Lists of Records of this Schema.
+	 * The {@link #tableName} is used as the name of the column.
+	 *
+	 * @param optional whether the column as a whole is optional (i.e. it will take {@code null} Lists})
+	 * @param elementOptional whether {@code null} records will be accepted
+	 * @param minLength the minimum length a of a valid List of Records
+	 * @param maxLength the maximum length a of a valid List of Records
+	 * @return the ListColumn
+	 */
+	public ListColumn<List<Record>, Record> asListRecordColumn(boolean optional, boolean elementOptional, int minLength, int maxLength)
+	{
+		return new ListColumn.Simple<>(tableName, this.asRecordColumn(elementOptional), optional, minLength, maxLength);
+	}
+
 	/**
 	 * Check for equality.
 	 * 
