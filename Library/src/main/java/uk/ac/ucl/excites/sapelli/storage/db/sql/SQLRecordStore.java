@@ -158,7 +158,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * @param initArgs the initInfo to set
+	 * @param newDB
+	 * @param targetVersion
+	 * @param upgrader
 	 */
 	protected final void setInitialisationArguments(boolean newDB, int targetVersion, SQLRecordStoreUpgrader upgrader)
 	{
@@ -682,7 +684,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Deletes all records that match the query.
 	 * Overridden for increased performance.
 	 * 
-	 * @param recordsQuery
+	 * @param query
 	 * @throws DBException
 	 */
 	@Override
@@ -873,7 +875,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * 
 	 * For upgrade purposes only.
 	 * 
-	 * @param unsanitisedName
+	 * @param unsanitisedTableName
 	 * @param force
 	 * @throws DBException
 	 */
@@ -1121,7 +1123,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Creates the table (+ any indexes) in the database.
 		 * Assumes the table does not already exist in the database! (caller must therefore first call isInDB())
 		 * 
-		 * @param factory
 		 * @throws DBException
 		 */
 		public void create() throws DBException
@@ -1282,7 +1283,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * 	The only obvious way to fix this is to generate UPDATE statements in which the WHERE clause checks whether
 		 * 	values _need_ to be updated. E.g. "UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE id = X AND (col1 IS NOT 'newVal1' OR col2 IS NOT 'newVal2');"
 		 * 	We could implement such a solution in RecordUpdateHelper but will wait until we are certain this feature will be required.
-		 * @see See: <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
+		 * @see <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
 		 * TODO implement solution to detect actual record value changes
 		 * 
 		 * @param record
@@ -1318,7 +1319,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param recordsQuery
+		 * @param query
 		 * @return the number of deleted records
 		 * @throws DBException
 		 */
@@ -1361,8 +1362,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Assumes the table exists in the database!
 		 * 
 		 * @param query
-		 * @param result record or null
-		 * @throws DBException 
+		 * @throws DBException
 		 */
 		public Record select(SingleRecordQuery query) throws DBException
 		{
@@ -2302,7 +2302,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Appends a WHERE clause which matches the PK (parts) of the given Record[Reference] (if non-null)
 		 * or the PK columns of the Schema of the table (if the given Record[Reference] is null and the statement is parameterised).
 		 * 
-		 * @param a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
+		 * @param recordOrReference a ValueSet<?> instance (when the statement is not parameterised) or null (when it is parameterised)
 		 */
 		protected void appendWhereClause(RecordValueSet<?> recordOrReference)
 		{
@@ -2540,7 +2540,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	/**
-	 * Interface that provides the projection(String) for different kinds of SELECT queries, used by {@link SelectHelper}.
+	 * Interface that provides the projection(String) for different kinds of SELECT queries, used by SelectHelper.
 	 * 
 	 * @author mstevens
 	 */
@@ -2591,7 +2591,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * @param table
 		 * @param projection
-		 * @param recordsQuery
+		 * @param query
 		 */
 		public SelectHelper(STable table, SP projection, Query<?> query)
 		{
@@ -2601,7 +2601,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * @param table
 		 * @param projection
-		 * @param recordsQuery
+		 * @param query
 		 * @param buildQueryNow whether or not to call {@link #buildQuery(RecordsQuery)} from this constructor
 		 */
 		protected SelectHelper(STable table, SP projection, Query<?> query, boolean buildQueryNow)
@@ -3000,7 +3000,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	
 		/**
 		 * @param table
-		 * @param recordQuery
+		 * @param recordsQuery
 		 */
 		public RecordsDeleteHelper(STable table, RecordsQuery recordsQuery)
 		{
