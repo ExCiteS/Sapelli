@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.tukaani.xz.FinishableOutputStream;
+import org.tukaani.xz.FinishableWrapperOutputStream;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.UnsupportedOptionsException;
 
@@ -40,68 +40,37 @@ import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compressio
 public class LZMA2Compressor extends Compressor
 {
 
-	private LZMA2Options options;
-	
-	public LZMA2Compressor()
+	static private LZMA2Options OPTIONS;
+
+	/**
+	 * @return options to be used when (de)compressing
+	 */
+	static /*package*/ LZMA2Options GetOptions()
 	{
-		try
-		{
-			options = new LZMA2Options(6);
-			options.setDictSize(1 << 20); // dictSize at present 6 is too high
-			//options.setNiceLen(LZMA2Options.NICE_LEN_MAX); // = "NumFastBytes" on LZMA(1)
-		}
-		catch(UnsupportedOptionsException e)
-		{
-			e.printStackTrace();
-		}
+		if(OPTIONS == null)
+			try
+			{
+				OPTIONS = new LZMA2Options(LZMA2Options.PRESET_MAX);
+
+				// Set options:
+				OPTIONS.setDictSize(1 << 20); // Default: 1 << 23 (= 8 << 20); but then it uses way too much memory!
+				//OPTIONS.setNiceLen(LZMA2Options.NICE_LEN_MAX); // = "NumFastBytes" in lzma-java
+				OPTIONS.setMatchFinder(LZMA2Options.MF_BT4);
+			}
+			catch (UnsupportedOptionsException ignore) {}
+		return OPTIONS;
 	}
 	
 	@Override
 	protected OutputStream _getOutputStream(OutputStream sink, long uncompressedSizeBytes)
 	{
-		return options.getOutputStream(new WrappedOutputStream(sink));
+		return GetOptions().getOutputStream(new FinishableWrapperOutputStream(sink));
 	}
 	
 	@Override
 	public InputStream getInputStream(InputStream source) throws IOException
 	{
-		return options.getInputStream(source);
-	}
-
-	public class WrappedOutputStream extends FinishableOutputStream
-	{
-		
-		private OutputStream wrappedStream;
-		
-		public WrappedOutputStream(OutputStream wrappedStream)
-		{
-			this.wrappedStream = wrappedStream;
-		}
-
-		@Override
-		public void write(int b) throws IOException
-		{
-			wrappedStream.write(b);
-		}
-
-		/* (non-Javadoc)
-		 * @see java.io.OutputStream#flush()
-		 */
-		@Override
-		public void flush() throws IOException
-		{
-			wrappedStream.flush();
-		}
-
-		/* (non-Javadoc)
-		 * @see java.io.OutputStream#close()
-		 */
-		@Override
-		public void close() throws IOException
-		{
-			wrappedStream.close();
-		}
-
+		return GetOptions().getInputStream(source);
 	}
 
 	@Override
