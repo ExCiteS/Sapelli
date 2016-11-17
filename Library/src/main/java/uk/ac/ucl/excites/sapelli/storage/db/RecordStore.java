@@ -603,7 +603,7 @@ public abstract class RecordStore extends Store
 	protected void doClose() throws DBException
 	{
 		if(isInTransaction())
-			System.err.println("Warning: record store is being closed but there is an uncommited transaction (changes may be lost)!");
+			System.err.println("Warning: record store is being closed but there is an uncommitted transaction (changes may be lost)!");
 		// Clean-up:
 		cleanup();
 		// Close DB connection:
