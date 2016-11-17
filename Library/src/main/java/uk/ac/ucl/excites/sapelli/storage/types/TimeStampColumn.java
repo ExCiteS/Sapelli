@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.types;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Date;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -400,7 +401,26 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 		// Note: we always keep milliseconds & UTC offset (keepMS & keepLocalTimeZone only affect binary storage)
 		return TimeUtils.ISOWithMSFormatter.withZone(dt.getZone()).print(dt);
 	}
-	
+
+	@Override
+	public TimeStamp convert(Object value) throws ClassCastException
+	{
+		// Null:
+		if(value == null)
+			return null;
+		// Already a TimeStamp:
+		if(value instanceof TimeStamp)
+			return (TimeStamp) value;
+		// DateTime:
+		if(value instanceof DateTime)
+			return new TimeStamp((DateTime) value);
+		// Date:
+		if(value instanceof Date)
+			return new TimeStamp(new DateTime((Date) value));
+		// Number (ms since epoch, usually a long):
+		return new TimeStamp(((Number) value).longValue()); // will fail if object is not a Number instance
+	}
+
 	@Override
 	protected void write(TimeStamp value, BitOutputStream bitStream, boolean lossless) throws IOException
 	{
