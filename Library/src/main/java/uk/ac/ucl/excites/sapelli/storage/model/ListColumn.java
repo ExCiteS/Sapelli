@@ -317,7 +317,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	protected abstract L _getNewList(int minimumCapacity);
 	
 	/**
-	 * Creates a new List of type {@code <L>} initialised with the given {@code elements}.
+	 * Creates a new List of type {@code L} initialised with the given {@code elements}.
 	 * 
 	 * @param elements
 	 * @return
@@ -858,7 +858,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		}
 		
 		/**
-		 * Converts Collection<T>s to (Array)List<T>s
+		 * Converts Collections to (Array)Lists of the same type T.
 		 * 
 		 * @param value possibly null
 		 * @return
