@@ -45,7 +45,7 @@ dependencies {
     compile 'com.github.jponge:lzma-java:1.3'
 
     // Google:
-    compile 'com.googlecode.libphonenumber:libphonenumber:7.5.1'
+    compile 'com.googlecode.libphonenumber:libphonenumber:7.7.4'
 }
 
 def thirdPartySrcFolder = new File(project.buildDir, 'third-party-src')
