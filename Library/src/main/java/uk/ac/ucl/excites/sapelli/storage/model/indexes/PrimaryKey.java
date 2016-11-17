@@ -39,7 +39,7 @@ public class PrimaryKey extends Index
 	{
 		if(columns == null || columns.length == 0)
 			throw new IllegalArgumentException("Primary key needs to span at least 1 column");
-		TransactionalStringBuilder bldr = new TransactionalStringBuilder(COLUMN_NAME_SEPARATOR);
+		final TransactionalStringBuilder bldr = new TransactionalStringBuilder(COLUMN_NAME_SEPARATOR);
 		for(Column<?> c : columns)
 			bldr.append(c.name);
 		return new PrimaryKey(bldr.toString(), columns);
@@ -76,7 +76,7 @@ public class PrimaryKey extends Index
 	public int hashCode()
 	{
 		int hash = super.hashCode();
-		hash = 31 * hash + "PrimaryKey".hashCode(); // to differentiate from a normal index
+		hash = 31 * hash + getClass().getSimpleName().hashCode(); // to differentiate from a normal index
 		return hash;
 	}
 	
