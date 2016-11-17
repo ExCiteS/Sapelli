@@ -401,7 +401,6 @@ public abstract class BitInputStream extends InputStream
 	 * Reads a single (16 bit) char from the input.
 	 * Always uses UTF-16BE encoding (for now).
 	 *
-	 * @param value char to write
 	 * @throws IOException
 	 * @see <a href="http://en.wikipedia.org/wiki/UTF-16">http://en.wikipedia.org/wiki/UTF-16</a>
 	 */

@@ -366,8 +366,8 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @throws InvalidValueException when the parsed value is invalid
 	 * @throws NullPointerException if the parsed value is {@code null} on an non-optional column, or if the valueSet is {@code null}
 	 * 
-	 * @see {@link #stringToValue(String)}
-	 * @see {@link #parse(String)}
+	 * @see #stringToValue(String)
+	 * @see #parse(String)
 	 */
 	public T storeString(ValueSet<?> valueSet, String valueString) throws ParseException, InvalidColumnException, InvalidValueException, NullPointerException
 	{
@@ -398,7 +398,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Note that this obviously means the existing value in this column will be replaced.
 	 * 
 	 * @param valueSet {@link ValueSet} to store the value in, should not be {@code null}
-	 * @param bytes binary representation of a column value, given as a {@link BitArray}
+	 * @param valueBits binary representation of a column value, given as a {@link BitArray}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
 	 * @return the stored value
 	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
@@ -674,8 +674,8 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @throws IllegalArgumentException when parsing fails (e.g. {@link NumberFormatException})
 	 * @throws NullPointerException when the given valueString is {@code null}
 	 * 
-	 * @see {@link #stringToValue(String)}
-	 * @see {@link #toString(Object)}
+	 * @see #stringToValue(String)
+	 * @see #toString(Object)
 	 */
 	public final T stringToValue(String valueString) throws ParseException, IllegalArgumentException
 	{
@@ -700,7 +700,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @throws IllegalArgumentException when parsing fails (e.g. {@link NumberFormatException})
 	 * @throws NullPointerException when the given valueString is {@code null}
 	 * 
-	 * @see {@link #toString(Object)}
+	 * @see #toString(Object)
 	 */
 	public abstract T parse(String valueString) throws ParseException, IllegalArgumentException, NullPointerException;
 	
@@ -779,7 +779,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * 
 	 * Subclasses may override this.
 	 * 
-	 * @return the character used to wrap serialised values in, or {@null}
+	 * @return the character used to wrap serialised values in, or {@code null}
 	 */
 	public Character getSerialisationDelimiter()
 	{
@@ -1090,7 +1090,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value, given as an {@link Object} which may need to be converted first.
 	 * {@code null} values will be accepted only if the column is optional.
 	 *
-	 * @param value
+	 * @param valueObject
 	 * @param convert whether to {@link #convert(Object)} or simply {@link #cast(Object)} the given {@code valueObject}
 	 * @return whether or not the value is valid
 	 * @see #convert(Object)
@@ -1112,7 +1112,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value, given as a String to be parsed.
 	 * When the given valueString is {@code null} or empty this is interpreted as a {@code null} value, which will be accepted only if the column is optional.
 	 *
-	 * @param value
+	 * @param valueString
 	 * @return whether or not the value is valid
 	 */
 	public final boolean isValidValueString(String valueString)
@@ -1460,7 +1460,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Alias for {@link #compare(ValueSet<?>, ValueSet<?>)}
+	 * Alias for {@link #compare(ValueSet, ValueSet)}
 	 * 
 	 * @param vs1
 	 * @param vs2
@@ -1488,7 +1488,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 * @return comparison result
 	 * @throws InvalidColumnException when this column is not part of the valueSet's {@link ColumnSet}, nor compatible with a column by the same name that is
 	 * @throws NullPointerException if value is null on an non-optional column
-	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type T
 	 * @see #convert(Object)
 	 */
 	public int retrieveAndCompareToObject(ValueSet<?> valueSet, Object value) throws InvalidColumnException, ClassCastException
@@ -1593,7 +1593,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 *
 	 * @param obj object to compare this one with
 	 * @param checkName whether or not to compare the column name
-	 * @param whether or not to check the restrictions
+	 * @param checkRestrictions whether or not to check the restrictions
 	 * @return whether or not the given Object is an identical/equivalent Column
 	 */
 	@SuppressWarnings("unchecked")
@@ -1623,7 +1623,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 	
 	/**
-	 * Checks if this column is compatible with another in terms of type, optionality & restrictions
+	 * Checks if this column is compatible with another in terms of type, optionality and restrictions
 	 * 
 	 * @param another
 	 * @return

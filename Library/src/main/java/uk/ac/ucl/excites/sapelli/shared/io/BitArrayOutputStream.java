@@ -34,7 +34,6 @@ public class BitArrayOutputStream extends BitOutputStream
 	private final int maxLength;
 	
 	/**
-	 * @param out
 	 */
 	public BitArrayOutputStream()
 	{
@@ -42,7 +41,7 @@ public class BitArrayOutputStream extends BitOutputStream
 	}
 
 	/**
-	 * @param out
+	 * @param maxLength
 	 */
 	public BitArrayOutputStream(int maxLength)
 	{

@@ -32,9 +32,10 @@ import java.util.Set;
 
 /**
  * Debugging utility which prints all objects reachable from a given object.
- * 
+ *
+ * http://stackoverflow.com/questions/23290753/java-objects-reachable-by-strong-or-weak-references
+ *
  * @author mstevens
- * @see http://stackoverflow.com/questions/23290753/java-objects-reachable-by-strong-or-weak-references
  */
 public class ReachableObjects
 {

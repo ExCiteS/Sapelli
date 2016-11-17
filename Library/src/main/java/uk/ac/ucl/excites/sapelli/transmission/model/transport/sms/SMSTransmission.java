@@ -112,7 +112,6 @@ public abstract class SMSTransmission<M extends Message<M, ?>> extends Transmiss
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
 	 * @param response - may be null
-	 * @param parts - list of {@link Message}s
 	 * @param numberOfSentResendRequests
 	 * @param lastResendReqSentAt - may be null
 	 */

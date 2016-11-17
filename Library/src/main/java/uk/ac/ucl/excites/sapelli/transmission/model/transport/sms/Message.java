@@ -88,7 +88,6 @@ public abstract class Message<M extends Message<M, C>, C> implements Comparable<
 	/**
 	 * To be called on sending side.
 	 * 
-	 * @param receiver
 	 * @param transmission
 	 * @param partNumber a value from [1, totalParts]
 	 * @param totalParts

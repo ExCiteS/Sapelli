@@ -49,7 +49,7 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	/**
 	 * One method to deal with all types of columns
 	 * 
-	 * @param leafColumn
+	 * @param column
 	 */
 	protected abstract <T> void visit(Column<T> column);
 	
