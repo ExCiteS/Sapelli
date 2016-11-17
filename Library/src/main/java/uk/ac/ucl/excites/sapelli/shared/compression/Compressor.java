@@ -35,7 +35,11 @@ import uk.ac.ucl.excites.sapelli.shared.io.StreamHelpers;
 public abstract class Compressor
 {
 	
-	static public final long UNKNOWN_UNCOMPRESSED_SIZE = -1;
+	/**
+	 * Value (-1) indicating an uncompressed size which is unknown at
+	 * the time of creating the compressing OutputStream.
+	 */
+	static public final long UNKNOWN_UNCOMPRESSED_SIZE = 0xffffffffffffffffL;
 
 	public abstract CompressorFactory.Compression getMode();
 
