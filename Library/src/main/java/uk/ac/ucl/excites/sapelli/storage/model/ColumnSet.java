@@ -139,7 +139,7 @@ public class ColumnSet implements Serializable
 	 * Add a new, non-virtual column to the ColumnSet.
 	 * 
 	 * @param column the column to add, cannot be a {@link VirtualColumn}
-	 * @param useVirtualVersion whether or not to also add the column's virtual versions (passing {@code true} will only have an effect if {@link #useVirtualVersions} is also {@code true})
+	 * @param useVirtualVersions whether or not to also add the column's virtual versions (passing {@code true} will only have an effect if {@link #useVirtualVersions} is also {@code true})
 	 * @param seal if {@code true} the ColumnSet will be sealed after adding the column (i.e. this is the last column to be added)
 	 * @return the added column
 	 * @throws DuplicateColumnException in case of a name-clash

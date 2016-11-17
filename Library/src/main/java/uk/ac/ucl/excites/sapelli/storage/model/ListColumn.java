@@ -631,6 +631,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	
 	/**
 	 * "Simple" ListColumn implementation which is only generic in terms of the content type (<T>) and not in the list type (<L>).
+	 * Uses {@link ArrayList}s when creating new lists.
 	 * 
 	 * @param <T> the content type
 	 *
@@ -677,9 +678,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 * @param optional
 		 * @param serialisationDelimiter
 		 * @param serialisationSeparator
-		 * @param separatorEscape
-		 * @param separatorEscapePrefix
-		 * 
+		 *
 		 * @see #ListColumn(String, Column, boolean, int, char, char)
 		 */
 		public Simple(String name, Column<T> singleColumn, boolean optional, char serialisationDelimiter, char serialisationSeparator)
