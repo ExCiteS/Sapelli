@@ -730,6 +730,17 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 			StreamHelpers.SilentClose(out);
 		}
 	}
+
+	/**
+	 * Losslessly write all ValueSet values to the given bitStream, excluding those of virtual columns.
+	 *
+	 * @param bitStream
+	 * @throws IOException
+	 */
+	public void writeToBitStream(BitOutputStream bitStream) throws IOException
+	{
+		writeToBitStream(bitStream, true);
+	}
 	
 	/**
 	 * Write all ValueSet values to the given bitStream, excluding those of virtual columns.
@@ -741,6 +752,19 @@ public class ValueSet<CS extends ColumnSet> implements Serializable
 	public void writeToBitStream(BitOutputStream bitStream, boolean lossless) throws IOException
 	{
 		writeToBitStream(bitStream, false, ColumnSet.SKIP_NONE, lossless);
+	}
+
+	/**
+	 * Losslessly write ValueSet values, possibly including those of virtual columns and except the given skipped ones, to the given bitStream.
+	 *
+	 * @param bitStream
+	 * @param includeVirtual whether or not to include the values corresponding to virtual columns
+	 * @param skipColumns columns *not* to include the values of
+	 * @throws IOException
+	 */
+	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
+	{
+		writeToBitStream(bitStream, includeVirtual, skipColumns, true);
 	}
 	
 	/**

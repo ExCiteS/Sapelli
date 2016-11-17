@@ -796,6 +796,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
+	 * Losslessly converts the given {@code <T>} value to binary representation and returns the result as a {@code byte[]}.
+	 *
+	 * @param value
+	 * @return a byte[] array
+	 * @throws InvalidValueException if the value does not pass the validation test
+	 * @throws IOException if an I/O error happens
+	 */
+	public byte[] toBytes(T value) throws IOException, InvalidValueException
+	{
+		return toBytes(value, true);
+	}
+
+	/**
 	 * Converts the given {@code <T>} value to binary representation and returns the result as a {@code byte[]}.
 	 * 
 	 * @param value
@@ -849,7 +862,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Convert the given binary representation to a value of type {@code <T>}.
+	 * Losslessly converts the given binary representation to a value of type {@code <T>}.
+	 *
+	 * @param bytes binary representation of a column value, given as a {@code byte[]}
+	 * @return the value
+	 * @throws InvalidValueException if the read value does not pass the validation test
+	 * @throws IOException if an I/O error happens
+	 */
+	public T fromBytes(byte[] bytes) throws InvalidValueException, IOException
+	{
+		return fromBytes(bytes, true);
+	}
+
+	/**
+	 * Converts the given binary representation to a value of type {@code <T>}.
 	 * 
 	 * @param bytes binary representation of a column value, given as a {@code byte[]}
 	 * @param lossless if {@code true} the value is expected to be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value is expected to be lossyly encoded
@@ -911,6 +937,24 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
+	 * Losslessly writes the given Object value to the given {@link BitOutputStream}.
+	 * The value will be casted to type {@code <T>}.
+	 *
+	 * @param value the value to write, given as an {@link Object} (will be casted, not converted), may be {@code null} if column is optional
+	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @throws ClassCastException if the Object cannot be casted to type {@code <T>}
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null}
+	 * @throws InvalidValueException if the value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 * @throws ClassCastException when the value cannot be casted to the column's type {@code <T>}
+	 * @see #cast(Object)
+	 */
+	public void writeObject(Object value, BitOutputStream bitStream) throws ClassCastException, NullPointerException, IOException, InvalidValueException
+	{
+		writeValue(cast(value), bitStream, true);
+	}
+
+	/**
 	 * Writes the given Object value to the given {@link BitOutputStream}.
 	 * The value will be casted to type {@code <T>}.
 	 *
@@ -927,6 +971,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	public void writeObject(Object value, BitOutputStream bitStream, boolean lossless) throws ClassCastException, NullPointerException, IOException, InvalidValueException
 	{
 		writeValue(cast(value), bitStream, lossless);
+	}
+
+	/**
+	 * Losslessly writes the given {@code <T>} value to the given {@link BitOutputStream}.
+	 *
+	 * @param value the value to write, may be {@code null} if column is optional
+	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null}
+	 * @throws InvalidValueException if the value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 */
+	public void writeValue(T value, BitOutputStream bitStream) throws NullPointerException, IOException, InvalidValueException
+	{
+		writeValue(value, bitStream, true);
 	}
 
 	/**
@@ -979,6 +1037,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	public final void readAndStoreValue(ValueSet<?> valueSet, BitInputStream bitStream, boolean lossless) throws IOException, InvalidColumnException, InvalidValueException, NullPointerException
 	{
 		storeValueUnchecked(valueSet, readValue(bitStream, lossless)); // we use storeValueUnchecked() instead of storeValue() because readValue() already performs all checks
+	}
+
+	/**
+	 * Losslessly reads a value from the given {@link BitInputStream}.
+	 *
+	 * @param bitStream the {@link BitInputStream} to read from
+	 * @return the value that was read, should not be {@code null}
+	 * @throws IOException if an I/O error happens upon reading from the bitStream
+	 * @throws InvalidValueException if the read value does not pass the validation test
+	 * @throws NullPointerException if the read value is {@code null} on an non-optional column, or if the bitStream is {@code null}
+	 */
+	public final T readValue(BitInputStream bitStream) throws IOException, InvalidValueException, NullPointerException
+	{
+		return readValue(bitStream, true);
 	}
 
 	/**
