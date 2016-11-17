@@ -115,11 +115,12 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 //    from javadoc.destinationDir
 //}
 
-task standaloneJar(type: Jar, dependsOn: classes) {
+task standaloneJar(type: Jar) {
     // Include all dependencies in jar:
     from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    with jar // to include library classes themselves
     baseName = artifactId
     version = project.version
     classifier = 'standalone'
