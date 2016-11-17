@@ -60,7 +60,7 @@ public abstract class ValueSetColumn<VS extends ValueSet<CS>, CS extends ColumnS
 	static public final boolean DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION = true;
 	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION = true;
 	
-	private final CS columnSet;
+	protected final CS columnSet;
 	protected final boolean includeSkipColsInStringSerialisation;
 	protected final boolean includeVirtualColsInStringSerialisation;
 	private Set<Integer> skipColumnPositions;
