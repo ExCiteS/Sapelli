@@ -19,6 +19,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'io.fabric'
 apply plugin: 'hu.supercluster.paperwork'
+apply plugin: 'com.jakewharton.hugo'
 
 def keysFolder = file('../../Keys/') // location of signing keys and other private credentials
 
@@ -115,6 +116,7 @@ android {
 
         versionName project.version // defined in root build.gradle file
         versionCode buildTimeBasedVersionCode() // the number of hours since 2012-01-01T00:00:00.000Z
+        setProperty("archivesBaseName", "sapelli-collector-android-$versionName")
 
         vectorDrawables.useSupportLibrary = true
 
@@ -181,4 +183,7 @@ dependencies {
     //  of the app (currently 10) in AndroidManifest.xml, seemingly without problems. If we
     //  switch to a newer release of timber we must re-evaluate whether this is still needed
     //  and still does not cause problems.
+
+    // Stetho debugging
+    compile 'com.facebook.stetho:stetho:1.4.1'
 }

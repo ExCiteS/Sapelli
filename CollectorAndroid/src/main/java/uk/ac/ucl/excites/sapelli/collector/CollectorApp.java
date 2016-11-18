@@ -28,6 +28,7 @@ import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
 import com.crashlytics.android.core.CrashlyticsCore;
+import com.facebook.stetho.Stetho;
 
 import java.io.File;
 import java.util.Collections;
@@ -114,6 +115,9 @@ public class CollectorApp extends Application
 		// Set Timber for logging
 		setTimber();
 
+		// Set Stetho for debugging
+		setStetho();
+
 		// Get collector preferences:
 		preferences = new CollectorPreferences(getApplicationContext());
 
@@ -178,6 +182,19 @@ public class CollectorApp extends Application
 				                     element.getLineNumber());
 			}
 		});
+	}
+
+	/**
+	 * Set up Stetho for debugging
+	 */
+	private void setStetho()
+	{
+		// Enable Stetho in Debug versions
+		if (!BuildConfig.DEBUG)
+			return;
+
+		// Start with a default initialisation
+		Stetho.initializeWithDefaults(this);
 	}
 
 	/**

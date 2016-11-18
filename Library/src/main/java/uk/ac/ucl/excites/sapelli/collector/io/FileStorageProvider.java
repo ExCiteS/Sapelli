@@ -47,7 +47,7 @@ public class FileStorageProvider
 		DB,
 		
 		/**
-		 * Folder for back-ups of old database versions (put here before being upgrade by {@link Upgrader})
+		 * Folder for back-ups of old database versions (put here before being upgrade by {@link uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader})
 		 */
 		OldDBVersions,
 		
@@ -90,7 +90,8 @@ public class FileStorageProvider
 	// Subfolders of project installation folder:
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
-	
+	static public final String RES_FOLDER = "resources";
+
 	// DYNAMICS------------------------------------------------------
 	private final File sapelliFolder;
 	private final File downloadsFolder;
@@ -340,11 +341,29 @@ public class FileStorageProvider
 	{
 		try
 		{
-			if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
+			if (soundFileRelativePath == null || soundFileRelativePath.isEmpty())
 				return null;
 			return new File(getProjectInstallationFolder(projDescr, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
+		} catch (FileStorageException fse)
+		{
+			fse.printStackTrace(System.err);
+			return null;
 		}
-		catch(FileStorageException fse)
+	}
+
+	/**
+	 * @param projDescr
+	 * @param resFileRelativePath
+	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
+	 */
+	public File getProjectResFile(ProjectDescriptor projDescr, String resFileRelativePath)
+	{
+		try
+		{
+			if (resFileRelativePath == null || resFileRelativePath.isEmpty())
+				return null;
+			return new File(getProjectInstallationFolder(projDescr, false).getAbsolutePath() + File.separator + RES_FOLDER + File.separator + resFileRelativePath);
+		} catch (FileStorageException fse)
 		{
 			fse.printStackTrace(System.err);
 			return null;

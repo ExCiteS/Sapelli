@@ -43,6 +43,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -401,7 +402,13 @@ public final class ColumnOptionalityAdvisor
 		{
 			return enterLinearField(withPage);
 		}
-		
+
+		@Override
+		public boolean enterHtmlField(HtmlField hf, FieldParameters arguments, boolean withPage)
+		{
+			return enterLinearField(withPage);
+		}
+
 		@Override
 		public boolean enterLinksTo(LinksToField linksTo, FieldParameters arguments)
 		{
