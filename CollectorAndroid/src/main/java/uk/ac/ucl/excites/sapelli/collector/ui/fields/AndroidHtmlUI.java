@@ -177,7 +177,7 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		{
 			Timber.d("Override Uri: %s", uri);
 
-			if(uri.toString().endsWith(".pdf"))
+			if(uri.getLastPathSegment().endsWith(".pdf"))
 			{
 				Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
 				pdfIntent.setDataAndType(uri, "application/pdf");
