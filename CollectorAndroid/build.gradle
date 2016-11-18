@@ -116,6 +116,7 @@ android {
 
         versionName project.version // defined in root build.gradle file
         versionCode buildTimeBasedVersionCode() // the number of hours since 2012-01-01T00:00:00.000Z
+        setProperty("archivesBaseName", "sapelli-collector-android-$versionName")
 
         vectorDrawables.useSupportLibrary = true
 
