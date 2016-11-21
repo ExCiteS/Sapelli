@@ -18,12 +18,28 @@
 
 package uk.ac.ucl.excites.sapelli.collector.control;
 
+import android.content.Context;
+import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
+
+import org.piwik.sdk.Piwik;
+import org.piwik.sdk.Tracker;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import timber.log.Timber;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
@@ -46,16 +62,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
-import android.content.Context;
-import android.content.Intent;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
-import android.os.SystemClock;
-import android.util.Log;
-
-import com.crashlytics.android.Crashlytics;
 
 /**
  * Controller subclass for the "Sapelli Collector for Android"
@@ -77,6 +83,9 @@ public class AndroidCollectorController extends CollectorController<CollectorVie
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
+
+	// Piwik Analytics Tracker
+	private Tracker piwikTracker;
 	
 	private AudioPlayer audioPlayer;
 
@@ -345,4 +354,25 @@ public class AndroidCollectorController extends CollectorController<CollectorVie
 		return new AndroidLogger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
 	}
 
+	public synchronized Tracker getAndroidAnalyticsTracker()
+	{
+		if(piwikTracker != null)
+			return piwikTracker;
+
+		try
+		{
+			// TODO: 21/11/2016 Get URL from Project
+			piwikTracker = Piwik
+			  .getInstance(activity)
+			  .newTracker("------------/piwik.php", 1);
+			piwikTracker.setDispatchInterval(7*1000);
+		}
+		catch(MalformedURLException e)
+		{
+			Timber.e(e, "Piwik URL is malformed");
+			return null;
+		}
+
+		return piwikTracker;
+	}
 }

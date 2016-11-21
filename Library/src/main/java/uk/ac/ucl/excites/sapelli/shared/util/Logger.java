@@ -18,10 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.shared.util;
 
+import org.joda.time.DateTime;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.text.FileWriter;
@@ -121,6 +121,8 @@ public class Logger
 		printToOutputStream(bff.toString());
 		// To file:
 		writeLine(bff.toString());
+		// To Analytics:
+		//logAnalytics(fields);
 	}
 
 	/**
@@ -187,6 +189,11 @@ public class Logger
 	private String getTime()
 	{
 		return TimeUtils.ISOWithMSFormatter.print(DateTime.now());
+	}
+
+	protected void logAnalytics(String... fields)
+	{
+		// Do nothing here
 	}
 
 }
