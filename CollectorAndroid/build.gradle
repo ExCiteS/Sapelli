@@ -161,8 +161,8 @@ dependencies {
     compile project(':Library')
 
     // Google:
-    compile 'com.android.support:support-v4:25.0.0'
-    compile 'com.android.support:appcompat-v7:25.0.0'
+    compile 'com.android.support:support-v4:25.0.1'
+    compile 'com.android.support:appcompat-v7:25.0.1'
 
     // Other dependencies:
     compile 'com.github.michalis-vitos:aFileChooser:e359025948'
