@@ -186,4 +186,7 @@ dependencies {
 
     // Stetho debugging
     compile 'com.facebook.stetho:stetho:1.4.1'
+
+    // piwik analytics
+    compile 'org.piwik.sdk:piwik-sdk:1.0.2'
 }
