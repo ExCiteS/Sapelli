@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+package "uk.ac.ucl.excites.sapelli.collector.control" {
+abstract class CollectorController
+
+CollectorController <|-- AndroidCollectorController
+CollectorController *-- CollectorUI
+CollectorController *-- FileStorageProvider
+CollectorController "1" *-- "many" FormSession
+CollectorController *-- Logger
+CollectorController *-- Project
+CollectorController *-- ProjectStore
+CollectorController *-- RecordStore
+
+
+AndroidCollectorController  *-- CollectorActivity
+AndroidCollectorController  *-- LocationManager
+AndroidCollectorController  *-- OrientationSensor
+AndroidCollectorController  *-- Location
+
+}
+@enduml
