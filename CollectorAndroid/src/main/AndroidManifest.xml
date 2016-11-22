@@ -53,7 +53,7 @@
     <uses-feature android:name="android.hardware.camera.flash"/>
 
     <!-- Refer to build.gradle dependencies for more info -->
-    <uses-sdk tools:overrideLibrary="timber.log"/>
+    <uses-sdk tools:overrideLibrary="gr.michalisvitos.timberutils"/>
 
     <application
         android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp"

@@ -179,6 +179,8 @@ dependencies {
 
     // Timber for logging:
     compile 'com.jakewharton.timber:timber:4.3.1'
+    // Debug and Crashlytics trees
+    compile 'com.github.michalis-vitos:timberutils:1.0.0'
     //  This lib is built using minSdkVersion=15, which we are overriding to the minSdkVersion
     //  of the app (currently 10) in AndroidManifest.xml, seemingly without problems. If we
     //  switch to a newer release of timber we must re-evaluate whether this is still needed
