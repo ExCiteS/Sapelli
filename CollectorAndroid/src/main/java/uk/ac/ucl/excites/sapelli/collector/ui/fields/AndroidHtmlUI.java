@@ -54,6 +54,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  */
 public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 {
+	public static final String PDF_EXTENSION = ".pdf";
+
 	private RelativeLayout backgroundView;
 	private WebView webView;
 	private ProgressBar progressBar;
@@ -178,7 +180,8 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 			Timber.d("Override Uri: %s", uri);
 
 			final String lastPathSegment = uri.getLastPathSegment();
-			if(lastPathSegment != null && lastPathSegment.endsWith(".pdf"))
+
+			if(lastPathSegment != null && (lastPathSegment.endsWith(PDF_EXTENSION) || uri.toString().endsWith(PDF_EXTENSION)))
 			{
 				Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
 				pdfIntent.setDataAndType(uri, "application/pdf");
