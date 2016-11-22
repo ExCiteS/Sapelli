@@ -186,6 +186,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LOCATION_STORE_ACCURACY = "storeAccuracy";
 	static private final String ATTRIBUTE_LOCATION_STORE_PROVIDER = "storeProvider";
 	static private final String ATTRIBUTE_HTML_URL = "url";
+	static private final String ATTRIBUTE_HTML_EXTERNAL_LINKS = "externalLinks";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
@@ -444,10 +445,10 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Orientation>
 			else if(qName.equals(TAG_HTML))
 			{
-				// TODO: 10/11/2016 Parse the rest of the arguments here
 				HtmlField htmlField = new HtmlField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_HTML, false));
 				newField(htmlField, attributes);
 				htmlField.setUrl(attributes.getString(ATTRIBUTE_HTML_URL, null, true, false));
+				htmlField.setOpensLinksExternally(attributes.getBoolean(ATTRIBUTE_HTML_EXTERNAL_LINKS, HtmlField.DEFAULT_EXTERNAL_LINKS));
 				// An Html field is always optional, so that forward button is showed
 				htmlField.setOptional(true);
 				// An Html field is always noColumn, so that it does not store any info

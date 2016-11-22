@@ -36,11 +36,12 @@ public class HtmlField extends Field
 
 	static public final String ID_PREFIX = "html";
 
-	// Defaults
-
+	//Defaults:
+	static public final boolean DEFAULT_EXTERNAL_LINKS = false;
 
 	// Dynamics
 	private String url;
+	private boolean opensLinksExternally = DEFAULT_EXTERNAL_LINKS;
 
 	/**
 	 * @param form
@@ -93,5 +94,21 @@ public class HtmlField extends Field
 	public void setUrl(String url)
 	{
 		this.url = url;
+	}
+
+	/**
+	 * @return get whether links open externally
+	 */
+	public boolean opensLinksExternally()
+	{
+		return opensLinksExternally;
+	}
+
+	/**
+	 * @param opensLinksExternally - set whether links open externally
+	 */
+	public void setOpensLinksExternally(boolean opensLinksExternally)
+	{
+		this.opensLinksExternally = opensLinksExternally;
 	}
 }

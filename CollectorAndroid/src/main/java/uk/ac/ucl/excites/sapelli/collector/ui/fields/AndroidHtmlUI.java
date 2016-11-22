@@ -179,6 +179,33 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 		{
 			Timber.d("Override Uri: %s", uri);
 
+			// Ensure that the url exists
+			if(uri == null || uri.toString().isEmpty())
+				return false;
+
+			// Check if there is a need to open links externally
+			if(field.opensLinksExternally())
+			{
+				Intent html = new Intent(Intent.ACTION_VIEW);
+				html.setData(uri);
+
+				try
+				{
+					context.startActivity(html);
+				}
+				catch(ActivityNotFoundException e)
+				{
+					Toast.makeText(context, "No browser installed.", Toast.LENGTH_SHORT).show();
+				}
+				catch(Exception otherException)
+				{
+					Toast.makeText(context, "Unknown error", Toast.LENGTH_SHORT).show();
+					Timber.e(otherException, "Webview open links externally.");
+				}
+
+				return false;
+			}
+
 			final String lastPathSegment = uri.getLastPathSegment();
 
 			if(lastPathSegment != null && (lastPathSegment.endsWith(PDF_EXTENSION) || uri.toString().endsWith(PDF_EXTENSION)))
@@ -193,11 +220,12 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 				}
 				catch(ActivityNotFoundException e)
 				{
-					Toast.makeText(context, "No PDF application found", Toast.LENGTH_SHORT).show();
+					Toast.makeText(context, "No PDF application found.", Toast.LENGTH_SHORT).show();
 				}
 				catch(Exception otherException)
 				{
 					Toast.makeText(context, "Unknown error", Toast.LENGTH_SHORT).show();
+					Timber.e(otherException, "Webview parsing pdf files.");
 				}
 
 				return true;
