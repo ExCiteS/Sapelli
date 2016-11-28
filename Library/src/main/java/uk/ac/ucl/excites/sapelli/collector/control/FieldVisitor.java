@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -35,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 
 /**
  * 
- * @author mstevens
+ * @author mstevens, Michalis Vitos
  */
 public interface FieldVisitor
 {
@@ -100,7 +101,15 @@ public interface FieldVisitor
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterTextBoxField(TextBoxField tbf, FieldParameters arguments, boolean withPage);
-	
+
+	/**
+	 * @param hf  the HtmlField
+	 * @param arguments
+	 * @param withPage whether or not the field is entered together with a page that contains it, or entered on its own
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterHtmlField(HtmlField hf, FieldParameters arguments, boolean withPage);
+
 	/**
 	 * @param cbf  the CheckBoxField
 	 * @param arguments

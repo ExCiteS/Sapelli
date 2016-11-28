@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector;
 
-import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -28,11 +27,14 @@ import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
 import com.crashlytics.android.core.CrashlyticsCore;
+import com.facebook.stetho.Stetho;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
+import gr.michalisvitos.timberutils.CrashlyticsTree;
+import gr.michalisvitos.timberutils.DebugTree;
 import io.fabric.sdk.android.Fabric;
 import timber.log.Timber;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
@@ -114,6 +116,9 @@ public class CollectorApp extends Application
 		// Set Timber for logging
 		setTimber();
 
+		// Set Stetho for debugging
+		setStetho();
+
 		// Get collector preferences:
 		preferences = new CollectorPreferences(getApplicationContext());
 
@@ -163,21 +168,23 @@ public class CollectorApp extends Application
 	private void setTimber()
 	{
 		// Enable Timber
+		if(BuildConfig.DEBUG)
+			Timber.plant(new DebugTree());
+		else
+			Timber.plant(new CrashlyticsTree());
+	}
+
+	/**
+	 * Set up Stetho for debugging
+	 */
+	private void setStetho()
+	{
+		// Enable Stetho in Debug versions
 		if (!BuildConfig.DEBUG)
 			return;
 
-		Timber.plant(new Timber.DebugTree()
-		{
-			@SuppressLint("StringFormatInTimber")
-			@Override
-			protected String createStackElementTag(StackTraceElement element)
-			{
-				return String.format("%s.%s(%s)",
-				                     super.createStackElementTag(element),
-				                     element.getMethodName(),
-				                     element.getLineNumber());
-			}
-		});
+		// Start with a default initialisation
+		Stetho.initializeWithDefaults(this);
 	}
 
 	/**

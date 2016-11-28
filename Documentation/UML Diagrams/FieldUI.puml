@@ -1,0 +1,47 @@
+@startuml
+
+package "uk.ac.ucl.excites.sapelli.collector.ui.fields" {
+    abstract class FieldUI
+    abstract class NonSelfLeavingFieldUI
+    abstract class SelfLeavingFieldUI
+    abstract class PageUI
+
+    FieldUI <|-- NonSelfLeavingFieldUI
+    FieldUI <|-- SelfLeavingFieldUI
+    FieldUI <|-- PageUI
+
+    abstract class CheckBoxUI
+    abstract class MultiListUI
+    abstract class TextBoxUI
+    abstract class LabelUI
+
+    NonSelfLeavingFieldUI <|-- CheckBoxUI
+    CheckBoxUI <|-- AndroidCheckBoxUI
+    NonSelfLeavingFieldUI <|-- MultiListUI
+    MultiListUI <|-- AndroidMultiListUI
+    NonSelfLeavingFieldUI <|-- TextBoxUI
+    TextBoxUI <|-- AndroidTextBoxUI
+    NonSelfLeavingFieldUI <|-- LabelUI
+    LabelUI <|-- AndroidLabelUI
+
+    abstract class ButtonUI
+    abstract class MediaUI
+    abstract class OrientationUI
+    abstract class ChoiceUI
+    abstract class LocationUI
+
+    SelfLeavingFieldUI <|-- ButtonUI
+    ButtonUI <|-- AndroidButtonUI
+    SelfLeavingFieldUI <|-- MediaUI
+    MediaUI <|-- AndroidMediaUI
+    SelfLeavingFieldUI <|-- OrientationUI
+    OrientationUI <|-- AndroidOrientationUI
+    SelfLeavingFieldUI <|-- ChoiceUI
+    ChoiceUI <|-- AndroidChoiceUI
+    SelfLeavingFieldUI <|-- LocationUI
+    LocationUI <|-- AndroidLocationUI
+
+    PageUI <|-- AndroidPageUI
+}
+
+@enduml

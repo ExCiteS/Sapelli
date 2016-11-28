@@ -19,6 +19,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'io.fabric'
 apply plugin: 'hu.supercluster.paperwork'
+apply plugin: 'com.jakewharton.hugo'
 
 def keysFolder = file('../../Keys/') // location of signing keys and other private credentials
 
@@ -87,7 +88,7 @@ paperwork {
 }
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 25
     buildToolsVersion "24.0.3"
 
     signingConfigs {
@@ -115,6 +116,7 @@ android {
 
         versionName project.version // defined in root build.gradle file
         versionCode buildTimeBasedVersionCode() // the number of hours since 2012-01-01T00:00:00.000Z
+        setProperty("archivesBaseName", "sapelli-collector-android-$versionName")
 
         vectorDrawables.useSupportLibrary = true
 
@@ -159,8 +161,8 @@ dependencies {
     compile project(':Library')
 
     // Google:
-    compile 'com.android.support:support-v4:24.1.1'
-    compile 'com.android.support:appcompat-v7:24.1.1'
+    compile 'com.android.support:support-v4:25.0.1'
+    compile 'com.android.support:appcompat-v7:25.0.1'
 
     // Other dependencies:
     compile 'com.github.michalis-vitos:aFileChooser:e359025948'
@@ -176,9 +178,14 @@ dependencies {
     compile 'hu.supercluster:paperwork:1.2.7'
 
     // Timber for logging:
-    compile 'com.jakewharton.timber:timber:4.1.2'
+    compile 'com.jakewharton.timber:timber:4.3.1'
+    // Debug and Crashlytics trees
+    compile 'com.github.michalis-vitos:timberutils:1.0.0'
     //  This lib is built using minSdkVersion=15, which we are overriding to the minSdkVersion
     //  of the app (currently 10) in AndroidManifest.xml, seemingly without problems. If we
     //  switch to a newer release of timber we must re-evaluate whether this is still needed
     //  and still does not cause problems.
+
+    // Stetho debugging
+    compile 'com.facebook.stetho:stetho:1.4.1'
 }

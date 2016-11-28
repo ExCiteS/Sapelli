@@ -18,12 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load.parse;
 
+import org.xml.sax.SAXException;
+
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.Stack;
-
-import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController.Mode;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
@@ -44,6 +44,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumn
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -85,6 +86,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String TAG_VIDEO = "Video";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
+	static private final String TAG_HTML = "Html";
 	static public final String TAG_BELONGS_TO = "BelongsTo";
 	static public final String TAG_LINKS_TO = "LinksTo";
 	static private final String TAG_CONSTRAINT = "Constraint";
@@ -183,6 +185,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LOCATION_STORE_SPEED = "storeSpeed";
 	static private final String ATTRIBUTE_LOCATION_STORE_ACCURACY = "storeAccuracy";
 	static private final String ATTRIBUTE_LOCATION_STORE_PROVIDER = "storeProvider";
+	static private final String ATTRIBUTE_HTML_URL = "url";
+	static private final String ATTRIBUTE_HTML_EXTERNAL_LINKS = "externalLinks";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
@@ -437,6 +441,18 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				orField.setStoreAzimuth(attributes.getBoolean("storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
 				orField.setStorePitch(attributes.getBoolean("storePitch", OrientationField.DEFAULT_STORE_PITCH));
 				orField.setStoreRoll(attributes.getBoolean("storeRoll", OrientationField.DEFAULT_STORE_ROLL));
+			}			
+			// <Orientation>
+			else if(qName.equals(TAG_HTML))
+			{
+				HtmlField htmlField = new HtmlField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_HTML, false));
+				newField(htmlField, attributes);
+				htmlField.setUrl(attributes.getString(ATTRIBUTE_HTML_URL, null, true, false));
+				htmlField.setOpensLinksExternally(attributes.getBoolean(ATTRIBUTE_HTML_EXTERNAL_LINKS, HtmlField.DEFAULT_EXTERNAL_LINKS));
+				// An Html field is always optional, so that forward button is showed
+				htmlField.setOptional(true);
+				// An Html field is always noColumn, so that it does not store any info
+				htmlField.setNoColumn(true);
 			}
 			// <BelongsTo>
 			else if(qName.equals(TAG_BELONGS_TO))

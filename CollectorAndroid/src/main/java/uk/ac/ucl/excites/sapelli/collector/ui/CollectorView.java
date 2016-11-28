@@ -18,6 +18,18 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Build;
+import android.util.Log;
+import android.view.ContextThemeWrapper;
+import android.view.View;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.LinearLayout;
+
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
@@ -31,6 +43,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
@@ -44,6 +57,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidHtmlUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLocationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidMultiListUI;
@@ -55,18 +69,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidVideoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.graphics.Color;
-import android.os.Build;
-import android.util.Log;
-import android.view.ContextThemeWrapper;
-import android.view.View;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
-import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.LinearLayout;
 
 /**
  * The GUI of the CollectorActivity
@@ -377,6 +379,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	}
 
 	@Override
+	public AndroidHtmlUI createHtmlUI(HtmlField hf)
+	{
+		return new AndroidHtmlUI(hf, controller, this);
+	}
+
+	@Override
 	public AndroidLabelUI createLabelUI(LabelField lf)
 	{
 		return new AndroidLabelUI(lf, controller, this);
@@ -536,19 +544,19 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	public int getFieldUIPartHeightPx(int availableHeight, int numRows)
 	{
-		if(numRows == 0) // avoid division by 0
+		if (numRows == 0) // avoid division by 0
 			return 0;
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
-	
+
 	public int getControlHeightPx()
 	{
 		return ScreenMetrics.ConvertDipToPx(activity, AndroidControlsUI.CONTROL_HEIGHT_DIP);
 	}
-	
+
 	/**
 	 * Returns an ImageItem using the given file path, or if no such file is available the given drawable resource.
-	 * 
+	 *
 	 * @param imgRelativePath
 	 * @param drawableResourceId
 	 * @return
@@ -560,9 +568,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	/**
 	 * Show software keyboard for input on the given view.
-	 * 
+	 * <p>
 	 * TODO check what happens on devices with an (exposed) hardware keyboard
-	 * 
+	 *
 	 * @param viewWithKeyboardInputNeed
 	 */
 	public void showKeyboardFor(View viewWithKeyboardInputNeed)
@@ -570,8 +578,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		try
 		{
 			imm.showSoftInput(viewWithKeyboardInputNeed, InputMethodManager.SHOW_IMPLICIT);
-		}
-		catch(Exception e) // just in case
+		} catch (Exception e) // just in case
 		{
 			Log.e(TAG, "Exception upon trying to show keyboard.", e);
 		}
@@ -579,7 +586,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	/**
 	 * Hide the software keyobard is currently shown.
-	 * 
+	 * <p>
 	 * TODO check what happens on devices with an (exposed) hardware keyboard
 	 */
 	public void hideKeyboard()
@@ -587,8 +594,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		try
 		{
 			imm.hideSoftInputFromWindow(getWindowToken(), 0);
-		}
-		catch(Exception e) // just in case
+		} catch (Exception e) // just in case
 		{
 			Log.e(TAG, "Exception upon trying to hide keyboard.", e);
 		}
@@ -609,7 +615,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public void revokeFocus()
 	{
 		View focusedView = activity.getCurrentFocus();
-		if(focusedView != null)
+		if (focusedView != null)
 			focusedView.clearFocus();
 	}
 
@@ -620,18 +626,18 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			audioFeedbackController = new AndroidAudioFeedbackController(controller);
 		return audioFeedbackController;
 	}
-	
+
 	@Override
 	public void stopAudioFeedback()
 	{
-		if(audioFeedbackController != null)
+		if (audioFeedbackController != null)
 			audioFeedbackController.stop();
 	}
 
 	@Override
 	public void destroyAudioFeedback()
 	{
-		if(audioFeedbackController != null)
+		if (audioFeedbackController != null)
 			audioFeedbackController.destroy();
 		audioFeedbackController = null;
 	}
