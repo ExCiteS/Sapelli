@@ -19,26 +19,23 @@
 package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.SequenceInputStream;
 import java.math.BigInteger;
 
+import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.LZMAInputStream;
+import org.tukaani.xz.LZMAOutputStream;
 
-import lzma.sdk.lzma.Encoder;
-import lzma.streams.LzmaOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.io.HeaderEatingOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 
 /**
  * LZMA(1) compressor.<br/>
- * Uses:<br/>
- * 	- for encoding: the lzma-java library by Julien Ponge (jponge) et al. (Apache License 2.0)<br/>
- * 	- for decoding: the "XZ for Java" library by Lasse Collin (public domain)<br/>
+ * Uses the "XZ for Java" library by Lasse Collin (public domain).<br/>
  * <p>
  * 2015-09-16: 	Lasse Collin, author of the "XZ for Java" library, told me in an e-mail
  * 				conversation that we can save 1 byte on LZMA(1) data streams because the
@@ -48,21 +45,26 @@ import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
  * 				{@link #MODE_NO_HEADER} we are pretending this byte is part of the LZMA
  * 				file format header.</p>
  * <p>
- * 2015-09-17:	Switched to "XZ for Java" for decoding because it is over 2.5x quicker
- * 				in my benchmarks. Unfortunately this library does not yet(?) support LZMA(1)
- * 				encoding. I have asked the author to consider it and he said he would ;-).</p>
+ * 2015-09-17:	Switched to "XZ for Java" for decoding because it is over 2.5x quicker than
+ * 				the lzma-java library in my benchmarks. Unfortunately the XZ library does not yet
+ * 				support LZMA(1) encoding. I have asked the author to consider it and he said he would ;-).</p>
  * <p>
  * 2015-09-18:	Introduced 3 modes:<ul><li>
  * 					- {@link #MODE_SPEC_HEADER}: compliant with the LZMA file format specification;</li><li>
  * 					- {@link #MODE_MINI_HEADER}: most efficient for known uncompressed sizes in range of [1, 65535] bytes;</li><li>
  * 					- {@link #MODE_NO_HEADER}: most efficient for unknown uncompressed sizes.</li></ul></p>
- * 
+ * <p>
+ * 2016-11-28:	Reimplemented compression using v1.6 of the "XZ for Java". Upon request by mstevens this library
+ * 				now supports writing raw .lzma streams in addition to reading them [thanks Lasse Collin!].
+ *				Hence we no longer need to use the slower lzma-java library by Julien Ponge (jponge) et al.<br/>
+ * </p>
+ *
  * @author mstevens
  * 
  * @see <a href="http://en.wikipedia.org/wiki/LZMA">http://en.wikipedia.org/wiki/LZMA</a>
- * @see <a href="http://git.tukaani.org/?p=xz.git;a=blob;f=doc/lzma-file-format.txt;hb=HEAD">LZMA file format specification</a>
- * @see <a href="https://github.com/jponge/lzma-java">https://github.com/jponge/lzma-java</a>
+ * @see <a href="http://git.tukaani.org/?p=xz.git;a=blob_plain;f=doc/lzma-file-format.txt;hb=HEAD">LZMA file format specification</a>
  * @see <a href="http://tukaani.org/xz/java.html">http://tukaani.org/xz/java.html</a>
+ * @see <a href="https://github.com/jponge/lzma-java">https://github.com/jponge/lzma-java</a>
  */
 public class LZMACompressor extends Compressor
 {
@@ -109,7 +111,7 @@ public class LZMACompressor extends Compressor
 	 * known at encoding time.
 	 * Eliminates the meaningless byte at the beginning of the compressed data.
 	 * 
-	 * Overhead:					
+	 * Overhead:
 	 *		 					  5 or 6 (EoPM)	=  5 or 6 bytes
 	 */
 	static public final int MODE_NO_HEADER = 2;
@@ -118,9 +120,14 @@ public class LZMACompressor extends Compressor
 	
 	static protected final int SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE = 8; // bytes
 	
+	/**
+	 *  The first (meaningless) byte in raw LZMA streams.
+	 */
+	static protected final byte[] B0 = { 0x00 };
+
 	static protected final int SPEC_HEADER_SIZE =	5 /*encoder properties (actually consisting of 1 byte for properties and 4 bytes for the dictionary size)*/ +
-													SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE +
-													1 /*first data byte is meaningless (see above)*/;
+			SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE +
+			B0.length;
 	
 	static protected final int MINI_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE = 2; // bytes
 	
@@ -135,9 +142,22 @@ public class LZMACompressor extends Compressor
 	 */
 	static protected final int MINI_HEADER_MAX_KNOWN_UNCOMPRESSED_SIZE = BigIntegerUtils.GetMaxValue(MINI_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE * Byte.SIZE, false).intValue();
 	
-	static protected final int GetUncompressedSizeFieldSize(boolean specMode)
+	static protected final int GetUncompressedSizeFieldSize(int mode)
 	{
-		return specMode ? SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE : MINI_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE;
+		if(mode == MODE_SPEC_HEADER)
+			return SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE;
+		else if(mode == MODE_MINI_HEADER)
+			return MINI_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE;
+		else /*should never happen*/
+			return 0;
+	}
+	
+	/**
+	 * @return LZMA options used in all modes (we use the same settings as in {@link LZMA2Compressor}).
+	 */
+	static private LZMA2Options GetOptions()
+	{
+		return LZMA2Compressor.GetOptions();
 	}
 	
 	private final int mode;
@@ -151,101 +171,72 @@ public class LZMACompressor extends Compressor
 	{
 		this.mode = mode;
 	}
-	
-	/**
-	 * @param writeEndOfPayloadMarker whether or not the end-of-payload marker will be used (takes 5 to 6 bytes)
-	 * @return
-	 */
-	public Encoder getEncoder(boolean writeEndOfPayloadMarker)
-	{
-		Encoder encoder = new Encoder();
 
-		// Properties:
-		encoder.setDictionarySize(1 << 20); // Default: 1 << 23 (but then it uses way too much memory!)
-		encoder.setEndMarkerMode(writeEndOfPayloadMarker); // whether or not the end-of-payload marker will be used (takes 5 to 6 bytes)
-		encoder.setMatchFinder(Encoder.EMatchFinderTypeBT4);
-		encoder.setNumFastBytes(0x20); // Default: 0x20 (= 32)
-		
-		return encoder;
-	}
-	
 	@Override
-	public OutputStream _getOutputStream(OutputStream sink, long uncompressedSize) throws IOException
+	protected LZMAOutputStream _getOutputStream(OutputStream sink, long uncompressedSize) throws IOException
 	{
-		if(mode == MODE_MINI_HEADER)
+		if(mode == MODE_SPEC_HEADER)
 		{
-			if(uncompressedSize != UNKNOWN_UNCOMPRESSED_SIZE)
+			// Return LZMAOutputStream configured to write spec-compliant .lzma file format stream:
+			return new FlushableLZMAOutputStream(sink, GetOptions(), uncompressedSize); // EoPM will only be used if size is unknown
+		}
+		else
+		{
+			if(mode == MODE_MINI_HEADER)
 			{
-				// Manipulate size field range (see {@link #MODE_MINI_HEADER}):
-				if(	uncompressedSize < MINI_HEADER_MIN_KNOWN_UNCOMPRESSED_SIZE ||
-					uncompressedSize > MINI_HEADER_MAX_KNOWN_UNCOMPRESSED_SIZE)
-					uncompressedSize = UNKNOWN_UNCOMPRESSED_SIZE;
-				else
-					uncompressedSize--;
+				// Check uncompressed size:
+				if(uncompressedSize != UNKNOWN_UNCOMPRESSED_SIZE)
+				{
+					// Manipulate size field range (see {@link #MODE_MINI_HEADER}):
+					if(	uncompressedSize < MINI_HEADER_MIN_KNOWN_UNCOMPRESSED_SIZE ||
+							uncompressedSize > MINI_HEADER_MAX_KNOWN_UNCOMPRESSED_SIZE)
+						uncompressedSize = UNKNOWN_UNCOMPRESSED_SIZE;
+					else
+						uncompressedSize--;
+				}
+				// Write MINIh (non-compliant):
+				writeSize(sink, uncompressedSize);
 			}
-			
-			// Write MINIh (non-compliant):
-			writeSize(sink, uncompressedSize, false);
+
+			// Decide on EoPM:
+			final boolean useEoPM = (mode == MODE_NO_HEADER || uncompressedSize == UNKNOWN_UNCOMPRESSED_SIZE);
+
+			// Return LZMAOutputStream configured to write raw (headerless) LZMA data stream ...
+			return new FlushableLZMAOutputStream(
+					// ... but get rid of the first meaningless byte (B0):
+					new HeaderEatingOutputStream(sink, B0.length),
+					GetOptions(),
+					useEoPM);
 		}
-		else if(mode == MODE_SPEC_HEADER)
-		{
-			// Write SPECh (LMZA file format compliant):
-			writeSPECh(sink, uncompressedSize);
-		}
-		
-		// Return compressing OutputStream:
-		return new LzmaOutputStream(
-					/* We always remove the header produced by the underlying LzmaOutputStream, even when
-					 * in {@link #MODE_SPEC_HEADER} because it always encodes an unknown uncompressed size: */
-					new HeaderEatingOutputStream(sink, SPEC_HEADER_SIZE),
-					// Use end-of-payload marker if size in unknown or if in {@link #MODE_NO_HEADER}:
-					getEncoder(uncompressedSize == UNKNOWN_UNCOMPRESSED_SIZE || mode == MODE_NO_HEADER));
 	}
 
 	@Override
-	public InputStream getInputStream(InputStream source) throws IOException
+	public LZMAInputStream getInputStream(InputStream source) throws IOException
 	{
-		if(mode == MODE_MINI_HEADER || mode == MODE_NO_HEADER)
+		if(mode == MODE_SPEC_HEADER)
 		{
-			long uncompressedSize = UNKNOWN_UNCOMPRESSED_SIZE;			
+			// Return LZMAInputStream configured to read spec-compliant .lzma file format stream:
+			return new LZMAInputStream(source);
+		}
+		else //if(mode == MODE_MINI_HEADER || mode == MODE_NO_HEADER)
+		{
+			long uncompressedSize = UNKNOWN_UNCOMPRESSED_SIZE;
 			if(mode == MODE_MINI_HEADER)
 			{
 				// Read MINIh (non-compliant):
-				uncompressedSize = readSize(source, false);
+				uncompressedSize = readSize(source);
 				// Manipulate size field range (see {@link #MODE_MINI_HEADER}):
 				if(uncompressedSize != UNKNOWN_UNCOMPRESSED_SIZE)
 					uncompressedSize++;
 			}
-			
-			// Generate fake SPECh (LMZA file format compliant):
-			ByteArrayOutputStream headerOut = new ByteArrayOutputStream();
-			writeSPECh(headerOut, uncompressedSize);
-			headerOut.close();
-			
-			// Insert fake header:
-			source = new SequenceInputStream(new ByteArrayInputStream(headerOut.toByteArray()), source);
+
+			// Return LZMAInputStream configured to read raw (headerless) LZMA data stream ...
+			return new OptionsTakingLZMAInputStream(
+					// ... but insert fake B0 byte:
+					new SequenceInputStream(new ByteArrayInputStream(B0), source),
+					uncompressedSize,
+					GetOptions());
 		}
-		
-		// Return decompressing InputStream:
-		return new LZMAInputStream(source); 
-	}
-	
-	/**
-	 * Writes the SPECh header (compliant with the LZMA file format specification), including
-	 * the meaningless byte at the beginning of the compressed data.
-	 * 
-	 * @param headerOut
-	 * @param uncompressedSize
-	 * @throws IOException
-	 */
-	private void writeSPECh(OutputStream headerOut, long uncompressedSize) throws IOException
-	{
-		// Write header with coder settings (takes up 5 bytes: 1 for properties, 4 for dictionary size):
-		getEncoder(uncompressedSize == UNKNOWN_UNCOMPRESSED_SIZE).writeCoderProperties(headerOut);
-		// Write -1 as "unknown" for file size (takes up 8 bytes):
-		writeSize(headerOut, uncompressedSize, true);
-		// Insert 0x00 byte (first byte is ignored by decoder, see above):
-		headerOut.write(0x00);
 	}
 	
 	/**
@@ -254,16 +245,15 @@ public class LZMACompressor extends Compressor
 	 * In both cases the given {@code size} value is stored as unsigned little endian integer of
 	 * {@value SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE} bytes (64 bits) for the SPECh or
 	 * {@value MINI_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE} bytes (16 bits) for the MINIh.
-	 * When the uncompressed size is unknown a special value consisting of all 0xFF bytes (= -1) is used.
+	 * When the uncompressed size is unknown {@link #UNKNOWN_UNCOMPRESSED_SIZE} is used.
 	 * 
 	 * @param out
 	 * @param size
-	 * @param specMode whether or not we are writing to a SPECh or a MINIh
 	 * @throws IOException
 	 */
-	private void writeSize(OutputStream out, long size, boolean specMode) throws IOException
+	private void writeSize(OutputStream out, long size) throws IOException
 	{
-		int numberOfBytes = GetUncompressedSizeFieldSize(specMode);
+		final int numberOfBytes = GetUncompressedSizeFieldSize(mode);
 		for(int i = 0; i < numberOfBytes; i++)
 			out.write((int) (size >>> (8 * i)) & 0xFF);
 	}
@@ -274,16 +264,15 @@ public class LZMACompressor extends Compressor
 	 * In both cases the given {@code size} value is stored as unsigned little endian integer of
 	 * {@value SPEC_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE} bytes (64 bits) for the SPECh or
 	 * {@value MINI_HEADER_UNCOMPRESSED_SIZE_FIELD_SIZE} bytes (16 bits) for the MINIh.
-	 * When the uncompressed size is unknown a special value consisting of all 0xFF bytes (= -1) is used.
+	 * When the uncompressed size is unknown {@link #UNKNOWN_UNCOMPRESSED_SIZE} is used.
 	 * 
 	 * @param in
-	 * @param specMode whether or not we are reading from a SPECh or a MINIh
 	 * @return
 	 * @throws IOException
 	 */
-	private long readSize(InputStream in, boolean specMode) throws IOException
+	private long readSize(InputStream in) throws IOException
 	{
-		int numberOfBytes = GetUncompressedSizeFieldSize(specMode);
+		int numberOfBytes = GetUncompressedSizeFieldSize(mode);
 		long size = 0;
 		BigInteger max = BigIntegerUtils.GetMaxValue(numberOfBytes * Byte.SIZE, false);
 		for(int i = 0; i < numberOfBytes; i++)
@@ -310,6 +299,43 @@ public class LZMACompressor extends Compressor
 	public String toString()
 	{
 		return super.toString() + "_[Mode:" + (mode == MODE_SPEC_HEADER ? "SPECh" : (mode == MODE_MINI_HEADER ? "MINIh" : "NOh")) + "]";
+	}
+
+	/**
+	 * @author mstevens
+	 */
+	private class FlushableLZMAOutputStream extends LZMAOutputStream
+	{
+
+		public FlushableLZMAOutputStream(OutputStream out, LZMA2Options options, long inputSize) throws IOException
+		{
+			super(out, options, inputSize);
+		}
+
+		public FlushableLZMAOutputStream(OutputStream out, LZMA2Options options, boolean useEndMarker) throws IOException
+		{
+			super(out, options, useEndMarker);
+		}
+
+		@Override
+		public void flush()
+		{
+			// do nothing.
+		}
+
+	}
+
+	/**
+	 * @author mstevens
+	 */
+	private class OptionsTakingLZMAInputStream extends LZMAInputStream
+	{
+
+		public OptionsTakingLZMAInputStream(InputStream in, long uncompSize, LZMA2Options options) throws IOException, NullPointerException
+		{
+			super(in, uncompSize, options.getLc(), options.getLp(), options.getPb(), options.getDictSize(), options.getPresetDict());
+		}
+
 	}
 
 }
