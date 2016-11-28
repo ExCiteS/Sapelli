@@ -203,8 +203,6 @@ public final class CharsetHelpers
 	 * then a new CharsetMaxMaxBytesPerChar.properties is created (or overwritten!)
 	 * in the output folder.
 	 * 
-	 * This method is called from a Groovy script in the pom.xml of the Sapelli Library.
-	 * 
 	 * @param inputFolderPath path of a directory containing CharsetInfo files (with *.charsetinfo extension!) to process
 	 * @param outputFolderPath path of a (resource) directory in which to create the new/updated CharsetMaxMaxBytesPerChar.properties file
 	 * @param force when {@code true} a new CharsetMaxMaxBytesPerChar.properties file will always be (re)generated
