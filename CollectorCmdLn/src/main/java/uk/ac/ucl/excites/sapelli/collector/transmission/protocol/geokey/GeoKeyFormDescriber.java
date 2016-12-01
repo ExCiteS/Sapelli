@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.HtmlField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -221,7 +222,13 @@ public class GeoKeyFormDescriber implements FieldVisitor
 		
 		return addFieldNode(fieldNode);
 	}
-	
+
+	@Override
+	public boolean enterHtmlField(HtmlField hf, FieldParameters arguments, boolean withPage)
+	{
+		return false;
+	}
+
 	@Override
 	public boolean enterCheckboxField(CheckBoxField cbf, FieldParameters arguments, boolean withPage)
 	{
