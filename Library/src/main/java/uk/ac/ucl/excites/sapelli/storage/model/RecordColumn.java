@@ -20,31 +20,31 @@
 package uk.ac.ucl.excites.sapelli.storage.model;
 
 /**
- * A composite column for storing Records.
+ * A composite column for storing Records of a specific Schema.
  *
  * @author mstevens
  */
 public class RecordColumn extends ValueSetColumn<Record, Schema>
 {
 
-	public RecordColumn(String name, Schema columnSet, boolean optional)
+	public RecordColumn(String name, Schema schema, boolean optional)
 	{
-		super(name, columnSet, optional);
+		super(name, schema, optional);
 	}
 
-	public RecordColumn(String name, Schema columnSet, boolean optional, Record defaultRecord)
+	public RecordColumn(String name, Schema schema, boolean optional, Record defaultRecord)
 	{
-		super(name, columnSet, optional, defaultRecord);
+		super(name, schema, optional, defaultRecord);
 	}
 
-	public RecordColumn(String name, Schema columnSet, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
+	public RecordColumn(String name, Schema schema, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
-		super(name, columnSet, optional, includeSkipColsInStringSerialisation, includeVirtualColsInStringSerialisation);
+		super(name, schema, optional, includeSkipColsInStringSerialisation, includeVirtualColsInStringSerialisation);
 	}
 
-	public RecordColumn(String name, Schema columnSet, boolean optional, Record defaultRecord, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
+	public RecordColumn(String name, Schema schema, boolean optional, Record defaultRecord, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
-		super(name, columnSet, optional, defaultRecord, includeSkipColsInStringSerialisation, includeVirtualColsInStringSerialisation);
+		super(name, schema, optional, defaultRecord, includeSkipColsInStringSerialisation, includeVirtualColsInStringSerialisation);
 	}
 
 	@Override

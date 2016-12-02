@@ -559,7 +559,7 @@ public class Schema extends ColumnSet implements Serializable
 	 * @param elementOptional whether {@code null} records will be accepted
 	 * @return the ListColumn
 	 */
-	public ListColumn<List<Record>, Record> asListRecordColumn(boolean optional, boolean elementOptional)
+	public ListColumn.Simple<Record> asListRecordColumn(boolean optional, boolean elementOptional)
 	{
 		return asListRecordColumn(optional, elementOptional, ListColumn.DEFAULT_MAXIMUM_LENGTH);
 	}
@@ -574,7 +574,7 @@ public class Schema extends ColumnSet implements Serializable
 	 * @param maxLength the maximum length a of a valid List of Records
 	 * @return the ListColumn
 	 */
-	public ListColumn<List<Record>, Record> asListRecordColumn(boolean optional, boolean elementOptional, int maxLength)
+	public ListColumn.Simple<Record> asListRecordColumn(boolean optional, boolean elementOptional, int maxLength)
 	{
 		return asListRecordColumn(optional, elementOptional, ListColumn.DEFAULT_MINIMUM_LENGTH, maxLength);
 	}
@@ -590,7 +590,7 @@ public class Schema extends ColumnSet implements Serializable
 	 * @param maxLength the maximum length a of a valid List of Records
 	 * @return the ListColumn
 	 */
-	public ListColumn<List<Record>, Record> asListRecordColumn(boolean optional, boolean elementOptional, int minLength, int maxLength)
+	public ListColumn.Simple<Record> asListRecordColumn(boolean optional, boolean elementOptional, int minLength, int maxLength)
 	{
 		return new ListColumn.Simple<>(tableName, this.asRecordColumn(elementOptional), optional, minLength, maxLength);
 	}

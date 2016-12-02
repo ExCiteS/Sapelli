@@ -974,7 +974,27 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Losslessly writes the given {@code <T>} value to the given {@link BitOutputStream}.
+	 * Helper-method for writing to binary representations.
+	 * Writes the "presence"-bit on optional columns and enforces non-nullness on non-optional ones.
+	 *
+	 * @param value the value to check, may be {@code null} if column is optional
+	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @throws NullPointerException if value is {@code null} on an non-optional column, or if the bitStream is {@code null}
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 */
+	protected void writePresenceBit(Object value, BitOutputStream bitStream) throws NullPointerException, IOException
+	{
+		if(optional)
+			bitStream.write(value != null); // write "presence"-bit
+		else
+		{
+			if(value == null)
+				throw new NullPointerException("Non-optional value is null!");
+		}
+	}
+
+	/**
+	 * Losslessly writes the given {@code <T>} value to the given {@link BitOutputStream}. Values are validated first.
 	 *
 	 * @param value the value to write, may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
@@ -988,7 +1008,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	}
 
 	/**
-	 * Writes the given {@code <T>} value to the given {@link BitOutputStream}.
+	 * Writes the given {@code <T>} value to the given {@link BitOutputStream}. Values are validated first.
 	 *
 	 * @param value the value to write, may be {@code null} if column is optional
 	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
@@ -999,17 +1019,15 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public void writeValue(T value, BitOutputStream bitStream, boolean lossless) throws NullPointerException, IOException, InvalidValueException
 	{
-		if(optional)
-			bitStream.write(value != null); // write "presence"-bit
-		else
-		{
-			if(value == null)
-				throw new NullPointerException("Non-optional value is null!");
-		}
+		// Null-check & write presence-bit:
+		writePresenceBit(value, bitStream);
+		// Validate & write actual value:
 		if(value != null)
 		{
-			validate(value); // just in case, throws InvalidValueException if invalid
-			write(value, bitStream, lossless); // handled by subclass
+			// Validate (just in case), throws InvalidValueException if invalid:
+			validate(value);
+			// Actually write the value (handled by subclass):
+			write(value, bitStream, lossless);
 		}
 	}
 

@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -508,14 +509,66 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 			values.add(singleColumn.readValue(bitStream, lossless));
 		return values;
 	}
-	
+
+	/**
+	 * Losslessly writes the given array of {@code <T>} values to the given {@link BitOutputStream}.
+	 *
+	 * @param array the array of values to write, may be {@code null} if column is optional
+	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @throws NullPointerException if array or element is {@code null} on an non-optional column, or if the bitStream is {@code null}
+	 * @throws InvalidValueException if the array is too short or too long, or if a value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 */
+	public void writeArray(T[] array, BitOutputStream bitStream) throws NullPointerException, IOException, InvalidValueException
+	{
+		writeArray(array, bitStream, true);
+	}
+
+	/**
+	 * Writes the given array of {@code <T>} values to the given {@link BitOutputStream}.
+	 *
+	 * @param array the array of values to write, may be {@code null} if column is optional
+	 * @param bitStream the {@link BitOutputStream} to write to, must not be {@code null}
+	 * @param lossless if {@code true} the value will be losslessly encoded, if {@code false} (and {@link #canBeLossy()} returns {@code true}) the value will be encoded lossyly
+	 * @throws NullPointerException if array or element is {@code null} on an non-optional column, or if the bitStream is {@code null}
+	 * @throws InvalidValueException if the array is too short or too long, or if a value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 */
+	public void writeArray(T[] array, BitOutputStream bitStream, boolean lossless) throws NullPointerException, IOException, InvalidValueException
+	{
+		// Null-check & write presence-bit:
+		writePresenceBit(array, bitStream);
+		// Validate & write actual value:
+		if(array != null)
+		{
+			// Check length:
+			validateLength(array.length);
+			// Write size:
+			sizeField.write(array.length, bitStream);
+			// Write values:
+			for(T value : array)
+				singleColumn.writeValue(value, bitStream, lossless);
+		}
+	}
+
+	/**
+	 * Checks the given length to ensure if fits in [minimumLength, maximumLength].
+	 *
+	 * @param length
+	 * @throws InvalidValueException
+	 */
+	public void validateLength(int length) throws InvalidValueException
+	{
+		if(length < getMinimumLength())
+			throw new InvalidValueException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + getMinimumLength() + ", given value has " + length + ".", this);
+		if(length > getMaximumLength())
+			throw new InvalidValueException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + getMaximumLength() + ", given value has " + length + ".", this);
+	}
+
 	@Override
 	protected void validate(L values) throws InvalidValueException
 	{
-		if(values.size() < getMinimumLength())
-			throw new InvalidValueException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + getMinimumLength() + ", given value has " + values.size() + ".", this);
-		if(values.size() > getMaximumLength())
-			throw new InvalidValueException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + getMaximumLength() + ", given value has " + values.size() + ".", this);
+		validateLength(values.size());
 		int v = 0;
 		for(T value : values)
 		{
@@ -545,13 +598,67 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	@Override
 	protected int getMaximumValueSize(boolean lossless)
 	{
-		return sizeField.size() + (getMaximumLength() * singleColumn.getMaximumSize(lossless));
+		return getMaximumSizeForLength(getMaximumLength(), lossless);
+	}
+
+	/**
+	 * Returns the maximum effective number of bits lists of the given
+	 * length will take up when written to a lossless binary representation,
+	 * _without_ the presence-bit in case of an optional column.
+	 *
+	 * @param length
+	 * @return
+	 */
+	public int getMaximumSizeForLength(int length)
+	{
+		return getMaximumSizeForLength(length, true);
+	}
+
+	/**
+	 * Returns the maximum effective number of bits lists of the given
+	 * length will take up when written to a lossless or lossy binary representation,
+	 * _without_ the presence-bit in case of an optional column.
+	 *
+	 * @param length
+	 * @param lossless
+	 * @return
+	 */
+	public int getMaximumSizeForLength(int length, boolean lossless)
+	{
+		return sizeField.size() + (length * singleColumn.getMaximumSize(lossless));
 	}
 
 	@Override
 	protected int getMinimumValueSize(boolean lossless)
 	{
-		return sizeField.size() + (getMinimumLength() * singleColumn.getMinimumSize(lossless));
+		return getMinimumSizeForLength(getMinimumLength(), true);
+	}
+
+	/**
+	 * Returns the minimum number of bits lists of the given length
+	 * will take up when written to a lossless binary representation,
+	 * _without_ the presence-bit in case of an optional column.
+	 *
+	 * @param length
+	 * @return
+	 */
+	public int getMinimumSizeForLength(int length)
+	{
+		return getMinimumSizeForLength(length, true);
+	}
+
+	/**
+	 * Returns the minimum number of bits lists of the given length
+	 * will take up when written to a lossless or lossy binary representation,
+	 * _without_ the presence-bit in case of an optional column.
+	 *
+	 * @param length
+	 * @param lossless
+	 * @return
+	 */
+	public int getMinimumSizeForLength(int length, boolean lossless)
+	{
+		return sizeField.size() + (length * singleColumn.getMinimumSize(lossless));
 	}
 
 	/* (non-Javadoc)
@@ -868,9 +975,18 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		 */
 		@SuppressWarnings("unchecked")
 		@Override
-		public List<T> convert(Object value)
+		public List<T> convert(Object valueObject) throws ClassCastException
 		{
-			return (List<T>) (value == null ? null : (value instanceof List ? value : new ArrayList<T>((Collection<? extends T>) value)));
+			// Null:
+			if(valueObject == null)
+				return null;
+			// Arrays:
+			if(valueObject.getClass().isArray())
+			{
+				return Arrays.asList((T[]) valueObject);
+			}
+			// (Other) lists:
+			return (List<T>) (valueObject instanceof List ? valueObject : new ArrayList<T>((Collection<? extends T>) valueObject));
 		}
 		
 		@Override
