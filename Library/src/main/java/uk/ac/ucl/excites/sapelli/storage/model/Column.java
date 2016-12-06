@@ -1387,7 +1387,7 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public final int getMinimumSize(boolean lossless)
 	{
-		getMinimumTotalSize(getMinimumValueSize(lossless));
+		return getMinimumTotalSize(getMinimumValueSize(lossless));
 	}
 
 	/**
@@ -1570,8 +1570,9 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 		int lhsHash = lhs.hashCode();
 		int rhsHash = rhs.hashCode();		
 		return	(lhsHash != rhsHash) ?
-					Integer.compare(lhsHash, rhsHash) :
-					Integer.compare(System.identityHashCode(lhs), System.identityHashCode(rhs));
+		  			Integer.valueOf(lhsHash).compareTo(rhsHash) :
+		  			Integer.valueOf(System.identityHashCode(lhs)).compareTo(System.identityHashCode(rhs));
+		// Note: we don't use Integer#compare(int, int) (introduced in Java 1.7) here anymore because it is only support from Android API level 19.
 	}
 	
 	/**
