@@ -595,16 +595,10 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		return copy;
 	}
 
-	@Override
-	protected int getMaximumValueSize(boolean lossless)
-	{
-		return getMaximumSizeForLength(getMaximumLength(), lossless);
-	}
-
 	/**
 	 * Returns the maximum effective number of bits lists of the given
 	 * length will take up when written to a lossless binary representation,
-	 * _without_ the presence-bit in case of an optional column.
+	 * including the presence-bit in case of an optional column.
 	 *
 	 * @param length
 	 * @return
@@ -617,7 +611,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	/**
 	 * Returns the maximum effective number of bits lists of the given
 	 * length will take up when written to a lossless or lossy binary representation,
-	 * _without_ the presence-bit in case of an optional column.
+	 * including the presence-bit in case of an optional column.
 	 *
 	 * @param length
 	 * @param lossless
@@ -625,19 +619,33 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public int getMaximumSizeForLength(int length, boolean lossless)
 	{
-		return sizeField.size() + (length * singleColumn.getMaximumSize(lossless));
+		return getMaximumTotalSize(getMaximumValueSizeForLength(length, lossless));
 	}
 
 	@Override
-	protected int getMinimumValueSize(boolean lossless)
+	protected int getMaximumValueSize(boolean lossless)
 	{
-		return getMinimumSizeForLength(getMinimumLength(), true);
+		return getMaximumValueSizeForLength(getMaximumLength(), lossless);
+	}
+
+	/**
+	 * Returns the maximum effective number of bits lists of the given
+	 * length will take up when written to a lossless or lossy binary representation,
+	 * _without_ the presence-bit in case of an optional column.
+	 *
+	 * @param length
+	 * @param lossless
+	 * @return
+	 */
+	protected int getMaximumValueSizeForLength(int length, boolean lossless)
+	{
+		return sizeField.size() + (length * singleColumn.getMaximumSize(lossless));
 	}
 
 	/**
 	 * Returns the minimum number of bits lists of the given length
 	 * will take up when written to a lossless binary representation,
-	 * _without_ the presence-bit in case of an optional column.
+	 * including the presence-bit in case of an optional column.
 	 *
 	 * @param length
 	 * @return
@@ -650,13 +658,33 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	/**
 	 * Returns the minimum number of bits lists of the given length
 	 * will take up when written to a lossless or lossy binary representation,
-	 * _without_ the presence-bit in case of an optional column.
+	 * including the presence-bit in case of an optional column.
 	 *
 	 * @param length
 	 * @param lossless
 	 * @return
 	 */
 	public int getMinimumSizeForLength(int length, boolean lossless)
+	{
+		return getMinimumTotalSize(getMinimumValueSizeForLength(length, lossless));
+	}
+
+	@Override
+	protected int getMinimumValueSize(boolean lossless)
+	{
+		return getMinimumValueSizeForLength(getMinimumLength(), true);
+	}
+
+	/**
+	 * Returns the minimum number of bits lists of the given length
+	 * will take up when written to a lossless or lossy binary representation,
+	 * _without_ the presence-bit in case of an optional column.
+	 *
+	 * @param length
+	 * @param lossless
+	 * @return
+	 */
+	protected int getMinimumValueSizeForLength(int length, boolean lossless)
 	{
 		return sizeField.size() + (length * singleColumn.getMinimumSize(lossless));
 	}

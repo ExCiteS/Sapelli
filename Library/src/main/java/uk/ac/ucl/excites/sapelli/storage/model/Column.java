@@ -1339,7 +1339,19 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public final int getMaximumSize(boolean lossless)
 	{
-		return (optional ? 1 : 0) + getMaximumValueSize(lossless);
+		return getMaximumTotalSize(getMaximumValueSize(lossless));
+	}
+
+	/**
+	 * Helper method to compute maximum effective column size, including the presence-bit in case
+	 * of an optional column.
+	 *
+	 * @param maxValueSize the maximum effective number of bits taken of by values of this column
+	 * @return
+	 */
+	protected final int getMaximumTotalSize(int maxValueSize)
+	{
+		return (optional ? 1 : 0) + maxValueSize;
 	}
 
 	/**
@@ -1374,10 +1386,20 @@ public abstract class Column<T> implements Serializable, Comparator<ValueSet<?>>
 	 */
 	public final int getMinimumSize(boolean lossless)
 	{
-		if(optional)
-			return 1;
-		else
-			return getMinimumValueSize(lossless);
+		getMinimumTotalSize(getMinimumValueSize(lossless));
+	}
+
+	/**
+	 * Helper method to compute minimum effective column size, including the presence-bit in case
+	 * of an optional column.
+	 *
+	 * @param minValueSize the minimum effective number of bits taken of by values of this column
+	 * @return
+	 */
+	protected final int getMinimumTotalSize(int minValueSize)
+	{
+		return optional ? 1 : minValueSize;
+		// when a column is optional its minimum size is always 1 (for the presence bit; which will be 0 is that case, indicating a null value)
 	}
 
 	/**
