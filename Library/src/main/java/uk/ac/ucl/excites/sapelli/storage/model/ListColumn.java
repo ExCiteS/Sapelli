@@ -596,7 +596,18 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	}
 
 	/**
-	 * Computes the maximum length of a List that can be binary stored (losslessly or lossly) using this ListColumn within the given amount of bits.
+	 * Computes the maximum length of a List that can be losslessly binary stored using this ListColumn within the given amount of bits.
+	 *
+	 * @param sizeBits the "budget" in which to fit the whole binary representation of the List
+	 * @return
+	 */
+	public int getMaximumLengthForSize(int sizeBits)
+	{
+		return getMaximumLengthForSize(sizeBits, true);
+	}
+
+	/**
+	 * Computes the maximum length of a List that can be (losslessly or lossly) binary stored using this ListColumn within the given amount of bits.
 	 *
 	 * @param sizeBits the "budget" in which to fit the whole binary representation of the List
 	 * @param lossless if {@code true} the List is losslessly encoded, if {@code false} it is lossyly encoded
