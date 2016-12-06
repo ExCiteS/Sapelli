@@ -615,7 +615,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 	 */
 	public int getMaximumLengthForSize(int sizeBits, boolean lossless)
 	{
-		return (sizeBits - getMaximumTotalSize(0) /*account for presence bit on optional columns*/ - sizeField.size()) / getMaximumValueSize(lossless);
+		return (sizeBits - getMaximumTotalSize(0) /*account for presence bit on optional columns*/ - sizeField.size()) / singleColumn.getMaximumSize(lossless);
 	}
 
 	/**
