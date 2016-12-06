@@ -112,7 +112,7 @@ public class ButtonField extends Field
 			case BOOLEAN :
 				return new BooleanColumn(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this));
 			case DATETIME :
-				return TimeStampColumn.Century21NoMS(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this), true);
+				return TimeStampColumn.Century21NoMS(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this), true, true);
 			case NONE :
 			default :
 				return null;

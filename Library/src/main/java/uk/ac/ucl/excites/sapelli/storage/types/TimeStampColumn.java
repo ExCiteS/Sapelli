@@ -52,15 +52,15 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	// STATICS-------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; //bits
+	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; // bits
 	
 	static public final String LOCAL_PRETTY_VIRTUAL_COLUMN_NAME = "LocalYYYYMMDD_HHMMSS";
 	static public final String UTC_OFFSET_VIRTUAL_COLUMN_NAME = "UCTOffsetH";
 	static public final String RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME = "UnixMS";
 	
-	static private final TimeStamp START_21ST_CENTURY = new TimeStamp(new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC));
-	static private final TimeStamp END_21ST_CENTURY = new TimeStamp(new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC));
-	static private final TimeStamp START_2008 = new TimeStamp(new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC));
+	static private final long START_21ST_CENTURY_UTC_MS = new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC).getMillis();
+	static private final long END_21ST_CENTURY_UTC_MS = new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC).getMillis();
+	static private final long START_2008_UTC_MS = new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC).getMillis();
 	
 	/**
 	 * Returns a TimeStampColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
@@ -130,12 +130,13 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param keepLocalTimezone
 	 * @param addVirtuals
 	 * @return
 	 */
-	static public TimeStampColumn Century21(String name, boolean optional, boolean addVirtuals)
+	static public TimeStampColumn Century21(String name, boolean optional, boolean keepLocalTimezone, boolean addVirtuals)
 	{
-		return Century21(name, optional, null, addVirtuals);
+		return Century21(name, optional, keepLocalTimezone, null, addVirtuals);
 	}
 	
 	/**
@@ -144,13 +145,14 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param keepLocalTimezone
 	 * @param defaultValue
 	 * @param addVirtuals
 	 * @return
 	 */
-	static public TimeStampColumn Century21(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	static public TimeStampColumn Century21(String name, boolean optional, boolean keepLocalTimezone, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, START_21ST_CENTURY, END_21ST_CENTURY, true, true, false, optional, defaultValue, addVirtuals);
+		return new TimeStampColumn(name, new TimeStamp(START_21ST_CENTURY_UTC_MS), new TimeStamp(END_21ST_CENTURY_UTC_MS), true, keepLocalTimezone, false, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -159,12 +161,13 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param keepLocalTimezone
 	 * @param addVirtuals
 	 * @return
 	 */
-	static public TimeStampColumn Century21NoMS(String name, boolean optional, boolean addVirtuals)
+	static public TimeStampColumn Century21NoMS(String name, boolean optional, boolean keepLocalTimezone, boolean addVirtuals)
 	{
-		return Century21NoMS(name, optional, null, addVirtuals);
+		return Century21NoMS(name, optional, keepLocalTimezone, null, addVirtuals);
 	}
 	
 	/**
@@ -173,13 +176,14 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 * 
 	 * @param name
 	 * @param optional
+	 * @param keepLocalTimezone
 	 * @param defaultValue
 	 * @param addVirtuals
 	 * @return
 	 */
-	static public TimeStampColumn Century21NoMS(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
+	static public TimeStampColumn Century21NoMS(String name, boolean optional, boolean keepLocalTimezone, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, START_21ST_CENTURY, END_21ST_CENTURY, false, true, false, optional, defaultValue, addVirtuals);
+		return new TimeStampColumn(name, new TimeStamp(START_21ST_CENTURY_UTC_MS), new TimeStamp(END_21ST_CENTURY_UTC_MS), false, keepLocalTimezone, false, optional, defaultValue, addVirtuals);
 	}
 	
 	/**
@@ -212,7 +216,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	 */
 	static public TimeStampColumn Compact(String name, boolean optional, TimeStamp defaultValue, boolean addVirtuals)
 	{
-		return new TimeStampColumn(name, START_2008, 30 /*bits*/, false, false, false, optional, defaultValue, addVirtuals);
+		return new TimeStampColumn(name, new TimeStamp(START_2008_UTC_MS), 30 /*bits*/, false, false, false, optional, defaultValue, addVirtuals);
 	}
 	
 	// DYNAMICS------------------------------------------------------

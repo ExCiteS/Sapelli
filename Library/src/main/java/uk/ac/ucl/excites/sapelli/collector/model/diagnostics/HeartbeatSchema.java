@@ -42,12 +42,12 @@ public class HeartbeatSchema extends Schema
 	
 	static public final String HEARTBEAT_NAME = "Heartbeat";
 	
-	static public final TimeStampColumn	COLUMN_LOCAL_TIME = TimeStampColumn.Century21("LocalTime", false, true);
+	static public final TimeStampColumn	COLUMN_LOCAL_TIME = TimeStampColumn.Century21("LocalTime", false, true, true);
 	static public final IntegerColumn	COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", false, true, Long.SIZE);
 	static public final IntegerColumn	COLUMN_UPTIME_MS = new IntegerColumn("UptimeMS", true, false, 40); // 40 bits: allowing for uptimes of almost 35 years ;-)
 	static public final IntegerColumn	COLUMN_BATTERY_LEVEL = new IntegerColumn("BatteryLevel", true, 0, 100);
 	static public final LocationColumn	COLUMN_LAST_KNOWN_LOCATION = new LocationColumn("lastKnownLocation", true, true, true, false, false, true, true, true);
-	static public final TimeStampColumn	COLUMN_PROJECT_LAST_OPENED_AT = TimeStampColumn.Century21("ProjectLastOpenedAt", false, true);
+	static public final TimeStampColumn	COLUMN_PROJECT_LAST_OPENED_AT = TimeStampColumn.Century21("ProjectLastOpenedAt", false, true, true);
 	
 	/**
 	 * HeartbeatSchema constructor

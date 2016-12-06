@@ -785,7 +785,7 @@ public abstract class MediaField extends Field
 		 * This is the "V1X" version of the Form start time column (minus the virtual versions).
 		 * We needs this because since v2.0 Beta 17 primary key columns can no longer be lossy.
 		 */
-		private static final TimeStampColumn COLUMN_TIMESTAMP_START_V1X = TimeStampColumn.Century21NoMS(Form.COLUMN_TIMESTAMP_START_NAME, false, false);
+		private static final TimeStampColumn COLUMN_TIMESTAMP_START_V1X = TimeStampColumn.Century21NoMS(Form.COLUMN_TIMESTAMP_START_NAME, false, true, false);
 		
 		public FileNameGeneratorV1X(String fieldID, boolean obfuscateFilename, boolean obfuscateExtension, String fileExtension)
 		{

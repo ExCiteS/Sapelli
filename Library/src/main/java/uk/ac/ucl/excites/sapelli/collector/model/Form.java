@@ -88,9 +88,9 @@ public class Form implements WarningKeeper
 	static public final boolean DEFAULT_SHOW_IMAGE_SIZES = false;
 	
 	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
-	public static final TimeStampColumn COLUMN_TIMESTAMP_START = TimeStampColumn.Century21(COLUMN_TIMESTAMP_START_NAME, false, true); // keep MS, PK columns must be lossless
+	public static final TimeStampColumn COLUMN_TIMESTAMP_START = TimeStampColumn.Century21(COLUMN_TIMESTAMP_START_NAME, false, true, true); // keep MS, PK columns must be lossless
 	public static final String COLUMN_TIMESTAMP_END_NAME = "EndTime";
-	public static final TimeStampColumn COLUMN_TIMESTAMP_END = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
+	public static final TimeStampColumn COLUMN_TIMESTAMP_END = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true, true);
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	
