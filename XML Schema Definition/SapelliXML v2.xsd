@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<xs:schema
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified">
+
+	<xs:simpleType name="screenTransition">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="none" />
+			<xs:enumeration value="horizontal" />
+			<xs:enumeration value="vertical" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="audioFeedback">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="long_click" />
+			<xs:enumeration value="none" />
+			<xs:enumeration value="sequential" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="next">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="exitapp" />
+			<xs:enumeration value="loopform" />
+			<xs:enumeration value="prevform" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:element name="SapelliCollectorProject">
+		<xs:complexType mixed="true">
+			<!-- Elements -->
+			<xs:sequence>
+				<xs:element maxOccurs="1" minOccurs="0" ref="Configuration"/>
+				<xs:choice maxOccurs="unbounded" minOccurs="0">
+					<xs:element ref="Form"/>
+				</xs:choice>
+			</xs:sequence>
+			<!-- Attributes -->
+			<!-- TODO: id: Positive integer restriction -->
+			<xs:attribute name="id" type="xs:integer" use="required"/>
+			<xs:attribute name="name" type="xs:string" use="required"/>
+			<xs:attribute name="format" default="2" type="xs:integer"/>
+			<xs:attribute name="variant" type="xs:string"/>
+			<xs:attribute name="version" default="0" type="xs:string"/>
+			<!-- TODO: startForm: Any String (id of an existing Form) -->
+			<xs:attribute name="startForm" type="xs:string"/>
+			<!-- TODO: defaultLanguage: A string representing a language according to the BCP-47 syntax  -->
+			<xs:attribute name="defaultLanguage" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Configuration">
+		<xs:complexType mixed="true">
+			<!-- Elements -->
+			<xs:all>
+				<xs:element maxOccurs="1" minOccurs="0" ref="Logging"/>
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Logging">
+		<xs:complexType mixed="true">
+			<!-- Attributes -->
+			<xs:attribute name="enabled" default="true" type="xs:boolean"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Form">
+		<xs:complexType mixed="true">
+			<!-- Attributes -->
+			<xs:attribute name="id" type="xs:string" use="required"/>
+			<xs:attribute name="storeEndTime" type="xs:boolean" />
+			<xs:attribute name="startField" type="xs:string" />
+			<xs:attribute name="clickAnimation" type="xs:boolean" />
+			<xs:attribute name="screenTransition" type="screenTransition" />
+			<xs:attribute name="audioFeedback" type="audioFeedback" />
+			<xs:attribute name="obfuscateMediaFiles" type="xs:boolean" />
+			<xs:attribute name="next" type="next" />
+			<xs:attribute name="saveSound" type="xs:boolean" />
+			<xs:attribute name="saveVibrate" type="xs:boolean" />
+			<!-- TODO: controlBackgroundColor: Hex Colour String (e.g. #000000) -->
+			<xs:attribute name="controlBackgroundColor" type="xs:string" />
+			<xs:attribute name="shortcutImage" type="xs:string" />
+			<xs:attribute name="singlePage" type="xs:boolean" />
+			<!-- TODO: defaultLanguage: A string representing a language according to the BCP-47 syntax  -->
+			<xs:attribute name="defaultLanguage" type="xs:string" />
+			<xs:attribute name="showImgSizes" type="xs:boolean" />
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>
