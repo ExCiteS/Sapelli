@@ -42,6 +42,26 @@
 		<xs:attribute name="description" type="xs:string"/>
 	</xs:attributeGroup>
 
+	<xs:attributeGroup name="Field">
+		<xs:attribute name="id" type="xs:string"/>
+		<xs:attribute name="caption" type="xs:string"/>
+		<xs:attribute name="optional" type="xs:boolean"/>
+		<xs:attribute name="jump" type="xs:string"/>
+		<xs:attribute name="description" type="xs:string"/>
+		<xs:attribute name="skipOnBack" type="xs:boolean"/>
+		<xs:attribute name="showOnCreate" type="xs:boolean"/>
+		<xs:attribute name="showOnEdit" type="xs:boolean"/>
+		<xs:attribute name="editable" type="xs:boolean"/>
+		<xs:attribute name="showBackOnCreate" type="xs:boolean"/>
+		<xs:attribute name="showBackOnEdit" type="xs:boolean"/>
+		<xs:attribute name="showCancelOnCreate" type="xs:boolean"/>
+		<xs:attribute name="showCancelOnEdit" type="xs:boolean"/>
+		<xs:attribute name="showForwardOnCreate" type="xs:boolean"/>
+		<xs:attribute name="showForwardOnEdit" type="xs:boolean"/>
+		<xs:attribute name="showBack" type="xs:boolean"/>
+		<xs:attribute name="showCancel" type="xs:boolean"/>
+		<xs:attribute name="showForward" type="xs:boolean"/>
+	</xs:attributeGroup>
 
 	<!--++++++++++++++++++++++++++++++++-->
 	<!-- Elements -->
