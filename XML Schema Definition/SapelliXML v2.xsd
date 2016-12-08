@@ -4,30 +4,48 @@
 	xmlns:xs="http://www.w3.org/2001/XMLSchema"
 	elementFormDefault="qualified">
 
+	<!--++++++++++++++++++++++++++++++++-->
+	<!--Enums-->
+	<!--++++++++++++++++++++++++++++++++-->
+
 	<xs:simpleType name="screenTransition">
 		<xs:restriction base="xs:string">
-			<xs:enumeration value="none" />
-			<xs:enumeration value="horizontal" />
-			<xs:enumeration value="vertical" />
+			<xs:enumeration value="none"/>
+			<xs:enumeration value="horizontal"/>
+			<xs:enumeration value="vertical"/>
 		</xs:restriction>
 	</xs:simpleType>
 
 	<xs:simpleType name="audioFeedback">
 		<xs:restriction base="xs:string">
-			<xs:enumeration value="long_click" />
-			<xs:enumeration value="none" />
-			<xs:enumeration value="sequential" />
+			<xs:enumeration value="long_click"/>
+			<xs:enumeration value="none"/>
+			<xs:enumeration value="sequential"/>
 		</xs:restriction>
 	</xs:simpleType>
 
 	<xs:simpleType name="next">
 		<xs:restriction base="xs:string">
-			<xs:enumeration value="exitapp" />
-			<xs:enumeration value="loopform" />
-			<xs:enumeration value="prevform" />
+			<xs:enumeration value="exitapp"/>
+			<xs:enumeration value="loopform"/>
+			<xs:enumeration value="prevform"/>
 		</xs:restriction>
 	</xs:simpleType>
 
+	<!--++++++++++++++++++++++++++++++++-->
+	<!-- Attribute Groups -->
+	<!--++++++++++++++++++++++++++++++++-->
+
+	<xs:attributeGroup name="Controls">
+		<xs:attribute name="img" type="xs:string"/>
+		<xs:attribute name="backgroundColor" type="xs:string"/>
+		<xs:attribute name="description" type="xs:string"/>
+	</xs:attributeGroup>
+
+
+	<!--++++++++++++++++++++++++++++++++-->
+	<!-- Elements -->
+	<!--++++++++++++++++++++++++++++++++-->
 	<xs:element name="SapelliCollectorProject">
 		<xs:complexType mixed="true">
 			<!-- Elements -->
@@ -69,24 +87,47 @@
 
 	<xs:element name="Form">
 		<xs:complexType mixed="true">
+			<xs:all>
+				<xs:element maxOccurs="1" minOccurs="0" ref="Back"/>
+				<xs:element maxOccurs="1" minOccurs="0" ref="Cancel"/>
+				<xs:element maxOccurs="1" minOccurs="0" ref="Forward"/>
+			</xs:all>
 			<!-- Attributes -->
 			<xs:attribute name="id" type="xs:string" use="required"/>
-			<xs:attribute name="storeEndTime" type="xs:boolean" />
-			<xs:attribute name="startField" type="xs:string" />
-			<xs:attribute name="clickAnimation" type="xs:boolean" />
-			<xs:attribute name="screenTransition" type="screenTransition" />
-			<xs:attribute name="audioFeedback" type="audioFeedback" />
-			<xs:attribute name="obfuscateMediaFiles" type="xs:boolean" />
-			<xs:attribute name="next" type="next" />
-			<xs:attribute name="saveSound" type="xs:boolean" />
-			<xs:attribute name="saveVibrate" type="xs:boolean" />
+			<xs:attribute name="storeEndTime" type="xs:boolean"/>
+			<xs:attribute name="startField" type="xs:string"/>
+			<xs:attribute name="clickAnimation" type="xs:boolean"/>
+			<xs:attribute name="screenTransition" type="screenTransition"/>
+			<xs:attribute name="audioFeedback" type="audioFeedback"/>
+			<xs:attribute name="obfuscateMediaFiles" type="xs:boolean"/>
+			<xs:attribute name="next" type="next"/>
+			<xs:attribute name="saveSound" type="xs:boolean"/>
+			<xs:attribute name="saveVibrate" type="xs:boolean"/>
 			<!-- TODO: controlBackgroundColor: Hex Colour String (e.g. #000000) -->
-			<xs:attribute name="controlBackgroundColor" type="xs:string" />
-			<xs:attribute name="shortcutImage" type="xs:string" />
-			<xs:attribute name="singlePage" type="xs:boolean" />
+			<xs:attribute name="controlBackgroundColor" type="xs:string"/>
+			<xs:attribute name="shortcutImage" type="xs:string"/>
+			<xs:attribute name="singlePage" type="xs:boolean"/>
 			<!-- TODO: defaultLanguage: A string representing a language according to the BCP-47 syntax  -->
-			<xs:attribute name="defaultLanguage" type="xs:string" />
-			<xs:attribute name="showImgSizes" type="xs:boolean" />
+			<xs:attribute name="defaultLanguage" type="xs:string"/>
+			<xs:attribute name="showImgSizes" type="xs:boolean"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Back">
+		<xs:complexType>
+			<xs:attributeGroup ref="Controls"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Cancel">
+		<xs:complexType>
+			<xs:attributeGroup ref="Controls"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Forward">
+		<xs:complexType>
+			<xs:attributeGroup ref="Controls"/>
 		</xs:complexType>
 	</xs:element>
 
