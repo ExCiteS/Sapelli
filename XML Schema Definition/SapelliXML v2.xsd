@@ -117,6 +117,7 @@
 				<xs:element ref="Audio"/>
 				<xs:element ref="Photo"/>
 				<xs:element ref="Video"/>
+				<xs:element ref="Html"/>
 			</xs:choice>
 		</xs:sequence>
 	</xs:group>
@@ -291,6 +292,14 @@
 			<xs:attribute name="useFrontCamera" type="xs:boolean"/>
 			<xs:attribute name="startRecImg" type="xs:string"/>
 			<xs:attribute name="stopRecImg" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Html">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attribute name="url" type="xs:string"/>
+			<xs:attribute name="externalLinks" type="xs:boolean"/>
 		</xs:complexType>
 	</xs:element>
 
