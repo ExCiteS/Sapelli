@@ -48,6 +48,18 @@
 		</xs:restriction>
 	</xs:simpleType>
 
+	<xs:simpleType name="flash">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="on"/>
+			<xs:enumeration value="always"/>
+			<xs:enumeration value="true"/>
+			<xs:enumeration value="auto"/>
+			<xs:enumeration value="off"/>
+			<xs:enumeration value="never"/>
+			<xs:enumeration value="false"/>
+		</xs:restriction>
+	</xs:simpleType>
+
 	<!--++++++++++++++++++++++++++++++++-->
 	<!-- Attribute Groups -->
 	<!--++++++++++++++++++++++++++++++++-->
@@ -79,6 +91,12 @@
 		<xs:attribute name="showForward" type="xs:boolean"/>
 	</xs:attributeGroup>
 
+	<xs:attributeGroup name="MediaField">
+		<xs:attribute name="max" type="xs:positiveInteger"/>
+		<xs:attribute name="review" type="xs:boolean"/>
+		<xs:attribute name="discardImg" type="xs:string"/>
+	</xs:attributeGroup>
+
 	<!--++++++++++++++++++++++++++++++++-->
 	<!-- Groups -->
 	<!--++++++++++++++++++++++++++++++++-->
@@ -96,6 +114,9 @@
 				<xs:element ref="Choice"/>
 				<xs:element ref="Location"/>
 				<xs:element ref="Orientation"/>
+				<xs:element ref="Audio"/>
+				<xs:element ref="Photo"/>
+				<xs:element ref="Video"/>
 			</xs:choice>
 		</xs:sequence>
 	</xs:group>
@@ -193,6 +214,11 @@
 
 	<xs:element name="Choice">
 		<xs:complexType mixed="true">
+			<!-- Elements -->
+			<xs:sequence>
+				<xs:element maxOccurs="unbounded" minOccurs="0" ref="Choice"/>
+			</xs:sequence>
+			<!-- Attributes -->
 			<xs:attributeGroup ref="Field"/>
 			<xs:attribute name="value" type="xs:string"/>
 			<xs:attribute name="img" type="xs:string"/>
@@ -229,7 +255,6 @@
 		</xs:complexType>
 	</xs:element>
 
-
 	<xs:element name="Orientation">
 		<xs:complexType mixed="true">
 			<xs:attributeGroup ref="Field"/>
@@ -238,4 +263,35 @@
 			<xs:attribute name="storeRoll" type="xs:boolean"/>
 		</xs:complexType>
 	</xs:element>
+
+
+	<xs:element name="Audio">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attributeGroup ref="MediaField"/>
+			<xs:attribute name="startRecImg" type="xs:string"/>
+			<xs:attribute name="stopRecImg" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Photo">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attributeGroup ref="MediaField"/>
+			<xs:attribute name="captureImg" type="xs:string"/>
+			<xs:attribute name="useFrontCamera" type="xs:boolean"/>
+			<xs:attribute name="flash" type="flash"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Video">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attributeGroup ref="MediaField"/>
+			<xs:attribute name="useFrontCamera" type="xs:boolean"/>
+			<xs:attribute name="startRecImg" type="xs:string"/>
+			<xs:attribute name="stopRecImg" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
 </xs:schema>
