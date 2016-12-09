@@ -32,6 +32,22 @@
 		</xs:restriction>
 	</xs:simpleType>
 
+	<xs:simpleType name="gpsType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="any"/>
+			<xs:enumeration value="GPS"/>
+			<xs:enumeration value="network"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="gpsStartWith">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="form"/>
+			<xs:enumeration value="page"/>
+			<xs:enumeration value="field"/>
+		</xs:restriction>
+	</xs:simpleType>
+
 	<!--++++++++++++++++++++++++++++++++-->
 	<!-- Attribute Groups -->
 	<!--++++++++++++++++++++++++++++++++-->
@@ -62,6 +78,27 @@
 		<xs:attribute name="showCancel" type="xs:boolean"/>
 		<xs:attribute name="showForward" type="xs:boolean"/>
 	</xs:attributeGroup>
+
+	<!--++++++++++++++++++++++++++++++++-->
+	<!-- Groups -->
+	<!--++++++++++++++++++++++++++++++++-->
+
+	<xs:group name="FieldsGroup">
+		<xs:sequence>
+			<xs:choice maxOccurs="unbounded" minOccurs="0">
+				<!--Back, Cancel, Forward should exist only once, and with the current setup, they
+				can show up multiple times. However, there is no workaround at least with XSD 1.0
+				-->
+				<xs:element ref="Back"/>
+				<xs:element ref="Cancel"/>
+				<xs:element ref="Forward"/>
+				<xs:element ref="Page"/>
+				<xs:element ref="Choice"/>
+				<xs:element ref="Location"/>
+				<xs:element ref="Orientation"/>
+			</xs:choice>
+		</xs:sequence>
+	</xs:group>
 
 	<!--++++++++++++++++++++++++++++++++-->
 	<!-- Elements -->
@@ -107,11 +144,7 @@
 
 	<xs:element name="Form">
 		<xs:complexType mixed="true">
-			<xs:all>
-				<xs:element maxOccurs="1" minOccurs="0" ref="Back"/>
-				<xs:element maxOccurs="1" minOccurs="0" ref="Cancel"/>
-				<xs:element maxOccurs="1" minOccurs="0" ref="Forward"/>
-			</xs:all>
+			<xs:group ref="FieldsGroup"/>
 			<!-- Attributes -->
 			<xs:attribute name="id" type="xs:string" use="required"/>
 			<xs:attribute name="storeEndTime" type="xs:boolean"/>
@@ -151,4 +184,58 @@
 		</xs:complexType>
 	</xs:element>
 
+	<xs:element name="Page">
+		<xs:complexType mixed="true">
+			<!-- TODO: Page cannot contain pages -->
+			<xs:group ref="FieldsGroup"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Choice">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attribute name="value" type="xs:string"/>
+			<xs:attribute name="img" type="xs:string"/>
+			<!--TODO: captionHeight: 0 to 1-->
+			<xs:attribute name="captionHeight" type="xs:decimal"/>
+			<xs:attribute name="matchTextSize" type="xs:boolean"/>
+			<xs:attribute name="backgroundColor" type="xs:string"/>
+			<xs:attribute name="crossed" type="xs:boolean"/>
+			<xs:attribute name="crossColor" type="xs:string"/>
+			<xs:attribute name="noColumn" type="xs:boolean"/>
+			<xs:attribute name="questionDescription" type="xs:string"/>
+			<xs:attribute name="answerDescription" type="xs:string"/>
+			<xs:attribute name="cols" type="xs:positiveInteger"/>
+			<xs:attribute name="rows" type="xs:positiveInteger"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Location">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attribute name="type" type="gpsType"/>
+			<xs:attribute name="startWith" type="gpsStartWith"/>
+			<xs:attribute name="waitAtField" type="xs:boolean"/>
+			<xs:attribute name="useBestKnownLocationOnTimeout" type="xs:boolean"/>
+			<xs:attribute name="timeout" type="xs:positiveInteger"/>
+			<xs:attribute name="maxAge" type="xs:positiveInteger"/>
+			<xs:attribute name="maxAccuracyRadius" type="xs:positiveInteger"/>
+			<xs:attribute name="doublePrecision" type="xs:boolean"/>
+			<xs:attribute name="storeAltitude" type="xs:boolean"/>
+			<xs:attribute name="storeBearing" type="xs:boolean"/>
+			<xs:attribute name="storeSpeed" type="xs:boolean"/>
+			<xs:attribute name="storeAccuracy" type="xs:boolean"/>
+			<xs:attribute name="storeProvider" type="xs:boolean"/>
+		</xs:complexType>
+	</xs:element>
+
+
+	<xs:element name="Orientation">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="Field"/>
+			<xs:attribute name="storeAzimuth" type="xs:boolean"/>
+			<xs:attribute name="storePitch" type="xs:boolean"/>
+			<xs:attribute name="storeRoll" type="xs:boolean"/>
+		</xs:complexType>
+	</xs:element>
 </xs:schema>
