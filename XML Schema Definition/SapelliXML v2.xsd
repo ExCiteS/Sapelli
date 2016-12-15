@@ -145,8 +145,7 @@
 				</xs:choice>
 			</xs:sequence>
 			<!-- Attributes -->
-			<!-- TODO: id: Positive integer restriction -->
-			<xs:attribute name="id" type="xs:integer" use="required"/>
+			<xs:attribute name="id" type="xs:positiveInteger" use="required"/>
 			<xs:attribute name="name" type="xs:string" use="required"/>
 			<xs:attribute name="format" default="2" type="xs:integer"/>
 			<xs:attribute name="variant" type="xs:string"/>
@@ -233,7 +232,14 @@
 			<xs:attribute name="value" type="xs:string"/>
 			<xs:attribute name="img" type="xs:string"/>
 			<!--TODO: captionHeight: 0 to 1-->
-			<xs:attribute name="captionHeight" type="xs:decimal"/>
+			<xs:attribute name="captionHeight">
+				<xs:simpleType>
+					<xs:restriction base="xs:decimal">
+						<xs:minInclusive value="0"/>
+						<xs:maxInclusive value="1"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
 			<xs:attribute name="matchTextSize" type="xs:boolean"/>
 			<xs:attribute name="backgroundColor" type="hexColour"/>
 			<xs:attribute name="crossed" type="xs:boolean"/>
