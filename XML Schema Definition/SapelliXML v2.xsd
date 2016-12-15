@@ -4,6 +4,24 @@
 	xmlns:xs="http://www.w3.org/2001/XMLSchema"
 	elementFormDefault="qualified">
 
+	<!--TODO: Missing elements -->
+	<!--<Transmission>-->
+	<!--<DropboxUpload>-->
+	<!--<HTTPUpload>-->
+	<!--<SMSUpload>-->
+	<!--<Encryption>-->
+	<!--<Button>-->
+	<!--<Label>-->
+	<!--<Text>-->
+	<!--<Check>-->
+	<!--<List>-->
+	<!--<MultiList>-->
+	<!--<Item>-->
+	<!--<BelongsTo>-->
+	<!--<Constraint>-->
+	<!--<LinksTo>-->
+	<!--<Trigger>-->
+
 	<!--++++++++++++++++++++++++++++++++-->
 	<!--Restrictions-->
 	<!--++++++++++++++++++++++++++++++++-->
@@ -231,7 +249,7 @@
 			<xs:attributeGroup ref="Field"/>
 			<xs:attribute name="value" type="xs:string"/>
 			<xs:attribute name="img" type="xs:string"/>
-			<!--TODO: captionHeight: 0 to 1-->
+			<!-- captionHeight: 0 to 1 -->
 			<xs:attribute name="captionHeight">
 				<xs:simpleType>
 					<xs:restriction base="xs:decimal">
