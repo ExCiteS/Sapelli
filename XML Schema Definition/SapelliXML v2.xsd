@@ -5,6 +5,16 @@
 	elementFormDefault="qualified">
 
 	<!--++++++++++++++++++++++++++++++++-->
+	<!--Restrictions-->
+	<!--++++++++++++++++++++++++++++++++-->
+
+	<xs:simpleType name="hexColour">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<!--++++++++++++++++++++++++++++++++-->
 	<!--Enums-->
 	<!--++++++++++++++++++++++++++++++++-->
 
@@ -66,7 +76,7 @@
 
 	<xs:attributeGroup name="Controls">
 		<xs:attribute name="img" type="xs:string"/>
-		<xs:attribute name="backgroundColor" type="xs:string"/>
+		<xs:attribute name="backgroundColor" type="hexColour"/>
 		<xs:attribute name="description" type="xs:string"/>
 	</xs:attributeGroup>
 
@@ -178,8 +188,7 @@
 			<xs:attribute name="next" type="next"/>
 			<xs:attribute name="saveSound" type="xs:boolean"/>
 			<xs:attribute name="saveVibrate" type="xs:boolean"/>
-			<!-- TODO: controlBackgroundColor: Hex Colour String (e.g. #000000) -->
-			<xs:attribute name="controlBackgroundColor" type="xs:string"/>
+			<xs:attribute name="controlBackgroundColor" type="hexColour"/>
 			<xs:attribute name="shortcutImage" type="xs:string"/>
 			<xs:attribute name="singlePage" type="xs:boolean"/>
 			<!-- TODO: defaultLanguage: A string representing a language according to the BCP-47 syntax  -->
@@ -226,9 +235,9 @@
 			<!--TODO: captionHeight: 0 to 1-->
 			<xs:attribute name="captionHeight" type="xs:decimal"/>
 			<xs:attribute name="matchTextSize" type="xs:boolean"/>
-			<xs:attribute name="backgroundColor" type="xs:string"/>
+			<xs:attribute name="backgroundColor" type="hexColour"/>
 			<xs:attribute name="crossed" type="xs:boolean"/>
-			<xs:attribute name="crossColor" type="xs:string"/>
+			<xs:attribute name="crossColor" type="hexColour"/>
 			<xs:attribute name="noColumn" type="xs:boolean"/>
 			<xs:attribute name="questionDescription" type="xs:string"/>
 			<xs:attribute name="answerDescription" type="xs:string"/>
