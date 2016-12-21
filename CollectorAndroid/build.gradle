@@ -150,6 +150,39 @@ android {
     }
 }
 
+// A wrapper for the Android assembleRelease task
+task assembleReleaseWrapper(type: GradleBuild){
+    tasks = ['assembleRelease']
+}
+
+// A wrapper for the Fabric crashlyticsUploadDistributionRelease task
+task uploadReleaseWrapper(type: GradleBuild){
+    tasks = ['crashlyticsUploadDistributionRelease']
+}
+
+// Assemble and release Sapelli task
+task releaseSapelliCollector {
+    description "Release task for Sapelli Android Collector"
+    group "Sapelli"
+
+    // Check if the project has a proper version and is not a SNAPSHOT release
+    onlyIf({
+        def snapshot = releaseSapelliCollector. project.version.toString().contains("SNAPSHOT")
+
+        if (snapshot) {
+            logger.log(LogLevel.ERROR, "This is a SNAPSHOT version. Please change the version and try again.")
+        }
+
+        return !snapshot
+    })
+
+    // Define task dependencies
+    dependsOn(assembleReleaseWrapper)
+    dependsOn(uploadReleaseWrapper)
+    // We want to ensure that uploading to Fabric happens only after we have an apk file
+    uploadReleaseWrapper.mustRunAfter(assembleReleaseWrapper)
+}
+
 dependencies {
     // Local libs:
     //compile fileTree(dir: 'libs', include: ['*.jar'])
