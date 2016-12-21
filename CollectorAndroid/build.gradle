@@ -129,6 +129,12 @@ android {
 
             // Signing the app
             signingConfig signingConfigs.release
+
+            // Fabric release info
+            ext.betaDistributionReleaseNotesFilePath = "$projectDir" + "/beta-notes.txt"
+            // ext.betaDistributionEmailsFilePath = "This is not used for now"
+            // Release it to UCL ExCiteS internal group
+            ext.betaDistributionGroupAliases = "ucl-excites-internal"
         }
         releaseTest { // identical to release except it's debuggable
             initWith(buildTypes.release)
