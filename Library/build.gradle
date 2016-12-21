@@ -133,12 +133,14 @@ artifacts {
 
 // Installs jars to local Maven repository:
 install {
-    println project.name + ": package name: "+ project.group
-    println project.name + ": package version: "+ project.version
-    repositories.mavenInstaller {
-        pom.groupId = project.group
-        pom.artifactId = artifactId
-        pom.version = project.version
-        pom.packaging = 'jar'
+    doFirst {
+        println project.name + ": package name: " + project.group
+        println project.name + ": package version: " + project.version
+        repositories.mavenInstaller {
+            pom.groupId = project.group
+            pom.artifactId = artifactId
+            pom.version = project.version
+            pom.packaging = 'jar'
+        }
     }
 }
