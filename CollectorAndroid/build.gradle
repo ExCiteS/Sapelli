@@ -20,6 +20,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'io.fabric'
 apply plugin: 'hu.supercluster.paperwork'
 apply plugin: 'com.jakewharton.hugo'
+apply plugin: 'org.ajoberstar.grgit'
 
 def keysFolder = file('../../Keys/') // location of signing keys and other private credentials
 
@@ -156,35 +157,94 @@ android {
     }
 }
 
-// A wrapper for the Android assembleRelease task
+/**
+ * Check if a version is snapshot and throw an exception if it is
+ */
+def checkSnapshot = {
+    def snapshot = releaseSapelliCollector.project.version.toString().contains("SNAPSHOT")
+
+    if (snapshot) {
+        throw new GradleException("This is a SNAPSHOT version. Please change the version and try again.")
+    }
+
+    return !snapshot
+}
+
+/**
+ * Commit changes to git
+ */
+task gitCommit {
+    description = 'Commit changes before a release version.'
+    group "Sapelli"
+
+	// Check if the project has a proper version and is not a SNAPSHOT release
+	onlyIf(checkSnapshot)
+
+    doLast {
+        def message = "Released build ${project.version}"
+        grgit.commit(message: message, all: true)
+        println "Git commit: " + message
+    }
+}
+
+/**
+ * Add a tag to git
+ */
+task gitTagRelease {
+    description = 'Tags the current head with the project\'s version.'
+    group "Sapelli"
+
+	// Check if the project has a proper version and is not a SNAPSHOT release
+	onlyIf(checkSnapshot)
+
+    doLast {
+        grgit.tag.add {
+            name = project.version
+            message = "Released build ${project.version}"
+            println "Added git tag: " + name
+        }
+    }
+}
+
+/**
+ * A wrapper for the Android assembleRelease task
+ */
 task assembleReleaseWrapper(type: GradleBuild){
     tasks = ['assembleRelease']
 }
 
-// A wrapper for the Fabric crashlyticsUploadDistributionRelease task
+/**
+ * A wrapper for the Fabric crashlyticsUploadDistributionRelease task
+ */
 task uploadReleaseWrapper(type: GradleBuild){
     tasks = ['crashlyticsUploadDistributionRelease']
 }
 
-// Assemble and release Sapelli task
+/**
+ * Assemble and release Sapelli task
+ */
 task releaseSapelliCollector {
     description "Release task for Sapelli Android Collector"
     group "Sapelli"
 
     // Check if the project has a proper version and is not a SNAPSHOT release
-    onlyIf({
-        def snapshot = releaseSapelliCollector. project.version.toString().contains("SNAPSHOT")
-
-        if (snapshot) {
-            logger.log(LogLevel.ERROR, "This is a SNAPSHOT version. Please change the version and try again.")
-        }
-
-        return !snapshot
-    })
+    onlyIf(checkSnapshot)
 
     // Define task dependencies
+
+    // Git operations
+    dependsOn(gitCommit)
+    dependsOn(gitTagRelease)
+
+    // Assemble
     dependsOn(assembleReleaseWrapper)
+    // Upload
     dependsOn(uploadReleaseWrapper)
+
+    // We want to ensure that we commit and tag the release before the assemble
+    gitTagRelease.mustRunAfter(gitCommit)
+    assembleReleaseWrapper.mustRunAfter(gitTagRelease)
+
     // We want to ensure that uploading to Fabric happens only after we have an apk file
     uploadReleaseWrapper.mustRunAfter(assembleReleaseWrapper)
 }
