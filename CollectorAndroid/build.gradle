@@ -161,8 +161,8 @@ dependencies {
     compile project(':Library')
 
     // Google:
-    compile 'com.android.support:support-v4:25.0.1'
-    compile 'com.android.support:appcompat-v7:25.0.1'
+    compile 'com.android.support:support-v4:25.1.0'
+    compile 'com.android.support:appcompat-v7:25.1.0'
 
     // Other dependencies:
     compile 'com.github.michalis-vitos:aFileChooser:e359025948'
@@ -187,5 +187,5 @@ dependencies {
     //  and still does not cause problems.
 
     // Stetho debugging
-    compile 'com.facebook.stetho:stetho:1.4.1'
+    compile 'com.facebook.stetho:stetho:1.4.2'
 }
