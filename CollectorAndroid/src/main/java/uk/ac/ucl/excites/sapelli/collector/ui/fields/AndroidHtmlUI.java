@@ -128,6 +128,26 @@ public class AndroidHtmlUI extends HtmlUI<View, CollectorView>
 	}
 
 	@Override
+	protected void cancel()
+	{
+		// Clear up the UI before cancelling
+
+		if (webView != null)
+		{
+			webView.destroy();
+			webView = null;
+		}
+
+		if (backgroundView != null)
+			backgroundView = null;
+
+		if (progressBar != null)
+			progressBar = null;
+
+		super.cancel();
+	}
+
+	@Override
 	public boolean canGoBack()
 	{
 		return webView != null && webView.canGoBack();
