@@ -67,7 +67,7 @@ public class AndroidTransmissionController extends TransmissionController
 	@Override
 	protected Logger createLogger(File logsFolder) throws FileStorageException, IOException
 	{
-		return new AndroidLogger(logsFolder.getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), false, true);
+		return new AndroidLogger(logsFolder.getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-MM-dd"), false, true);
 	}
 
 	@Override

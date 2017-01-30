@@ -157,7 +157,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 */
 	protected Logger createLogger(File logsFolder) throws FileStorageException, IOException
 	{
-		return new Logger(logsFolder.getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), true);
+		return new Logger(logsFolder.getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-MM-dd"), true);
 	}
 	
 	/**
