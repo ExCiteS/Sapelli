@@ -80,3 +80,5 @@ fabric.properties
 .DS_Store
 /build
 /captures
+/.idea/markdown-navigator/profiles_settings.xml
+/.idea/sonarlint/issuestore/index.pb
