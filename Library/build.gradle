@@ -91,15 +91,18 @@ javadoc {
     options.encoding = 'UTF-8'
 }
 
-task generateCMMBPCProperties(dependsOn: processResources) << {
-    //def os = new ByteArrayOutputStream()
-    javaexec {
-        main = 'uk.ac.ucl.excites.sapelli.shared.io.text.GenerateCMMBPCProperties'
-        classpath = sourceSets.main.runtimeClasspath
-        args new File(projectDir, 'charsetinfo').absolutePath, sourceSets.main.output.resourcesDir.absolutePath
-        //standardOutput = os
+task generateCMMBPCProperties(dependsOn: processResources) {
+
+    doLast {
+        //def os = new ByteArrayOutputStream()
+        javaexec {
+            main = 'uk.ac.ucl.excites.sapelli.shared.io.text.GenerateCMMBPCProperties'
+            classpath = sourceSets.main.runtimeClasspath
+            args new File(projectDir, 'charsetinfo').absolutePath, sourceSets.main.output.resourcesDir.absolutePath
+            //standardOutput = os
+        }
+        //def buildString = os.toString()
     }
-    //def buildString = os.toString()
 }
 
 processResources.finalizedBy(generateCMMBPCProperties)
