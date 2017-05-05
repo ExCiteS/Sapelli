@@ -307,7 +307,7 @@ public class DeviceID
 			// Check if the we already have a raw device ID, if not run the AsyncTask:
 			if(!this.id.isInitialised())
 			{
-				wifiManager = (WifiManager) activity.getSystemService(Context.WIFI_SERVICE);
+				wifiManager = (WifiManager) activity.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 				bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 				execute(); // async!
 			}
