@@ -63,6 +63,7 @@ public class AboutFragment extends ProjectManagerFragment
 		infoLbl.setText(Html.fromHtml(
 				"<p><b>" + app.getBuildInfo().getNameAndVersion() + "</b><br/>[" + app.getBuildInfo().getExtraVersionInfo() + "]</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" +
+				"<p>" + getString(R.string.user_data_policy)  + "</p>" +
 				"<p>" + getString(R.string.license)  + "</p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));
