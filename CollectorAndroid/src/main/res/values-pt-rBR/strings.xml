@@ -38,6 +38,7 @@
     <string name="manage">Gerenciar</string>
     <string name="manageEtc">manage&#8230;</string>
     <string name="by_ucl_excites_html"><![CDATA[<a href="http://sapelli.org">Sapelli</a> é um projeto de <a href="http://ucl.ac.uk/excites">UCL ExCiteS</a> &amp; colaboradores.]]></string>
+    <string name="user_data_policy"><![CDATA[<a href="http://www.sapelli.org/sapelli-user-data-policy/">User Data Policy</a>]]></string>
     <string name="license"><![CDATA[<a href="http://github.com/ExCiteS/Sapelli">Código fonte disponível </a> sob os termos de <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></string>
     <string name="determiningDeviceID">Determinando o ID do dispositivo …</string>
     <string name="pleaseLeaveAirplaneMode">Para inicializar a aplicação pela primeira vez, por favor, desative o modo avião.</string>
