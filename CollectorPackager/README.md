@@ -43,3 +43,9 @@ Because the application plugin is being used, you may directly run the applicati
 ```
 gradlew CollectorPackager:run
 ```
+
+### Dependencies:
+Displays a report of the project dependencies that are up-to-date, exceed the latest version found, have upgrades, or failed to be resolved. 
+```
+gradlew CollectorPackager:dependencyUpdates
+```

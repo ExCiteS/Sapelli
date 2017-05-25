@@ -26,12 +26,15 @@ buildscript {
     dependencies {
         // Gradle plugin for creating fat/uber JARs with support for package relocation.
         classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+        // Gradle Versions Plugin
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.14.0'
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.github.ben-manes.versions'
 
 defaultTasks 'clean', 'install'
 

@@ -42,6 +42,8 @@ public class Packager extends Application
 
 	public static void main(String[] args)
 	{
+		log.info("Sapelli Packer is starting!");
+
 		try
 		{
 			launch(args);
