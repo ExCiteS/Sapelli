@@ -1,3 +1,4 @@
 include 'CollectorAndroid'
 include 'Library'
 include 'CollectorCmdLn'
+include 'CollectorPackager'

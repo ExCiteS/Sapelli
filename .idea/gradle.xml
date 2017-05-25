@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/CollectorAndroid" />
             <option value="$PROJECT_DIR$/CollectorCmdLn" />
+            <option value="$PROJECT_DIR$/CollectorPackager" />
             <option value="$PROJECT_DIR$/Library" />
           </set>
         </option>
