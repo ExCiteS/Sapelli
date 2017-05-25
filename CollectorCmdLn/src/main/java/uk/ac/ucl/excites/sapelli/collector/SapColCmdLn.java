@@ -1,32 +1,22 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ * <p>
  * Copyright 2012-2016 University College London - ExCiteS group
- * 
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
 package uk.ac.ucl.excites.sapelli.collector;
-
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -34,6 +24,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import java.io.File;
+import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
@@ -43,13 +44,14 @@ import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.GeoKeyFo
 
 /**
  * Simple command-line interface to load/verify (and in the future store) Sapelli Collector projects
- * 
+ *
  * @author mstevens
  */
 public class SapColCmdLn
 {
 
 	static private Options options = new Options();
+
 	static
 	{
 		options.addOption("p", true, "Sapelli working directory");
@@ -57,10 +59,14 @@ public class SapColCmdLn
 		options.addOption(loadFile);
 		options.addOption("json", false, "Produce JSON output");
 		options.addOption("geokey", false, "Produce 'sapelli_project_info' (JSON) for geokey_sapelli");
+		options.addOption("help", false, "Print list of arguments");
 	}
 
+	static HelpFormatter formatter = new HelpFormatter();
+
+
 	static FileStorageProvider fsp;
-	
+
 	/**
 	 * @param args
 	 */
@@ -123,7 +129,10 @@ public class SapColCmdLn
 				System.exit(2);
 			}
 		}
-		
+
+		if(cmd.hasOption("help"))
+			formatter.printHelp("To use CollectorCmdLn, run the jar with the folowing arguments:", options);
+
 		System.exit(0);
 	}
 
@@ -163,7 +172,7 @@ public class SapColCmdLn
 
 		// the root node
 		ObjectNode projectJSON = factory.objectNode();
-		
+
 		// describe project:
 		projectJSON.put("source", sapFile.getAbsolutePath());
 		projectJSON.put("id", project.getID());
@@ -184,10 +193,10 @@ public class SapColCmdLn
 			formsJSON.add(formJSON);
 		}
 		projectJSON.set("forms", formsJSON);
-		
+
 		// Serialise:
 		mapper.writeTree(generator, projectJSON);
-	}	
+	}
 
 	/**
 	 * @param sapFile
@@ -198,7 +207,7 @@ public class SapColCmdLn
 	static public void printProjectInfoForGeoKey(File sapFile, Project project) throws IOException
 	{
 		GeoKeyFormDescriber gkFormDescriber = new GeoKeyFormDescriber();
-		
+
 		// Create the node factory that gives us nodes.
 		JsonNodeFactory factory = new JsonNodeFactory(false);
 
@@ -210,7 +219,7 @@ public class SapColCmdLn
 
 		// the root node
 		ObjectNode projectJSON = factory.objectNode();
-		
+
 		// describe project:
 		projectJSON.put("name", project.getName());
 		projectJSON.put("variant", project.getVariant());
@@ -228,9 +237,9 @@ public class SapColCmdLn
 				formsJSON.add(formNode);
 		}
 		projectJSON.set("forms", formsJSON);
-		
+
 		// Serialise:
 		mapper.writeTree(generator, projectJSON);
 	}
-	
+
 }
