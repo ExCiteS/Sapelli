@@ -16,8 +16,22 @@
  * limitations under the License.
  */
 
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        // Gradle plugin for creating fat/uber JARs with support for package relocation.
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+    }
+}
+
 apply plugin: 'java'
-apply plugin: 'maven'
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 defaultTasks 'clean', 'install'
 
@@ -46,24 +60,20 @@ jar {
         attributes 'Main-Class': 'uk.ac.ucl.excites.sapelli.collector.packger.Packager'
     }
     // Include all dependencies in jar:
-    from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-    baseName = artifactId
-    version = project.version
-    classifier = 'with-dependencies'
-}
 
-// Installs jar to local Maven repository:
-install {
-    doFirst {
-        println project.name + ": package name: " + project.group
-        println project.name + ": package version: " + project.version
-        repositories.mavenInstaller {
-            pom.groupId = project.group
-            pom.artifactId = artifactId
-            pom.version = project.version
-            pom.packaging = 'jar'
-        }
+shadowJar {
+    // Name the file sapelli-collector-packager.jar
+    baseName = artifactId
+    classifier = 'with-dependencies'
+    version = version
+    mainClassName = 'uk.ac.ucl.excites.sapelli.packager.Packager'
+
+    manifest {
+        //noinspection GroovyAssignabilityCheck
+        attributes 'Implementation-Title': 'Sapelli Packager',
+                'Implementation-Version': version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-JDK': System.getProperty('java.version'),
+                'Created-By': 'Gradle'
     }
 }
