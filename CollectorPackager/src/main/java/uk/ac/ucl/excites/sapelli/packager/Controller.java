@@ -18,37 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.packager;
 
-import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-import lombok.extern.slf4j.Slf4j;
-
-/**
- * Created by Michalis on 25/05/2017.
- */
-@Slf4j
-public class Packager extends Application
+public class Controller
 {
-	@Override
-	public void start(Stage primaryStage) throws Exception
-	{
-		Parent root = FXMLLoader.load(getClass().getResource("/PackagerUI.fxml"));
-		primaryStage.setTitle("Sapelli Packager");
-		primaryStage.setScene(new Scene(root));
-		primaryStage.show();
-	}
-
-	public static void main(String[] args)
-	{
-		try
-		{
-			launch(args);
-		}
-		catch(Exception e)
-		{
-			log.error("Error while trying to load JavaFX: ", e);
-		}
-	}
 }
