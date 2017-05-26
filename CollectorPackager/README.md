@@ -49,3 +49,15 @@ Displays a report of the project dependencies that are up-to-date, exceed the la
 ```
 gradlew CollectorPackager:dependencyUpdates
 ```
+
+### Create .exe:
+Sapelli Packager has the gradle-launch4j that generates an executable (exe) out of the compiled fat jar. To create the exe, run:
+
+```
+gradlew CollectorPackager:launch4j
+```
+
+This will place the exe in:
+```
+..\CollectorPackager\build\launch4j\Sapelli Packager VERSION.exe
+```

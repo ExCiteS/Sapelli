@@ -17,57 +17,79 @@
  */
 
 plugins {
-    id 'java'
-    id 'application'
-    id "com.github.johnrengelman.shadow" version "2.0.0"
-    id 'com.github.ben-manes.versions' version '0.14.0'
+	id 'java'
+	id 'application'
+	id "com.github.johnrengelman.shadow" version "2.0.0"
+	id 'com.github.ben-manes.versions' version '0.14.0'
+	id 'edu.sc.seis.launch4j' version '2.3.0'
 }
 
 defaultTasks 'clean', 'install'
 
 def artifactId = 'sapelli-collector-packager'
+def packagerTitle = 'Sapelli Packager'
+def packagerMainClass = 'uk.ac.ucl.excites.sapelli.packager.Packager'
+def packagerVersion = project.version
 
 compileJava {
-    options.encoding = 'UTF-8'
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+	options.encoding = 'UTF-8'
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 dependencies {
-    // Sapelli Library:
-    compile project(':Library')
-    // Other dependencies:
-    //  For command line interaction:
-    compile 'commons-cli:commons-cli:1.4'
-    // Add Logging tools
-    compile 'ch.qos.logback:logback-classic:1.2.3'
-    compile 'org.slf4j:log4j-over-slf4j:1.7.25'
-    // Add JetBrains Annotations
-    compile 'org.jetbrains:annotations:15.0'
-    // Add project lombok
-    compile 'org.projectlombok:lombok:1.16.16'
+	// Sapelli Library:
+	compile project(':Library')
+	// Other dependencies:
+	//  For command line interaction:
+	compile 'commons-cli:commons-cli:1.4'
+	// Add Logging tools
+	compile 'ch.qos.logback:logback-classic:1.2.3'
+	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
+	// Add JetBrains Annotations
+	compile 'org.jetbrains:annotations:15.0'
+	// Add project lombok
+	compile 'org.projectlombok:lombok:1.16.16'
 }
 
 // Define Logger
 configurations.all {
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
-    exclude group: "log4j", module: "log4j"
+	exclude group: "org.slf4j", module: "slf4j-log4j12"
+	exclude group: "log4j", module: "log4j"
 }
 
-
+// Fat Jar
 shadowJar {
-    // Name the file sapelli-collector-packager.jar
-    baseName = artifactId
-    classifier = 'with-dependencies'
-    version = version
-    mainClassName = 'uk.ac.ucl.excites.sapelli.packager.Packager'
+	// Name the file sapelli-collector-packager.jar
+	baseName = artifactId
+	classifier = 'with-dependencies'
+	version = packagerVersion
+	mainClassName = packagerMainClass
 
-    manifest {
-        //noinspection GroovyAssignabilityCheck
-        attributes 'Implementation-Title': 'Sapelli Packager',
-                'Implementation-Version': version,
-                'Built-By': System.getProperty('user.name'),
-                'Built-JDK': System.getProperty('java.version'),
-                'Created-By': 'Gradle'
-    }
+	manifest {
+		//noinspection GroovyAssignabilityCheck
+		attributes 'Implementation-Title': packagerTitle,
+		  'Implementation-Version': packagerVersion,
+		  'Built-By': System.getProperty('user.name'),
+		  'Built-JDK': System.getProperty('java.version'),
+		  'Created-By': 'Gradle'
+	}
+}
+
+// Create an .exe
+launch4j {
+	outfile = packagerTitle + ' v' + packagerVersion + '.exe'
+	productName = packagerTitle
+	mainClassName = packagerMainClass
+	icon = "${project.projectDir}\\icon\\SapelliPackager.ico"
+	jar = "${project.buildDir}\\libs\\sapelli-collector-packager-2.0.0-SNAPSHOT-with-dependencies.jar"
+	
+	println "----------"
+	println "Packger to .exe"
+	println project.name + ": package name: " + project.group
+	println project.name + ": package version: " + project.version
+	println project.name + ": outfile: " + outfile
+	println project.name + ": icon: " + icon
+	println project.name + ": jar: " + jar
+	println "----------"
 }
