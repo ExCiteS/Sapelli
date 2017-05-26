@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,8 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.parse.ProjectParser;
@@ -273,28 +273,7 @@ public class ProjectLoader implements WarningKeeper
 			
 			// STEP 5 - Run post-processing tasks:
 			List<PostProcessTask> tasks = parser.getPostProcessingTasks();
-			if(!tasks.isEmpty())
-			{
-				if(postProcessor != null)
-				{
-					postProcessor.initialise(project);
-					for(PostProcessTask task : tasks)
-					{
-						try
-						{
-							task.execute(postProcessor, project, this);
-						}
-						catch(Exception e)
-						{
-							throw new Exception("Error on executing post-processing task", e);
-						}
-					}
-					
-					postProcessor.freeResources();
-				}
-				else
-					addWarning("Unable to perform " + tasks.size() + " post-processing");
-			}
+			runPostProcessingTasks(project, tasks);
 		}
 		catch(Exception e)
 		{
@@ -309,6 +288,94 @@ public class ProjectLoader implements WarningKeeper
 		return project;
 	}
 	
+	/**
+	 * Parses the given PROJECT.xml; returns the resulting Project object.
+	 *
+	 * @param projectFile a File for the PROJECT.xml
+	 * @return the loaded Project
+	 * @throws Exception
+	 */
+	public Project loadProjectFile(File projectFile) throws Exception
+	{
+		return loadProjectFile(FileHelpers.openInputStream(projectFile, true));
+	}
+
+	/**
+	 * Parses the given PROJECT.xml; returns the resulting Project object.
+	 *
+	 * @param projectFileInputStream an InputStream for the PROJECT.xml
+	 * @return the loaded Project
+	 * @throws Exception
+	 */
+	public Project loadProjectFile(InputStream projectFileInputStream) throws Exception
+	{
+		clearWarnings();
+		Project project = null;
+
+		try
+		{
+			// STEP 1 - Parse PROJECT.xml:
+			try
+			{
+				project = parser.parseProject(projectFileInputStream);
+			}
+			catch(Exception e)
+			{
+				throw new Exception("Error on parsing " + PROJECT_FILE, e);
+			}
+			// Copy parser warnings:
+			addWarnings(parser.getWarnings());
+
+			// STEP 2 - Check if project is acceptable:
+			checkProject(project); // throws IllegalArgumentException if something is wrong
+
+			// STEP 5 - Run post-processing tasks:
+			List<PostProcessTask> tasks = parser.getPostProcessingTasks();
+			runPostProcessingTasks(project, tasks);
+		}
+		catch(Exception e)
+		{
+			// Re-throw Exception:
+			throw e;
+		}
+
+		// Return project object:
+		return project;
+	}
+
+	/**
+	 * Run post-processing tasks:
+	 *
+	 * @param project a {@link Project}
+	 * @param tasks   List of {@link PostProcessTask}
+	 * @throws Exception exception
+	 */
+	private void runPostProcessingTasks(Project project, List<PostProcessTask> tasks) throws Exception
+	{
+		if(!tasks.isEmpty())
+		{
+			if(postProcessor != null)
+			{
+				postProcessor.initialise(project);
+				for(PostProcessTask task : tasks)
+				{
+					try
+					{
+						task.execute(postProcessor, project, this);
+					}
+					catch(Exception e)
+					{
+						throw new Exception("Error on executing post-processing task", e);
+					}
+				}
+
+				postProcessor.freeResources();
+			}
+			else
+				addWarning("Unable to perform " + tasks.size() + " post-processing");
+		}
+	}
+
 	/**
 	 * @param project
 	 * @throws IllegalArgumentException when the project is not acceptable
