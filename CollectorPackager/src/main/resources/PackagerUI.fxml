@@ -2,7 +2,10 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <AnchorPane fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
 			minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0"
 			stylesheets="@css/Packager.css" xmlns="http://javafx.com/javafx/8.0.112"
@@ -13,16 +16,42 @@
 	<children>
 
 		<!-- Directory label -->
-		<Label fx:id="labelDirectory" prefHeight="35" minHeight="35"
+		<Label fx:id="labelDirectory" minHeight="35" prefHeight="35"
 			   text="Please select the working directory of the Sapelli project"
-			   AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0"
-			   AnchorPane.topAnchor="0.0"/>
+			   AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0"/>
 
 		<!-- Browse Button-->
-		<Button fx:id="buttonBrowse" mnemonicParsing="false" prefHeight="35" minHeight="35"
-				onAction="#onBrowseButtonClicked" text="Browse" AnchorPane.rightAnchor="0.0"
-				AnchorPane.topAnchor="0.0"/>
+		<Button fx:id="buttonBrowse" minHeight="35" mnemonicParsing="false"
+				onAction="#onBrowseButtonClicked" prefHeight="35" text="Browse"
+				AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
 
+		<!-- Dir contents Label-->
+		<Label layoutY="37.0" text="Dir contents:" AnchorPane.leftAnchor="0.0"
+			   AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="40.0"/>
+
+		<!--VBox for Sapelli elements-->
+		<VBox layoutY="368.0" prefHeight="279.0" prefWidth="800.0" AnchorPane.bottomAnchor="241.0"
+			  AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="80.0">
+			<children>
+				<HBox prefHeight="56.0" prefWidth="800.0">
+					<children>
+						<Label text="PROJECT.XML"/>
+						<Label/>
+					</children>
+				</HBox>
+			</children>
+		</VBox>
+
+		<!--ScrollPanel with results-->
+		<ScrollPane layoutX="313.0" layoutY="375.0" prefHeight="237.0" prefWidth="800.0"
+					AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+					AnchorPane.rightAnchor="0.0">
+			<content>
+				<Label fx:id="labelResult" maxHeight="1.7976931348623157E308"
+					   maxWidth="1.7976931348623157E308" minHeight="-Infinity"
+					   minWidth="-Infinity"/>
+			</content>
+		</ScrollPane>
 
 	</children>
 </AnchorPane>
