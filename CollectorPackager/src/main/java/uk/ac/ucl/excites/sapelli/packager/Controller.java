@@ -36,6 +36,10 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 @Slf4j
 public class Controller
 {
+	// Directory for the Project Packager to work
+	private File sapelliProjectDir;
+
+	// UI
 	@FXML
 	private Button buttonBrowse;
 	@FXML
@@ -58,8 +62,10 @@ public class Controller
 		// Get the Directory Chooser
 		Stage stage = (Stage) anchorPane.getScene().getWindow();
 		DirectoryChooser directoryChooser = new DirectoryChooser();
+		if (sapelliProjectDir != null && sapelliProjectDir.exists())
+			directoryChooser.setInitialDirectory(sapelliProjectDir);
 		directoryChooser.setTitle("Select directory of project");
-		File sapelliProjectDir = directoryChooser.showDialog(stage);
+		sapelliProjectDir = directoryChooser.showDialog(stage);
 
 		// Ensure that the users has selected a dir
 		if(sapelliProjectDir != null)
