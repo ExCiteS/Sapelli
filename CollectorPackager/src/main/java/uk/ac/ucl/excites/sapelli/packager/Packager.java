@@ -22,6 +22,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +38,7 @@ public class Packager extends Application
 		Parent root = FXMLLoader.load(getClass().getResource("/PackagerUI.fxml"));
 		primaryStage.setTitle("Sapelli Packager");
 		primaryStage.setScene(new Scene(root));
+		primaryStage.getIcons().add(new Image("/icon/SapelliPackager.png"));
 		primaryStage.show();
 	}
 

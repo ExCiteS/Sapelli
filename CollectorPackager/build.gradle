@@ -81,7 +81,7 @@ launch4j {
 	outfile = packagerTitle + ' v' + packagerVersion + '.exe'
 	productName = packagerTitle
 	mainClassName = packagerMainClass
-	icon = "${project.projectDir}\\icon\\SapelliPackager.ico"
+	icon = "${project.buildDir}\\resources\\main\\icon\\SapelliPackager.ico"
 	jar = "${project.buildDir}\\libs\\sapelli-collector-packager-2.0.0-SNAPSHOT-with-dependencies.jar"
 	
 	println "----------"
