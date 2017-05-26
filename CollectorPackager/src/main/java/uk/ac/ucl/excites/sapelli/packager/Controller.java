@@ -18,6 +18,42 @@
 
 package uk.ac.ucl.excites.sapelli.packager;
 
+
+import java.io.File;
+
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Controller
 {
+	public Button buttonBrowse;
+	@FXML
+	private Label labelDirectory;
+	@FXML
+	private AnchorPane anchorPane;
+
+	/**
+	 * Method to be called when the Browse button is clicked
+	 *
+	 * @param actionEvent {@link ActionEvent}
+	 */
+	public void onBrowseButtonClicked(ActionEvent actionEvent)
+	{
+		Stage stage = (Stage) anchorPane.getScene().getWindow();
+		DirectoryChooser directoryChooser = new DirectoryChooser();
+		directoryChooser.setTitle("Select directory of project");
+		File sapelliProjectDir = directoryChooser.showDialog(stage);
+
+		log.debug("Selected dir: {}", sapelliProjectDir);
+
+		if(sapelliProjectDir != null)
+			labelDirectory.setText("Working dir: " + sapelliProjectDir.toString());
+	}
 }
