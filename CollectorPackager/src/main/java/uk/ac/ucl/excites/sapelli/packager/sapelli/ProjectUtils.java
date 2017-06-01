@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.packager;
+package uk.ac.ucl.excites.sapelli.packager.sapelli;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;

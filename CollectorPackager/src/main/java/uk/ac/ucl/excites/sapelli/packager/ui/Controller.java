@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.packager;
+package uk.ac.ucl.excites.sapelli.packager.ui;
 
 
 import java.io.File;
@@ -30,6 +30,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
+import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 
 @Slf4j
 public class Controller
@@ -102,7 +103,7 @@ public class Controller
 			labelDirectory.setText("Please select a directory...");
 		}
 
-		// TODO: 01/06/2017 Continue the validation here 
+		// TODO: 01/06/2017 Continue the validation here
 
 	}
 

@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.packager;
+package uk.ac.ucl.excites.sapelli.packager.sapelli;
 
 import java.io.File;
 
