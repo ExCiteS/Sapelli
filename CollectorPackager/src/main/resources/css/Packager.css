@@ -1,3 +1,7 @@
 #labelDirectory {
-    -fx-background-color: greenyellow;
+    -fx-background-color: #EFE6DD;
+}
+
+.accordion .titled-pane > *.content{
+    -fx-background-color: #BB4430 ;
 }
