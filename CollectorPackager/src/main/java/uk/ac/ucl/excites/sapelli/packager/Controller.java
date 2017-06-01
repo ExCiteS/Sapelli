@@ -25,19 +25,18 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 
 @Slf4j
 public class Controller
 {
+
 	// Directory for the Project Packager to work
-	private File sapelliProjectDir;
+	private ProjectChecker projectChecker;
 
 	// UI
 	@FXML
@@ -48,6 +47,14 @@ public class Controller
 	private AnchorPane anchorPane;
 	@FXML
 	private Label labelResult;
+	@FXML
+	private TitledPane accordionProjectXML;
+	@FXML
+	private TitledPane accordionImg;
+	@FXML
+	private TitledPane accordionSnd;
+	@FXML
+	private TitledPane accordionResources;
 
 
 	/**
@@ -57,55 +64,46 @@ public class Controller
 	 */
 	public void onBrowseButtonClicked(ActionEvent actionEvent)
 	{
-		resetUI();
-
 		// Get the Directory Chooser
-		Stage stage = (Stage) anchorPane.getScene().getWindow();
-		DirectoryChooser directoryChooser = new DirectoryChooser();
-		if (sapelliProjectDir != null && sapelliProjectDir.exists())
-			directoryChooser.setInitialDirectory(sapelliProjectDir);
+		final Stage stage = (Stage) anchorPane.getScene().getWindow();
+		final DirectoryChooser directoryChooser = new DirectoryChooser();
+		if(projectChecker != null && projectChecker.sapelliProjectDirExists())
+			directoryChooser.setInitialDirectory(projectChecker.getSapelliProjectDir());
 		directoryChooser.setTitle("Select directory of project");
-		sapelliProjectDir = directoryChooser.showDialog(stage);
+		final File sapelliProjectDir = directoryChooser.showDialog(stage);
 
-		// Ensure that the users has selected a dir
-		if(sapelliProjectDir != null)
+		// Ensure that the user has selected something
+		if(sapelliProjectDir == null)
+			return;
+
+		// Create a new Project Checker
+		projectChecker = new ProjectChecker(sapelliProjectDir);
+
+		// Update UI
+		updateUI();
+	}
+
+	/**
+	 * Update the UI
+	 */
+	private void updateUI()
+	{
+		// TODO: 26/05/2017 Reset all UI elements
+
+		// * Update Working Dir
+		if(projectChecker.sapelliProjectDirExists())
 		{
-			// Set the label to the UI
-			labelDirectory.setText("Working dir: " + sapelliProjectDir.toString());
-			loadProject(sapelliProjectDir);
+			labelDirectory.setStyle("-fx-background-color: #7EBDC2");
+			labelDirectory.setText("Working dir: " + projectChecker.getSapelliProjectDir().toString());
 		}
 		else
 		{
-			// TODO: 26/05/2017 Inform the user
+			labelDirectory.setStyle("-fx-background-color: red");
+			labelDirectory.setText("Please select a directory...");
 		}
-	}
 
-	private void loadProject(File sapelliProjectDir)
-	{
-		// Get the PROJECT.xml file
-		File PROJECT_xml = ProjectLoader.GetProjectXMLFile(sapelliProjectDir);
+		// TODO: 01/06/2017 Continue the validation here 
 
-		if(PROJECT_xml.exists())
-		{
-
-			FileStorageProvider fsp = new FileStorageProvider(sapelliProjectDir, new File(System.getProperty("java.io.tmpdir")));
-			ProjectLoader projectLoader = new ProjectLoader(fsp);
-
-			try
-			{
-				Project project = projectLoader.loadProjectFile(PROJECT_xml);
-				labelResult.setText(ProjectUtils.printProjectInfo(project));
-			}
-			catch(Exception e)
-			{
-				log.error("Error while loading the project:", e);
-			}
-		}
-	}
-
-	private void resetUI()
-	{
-		// TODO: 26/05/2017 Reset all UI elements 
 	}
 
 }
