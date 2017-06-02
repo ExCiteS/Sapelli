@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
+import uk.ac.ucl.excites.sapelli.shared.util.ErrorKeeper;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
@@ -45,7 +46,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
  * 
  * @author mstevens, Michalis Vitos
  */
-public class ProjectLoader implements WarningKeeper
+public class ProjectLoader implements WarningKeeper, ErrorKeeper
 {
 	
 	// STATICS -----------------------------------------------------------
@@ -176,7 +177,8 @@ public class ProjectLoader implements WarningKeeper
 	private final ProjectChecker checker;
 	private final PostProcessor postProcessor;
 	private List<String> warnings;
-	
+	private List<String> errors;
+
 	private final ProjectParser parser;
 
 	/**
@@ -224,6 +226,7 @@ public class ProjectLoader implements WarningKeeper
 	public Project load(InputStream sapelliFileInputStream) throws Exception
 	{
 		clearWarnings();
+		clearErrors();
 		Project project = null;
 		File extractFolder = null;
 		try
@@ -251,11 +254,14 @@ public class ProjectLoader implements WarningKeeper
 			}
 			catch(Exception e)
 			{
+				// Copy error:
+				addError(e.getLocalizedMessage());
+
 				throw new Exception("Error on parsing " + PROJECT_FILE, e);
 			}
 			// Copy parser warnings:
 			addWarnings(parser.getWarnings());
-			
+
 			// STEP 3 - Check if project is acceptable:
 			checkProject(project); // throws IllegalArgumentException if something is wrong
 
@@ -310,6 +316,7 @@ public class ProjectLoader implements WarningKeeper
 	public Project loadProjectFile(InputStream projectFileInputStream) throws Exception
 	{
 		clearWarnings();
+		clearErrors();
 		Project project = null;
 
 		try
@@ -321,6 +328,9 @@ public class ProjectLoader implements WarningKeeper
 			}
 			catch(Exception e)
 			{
+				// Copy error:
+				addError(e.getLocalizedMessage());
+
 				throw new Exception("Error on parsing " + PROJECT_FILE, e);
 			}
 			// Copy parser warnings:
@@ -411,6 +421,7 @@ public class ProjectLoader implements WarningKeeper
 	public Project loadParseOnly(InputStream sapelliFileStream) throws Exception
 	{
 		clearWarnings();
+		clearErrors();
 		try
 		{	// Parse PROJECT.xml:
 			Project project = parser.parseProject(Unzipper.getInputStreamForFileInZip(sapelliFileStream, PROJECT_FILE));
@@ -423,6 +434,9 @@ public class ProjectLoader implements WarningKeeper
 		}
 		catch(Exception e)
 		{
+			// Copy error:
+			addError(e.getLocalizedMessage());
+
 			throw new Exception("Error on parsing " + PROJECT_FILE, e);
 		}
 	}
@@ -454,7 +468,36 @@ public class ProjectLoader implements WarningKeeper
 	{
 		warnings = null;
 	}
-	
+
+	@Override
+	public void addError(String error)
+	{
+		if(error == null)
+			errors = new ArrayList<String>();
+		errors.add(error);
+
+	}
+
+	@Override
+	public void addErrors(Collection<String> errors)
+	{
+		if(this.errors == null)
+			this.errors = new ArrayList<>();
+		this.errors.addAll(errors);
+	}
+
+	@Override
+	public List<String> getErrors()
+	{
+		return errors != null ? errors : Collections.<String> emptyList();
+	}
+
+	@Override
+	public void clearErrors()
+	{
+		errors = null;
+	}
+
 	/**
 	 * Callback interface for checking Project acceptance
 	 * 
