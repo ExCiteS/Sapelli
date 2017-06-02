@@ -94,27 +94,32 @@ public class Controller
 	{
 		// TODO: 26/05/2017 Reset all UI elements
 
-		// * Update Working Dir
+		// * Update Working Dir Or return
 		if(projectChecker.sapelliProjectDirExists())
 		{
 			labelDirectory.setStyle("-fx-background-color: #7EBDC2");
-			labelDirectory.setText("Working dir: " + projectChecker.getSapelliProjectDir().toString());
+			labelDirectory.setText(projectChecker.getSapelliProjectDir().toString());
 		}
 		else
 		{
 			labelDirectory.setStyle("-fx-background-color: red");
 			labelDirectory.setText("Please select a directory...");
+			return;
 		}
 
+		// Check if PROJECT.XML exists
 		if(projectChecker.projectXmlExists())
 		{
 			accordion.setExpandedPane(accordionProjectXML);
-			// TODO: 02/06/2017 Check Projects 
+			// TODO: 02/06/2017 Check Projects
 		}
 		else
 		{
+			// Inform the user that the PROJECT.XML does not exist
+			setErrorTitledPaneStyle(accordionProjectXML);
+			// TODO: 02/06/2017 Inform user
+
 			// Reset
-			setDefaultTitledPaneStyle(accordionProjectXML);
 			setDefaultTitledPaneStyle(accordionImg);
 			setDefaultTitledPaneStyle(accordionSnd);
 			setDefaultTitledPaneStyle(accordionResources);
@@ -124,6 +129,11 @@ public class Controller
 		// TODO: 01/06/2017 Continue the validation here
 	}
 
+	/**
+	 * Set the accordion-default style to a given {@link TitledPane}
+	 *
+	 * @param pane a {@link TitledPane}
+	 */
 	private void setDefaultTitledPaneStyle(TitledPane pane)
 	{
 		// Set style
@@ -134,6 +144,11 @@ public class Controller
 		pane.setDisable(true);
 	}
 
+	/**
+	 * Set the accordion-error style to a given {@link TitledPane}
+	 *
+	 * @param pane a {@link TitledPane}
+	 */
 	private void setErrorTitledPaneStyle(TitledPane pane)
 	{
 		// Set style
@@ -144,6 +159,11 @@ public class Controller
 		pane.setDisable(false);
 	}
 
+	/**
+	 * Set the accordion-success style to a given {@link TitledPane}
+	 *
+	 * @param pane a {@link TitledPane}
+	 */
 	private void setSuccessTitledPaneStyle(TitledPane pane)
 	{
 		// Set style
