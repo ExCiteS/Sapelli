@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.packager.ui;
 
 
 import java.io.File;
+import java.util.List;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -124,13 +125,40 @@ public class Controller
 		// 2: Check if PROJECT.XML exists
 		if(projectChecker.projectXmlExists())
 		{
-			// Inform the user that the PROJECT.XML does not exist
-			final Project project = projectChecker.getProject();
-			setSuccessTitledPaneStyle(accordionProjectXML);
-			labelProjectXML.setText(ProjectUtils.printProjectInfo(project));
+			// Expand the Accordion
 			accordion.setExpandedPane(accordionProjectXML);
 
-			// TODO: 02/06/2017 Check Projects
+			// Get Project, Warnings and Errors
+			final Project project = projectChecker.getProject();
+			final List<String> warnings = projectChecker.getWarnings();
+			final List<String> errors = projectChecker.getErrors();
+
+			// CASE 1: SUCCESS
+			// Project exists, no warnings, no errors
+			if(project != null && warnings.isEmpty() && errors.isEmpty())
+			{
+				setSuccessTitledPaneStyle(accordionProjectXML);
+				labelProjectXML.setText(ProjectUtils.printProjectInfo(project));
+			}
+			// CASE 2: WARNINGS
+			// Project exists with warnings, no errors
+			if(project != null && !warnings.isEmpty() && errors.isEmpty())
+			{
+				setWarningTitledPaneStyle(accordionProjectXML);
+				// TODO: Fix this
+				labelProjectXML.setText(warnings.toString());
+			}
+
+			// CASE 3: ERROR
+			// Project does not exists or there are errors
+			if(project == null || !errors.isEmpty())
+			{
+				setErrorTitledPaneStyle(accordionProjectXML);
+				// TODO: Fix this
+				labelProjectXML.setText(errors.toString());
+			}
+
+			// TODO: 02/06/2017 Continue this?
 		}
 		else
 		{
