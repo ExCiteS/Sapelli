@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.packager.sapelli;
 
 import java.io.File;
+import java.util.List;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +89,7 @@ public class ProjectChecker
 	{
 		return project_img.exists();
 	}
+
 	/**
 	 * Check if the /snd directory exists.
 	 *
@@ -106,5 +108,25 @@ public class ProjectChecker
 	public boolean projectResourcesExists()
 	{
 		return project_resources.exists();
+	}
+
+	/**
+	 * Get a list of the available Warnings, while trying to load the PROJECT.xml
+	 *
+	 * @return the list of Warnings
+	 */
+	public List<String> getWarnings()
+	{
+		return projectLoader.getWarnings();
+	}
+
+	/**
+	 * Get a list of the available Errors, while trying to load the PROJECT.xml
+	 *
+	 * @return the list of Errors
+	 */
+	public List<String> getErrors()
+	{
+		return projectLoader.getErrors();
 	}
 }
