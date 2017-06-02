@@ -25,10 +25,10 @@ public class ProjectChecker
 	private ProjectLoader projectLoader;
 
 	// Sapelli Structure Files:
-	private final File project_xml;
-	private final File project_img;
-	private final File project_snd;
-	private final File project_resources;
+	private File project_xml;
+	private File project_img;
+	private File project_snd;
+	private File project_resources;
 
 	/**
 	 * Constructor for a {@link ProjectChecker}
@@ -36,6 +36,11 @@ public class ProjectChecker
 	 * @param sapelliProjectDir The directory to check for a valid Sapelli project
 	 */
 	public ProjectChecker(File sapelliProjectDir)
+	{
+		init(sapelliProjectDir);
+	}
+
+	private void init(File sapelliProjectDir)
 	{
 		this.sapelliProjectDir = sapelliProjectDir;
 		// Get the PROJECT.xml file
@@ -58,6 +63,14 @@ public class ProjectChecker
 				log.error("Error while loading the project:", e);
 			}
 		}
+	}
+
+	/**
+	 * Refresh the Project Checker and recalculate eveyrthing
+	 */
+	public void refresh()
+	{
+		init(sapelliProjectDir);
 	}
 
 	/**

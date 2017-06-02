@@ -95,6 +95,22 @@ public class Controller
 	}
 
 	/**
+	 * Method to be called when the Refresh button is clicked
+	 *
+	 * @param actionEvent {@link ActionEvent}
+	 */
+	public void onRefreshButtonClicked(ActionEvent actionEvent)
+	{
+		if(projectChecker == null)
+			return;
+
+		projectChecker.refresh();
+
+		// Update UI
+		updateUI();
+	}
+
+	/**
 	 * Update the UI
 	 */
 	private void updateUI()
