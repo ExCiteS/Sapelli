@@ -31,7 +31,9 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
+import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
 
 @Slf4j
 public class Controller
@@ -61,6 +63,8 @@ public class Controller
 	private TitledPane accordionSnd;
 	@FXML
 	private TitledPane accordionResources;
+	@FXML
+	public Label labelProjectXML;
 
 
 	/**
@@ -120,14 +124,22 @@ public class Controller
 		// 2: Check if PROJECT.XML exists
 		if(projectChecker.projectXmlExists())
 		{
+			// Inform the user that the PROJECT.XML does not exist
+			final Project project = projectChecker.getProject();
+			setSuccessTitledPaneStyle(accordionProjectXML);
+			labelProjectXML.setText(ProjectUtils.printProjectInfo(project));
 			accordion.setExpandedPane(accordionProjectXML);
+
 			// TODO: 02/06/2017 Check Projects
 		}
 		else
 		{
 			// Inform the user that the PROJECT.XML does not exist
 			setErrorTitledPaneStyle(accordionProjectXML);
-			// TODO: 02/06/2017 Inform user
+			// Set text to inform user
+			labelProjectXML.setText("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
+			// Expand the accordion
+			accordion.setExpandedPane(accordionProjectXML);
 
 			// Reset
 			setDefaultTitledPaneStyle(accordionImg);
