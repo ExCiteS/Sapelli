@@ -1,7 +1,19 @@
-#labelDirectory {
+/* Working Dir*/
+.working-dir-default {
     -fx-background-color: #EFE6DD;
 }
 
+.working-dir-error {
+    -fx-background-color: #BB4430;
+    -fx-text-fill: white;
+}
+
+.working-dir-success {
+    -fx-background-color: #7EBDC2;
+    -fx-text-fill: white;
+}
+
+/* Accordion */
 .accordion .titled-pane > *.content {
     -fx-background-color: white;
 }

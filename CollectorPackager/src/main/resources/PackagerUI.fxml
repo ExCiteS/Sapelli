@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Accordion?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -10,36 +11,43 @@
 
 	<!--AnchorPane children-->
 	<children>
+		<AnchorPane fx:id="anchorPanelDirectory" prefHeight="50.0" styleClass="working-dir-default" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+			<padding>
+				<Insets bottom="10.0" left="15.0" right="15.0" top="10.0" />
+			</padding>
+			<children>
 
-		<!-- Directory label -->
-		<Label fx:id="labelDirectory" minHeight="35" prefHeight="35" text="Please select the working directory of the Sapelli project" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0" />
+				<!-- Directory label -->
+				<Label fx:id="labelDirectory" text="Please select the working directory of the Sapelli project" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
 
-		<!-- Browse Button-->
-		<Button fx:id="buttonBrowse" minHeight="35" mnemonicParsing="false" onAction="#onBrowseButtonClicked" prefHeight="35" text="Browse" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-      <Accordion fx:id="accordion" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="35.0">
-        <panes>
-          <TitledPane fx:id="accordionProjectXML" styleClass="accordion-default" disable="true" text="PROJECT.xml">
-            <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
-            </content>
-          </TitledPane>
-          <TitledPane fx:id="accordionImg" animated="false" styleClass="accordion-default" disable="true" text="img">
-            <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
-            </content>
-          </TitledPane>
-          <TitledPane fx:id="accordionSnd" animated="false" styleClass="accordion-default" disable="true" text="snd">
-            <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
-            </content>
-          </TitledPane>
-            <TitledPane fx:id="accordionResources" animated="false" styleClass="accordion-default" disable="true" text="resources">
-               <content>
-                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
-               </content>
-            </TitledPane>
-        </panes>
-      </Accordion>
+				<!-- Browse Button-->
+				<Button fx:id="buttonBrowse" mnemonicParsing="false" onAction="#onBrowseButtonClicked" text="Browse" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+			</children>
+		</AnchorPane>
+		<Accordion fx:id="accordion" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="50.0">
+			<panes>
+				<TitledPane fx:id="accordionProjectXML" disable="true" styleClass="accordion-default" text="PROJECT.xml">
+					<content>
+						<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+					</content>
+				</TitledPane>
+				<TitledPane fx:id="accordionImg" animated="false" disable="true" styleClass="accordion-default" text="img">
+					<content>
+						<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+					</content>
+				</TitledPane>
+				<TitledPane fx:id="accordionSnd" animated="false" disable="true" styleClass="accordion-default" text="snd">
+					<content>
+						<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+					</content>
+				</TitledPane>
+				<TitledPane fx:id="accordionResources" animated="false" disable="true" styleClass="accordion-default" text="resources">
+					<content>
+						<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+					</content>
+				</TitledPane>
+			</panes>
+		</Accordion>
 
 
 	</children>

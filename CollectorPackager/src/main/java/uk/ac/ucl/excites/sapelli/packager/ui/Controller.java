@@ -39,10 +39,12 @@ public class Controller
 
 	// Directory for the Project Packager to work
 	private ProjectChecker projectChecker;
+
 	// UI
 	@FXML
+	public AnchorPane anchorPanelDirectory;
+	@FXML
 	private Button buttonBrowse;
-
 	@FXML
 	private Label labelDirectory;
 	@FXML
@@ -94,20 +96,28 @@ public class Controller
 	{
 		// TODO: 26/05/2017 Reset all UI elements
 
-		// * Update Working Dir Or return
+		// 1: Update Working Dir Or return
 		if(projectChecker.sapelliProjectDirExists())
 		{
-			labelDirectory.setStyle("-fx-background-color: #7EBDC2");
+			// Set style
+			anchorPanelDirectory.getStyleClass().clear();
+			anchorPanelDirectory.getStyleClass().add("working-dir-success");
+
+			// Set text
 			labelDirectory.setText(projectChecker.getSapelliProjectDir().toString());
 		}
 		else
 		{
-			labelDirectory.setStyle("-fx-background-color: red");
+			// Set style
+			anchorPanelDirectory.getStyleClass().clear();
+			anchorPanelDirectory.getStyleClass().add("working-dir-error");
+
+			// Set text and exit
 			labelDirectory.setText("Please select a directory...");
 			return;
 		}
 
-		// Check if PROJECT.XML exists
+		// 2: Check if PROJECT.XML exists
 		if(projectChecker.projectXmlExists())
 		{
 			accordion.setExpandedPane(accordionProjectXML);
