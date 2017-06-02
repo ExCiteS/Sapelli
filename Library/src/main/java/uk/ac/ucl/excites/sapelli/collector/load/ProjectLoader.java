@@ -472,7 +472,7 @@ public class ProjectLoader implements WarningKeeper, ErrorKeeper
 	@Override
 	public void addError(String error)
 	{
-		if(error == null)
+		if(errors == null)
 			errors = new ArrayList<String>();
 		errors.add(error);
 
