@@ -23,6 +23,7 @@ import java.io.File;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TitledPane;
@@ -38,16 +39,18 @@ public class Controller
 
 	// Directory for the Project Packager to work
 	private ProjectChecker projectChecker;
-
 	// UI
 	@FXML
 	private Button buttonBrowse;
+
 	@FXML
 	private Label labelDirectory;
 	@FXML
 	private AnchorPane anchorPane;
 	@FXML
 	private Label labelResult;
+	@FXML
+	public Accordion accordion;
 	@FXML
 	private TitledPane accordionProjectXML;
 	@FXML
@@ -103,8 +106,52 @@ public class Controller
 			labelDirectory.setText("Please select a directory...");
 		}
 
-		// TODO: 01/06/2017 Continue the validation here
+		if(projectChecker.projectXmlExists())
+		{
+			accordion.setExpandedPane(accordionProjectXML);
+			// TODO: 02/06/2017 Check Projects 
+		}
+		else
+		{
+			// Reset
+			setDefaultTitledPaneStyle(accordionProjectXML);
+			setDefaultTitledPaneStyle(accordionImg);
+			setDefaultTitledPaneStyle(accordionSnd);
+			setDefaultTitledPaneStyle(accordionResources);
+		}
 
+
+		// TODO: 01/06/2017 Continue the validation here
+	}
+
+	private void setDefaultTitledPaneStyle(TitledPane pane)
+	{
+		// Set style
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-success");
+		pane.getStyleClass().add("accordion-default");
+
+		// Disable
+		pane.setDisable(true);
+	}
+
+	private void setErrorTitledPaneStyle(TitledPane pane)
+	{
+		// Set style
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-success");
+		pane.getStyleClass().add("accordion-error");
+
+		// Disable
+		pane.setDisable(false);
+	}
+
+	private void setSuccessTitledPaneStyle(TitledPane pane)
+	{
+		// Set style
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-success");
+		pane.getStyleClass().add("accordion-success");
+
+		// Disable
+		pane.setDisable(false);
 	}
 
 }

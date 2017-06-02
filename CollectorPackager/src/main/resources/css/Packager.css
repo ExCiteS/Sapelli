@@ -2,6 +2,24 @@
     -fx-background-color: #EFE6DD;
 }
 
-.accordion .titled-pane > *.content{
-    -fx-background-color: #BB4430 ;
+.accordion .titled-pane > *.content {
+    -fx-background-color: white;
+}
+
+.titled-pane > .title {
+    -fx-background-color: transparent;
+}
+
+.accordion > .accordion-default {
+    -fx-background-color: #f0f0f0;
+}
+
+.accordion > .accordion-error {
+    -fx-background-color: #BB4430;
+    -fx-text-fill: white;
+}
+
+.accordion > .accordion-success {
+    -fx-background-color: #79C16C;
+    -fx-text-fill: white;
 }
