@@ -159,7 +159,7 @@ public class Controller
 	private void setDefaultTitledPaneStyle(TitledPane pane)
 	{
 		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-success");
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
 		pane.getStyleClass().add("accordion-default");
 
 		// Disable
@@ -174,8 +174,23 @@ public class Controller
 	private void setErrorTitledPaneStyle(TitledPane pane)
 	{
 		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-success");
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
 		pane.getStyleClass().add("accordion-error");
+
+		// Disable
+		pane.setDisable(false);
+	}
+
+	/**
+	 * Set the accordion-success style to a given {@link TitledPane}
+	 *
+	 * @param pane a {@link TitledPane}
+	 */
+	private void setWarningTitledPaneStyle(TitledPane pane)
+	{
+		// Set style
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
+		pane.getStyleClass().add("accordion-warning");
 
 		// Disable
 		pane.setDisable(false);
@@ -189,7 +204,7 @@ public class Controller
 	private void setSuccessTitledPaneStyle(TitledPane pane)
 	{
 		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-success");
+		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
 		pane.getStyleClass().add("accordion-success");
 
 		// Disable

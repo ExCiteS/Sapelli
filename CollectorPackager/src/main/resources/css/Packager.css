@@ -31,8 +31,13 @@
     -fx-text-fill: white;
 }
 
+.accordion > .accordion-warning {
+    -fx-background-color: #f8ab33;
+    -fx-text-fill: black;
+}
+
 .accordion > .accordion-success {
-    -fx-background-color: #79C16C;
+    -fx-background-color: #71b864;
     -fx-text-fill: white;
 }
 
