@@ -111,6 +111,18 @@ public class Controller
 	}
 
 	/**
+	 * Method to be called when the Package button is clicked
+	 *
+	 * @param actionEvent {@link ActionEvent}
+	 */
+	public void onPackageButtonClicked(ActionEvent actionEvent)
+	{
+		log.info("Package button has been clidked: {}", actionEvent);
+
+		// TODO: 05/06/2017 ZIP files 
+	}
+
+	/**
 	 * Update the UI
 	 */
 	private void updateUI()
