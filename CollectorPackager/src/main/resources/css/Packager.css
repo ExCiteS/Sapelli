@@ -70,3 +70,17 @@
 #package-button Text {
     -fx-effect: dropshadow(one-pass-box, rgba(0, 0, 0, 0.8), 0, 0.0, 0, 1);
 }
+
+#package-button:hover {
+    -fx-background-color: #000000,
+    linear-gradient(#7ebcea, #395fad),
+    linear-gradient(#426ab7, #2b4f8b),
+    linear-gradient(#395cab, #2c4986);
+}
+
+#package-button:pressed {
+    -fx-background-color: #2e2e2e,
+    linear-gradient(#7ebcea, #406ec6),
+    linear-gradient(#426ab7, #3968b8),
+    linear-gradient(#395cab, #3d68bc);
+}

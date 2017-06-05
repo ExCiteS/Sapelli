@@ -49,6 +49,8 @@ public class Controller
 	@FXML
 	private Button buttonBrowse;
 	@FXML
+	private Button buttonPackage;
+	@FXML
 	private Label labelDirectory;
 	@FXML
 	private AnchorPane anchorPane;
@@ -119,7 +121,7 @@ public class Controller
 	{
 		log.info("Package button has been clidked: {}", actionEvent);
 
-		// TODO: 05/06/2017 ZIP files 
+		// TODO: 05/06/2017 ZIP files
 	}
 
 	/**
@@ -167,12 +169,19 @@ public class Controller
 			{
 				setSuccessTitledPaneStyle(accordionProjectXML);
 				labelProjectXML.setText(ProjectUtils.printProjectInfo(project));
+
+				// Enable the Package button
+				buttonPackage.setDisable(false);
 			}
 			// CASE 2: WARNINGS
 			// Project exists with warnings, no errors
 			if(project != null && !warnings.isEmpty() && errors.isEmpty())
 			{
 				setWarningTitledPaneStyle(accordionProjectXML);
+
+				// Disable the Package button
+				buttonPackage.setDisable(true);
+
 				// TODO: Fix this
 				labelProjectXML.setText(warnings.toString());
 			}
@@ -182,6 +191,10 @@ public class Controller
 			if(project == null || !errors.isEmpty())
 			{
 				setErrorTitledPaneStyle(accordionProjectXML);
+
+				// Disable the Package button
+				buttonPackage.setDisable(true);
+
 				// TODO: Fix this
 				labelProjectXML.setText(errors.toString());
 			}
@@ -196,6 +209,9 @@ public class Controller
 			labelProjectXML.setText("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
 			// Expand the accordion
 			accordion.setExpandedPane(accordionProjectXML);
+
+			// Disable the Package button
+			buttonPackage.setDisable(true);
 
 			// Reset
 			setDefaultTitledPaneStyle(accordionImg);

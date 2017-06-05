@@ -64,7 +64,7 @@
 		</Accordion>
       <StackPane id="package-container" prefHeight="50.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
          <children>
-            <Button id="package-button" fx:id="buttonPackage" mnemonicParsing="false" onAction="#onPackageButtonClicked" text="Package" />
+            <Button id="package-button" fx:id="buttonPackage" disable="true" mnemonicParsing="false" onAction="#onPackageButtonClicked" text="Package" />
          </children>
       </StackPane>
 
