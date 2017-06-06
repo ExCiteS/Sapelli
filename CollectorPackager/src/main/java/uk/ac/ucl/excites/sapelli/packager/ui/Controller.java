@@ -128,11 +128,11 @@ public class Controller
 			ProjectZipper projectZipper = new ProjectZipper(projectChecker);
 			projectZipper.zipProject();
 
-			// TODO: 06/06/2017 Inform user 
+			// TODO: 06/06/2017 Inform user
 		}
 		catch(Exception e)
 		{
-			log.error("Errow while Zipping project", e);
+			log.error("Error while Zipping project", e);
 		}
 	}
 
@@ -174,10 +174,11 @@ public class Controller
 			final Project project = projectChecker.getProject();
 			final List<String> warnings = projectChecker.getWarnings();
 			final List<String> errors = projectChecker.getErrors();
+			final List<String> missing = projectChecker.getMissingFiles();
 
 			// CASE 1: SUCCESS
-			// Project exists, no warnings, no errors
-			if(project != null && warnings.isEmpty() && errors.isEmpty())
+			// Project exists, no warnings, no errors, no missing files
+			if(project != null && warnings.isEmpty() && errors.isEmpty() && missing.isEmpty())
 			{
 				setSuccessTitledPaneStyle(accordionProjectXML);
 				labelProjectXML.setText(ProjectUtils.printProjectInfo(project));
@@ -186,8 +187,8 @@ public class Controller
 				buttonPackage.setDisable(false);
 			}
 			// CASE 2: WARNINGS
-			// Project exists with warnings, no errors
-			if(project != null && !warnings.isEmpty() && errors.isEmpty())
+			// Project exists with warnings or missing files, no errors
+			if(project != null && (!warnings.isEmpty() || !missing.isEmpty()) && errors.isEmpty())
 			{
 				setWarningTitledPaneStyle(accordionProjectXML);
 
@@ -195,7 +196,7 @@ public class Controller
 				buttonPackage.setDisable(true);
 
 				// TODO: Fix this
-				labelProjectXML.setText(warnings.toString());
+				labelProjectXML.setText(warnings.toString() + "\n\n" + missing.toString());
 			}
 
 			// CASE 3: ERROR

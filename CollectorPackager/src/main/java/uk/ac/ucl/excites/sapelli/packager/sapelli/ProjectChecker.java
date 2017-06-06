@@ -146,4 +146,15 @@ public class ProjectChecker
 	{
 		return projectLoader.getErrors();
 	}
+
+	/**
+	 * Get a list of paths (relative to the project path) of files that are referred to by (forms of)
+	 * this project but which could not be found or accessed
+	 *
+	 * @return list of Paths
+	 */
+	public List<String> getMissingFiles()
+	{
+		return project.getMissingFilesRelativePaths(fsp);
+	}
 }
