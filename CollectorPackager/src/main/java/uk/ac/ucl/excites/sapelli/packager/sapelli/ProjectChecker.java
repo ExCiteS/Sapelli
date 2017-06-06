@@ -25,10 +25,14 @@ public class ProjectChecker
 	private ProjectLoader projectLoader;
 
 	// Sapelli Structure Files:
-	private File project_xml;
-	private File project_img;
-	private File project_snd;
-	private File project_resources;
+	@Getter
+	private File projectXml;
+	@Getter
+	private File projectImg;
+	@Getter
+	private File projectSnd;
+	@Getter
+	private File projectResources;
 
 	/**
 	 * Constructor for a {@link ProjectChecker}
@@ -44,10 +48,10 @@ public class ProjectChecker
 	{
 		this.sapelliProjectDir = sapelliProjectDir;
 		// Get the PROJECT.xml file
-		project_xml = ProjectLoader.GetProjectXMLFile(sapelliProjectDir);
-		project_img = new File(sapelliProjectDir, FileStorageProvider.IMAGE_FOLDER);
-		project_snd = new File(sapelliProjectDir, FileStorageProvider.SOUND_FOLDER);
-		project_resources = new File(sapelliProjectDir, FileStorageProvider.RES_FOLDER);
+		projectXml = ProjectLoader.GetProjectXMLFile(sapelliProjectDir);
+		projectImg = new File(sapelliProjectDir, FileStorageProvider.IMAGE_FOLDER);
+		projectSnd = new File(sapelliProjectDir, FileStorageProvider.SOUND_FOLDER);
+		projectResources = new File(sapelliProjectDir, FileStorageProvider.RES_FOLDER);
 
 		if(projectXmlExists())
 		{
@@ -56,7 +60,7 @@ public class ProjectChecker
 
 			try
 			{
-				project = projectLoader.loadProjectFile(project_xml);
+				project = projectLoader.loadProjectFile(projectXml);
 			}
 			catch(Exception e)
 			{
@@ -90,7 +94,7 @@ public class ProjectChecker
 	 */
 	public boolean projectXmlExists()
 	{
-		return project_xml.exists();
+		return projectXml.exists();
 	}
 
 	/**
@@ -100,7 +104,7 @@ public class ProjectChecker
 	 */
 	public boolean projectImgExists()
 	{
-		return project_img.exists();
+		return projectImg.exists();
 	}
 
 	/**
@@ -110,7 +114,7 @@ public class ProjectChecker
 	 */
 	public boolean projectSndExists()
 	{
-		return project_snd.exists();
+		return projectSnd.exists();
 	}
 
 	/**
@@ -120,7 +124,7 @@ public class ProjectChecker
 	 */
 	public boolean projectResourcesExists()
 	{
-		return project_resources.exists();
+		return projectResources.exists();
 	}
 
 	/**

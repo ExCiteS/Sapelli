@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
+import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectZipper;
 
 @Slf4j
 public class Controller
@@ -119,9 +120,20 @@ public class Controller
 	 */
 	public void onPackageButtonClicked(ActionEvent actionEvent)
 	{
-		log.info("Package button has been clidked: {}", actionEvent);
+		try
+		{
+			// TODO: 06/06/2017 Backup previous version
 
-		// TODO: 05/06/2017 ZIP files
+			// Create a ProjectZipper and Zip the project
+			ProjectZipper projectZipper = new ProjectZipper(projectChecker);
+			projectZipper.zipProject();
+
+			// TODO: 06/06/2017 Inform user 
+		}
+		catch(Exception e)
+		{
+			log.error("Errow while Zipping project", e);
+		}
 	}
 
 	/**
