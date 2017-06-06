@@ -1,13 +1,16 @@
 package uk.ac.ucl.excites.sapelli.packager.sapelli;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 
 /**
  * Class to check if a directory has a valid Sapelli project
@@ -148,13 +151,35 @@ public class ProjectChecker
 	}
 
 	/**
-	 * Get a list of paths (relative to the project path) of files that are referred to by (forms of)
+	 * Get a list of paths of files that are referred to by (forms of)
 	 * this project but which could not be found or accessed
 	 *
 	 * @return list of Paths
 	 */
 	public List<String> getMissingFiles()
 	{
-		return project.getMissingFilesRelativePaths(fsp);
+		List<String> missing = new ArrayList<>();
+		File installationDir = fsp.getProjectInstallationFolder(project, false);
+		final Set<File> files = project.getFiles(fsp);
+
+		// Sapelli uses the installation dir to store the imgs/snds/resources etc.
+		// Here we clean the installation dir, thus this:
+		// -- C:\Users\Michalis\Desktop\Working Dir\Projects\GPS Test 5m\v3.0\img\Back.png
+		// will become this:
+		// -- C:\Users\Michalis\Desktop\Working Dir\img\Back.png
+		for(File file : files)
+		{
+			// Remove installation dir from file
+			String relativePath = FileHelpers.getRelativePath(installationDir, file);
+			File missingFile = new File(sapelliProjectDir + relativePath);
+
+			log.info("Check if '{}' is missing.", missingFile);
+
+			// Check if the file exists or it is missing:
+			if(!missingFile.exists() || !missingFile.isFile())
+				missing.add(missingFile.toString());
+		}
+
+		return missing;
 	}
 }
