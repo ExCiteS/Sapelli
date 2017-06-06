@@ -1,18 +1,18 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ *
  * Copyright 2012-2016 University College London - ExCiteS group
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -31,7 +31,7 @@ import org.apache.commons.io.FileUtils;
 
 /**
  * File I/O helpers
- * 
+ *
  * @author mstevens, Michalis Vitos
  */
 public final class FileHelpers
@@ -63,15 +63,15 @@ public final class FileHelpers
 		{
 			switch(c)
 			{
-				case '*': 
-				case '?': 
-				case '<': 
-				case '>': 
-				case ':': 
-				case '"': 
-				case '\\': 
-				case '/': 
-				case '|': 
+				case '*':
+				case '?':
+				case '<':
+				case '>':
+				case ':':
+				case '"':
+				case '\\':
+				case '/':
+				case '|':
 				case '\n':
 				case '\r':
 				case '\t': return false;
@@ -79,16 +79,16 @@ public final class FileHelpers
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Ensures that the path is a directory path (adding / or \ if needed, but does not check if the directory actually exists)
-	 * 
+	 *
 	 * @param path
 	 * @return
 	 */
 	static public String ensureDirectoryPath(String path)
 	{
-		return path + (path.charAt(path.length() - 1) == File.separatorChar ? "" : File.separatorChar); 
+		return path + (path.charAt(path.length() - 1) == File.separatorChar ? "" : File.separatorChar);
 	}
 
 	static public String makeValidFileName(String filename)
@@ -116,10 +116,10 @@ public final class FileHelpers
 		}
 		return new String(chars);
 	}
-	
+
 	/**
 	 * Delete a file
-	 * 
+	 *
 	 * @param filePath
 	 * @return whether the file was deleted or not
 	 */
@@ -127,12 +127,12 @@ public final class FileHelpers
 	{
 		return (new File(filePath)).delete();
 	}
-	
+
 	/**
 	 * Quietly deletes a bunch of {@link File}s. 
-	 * 
+	 *
 	 * @param files list of files to quietly delete (may be {@code null})
-	 * 
+	 *
 	 * @see FileUtils#deleteQuietly(File)
 	 */
 	public static void deleteQuietly(Collection<File> files)
@@ -144,7 +144,7 @@ public final class FileHelpers
 
 	/**
 	 * Copies a file. If the destination exists it is overwritten.
-	 * 
+	 *
 	 * @param srcFilePath
 	 * @param dstFilePath
 	 * @throws IOException
@@ -156,7 +156,7 @@ public final class FileHelpers
 
 	/**
 	 * Copies a file. If the destination exists it is overwritten.
-	 * 
+	 *
 	 * @param srcFile
 	 * @param dstFile
 	 * @throws IOException
@@ -196,7 +196,7 @@ public final class FileHelpers
 
 	/**
 	 * Move a file. If the destination exists it is overwritten.
-	 * 
+	 *
 	 * @param srcFilepath
 	 * @param dstFilepath
 	 * @throws IOException
@@ -206,10 +206,10 @@ public final class FileHelpers
 	{
 		moveFile(new File(srcFilepath), new File(dstFilepath));
 	}
-	
+
 	/**
 	 * Move a file. If the destination exists it is overwritten.
-	 * 
+	 *
 	 * @param srcFile
 	 * @param dstFile
 	 * @throws IOException
@@ -226,10 +226,10 @@ public final class FileHelpers
 				throw new IOException("Unable to delete " + srcFile.getAbsolutePath());
 		}
 	}
-	
+
 	/**
 	 * Moves a directory. Files that already exist in the destination directory are overwritten.
-	 * 
+	 *
 	 * @param srcPath
 	 * @param dstPath
 	 * @throws IOException
@@ -239,10 +239,10 @@ public final class FileHelpers
 	{
 		moveDirectory(new File(srcPath), new File(dstPath));
 	}
-	
+
 	/**
 	 * Moves a directory. Files that already exist in the destination directory are overwritten. Files that exist in the destination directory but not in the source are left alone.
-	 * 
+	 *
 	 * @param srcDir
 	 * @param dstDir
 	 * @throws IOException
@@ -254,29 +254,29 @@ public final class FileHelpers
 			throw new IllegalArgumentException("Source directory does not exist");
 		if( !srcDir.isDirectory())
 			throw new IllegalArgumentException("Source is not a directory, call moveFile() instead");
-		
+
 		// Create destination if needed:
 		if(!dstDir.exists())
 			createDirectory(dstDir);
 		else if(!dstDir.isDirectory())
 			throw new IllegalArgumentException("Destination exists but is not a directory!");
-		
+
 		// Move contents (recursive calls will happen for subdirectories):
 		for(File source : srcDir.listFiles())
 			moveFileOrDirectory(source, new File(dstDir.getAbsolutePath() + File.separator + source.getName()));
-		
+
 		// Check if srcDir is empty:
 		if(!isDirectoryEmpty(srcDir))
 			throw new IOException("Some contents may not have been moved or copied.");
-		
+
 		// Delete srcDir:
 		if(!srcDir.delete())
 			throw new IOException("Could not delete source directory (" + srcDir.getAbsolutePath() + ").");
 	}
-	
+
 	/**
 	 * Move a file or directory. Existing files are overwritten.
-	 * 
+	 *
 	 * @param srcPath
 	 * @param dstPath
 	 * @throws IOException
@@ -286,10 +286,10 @@ public final class FileHelpers
 	{
 		moveFileOrDirectory(new File(srcPath), new File(dstPath));
 	}
-	
+
 	/**
 	 * Move a file or directory
-	 * 
+	 *
 	 * @param source
 	 * @param destination
 	 * @throws IOException
@@ -302,7 +302,7 @@ public final class FileHelpers
 		else
 			moveFile(source, destination);
 	}
-	
+
 	public static void deleteDirectoryIfEmpty(File directory)
 	{
 		try
@@ -312,7 +312,7 @@ public final class FileHelpers
 		}
 		catch(Exception ignore) {}
 	}
-	
+
 	public static boolean isDirectoryEmpty(File directory)
 	{
 		if(!directory.isDirectory())
@@ -323,7 +323,7 @@ public final class FileHelpers
 
 	/**
 	 * Attempts to create the necessary (containing) directory/ies for a given path
-	 * 
+	 *
 	 * @param directoryPath
 	 * @return success (whether the directory exists now, or already existed)
 	 */
@@ -334,7 +334,7 @@ public final class FileHelpers
 
 	/**
 	 * Attempts to create the necessary (containing) directory/ies for a given path
-	 * 
+	 *
 	 * @param directory
 	 * @return success, i.e. whether the directory exists now (as a directory, *not* as a file), or existed already
 	 */
@@ -358,7 +358,7 @@ public final class FileHelpers
 	/**
 	 * Returns (as a File instance) a subdirectory with the given name in the given parent directory.
 	 * If {@code create} is {@code true} the directory is created on disc (if the parent directory does not exist it is created as well).
-	 * 
+	 *
 	 * @param parentDir
 	 * @param subDirName
 	 * @param create
@@ -375,10 +375,10 @@ public final class FileHelpers
 		}
 		return subDir;
 	}
-	
+
 	/**
 	 * Attempts to create the necessary parent directory/ies for a given path (the path could be a directory or file)
-	 * 
+	 *
 	 * @param path
 	 * @return
 	 */
@@ -390,7 +390,7 @@ public final class FileHelpers
 	/**
 	 * Returns only the parent directory path of the given file path,
 	 * e.g. for "/my/path/myfile.raw" : "/my/path/"
-	 * 
+	 *
 	 * @param filePath
 	 * @return The parent path of the filePath
 	 */
@@ -398,7 +398,7 @@ public final class FileHelpers
 	{
 		return filePath.substring(0, filePath.lastIndexOf(File.separatorChar) + 1);
 	}
-	
+
 	/**
 	 * @param file
 	 * @return the extension of a file represented by a File object, returns the separator char (/ or \) in case of a directory
@@ -413,7 +413,7 @@ public final class FileHelpers
 
 	/**
 	 * Returns the extension of the filePath. e.g. for "/my/path/myfile.raw" : "raw"
-	 * 
+	 *
 	 * @param filePath
 	 * @return The extension of the filePath. If there is no extension the empty String is returned.
 	 */
@@ -427,7 +427,7 @@ public final class FileHelpers
 
 	/**
 	 * Returns the filePath without its extension. e.g for "/my/path/myfile.raw" : "/my/path/myfile"
-	 * 
+	 *
 	 * @param filePath
 	 * @return The filePath without its extension. If these is not extension the path is return as-is.
 	 */
@@ -441,7 +441,7 @@ public final class FileHelpers
 
 	/**
 	 * Returns only the fileName of the filePath. e.g. for "/my/path/myfile.raw" : "myFile.raw"
-	 * 
+	 *
 	 * @param filePath
 	 * @return The fileName of the filePath. e.g. for "/my/path/myfile.raw" : "myFile.raw"
 	 */
@@ -451,7 +451,7 @@ public final class FileHelpers
 		String result = filePath.substring(lastIndex + 1, filePath.length());
 		return result;
 	}
-	
+
 	/**
 	 * @param file
 	 * @return true if the file object is not null and represents an existing, readable file, false otherwise
@@ -485,7 +485,7 @@ public final class FileHelpers
 			return false;
 		}
 	}
-	
+
 	/**
 	 * @param file
 	 * @param refuseEmpty whether or not to refuse empty files (i.e. size = 0 bytes)
@@ -502,4 +502,21 @@ public final class FileHelpers
 		return new FileInputStream(file);
 	}
 
+	/**
+	 * Get the relative path of a file. For example for "C:\Users\Desktop\Projects\GPS Test 5m\v3.0\img\Back.png" get the "\img\Back.png"
+	 *
+	 * @param sourceDir the source directory
+	 * @param file the file
+	 * @return relative path of the file
+	 */
+	public static String getRelativePath(File sourceDir, File file)
+	{
+		// Trim off the start of source dir path...
+		String path = file.getPath().substring(sourceDir.toString().length());
+		if(path.startsWith(File.pathSeparator))
+		{
+			path = path.substring(1);
+		}
+		return path;
+	}
 }

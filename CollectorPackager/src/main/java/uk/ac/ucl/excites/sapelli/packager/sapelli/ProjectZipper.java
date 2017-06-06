@@ -185,15 +185,5 @@ public class ProjectZipper
 				zipFile(zipOutputStream, file, basePathLength);
 	}
 
-	public static String getRelativePath(File sourceDir, File file)
-	{
-		// Trim off the start of source dir path...
-		String path = file.getPath().substring(sourceDir.toString().length());
-		if(path.startsWith(File.pathSeparator))
-		{
-			path = path.substring(1);
-		}
-		return path;
-	}
 }
 
