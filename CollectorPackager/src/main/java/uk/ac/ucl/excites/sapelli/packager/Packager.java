@@ -27,6 +27,8 @@ import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * Entry point for the Packager Javafx application. This class setups the UI and launches the app.
+ * <p>
  * Created by Michalis on 25/05/2017.
  */
 @Slf4j
