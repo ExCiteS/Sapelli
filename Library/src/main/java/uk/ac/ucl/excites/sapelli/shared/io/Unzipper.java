@@ -33,11 +33,11 @@ public final class Unzipper
 {
 
 	private Unzipper() {}
-	
+
 	/**
 	 * Note that if the zipFileStream is not a ZIP file there will be no exception thrown,
 	 * but also no files extracted (i.e. method returns 0).
-	 * 
+	 *
 	 * @param zipFileStream
 	 * @param extractionFolder
 	 * @return the number of extracted entries
@@ -54,9 +54,10 @@ public final class Unzipper
 			while((ze = zin.getNextEntry()) != null)
 			{
 				entryCount++;
+				final String extractionName = extractionPath + ze.getName();
 				if(ze.isDirectory())
 				{
-					if(!FileHelpers.createDirectory(extractionPath + ze.getName()))
+					if(!FileHelpers.createDirectory(extractionName))
 					{
 						zin.close();
 						throw new IOException("Could not create folder: " + extractionPath + ze.getName());
@@ -64,7 +65,17 @@ public final class Unzipper
 				}
 				else
 				{
-					FileOutputStream fout = new FileOutputStream(extractionPath + ze.getName(), false);
+					// Create a file out of the extractionName & check if it exists
+					// If not create the file, along with its parent directories
+					File file = new File(extractionName);
+					if(!file.exists())
+					{
+						FileHelpers.createParentDirectory(file);
+						file.createNewFile();
+					}
+
+					// Now we are ready to create FileOutputStream
+					FileOutputStream fout = new FileOutputStream(file, false);
 					byte[] buffer = new byte[4096];
 					for(int c = zin.read(buffer); c != -1; c = zin.read(buffer))
 						fout.write(buffer, 0, c);
@@ -80,7 +91,7 @@ public final class Unzipper
 			throw new IOException("Error on unzipping archive", e);
 		}
 	}
-	
+
 	public static InputStream getInputStreamForFileInZip(InputStream zipFileStream, String filename) throws IOException
 	{
 		ZipInputStream zin = new ZipInputStream(zipFileStream);
