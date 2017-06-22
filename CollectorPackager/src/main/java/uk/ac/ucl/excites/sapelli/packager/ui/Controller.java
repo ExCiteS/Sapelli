@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectZipper;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 
 @Slf4j
 public class Controller
@@ -120,13 +121,33 @@ public class Controller
 	 */
 	public void onPackageButtonClicked(ActionEvent actionEvent)
 	{
+		final StringBuilder message = new StringBuilder();
 		try
 		{
-			// TODO: 06/06/2017 Backup previous version
-
-			// Create a ProjectZipper and Zip the project
+			// Create a ProjectZipper:
 			ProjectZipper projectZipper = new ProjectZipper(projectChecker);
+
+			// Check if file already exists:
+			File previousFile = projectZipper.getSapFile();
+			if(previousFile.exists())
+			{
+				// Create the backup
+				String backupFileName = FileHelpers.trimFileExtensionAndDot(previousFile.toString());
+				backupFileName += "-" + System.currentTimeMillis() + "." + ProjectZipper.SAP_EXTENSION;
+
+				File backupFile = new File(backupFileName);
+
+				if(previousFile.renameTo(backupFile))
+					message.append("The was already a Sapelli file in the directory. We made a backup of it on: ").append(backupFile.getName());
+				else
+					message.append("The is already a Sapelli file in the directory, but we cannot make a backuup of it.");
+			}
+
+			// Zip the project
 			projectZipper.zipProject();
+
+			// Log
+			log.info(message.toString());
 
 			// TODO: 06/06/2017 Inform user
 		}

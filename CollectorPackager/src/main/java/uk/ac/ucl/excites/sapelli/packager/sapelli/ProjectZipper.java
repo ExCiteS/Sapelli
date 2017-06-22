@@ -54,7 +54,7 @@ public class ProjectZipper
 	 * @return sap file
 	 */
 	@NotNull
-	private File getSapFile()
+	public File getSapFile()
 	{
 		// Get Project
 		final Project project = projectChecker.getProject();
