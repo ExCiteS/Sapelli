@@ -41,7 +41,7 @@ public class UiMessageManager
 
 	public void addMessages(String message)
 	{
-		messageBuilder.append(message);
+		messageBuilder.append(message).append("\n");
 	}
 
 }

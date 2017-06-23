@@ -90,8 +90,9 @@ public class Controller
 		// Create a new Project Checker
 		projectChecker = new ProjectChecker(sapelliProjectDir);
 
-		// Update UI
-		updateUI();
+		// Validate Working directory and Project
+		if(validateWorkingDirectory())
+			validateProject();
 	}
 
 	/**
@@ -110,7 +111,7 @@ public class Controller
 		uiMessageManager.clear();
 
 		// Update UI
-		updateUI();
+		validateProject();
 	}
 
 	/**
@@ -120,7 +121,11 @@ public class Controller
 	 */
 	public void onPackageButtonClicked(ActionEvent actionEvent)
 	{
-		final StringBuilder message = new StringBuilder();
+		// Reset the uiMessageManager
+		uiMessageManager.clear();
+		// Let's assume that this will be a success:
+		uiMessageManager.setState(State.SUCCESS);
+
 		try
 		{
 			// Create a ProjectZipper:
@@ -137,32 +142,45 @@ public class Controller
 				File backupFile = new File(backupFileName);
 
 				if(previousFile.renameTo(backupFile))
-					message.append("The was already a Sapelli file in the directory. We made a backup of it on: ").append(backupFile.getName());
+				{
+					uiMessageManager.setState(State.WARNING);
+					uiMessageManager.addMessages("The was already a Sapelli file in the directory. We made a backup of it on: " + backupFile.getName());
+				}
 				else
-					message.append("The is already a Sapelli file in the directory, but we cannot make a backuup of it.");
+				{
+					uiMessageManager.setState(State.ERROR);
+					uiMessageManager.addMessages("The is already a Sapelli file in the directory, but we cannot make a backup of it.");
+				}
 			}
 
 			// Zip the project
 			projectZipper.zipProject();
 
-			// Log
-			log.info(message.toString());
+			uiMessageManager.addMessages("The project has been packaged into " + projectZipper.getSapFile());
 
-			// TODO: 06/06/2017 Inform user
+			// Log
+			log.info(uiMessageManager.getMessages());
+
 		}
 		catch(Exception e)
 		{
+			uiMessageManager.setState(State.ERROR);
+			uiMessageManager.addMessages("Error while trying to package the project: \n" + e.getLocalizedMessage());
+
 			log.error("Error while Zipping project", e);
 		}
+
+		// Update the UI
+		updateUI();
 	}
 
 	/**
-	 * Update the UI
+	 * Validate the Working Directory and update the UI
+	 *
+	 * @return true if we have a valid directory
 	 */
-	private void updateUI()
+	private boolean validateWorkingDirectory()
 	{
-		// TODO: 26/05/2017 Reset all UI elements
-
 		// 1: Update Working Dir Or return
 		if(projectChecker.sapelliProjectDirExists())
 		{
@@ -181,8 +199,19 @@ public class Controller
 
 			// Set text and exit
 			workingDirectoryLabel.setText("Please select a directory...");
-			return;
+			return false;
 		}
+
+		return projectChecker.sapelliProjectDirExists();
+	}
+
+	/**
+	 * Validate the Project and update the UI
+	 */
+	private void validateProject()
+	{
+		// Reset the uiMessageManager
+		uiMessageManager.clear();
 
 		// 2: Check if PROJECT.XML exists
 		if(projectChecker.projectXmlExists())
@@ -243,6 +272,16 @@ public class Controller
 
 		// TODO: 01/06/2017 Continue the validation here
 
+
+		// Finally, update the UI
+		updateUI();
+	}
+
+	/**
+	 * Update UI
+	 */
+	private void updateUI()
+	{
 		// Update UI
 		switch(uiMessageManager.getState())
 		{
