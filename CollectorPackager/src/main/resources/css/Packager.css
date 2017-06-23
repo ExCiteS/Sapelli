@@ -1,3 +1,8 @@
+/* General */
+.box-with-padding {
+    -fx-padding: 10 15 10 15;
+}
+
 /* Working Dir*/
 .working-dir-default {
     -fx-background-color: #EFE6DD;
@@ -13,31 +18,23 @@
     -fx-text-fill: white;
 }
 
-/* Accordion */
-.accordion .titled-pane > *.content {
-    -fx-background-color: white;
+/* Warning Panel */
+.warning-default {
+    -fx-background-color: #FFF;
 }
 
-.titled-pane > .title {
-    -fx-background-color: transparent;
-}
-
-.accordion > .accordion-default {
-    -fx-background-color: #f0f0f0;
-}
-
-.accordion > .accordion-error {
-    -fx-background-color: #BB4430;
+.warning-error {
+    -fx-background-color: #bb2a1a;
     -fx-text-fill: white;
 }
 
-.accordion > .accordion-warning {
+.warning-warning {
     -fx-background-color: #f8ab33;
     -fx-text-fill: black;
 }
 
-.accordion > .accordion-success {
-    -fx-background-color: #71b864;
+.warning-success {
+    -fx-background-color: #25c250;
     -fx-text-fill: white;
 }
 

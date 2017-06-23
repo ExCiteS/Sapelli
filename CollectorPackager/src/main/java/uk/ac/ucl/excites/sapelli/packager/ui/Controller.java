@@ -24,10 +24,8 @@ import java.util.List;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TitledPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -36,40 +34,38 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectZipper;
+import uk.ac.ucl.excites.sapelli.packager.ui.UiMessageManager.State;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 
 @Slf4j
 public class Controller
 {
 
-	// Directory for the Project Packager to work
+	// Privates:
 	private ProjectChecker projectChecker;
+	private UiMessageManager uiMessageManager = new UiMessageManager();
 
-	// UI
+	//----- UI
+
+	//--- Main elements
 	@FXML
-	public AnchorPane anchorPanelDirectory;
+	public AnchorPane root;
+
+	//--- Working directory elements
 	@FXML
-	private Button buttonBrowse;
+	public AnchorPane workingDirectoryBackground;
 	@FXML
-	private Button buttonPackage;
+	private Label workingDirectoryLabel;
+
+	//--- Warnings/messages elements
 	@FXML
-	private Label labelDirectory;
+	public Label warningLabel;
 	@FXML
-	private AnchorPane anchorPane;
+	public Label messageLabel;
+
+	//--- Packager
 	@FXML
-	private Label labelResult;
-	@FXML
-	public Accordion accordion;
-	@FXML
-	private TitledPane accordionProjectXML;
-	@FXML
-	private TitledPane accordionImg;
-	@FXML
-	private TitledPane accordionSnd;
-	@FXML
-	private TitledPane accordionResources;
-	@FXML
-	public Label labelProjectXML;
+	private Button packageButton;
 
 
 	/**
@@ -80,7 +76,7 @@ public class Controller
 	public void onBrowseButtonClicked(ActionEvent actionEvent)
 	{
 		// Get the Directory Chooser
-		final Stage stage = (Stage) anchorPane.getScene().getWindow();
+		final Stage stage = (Stage) root.getScene().getWindow();
 		final DirectoryChooser directoryChooser = new DirectoryChooser();
 		if(projectChecker != null && projectChecker.sapelliProjectDirExists())
 			directoryChooser.setInitialDirectory(projectChecker.getSapelliProjectDir());
@@ -109,6 +105,9 @@ public class Controller
 			return;
 
 		projectChecker.refresh();
+
+		// Clear UI
+		uiMessageManager.clear();
 
 		// Update UI
 		updateUI();
@@ -168,29 +167,26 @@ public class Controller
 		if(projectChecker.sapelliProjectDirExists())
 		{
 			// Set style
-			anchorPanelDirectory.getStyleClass().clear();
-			anchorPanelDirectory.getStyleClass().add("working-dir-success");
+			workingDirectoryBackground.getStyleClass().clear();
+			workingDirectoryBackground.getStyleClass().addAll("box-with-padding", "working-dir-success");
 
 			// Set text
-			labelDirectory.setText(projectChecker.getSapelliProjectDir().toString());
+			workingDirectoryLabel.setText(projectChecker.getSapelliProjectDir().toString());
 		}
 		else
 		{
 			// Set style
-			anchorPanelDirectory.getStyleClass().clear();
-			anchorPanelDirectory.getStyleClass().add("working-dir-error");
+			workingDirectoryBackground.getStyleClass().clear();
+			workingDirectoryBackground.getStyleClass().addAll("box-with-padding", "working-dir-error");
 
 			// Set text and exit
-			labelDirectory.setText("Please select a directory...");
+			workingDirectoryLabel.setText("Please select a directory...");
 			return;
 		}
 
 		// 2: Check if PROJECT.XML exists
 		if(projectChecker.projectXmlExists())
 		{
-			// Expand the Accordion
-			accordion.setExpandedPane(accordionProjectXML);
-
 			// Get Project, Warnings and Errors
 			final Project project = projectChecker.getProject();
 			final List<String> warnings = projectChecker.getWarnings();
@@ -201,36 +197,34 @@ public class Controller
 			// Project exists, no warnings, no errors, no missing files
 			if(project != null && warnings.isEmpty() && errors.isEmpty() && missing.isEmpty())
 			{
-				setSuccessTitledPaneStyle(accordionProjectXML);
-				labelProjectXML.setText(ProjectUtils.printProjectInfo(project));
+				uiMessageManager.setState(State.SUCCESS);
+				uiMessageManager.addMessages(ProjectUtils.printProjectInfo(project));
 
 				// Enable the Package button
-				buttonPackage.setDisable(false);
+				packageButton.setDisable(false);
 			}
 			// CASE 2: WARNINGS
 			// Project exists with warnings or missing files, no errors
 			if(project != null && (!warnings.isEmpty() || !missing.isEmpty()) && errors.isEmpty())
 			{
-				setWarningTitledPaneStyle(accordionProjectXML);
-
 				// Disable the Package button
-				buttonPackage.setDisable(true);
+				packageButton.setDisable(true);
 
+				uiMessageManager.setState(State.WARNING);
 				// TODO: Fix this
-				labelProjectXML.setText(warnings.toString() + "\n\n" + missing.toString());
+				uiMessageManager.addMessages(warnings.toString() + "\n\n" + missing.toString());
 			}
 
 			// CASE 3: ERROR
 			// Project does not exists or there are errors
 			if(project == null || !errors.isEmpty())
 			{
-				setErrorTitledPaneStyle(accordionProjectXML);
-
 				// Disable the Package button
-				buttonPackage.setDisable(true);
+				packageButton.setDisable(true);
 
+				uiMessageManager.setState(State.ERROR);
 				// TODO: Fix this
-				labelProjectXML.setText(errors.toString());
+				uiMessageManager.addMessages(errors.toString());
 			}
 
 			// TODO: 02/06/2017 Continue this?
@@ -238,83 +232,42 @@ public class Controller
 		else
 		{
 			// Inform the user that the PROJECT.XML does not exist
-			setErrorTitledPaneStyle(accordionProjectXML);
+			uiMessageManager.setState(State.ERROR);
 			// Set text to inform user
-			labelProjectXML.setText("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
-			// Expand the accordion
-			accordion.setExpandedPane(accordionProjectXML);
+			uiMessageManager.addMessages("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
 
 			// Disable the Package button
-			buttonPackage.setDisable(true);
-
-			// Reset
-			setDefaultTitledPaneStyle(accordionImg);
-			setDefaultTitledPaneStyle(accordionSnd);
-			setDefaultTitledPaneStyle(accordionResources);
+			packageButton.setDisable(true);
 		}
 
 
 		// TODO: 01/06/2017 Continue the validation here
+
+		// Update UI
+		switch(uiMessageManager.getState())
+		{
+			case DEFAULT:
+				warningLabel.getStyleClass().clear();
+				warningLabel.getStyleClass().add("warning-default");
+				messageLabel.setText(uiMessageManager.getMessages());
+				break;
+			case SUCCESS:
+				warningLabel.getStyleClass().clear();
+				warningLabel.getStyleClass().add("warning-success");
+				messageLabel.setText(uiMessageManager.getMessages());
+				break;
+			case WARNING:
+				warningLabel.getStyleClass().clear();
+				warningLabel.getStyleClass().add("warning-warning");
+				messageLabel.setText(uiMessageManager.getMessages());
+				break;
+			case ERROR:
+				warningLabel.getStyleClass().clear();
+				warningLabel.getStyleClass().add("warning-error");
+				messageLabel.setText(uiMessageManager.getMessages());
+				break;
+		}
 	}
 
-	/**
-	 * Set the accordion-default style to a given {@link TitledPane}
-	 *
-	 * @param pane a {@link TitledPane}
-	 */
-	private void setDefaultTitledPaneStyle(TitledPane pane)
-	{
-		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
-		pane.getStyleClass().add("accordion-default");
-
-		// Disable
-		pane.setDisable(true);
-	}
-
-	/**
-	 * Set the accordion-error style to a given {@link TitledPane}
-	 *
-	 * @param pane a {@link TitledPane}
-	 */
-	private void setErrorTitledPaneStyle(TitledPane pane)
-	{
-		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
-		pane.getStyleClass().add("accordion-error");
-
-		// Disable
-		pane.setDisable(false);
-	}
-
-	/**
-	 * Set the accordion-success style to a given {@link TitledPane}
-	 *
-	 * @param pane a {@link TitledPane}
-	 */
-	private void setWarningTitledPaneStyle(TitledPane pane)
-	{
-		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
-		pane.getStyleClass().add("accordion-warning");
-
-		// Disable
-		pane.setDisable(false);
-	}
-
-	/**
-	 * Set the accordion-success style to a given {@link TitledPane}
-	 *
-	 * @param pane a {@link TitledPane}
-	 */
-	private void setSuccessTitledPaneStyle(TitledPane pane)
-	{
-		// Set style
-		pane.getStyleClass().removeAll("accordion-default", "accordion-error", "accordion-warning", "accordion-success");
-		pane.getStyleClass().add("accordion-success");
-
-		// Disable
-		pane.setDisable(false);
-	}
 
 }
