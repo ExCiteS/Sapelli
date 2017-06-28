@@ -20,8 +20,10 @@ package uk.ac.ucl.excites.sapelli.packager.ui;
 
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -31,6 +33,8 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.packager.io.ProjectListener;
+import uk.ac.ucl.excites.sapelli.packager.io.ProjectWatcher;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectZipper;
@@ -44,6 +48,7 @@ public class Controller
 	// Privates:
 	private ProjectChecker projectChecker;
 	private UiMessageManager uiMessageManager = new UiMessageManager();
+	private ProjectWatcher sapelliProjectWatcher;
 
 	//----- UI
 
@@ -93,25 +98,6 @@ public class Controller
 		// Validate Working directory and Project
 		if(validateWorkingDirectory())
 			validateProject();
-	}
-
-	/**
-	 * Method to be called when the Refresh button is clicked
-	 *
-	 * @param actionEvent {@link ActionEvent}
-	 */
-	public void onRefreshButtonClicked(ActionEvent actionEvent)
-	{
-		if(projectChecker == null)
-			return;
-
-		projectChecker.refresh();
-
-		// Clear UI
-		uiMessageManager.clear();
-
-		// Update UI
-		validateProject();
 	}
 
 	/**
@@ -210,6 +196,9 @@ public class Controller
 	 */
 	private void validateProject()
 	{
+		// Monitor any file changes
+		watchDirectoryForChanges();
+
 		// Reset the uiMessageManager
 		uiMessageManager.clear();
 
@@ -275,6 +264,47 @@ public class Controller
 
 		// Finally, update the UI
 		updateUI();
+	}
+
+	/**
+	 * Watch the Sapelli Dir for file changes and refresh UI
+	 */
+	private void watchDirectoryForChanges()
+	{
+		// Stop Previous Watcher
+		if(sapelliProjectWatcher != null)
+		{
+			sapelliProjectWatcher.stopWatching();
+			sapelliProjectWatcher = null;
+		}
+
+		sapelliProjectWatcher = new ProjectWatcher(projectChecker, new ProjectListener()
+		{
+			@Override
+			public void onFileChanged(Path path)
+			{
+				// We want this to run to UI thread
+				Platform.runLater(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						log.info("'{}' has been changed. Refresh UI.", path.getFileName());
+
+						if(projectChecker == null)
+							return;
+
+						projectChecker.refresh();
+
+						// Clear UI
+						uiMessageManager.clear();
+
+						// Update UI
+						validateProject();
+					}
+				});
+			}
+		});
 	}
 
 	/**
