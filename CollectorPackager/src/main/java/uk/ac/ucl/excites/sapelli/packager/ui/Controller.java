@@ -229,8 +229,8 @@ public class Controller
 				packageButton.setDisable(true);
 
 				uiMessageManager.setState(State.WARNING);
-				// TODO: Fix this
-				uiMessageManager.addMessages(warnings.toString() + "\n\n" + missing.toString());
+				uiMessageManager.addWarnings(warnings);
+				uiMessageManager.addMissingFiles(missing);
 			}
 
 			// CASE 3: ERROR
@@ -241,8 +241,7 @@ public class Controller
 				packageButton.setDisable(true);
 
 				uiMessageManager.setState(State.ERROR);
-				// TODO: Fix this
-				uiMessageManager.addMessages(errors.toString());
+				uiMessageManager.addErrors(errors);
 			}
 
 			// TODO: 02/06/2017 Continue this?

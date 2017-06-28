@@ -1,5 +1,7 @@
 package uk.ac.ucl.excites.sapelli.packager.ui;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -42,6 +44,45 @@ public class UiMessageManager
 	public void addMessages(String message)
 	{
 		messageBuilder.append(message).append("\n");
+	}
+
+	public void addMissingFiles(List<String> missing)
+	{
+		if(missing.isEmpty())
+			return;
+
+		if(messageBuilder.length() > 0)
+			messageBuilder.append("\n");
+
+		messageBuilder.append("The following files are missing:\n\n");
+		for(String file : missing)
+			messageBuilder.append(file).append("\n");
+	}
+
+	public void addWarnings(List<String> warnings)
+	{
+		if(warnings.isEmpty())
+			return;
+
+		if(messageBuilder.length() > 0)
+			messageBuilder.append("\n");
+
+		messageBuilder.append("The project contains the following warnings:\n\n");
+		for(String warning : warnings)
+			messageBuilder.append(warning).append("\n");
+	}
+
+	public void addErrors(List<String> errors)
+	{
+		if(errors.isEmpty())
+			return;
+
+		if(messageBuilder.length() > 0)
+			messageBuilder.append("\n");
+
+		messageBuilder.append("The project contains the following errors:\n\n");
+		for(String error : errors)
+			messageBuilder.append(error).append("\n");
 	}
 
 }
