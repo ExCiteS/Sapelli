@@ -27,7 +27,7 @@ plugins {
 def artifactId = 'sapelli-collector-packager'
 def packagerTitle = 'Sapelli Packager'
 def packagerMainClass = 'uk.ac.ucl.excites.sapelli.packager.Packager'
-def packagerVersion = project.version
+def packagerVersion = '1.0.0-SNAPSHOT'
 
 compileJava {
 	options.encoding = 'UTF-8'
