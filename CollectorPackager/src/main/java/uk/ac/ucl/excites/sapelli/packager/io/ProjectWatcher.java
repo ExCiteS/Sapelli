@@ -9,6 +9,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 
 /**
@@ -81,11 +82,22 @@ public class ProjectWatcher
 						// Debug
 						log.info("{}: {} ", kind, fileName);
 
-						// If we have any kind of file modification
+						// Check whether we have any kind of file modification
 						if(kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_DELETE)
 						{
-							// TODO: 28/06/2017 Check files
-							listener.onFileChanged(fileName);
+							// This combines the parent directory with the filename that is a relative file
+							// resulting in a full path
+							Path absoluteFileName = directory.resolve(fileName);
+
+							// Check if the PROJECT.XML has been modified
+							// or img, snd, resources dir
+							final boolean PROJECT = absoluteFileName.equals(projectChecker.getProjectXml().toPath());
+							final boolean img = fileName.toString().equalsIgnoreCase(FileStorageProvider.IMAGE_FOLDER);
+							final boolean snd = fileName.toString().equalsIgnoreCase(FileStorageProvider.SOUND_FOLDER);
+							final boolean resources = fileName.toString().equalsIgnoreCase(FileStorageProvider.RES_FOLDER);
+
+							if(PROJECT || img || snd || resources)
+								listener.onFileChanged(absoluteFileName);
 						}
 					}
 
