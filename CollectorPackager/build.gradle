@@ -40,9 +40,9 @@ compileJava {
 dependencies {
 	// Sapelli Library:
 	compile project(':Library')
+
 	// Other dependencies:
-	//  For command line interaction:
-	compile 'commons-cli:commons-cli:1.4'
+
 	// Add Logging tools
 	compile 'ch.qos.logback:logback-classic:1.2.3'
 	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
