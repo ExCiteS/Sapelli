@@ -24,8 +24,6 @@ plugins {
 	id 'edu.sc.seis.launch4j' version '2.3.0'
 }
 
-defaultTasks 'clean', 'install'
-
 def artifactId = 'sapelli-collector-packager'
 def packagerTitle = 'Sapelli Packager'
 def packagerMainClass = 'uk.ac.ucl.excites.sapelli.packager.Packager'
