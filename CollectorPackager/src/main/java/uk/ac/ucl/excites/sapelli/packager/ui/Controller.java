@@ -29,6 +29,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +67,7 @@ public class Controller
 	@FXML
 	public Label warningLabel;
 	@FXML
-	public Label messageLabel;
+	public TextFlow messageLabel;
 
 	//--- Packager
 	@FXML
@@ -130,28 +131,27 @@ public class Controller
 				if(previousFile.renameTo(backupFile))
 				{
 					uiMessageManager.setState(State.WARNING);
-					uiMessageManager.addMessages("The was already a Sapelli file in the directory. We made a backup of it on: " + backupFile.getName());
+					uiMessageManager.addMessage("There was already a Sapelli file in the directory. We made a backup of it on: " + backupFile.getName());
 				}
 				else
 				{
 					uiMessageManager.setState(State.ERROR);
-					uiMessageManager.addMessages("The is already a Sapelli file in the directory, but we cannot make a backup of it.");
+					uiMessageManager.addMessage("The is already a Sapelli file in the directory, but we cannot make a backup of it.");
 				}
 			}
 
 			// Zip the project
 			projectZipper.zipProject();
 
-			uiMessageManager.addMessages("The project has been packaged into " + projectZipper.getSapFile());
+			uiMessageManager.addMessage("The project has been packaged into " + projectZipper.getSapFile());
 
 			// Log
-			log.info(uiMessageManager.getMessages());
-
+			log.info(uiMessageManager.toString());
 		}
 		catch(Exception e)
 		{
 			uiMessageManager.setState(State.ERROR);
-			uiMessageManager.addMessages("Error while trying to package the project: \n" + e.getLocalizedMessage());
+			uiMessageManager.addMessage("Error while trying to package the project: \n" + e.getLocalizedMessage());
 
 			log.error("Error while Zipping project", e);
 		}
@@ -216,7 +216,7 @@ public class Controller
 			if(project != null && warnings.isEmpty() && errors.isEmpty() && missing.isEmpty())
 			{
 				uiMessageManager.setState(State.SUCCESS);
-				uiMessageManager.addMessages(ProjectUtils.printProjectInfo(project));
+				uiMessageManager.addProject(ProjectUtils.printProjectInfo(project));
 
 				// Enable the Package button
 				packageButton.setDisable(false);
@@ -251,7 +251,7 @@ public class Controller
 			// Inform the user that the PROJECT.XML does not exist
 			uiMessageManager.setState(State.ERROR);
 			// Set text to inform user
-			uiMessageManager.addMessages("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
+			uiMessageManager.addMessage("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
 
 			// Disable the Package button
 			packageButton.setDisable(true);
@@ -317,24 +317,24 @@ public class Controller
 			case DEFAULT:
 				warningLabel.getStyleClass().clear();
 				warningLabel.getStyleClass().add("warning-default");
-				messageLabel.setText(uiMessageManager.getMessages());
 				break;
 			case SUCCESS:
 				warningLabel.getStyleClass().clear();
 				warningLabel.getStyleClass().add("warning-success");
-				messageLabel.setText(uiMessageManager.getMessages());
 				break;
 			case WARNING:
 				warningLabel.getStyleClass().clear();
 				warningLabel.getStyleClass().add("warning-warning");
-				messageLabel.setText(uiMessageManager.getMessages());
 				break;
 			case ERROR:
 				warningLabel.getStyleClass().clear();
 				warningLabel.getStyleClass().add("warning-error");
-				messageLabel.setText(uiMessageManager.getMessages());
 				break;
 		}
+
+		// Clear old messages and add new 
+		messageLabel.getChildren().clear();
+		messageLabel.getChildren().addAll(uiMessageManager.getMessages());
 	}
 
 

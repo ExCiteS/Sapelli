@@ -1,7 +1,9 @@
 package uk.ac.ucl.excites.sapelli.packager.ui;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import javafx.scene.text.Text;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,61 +30,86 @@ public class UiMessageManager
 	@Getter
 	@Setter
 	private State state = State.DEFAULT;
-	private StringBuilder messageBuilder = new StringBuilder();
+	@Getter
+	private List<Text> messages = new ArrayList<>();
 
 	public void clear()
 	{
 		state = State.DEFAULT;
-		messageBuilder = new StringBuilder();
+		messages = new ArrayList<>();
 	}
 
-	public String getMessages()
+	public void addMessage(String message)
 	{
-		return messageBuilder.toString();
+		final Text text = new Text(message + "\n");
+		messages.add(text);
 	}
 
-	public void addMessages(String message)
+	public void addProject(String projectInfo)
 	{
-		messageBuilder.append(message).append("\n");
+		addString("Your project looks good!\n", projectInfo);
 	}
 
 	public void addMissingFiles(List<String> missing)
 	{
-		if(missing.isEmpty())
-			return;
-
-		if(messageBuilder.length() > 0)
-			messageBuilder.append("\n");
-
-		messageBuilder.append("The following files are missing:\n\n");
-		for(String file : missing)
-			messageBuilder.append(file).append("\n");
+		addList("The following files are missing:", missing);
 	}
 
 	public void addWarnings(List<String> warnings)
 	{
-		if(warnings.isEmpty())
-			return;
-
-		if(messageBuilder.length() > 0)
-			messageBuilder.append("\n");
-
-		messageBuilder.append("The project contains the following warnings:\n\n");
-		for(String warning : warnings)
-			messageBuilder.append(warning).append("\n");
+		addList("The project contains the following warnings:", warnings);
 	}
 
 	public void addErrors(List<String> errors)
 	{
-		if(errors.isEmpty())
+		addList("The project contains the following errors:", errors);
+	}
+
+	private void addString(String title, String content)
+	{
+		// If the list is not empty, add some whitespace
+		if(!messages.isEmpty())
+			messages.add(new Text("\n"));
+
+		final Text titleText = new Text(title + "\n");
+		titleText.setStyle("-fx-font-weight: bold");
+		messages.add(titleText);
+		messages.add(new Text(content + "\n"));
+	}
+
+	private void addList(String title, List<String> list)
+	{
+		if(list.isEmpty())
 			return;
 
-		if(messageBuilder.length() > 0)
-			messageBuilder.append("\n");
+		// If the list is not empty, add some whitespace
+		if(!messages.isEmpty())
+			messages.add(new Text("\n"));
 
-		messageBuilder.append("The project contains the following errors:\n\n");
-		for(String error : errors)
-			messageBuilder.append(error).append("\n");
+		final Text titleText = new Text(title + "\n");
+		titleText.setStyle("-fx-font-weight: bold");
+		messages.add(titleText);
+		for(String s : list)
+			messages.add(new Text(s + "\n"));
+	}
+
+	/**
+	 * Get all the messages as a String, ignore empty lines
+	 *
+	 * @return
+	 */
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder();
+
+		for(Text text : messages)
+		{
+			String textString = text.getText().trim();
+			if(!textString.equalsIgnoreCase("\n"))
+				builder.append(textString).append("\n");
+		}
+
+		return builder.toString().trim();
 	}
 
 }
