@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.packager.ui;
 
 
 import java.io.File;
-import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -36,7 +35,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.packager.io.ProjectListener;
 import uk.ac.ucl.excites.sapelli.packager.io.ProjectWatcher;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectChecker;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
@@ -288,32 +286,24 @@ public class Controller
 			sapelliProjectWatcher = null;
 		}
 
-		sapelliProjectWatcher = new ProjectWatcher(projectChecker, new ProjectListener()
+		sapelliProjectWatcher = new ProjectWatcher(projectChecker, path ->
 		{
-			@Override
-			public void onFileChanged(Path path)
+			// We want this to run to UI thread
+			Platform.runLater(() ->
 			{
-				// We want this to run to UI thread
-				Platform.runLater(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						log.info("'{}' has been changed. Refresh UI.", path.getFileName());
+				log.info("'{}' has been changed. Refresh UI.", path.getFileName());
 
-						if(projectChecker == null)
-							return;
+				if(projectChecker == null)
+					return;
 
-						projectChecker.refresh();
+				projectChecker.refresh();
 
-						// Clear UI
-						uiMessageManager.clear();
+				// Clear UI
+				uiMessageManager.clear();
 
-						// Update UI
-						validateProject();
-					}
-				});
-			}
+				// Update UI
+				validateProject();
+			});
 		});
 	}
 
