@@ -2,10 +2,10 @@ package uk.ac.ucl.excites.sapelli.packager.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 
 import javafx.scene.text.Text;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
  * Created by Michalis on 23/06/2017.
  */
 
-@NoArgsConstructor
 @Slf4j
 public class UiMessageManager
 {
@@ -32,6 +31,12 @@ public class UiMessageManager
 	private State state = State.DEFAULT;
 	@Getter
 	private List<Text> messages = new ArrayList<>();
+	private ResourceBundle resources;
+
+	public UiMessageManager(ResourceBundle resources)
+	{
+		this.resources = resources;
+	}
 
 	public void clear()
 	{
@@ -47,22 +52,22 @@ public class UiMessageManager
 
 	public void addProject(String projectInfo)
 	{
-		addString("Your project looks good!\n", projectInfo);
+		addString(resources.getString("project_looks_good"), projectInfo);
 	}
 
 	public void addMissingFiles(List<String> missing)
 	{
-		addList("The following files are missing:", missing);
+		addList(resources.getString("files_missing"), missing);
 	}
 
 	public void addWarnings(List<String> warnings)
 	{
-		addList("The project contains the following warnings:", warnings);
+		addList(resources.getString("warnings"), warnings);
 	}
 
 	public void addErrors(List<String> errors)
 	{
-		addList("The project contains the following errors:", errors);
+		addList(resources.getString("errors"), errors);
 	}
 
 	private void addString(String title, String content)

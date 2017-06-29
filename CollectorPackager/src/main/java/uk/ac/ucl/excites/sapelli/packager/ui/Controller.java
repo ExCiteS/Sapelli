@@ -21,7 +21,9 @@ package uk.ac.ucl.excites.sapelli.packager.ui;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.ResourceBundle;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -48,8 +50,11 @@ public class Controller
 
 	// Privates:
 	private ProjectChecker projectChecker;
-	private UiMessageManager uiMessageManager = new UiMessageManager();
+	private UiMessageManager uiMessageManager;
 	private ProjectWatcher sapelliProjectWatcher;
+
+	@FXML
+	private ResourceBundle resources;
 
 	//----- UI
 
@@ -77,6 +82,7 @@ public class Controller
 	public void initialize()
 	{
 		// Do any initialisation required here
+		uiMessageManager = new UiMessageManager(resources);
 	}
 
 	/**
@@ -91,7 +97,7 @@ public class Controller
 		final DirectoryChooser directoryChooser = new DirectoryChooser();
 		if(projectChecker != null && projectChecker.sapelliProjectDirExists())
 			directoryChooser.setInitialDirectory(projectChecker.getSapelliProjectDir());
-		directoryChooser.setTitle("Select directory of project");
+		directoryChooser.setTitle(resources.getString("directory_chooser"));
 		final File sapelliProjectDir = directoryChooser.showDialog(stage);
 
 		// Ensure that the user has selected something
@@ -136,19 +142,19 @@ public class Controller
 				if(previousFile.renameTo(backupFile))
 				{
 					uiMessageManager.setState(State.WARNING);
-					uiMessageManager.addMessage("There was already a Sapelli file in the directory. We made a backup of it on: " + backupFile.getName());
+					uiMessageManager.addMessage(MessageFormat.format(resources.getString("sap_already_in_directory"), backupFile.getName()));
 				}
 				else
 				{
 					uiMessageManager.setState(State.ERROR);
-					uiMessageManager.addMessage("The is already a Sapelli file in the directory, but we cannot make a backup of it.");
+					uiMessageManager.addMessage(resources.getString("sap_already_in_directory_cannot_backup"));
 				}
 			}
 
 			// Zip the project
 			projectZipper.zipProject();
 
-			uiMessageManager.addMessage("The project has been packaged into " + projectZipper.getSapFile());
+			uiMessageManager.addMessage(MessageFormat.format(resources.getString("sap_packaged_into"), projectZipper.getSapFile()));
 
 			// Log
 			log.info(uiMessageManager.toString());
@@ -156,7 +162,7 @@ public class Controller
 		catch(Exception e)
 		{
 			uiMessageManager.setState(State.ERROR);
-			uiMessageManager.addMessage("Error while trying to package the project: \n" + e.getLocalizedMessage());
+			uiMessageManager.addMessage(MessageFormat.format(resources.getString("sap_package_error"), e.getLocalizedMessage()));
 
 			log.error("Error while Zipping project", e);
 		}
@@ -189,7 +195,7 @@ public class Controller
 			workingDirectoryBackground.getStyleClass().addAll("box-with-padding", "working-dir-error");
 
 			// Set text and exit
-			workingDirectoryLabel.setText("Please select a directory...");
+			workingDirectoryLabel.setText(resources.getString("directory_chooser"));
 			return false;
 		}
 
@@ -256,7 +262,7 @@ public class Controller
 			// Inform the user that the PROJECT.XML does not exist
 			uiMessageManager.setState(State.ERROR);
 			// Set text to inform user
-			uiMessageManager.addMessage("The directory '" + projectChecker.getSapelliProjectDir() + "' does not contain a PROJECT.xml and therefore it is not a valid Sapelli project. \n\nMake sure you have a file named PROJECT.xml in this directory.");
+			uiMessageManager.addMessage(MessageFormat.format(resources.getString("project_xml_missing"), projectChecker.getSapelliProjectDir().toString()));
 
 			// Disable the Package button
 			packageButton.setDisable(true);

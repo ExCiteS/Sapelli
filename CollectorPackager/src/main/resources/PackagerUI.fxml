@@ -27,7 +27,7 @@
 
 				<!-- Browse Button-->
 				<Button fx:id="buttonBrowse" mnemonicParsing="false"
-						onAction="#onBrowseButtonClicked" text="Browse"
+						onAction="#onBrowseButtonClicked" text="%browse"
 						AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0"
 						AnchorPane.topAnchor="0.0"/>
 			</children>

@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.packager;
 
+import java.util.ResourceBundle;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -38,10 +40,11 @@ public class Packager extends Application
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
-		final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/PackagerUI.fxml"));
+		final ResourceBundle bundle = ResourceBundle.getBundle("LanguageBundle");
+		final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/PackagerUI.fxml"), bundle);
 		final Parent root = fxmlLoader.load();
 		final Scene scene = new Scene(root);
-		primaryStage.setTitle("Sapelli Packager");
+		primaryStage.setTitle(bundle.getString("app"));
 		primaryStage.setScene(scene);
 		primaryStage.getIcons().add(new Image("/icon/SapelliPackager.png"));
 		primaryStage.show();
