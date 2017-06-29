@@ -25,6 +25,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
+import uk.ac.ucl.excites.sapelli.packager.ui.Controller;
 
 /**
  * Entry point for the Packager Javafx application. This class setups the UI and launches the app.
@@ -37,11 +38,21 @@ public class Packager extends Application
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
-		Parent root = FXMLLoader.load(getClass().getResource("/PackagerUI.fxml"));
+		final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/PackagerUI.fxml"));
+		final Parent root = fxmlLoader.load();
+		final Scene scene = new Scene(root);
 		primaryStage.setTitle("Sapelli Packager");
-		primaryStage.setScene(new Scene(root));
+		primaryStage.setScene(scene);
 		primaryStage.getIcons().add(new Image("/icon/SapelliPackager.png"));
 		primaryStage.show();
+
+		// Call the Controller close method when the stage is about to close and clean up resources
+		primaryStage.setOnCloseRequest(event ->
+		  {
+			  Controller controller = fxmlLoader.getController();
+			  controller.close();
+		  }
+		);
 	}
 
 	public static void main(String[] args)

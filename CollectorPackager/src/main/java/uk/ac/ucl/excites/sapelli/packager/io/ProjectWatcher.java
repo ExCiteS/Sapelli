@@ -133,6 +133,9 @@ public class ProjectWatcher
 	{
 		isWatching = false;
 		if(watchingThread != null)
+		{
 			watchingThread.interrupt();
+			watchingThread = null;
+		}
 	}
 }

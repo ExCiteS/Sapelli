@@ -73,6 +73,11 @@ public class Controller
 	@FXML
 	private Button packageButton;
 
+	@FXML
+	public void initialize()
+	{
+		// Do any initialisation required here
+	}
 
 	/**
 	 * Method to be called when the Browse button is clicked
@@ -332,10 +337,20 @@ public class Controller
 				break;
 		}
 
-		// Clear old messages and add new 
+		// Clear old messages and add new
 		messageLabel.getChildren().clear();
 		messageLabel.getChildren().addAll(uiMessageManager.getMessages());
 	}
 
+	/**
+	 * Method to be called when the Stage is about to terminate and clean up any resources
+	 */
+	public void close()
+	{
+		log.info("Cleaning up resources in the Controller.");
 
+		// Stop Watching for file changes
+		if(sapelliProjectWatcher != null)
+			sapelliProjectWatcher.stopWatching();
+	}
 }
