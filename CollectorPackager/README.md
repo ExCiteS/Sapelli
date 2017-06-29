@@ -21,6 +21,16 @@ java -jar sapelli-collector-cmdln-VERSION-with-dependencies.jar
 
 ## Gradle Commands
 
+
+
+### List Tasks:
+
+```
+gradlew -q -b CollectorPackager\build.gradle tasks
+```
+
+
+
 ### Clean:
 ```
 gradlew CollectorPackager:clean
@@ -83,3 +93,19 @@ This will place the exe in:
 ```
 ..\CollectorPackager\build\launch4j\Sapelli Packager VERSION.exe
 ```
+
+
+### Prepare archive for GitHub:
+
+This task will create a zip archive, containing the latest version of the packager in an executable (exe) format. The task will firstly run **clean**, **build**, **shadowJar** and **createExe**, so there is no need to run any of those before that. The task will ensure that the version is a release and not a SNAPSHOT version.
+
+```
+gradlew CollectorPackager:archiveRelease
+```
+
+This will place the exe in:
+
+```
+..\CollectorPackager\build\Sapelli Packager VERSION.exe
+```
+
