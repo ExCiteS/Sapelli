@@ -80,14 +80,68 @@ launch4j {
 	productName = packagerTitle
 	mainClassName = packagerMainClass
 	icon = "${project.buildDir}\\resources\\main\\icon\\SapelliPackager.ico"
-	jar = "${project.buildDir}\\libs\\sapelli-collector-packager-2.0.0-SNAPSHOT-with-dependencies.jar"
-	
+	jar = "${project.buildDir}\\libs\\sapelli-collector-packager-${packagerVersion}-with-dependencies.jar"
+
 	println "----------"
-	println "Packger to .exe"
+	println "Collector Packager to .exe"
 	println project.name + ": package name: " + project.group
 	println project.name + ": package version: " + project.version
 	println project.name + ": outfile: " + outfile
 	println project.name + ": icon: " + icon
 	println project.name + ": jar: " + jar
+	println "----------"
+}
+
+/**
+ * Check if a version is snapshot and throw an exception if it is
+ */
+def checkSnapshot = {
+	def snapshot = packagerVersion.toString().contains("SNAPSHOT")
+
+	if (snapshot)
+	{
+		throw new GradleException("This is a SNAPSHOT version. Please change the version and try again.")
+	}
+
+	return !snapshot
+}
+
+/**
+ * Task to zip the release, ready to be upload on GitHub
+ */
+task archiveRelease(type: Zip) {
+
+	description "Prepare an archive for the Sapelli CollectorPackager"
+	group "Sapelli CollectorPackager"
+
+	// Check if the project has a proper version and is not a SNAPSHOT release
+	onlyIf(checkSnapshot)
+
+	// Define task dependencies
+	dependsOn(clean)
+	dependsOn(shadowJar)
+	dependsOn(createExe)
+
+	// Ensure order of dependancies
+	shadowJar.mustRunAfter(clean)
+	createExe.mustRunAfter(shadowJar)
+
+	// Define variables
+	def appNameVesion = packagerTitle + ' v' + packagerVersion
+	def fromDirectory = "${project.buildDir}\\launch4j\\"
+
+	// Gradle ZIP parameters
+	archiveName = appNameVesion + '.zip'
+	destinationDir = new File("${project.buildDir}")
+	includeEmptyDirs = true
+	from fromDirectory
+	into appNameVesion // Add a directory in the zip with the name version of the packager
+	include '*.exe' // Include only the executable
+
+	println "----------"
+	println "Collector Packager to archive"
+	println project.name + ": archiveName: " + archiveName
+	println project.name + ": fromDirectory: " + fromDirectory
+	println project.name + ": destinationDir: " + destinationDir
 	println "----------"
 }
