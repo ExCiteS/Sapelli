@@ -56,7 +56,9 @@ configurations.all {
 	exclude group: "log4j", module: "log4j"
 }
 
-// Fat Jar
+/**
+ * Fat Jar configuration
+ */
 shadowJar {
 	// Name the file sapelli-collector-packager.jar
 	baseName = artifactId
@@ -74,23 +76,39 @@ shadowJar {
 	}
 }
 
-// Create an .exe
+/**
+ * launch4j (Create an .exe) configuration
+ */
 launch4j {
 	outfile = packagerTitle + ' v' + packagerVersion + '.exe'
 	productName = packagerTitle
 	mainClassName = packagerMainClass
 	icon = "${project.buildDir}\\resources\\main\\icon\\SapelliPackager.ico"
 	jar = "${project.buildDir}\\libs\\sapelli-collector-packager-${packagerVersion}-with-dependencies.jar"
-
-	println "----------"
-	println "Collector Packager to .exe"
-	println project.name + ": package name: " + project.group
-	println project.name + ": package version: " + project.version
-	println project.name + ": outfile: " + outfile
-	println project.name + ": icon: " + icon
-	println project.name + ": jar: " + jar
-	println "----------"
 }
+
+/**
+ * Very simple task that just prints some debug info for the launch4j createExe task, this is linked to the createExe task later with the depend on command
+ */
+task createExeInfo {
+
+	description "Very simple task that just prints some debug info for the launch4j createExe task"
+	group "Sapelli CollectorPackager"
+
+	// Show debug info firstly
+	doLast {
+		println "----------"
+		println "Collector Packager to .exe"
+		println project.name + ": package name: " + project.group
+		println project.name + ": package version: " + project.version
+		println project.name + ": outfile: " + launch4j.outfile
+		println project.name + ": icon: " + launch4j.icon
+		println project.name + ": jar: " + launch4j.jar
+		println "----------"
+	}
+}
+// Configure createExeInfo: Run each time before the createExe
+createExe.dependsOn createExeInfo
 
 /**
  * Check if a version is snapshot and throw an exception if it is
@@ -138,10 +156,13 @@ task archiveRelease(type: Zip) {
 	into appNameVesion // Add a directory in the zip with the name version of the packager
 	include '*.exe' // Include only the executable
 
-	println "----------"
-	println "Collector Packager to archive"
-	println project.name + ": archiveName: " + archiveName
-	println project.name + ": fromDirectory: " + fromDirectory
-	println project.name + ": destinationDir: " + destinationDir
-	println "----------"
+	// Show debug info firstly
+	doFirst {
+		println "----------"
+		println "Collector Packager to archive"
+		println project.name + ": archiveName: " + archiveName
+		println project.name + ": fromDirectory: " + fromDirectory
+		println project.name + ": destinationDir: " + destinationDir
+		println "----------"
+	}
 }
