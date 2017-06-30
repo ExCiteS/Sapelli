@@ -44,6 +44,7 @@ public class Packager extends Application
 		final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/PackagerUI.fxml"), bundle);
 		final Parent root = fxmlLoader.load();
 		final Scene scene = new Scene(root);
+		primaryStage.setMaximized(true);
 		primaryStage.setTitle(bundle.getString("app"));
 		primaryStage.setScene(scene);
 		primaryStage.getIcons().add(new Image("/icon/SapelliPackager.png"));
