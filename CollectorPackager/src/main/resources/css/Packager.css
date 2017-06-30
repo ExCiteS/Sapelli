@@ -52,32 +52,11 @@
     -fx-background-color: #7EBDC2;
 }
 
-#package-button {
-    -fx-background-color: #000000,
-    linear-gradient(#7ebcea, #2f4b8f),
-    linear-gradient(#426ab7, #263e75),
-    linear-gradient(#395cab, #223768);
-    -fx-background-insets: 0, 1, 2, 3;
-    -fx-background-radius: 3, 2, 2, 2;
-    -fx-padding: 12 30 12 30;
-    -fx-text-fill: white;
-    -fx-font-size: 12px;
-}
-
-#package-button Text {
-    -fx-effect: dropshadow(one-pass-box, rgba(0, 0, 0, 0.8), 0, 0.0, 0, 1);
-}
-
-#package-button:hover {
-    -fx-background-color: #000000,
-    linear-gradient(#7ebcea, #395fad),
-    linear-gradient(#426ab7, #2b4f8b),
-    linear-gradient(#395cab, #2c4986);
-}
-
-#package-button:pressed {
-    -fx-background-color: #2e2e2e,
-    linear-gradient(#7ebcea, #406ec6),
-    linear-gradient(#426ab7, #3968b8),
-    linear-gradient(#395cab, #3d68bc);
+.button-raised {
+    -fx-padding: 0.8em 0.6em;
+    -fx-font-size: 14px;
+    -jfx-button-type: FLAT;
+    -fx-background-color: rgb(204, 105, 30);
+    -fx-pref-width: 200;
+    -fx-text-fill: WHITE;
 }

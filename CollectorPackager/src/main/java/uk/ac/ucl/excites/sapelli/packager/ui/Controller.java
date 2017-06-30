@@ -19,6 +19,8 @@
 package uk.ac.ucl.excites.sapelli.packager.ui;
 
 
+import com.jfoenix.controls.JFXButton;
+
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.List;
@@ -27,7 +29,6 @@ import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.text.TextFlow;
@@ -74,7 +75,7 @@ public class Controller
 
 	//--- Packager
 	@FXML
-	private Button packageButton;
+	private JFXButton packageButton;
 
 	@FXML
 	public void initialize()
