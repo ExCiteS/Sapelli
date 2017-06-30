@@ -48,6 +48,8 @@ dependencies {
 	compile 'org.jetbrains:annotations:15.0'
 	// Add project lombok
 	compile 'org.projectlombok:lombok:1.16.16'
+	// Material Design for JavaFX
+	compile 'com.jfoenix:jfoenix:1.5.0'
 }
 
 // Define Logger
