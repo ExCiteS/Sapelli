@@ -42,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectUtils;
 import uk.ac.ucl.excites.sapelli.packager.sapelli.ProjectZipper;
 import uk.ac.ucl.excites.sapelli.packager.ui.UiMessageManager.State;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 
 @Slf4j
 public class Controller
@@ -134,7 +135,7 @@ public class Controller
 			{
 				// Create the backup
 				String backupFileName = FileHelpers.trimFileExtensionAndDot(previousFile.toString());
-				backupFileName += "-" + System.currentTimeMillis() + "." + ProjectZipper.SAP_EXTENSION;
+				backupFileName += "-" + TimeUtils.getTimestampForFileName() + "." + ProjectZipper.SAP_EXTENSION;
 
 				File backupFile = new File(backupFileName);
 
