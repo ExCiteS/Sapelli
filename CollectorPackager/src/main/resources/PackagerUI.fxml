@@ -7,61 +7,41 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.text.TextFlow?>
-<AnchorPane fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
-			minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0"
-			stylesheets="@css/Packager.css" xmlns="http://javafx.com/javafx/8.0.111"
-			xmlns:fx="http://javafx.com/fxml/1"
-			fx:controller="uk.ac.ucl.excites.sapelli.packager.ui.Controller">
+
+<AnchorPane fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" stylesheets="@css/Packager.css" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="uk.ac.ucl.excites.sapelli.packager.ui.Controller">
 
 	<!--AnchorPane children-->
 
-	<AnchorPane fx:id="workingDirectoryBackground" prefHeight="50.0" AnchorPane.leftAnchor="0.0"
-				AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+	<AnchorPane fx:id="workingDirectoryBackground" prefHeight="60.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 		<styleClass>
-			<String fx:value="box-with-padding"/>
-			<String fx:value="working-dir-default"/>
+			<String fx:value="box-with-padding" />
+			<String fx:value="working-dir-default" />
 		</styleClass>
 		<!-- Directory label -->
-		<Label fx:id="workingDirectoryLabel"
-			   text="Please select the working directory of the Sapelli project"
-			   AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
-			   AnchorPane.topAnchor="0.0"/>
+		<Label fx:id="workingDirectoryLabel" text="Please select the working directory of the Sapelli project" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
 
 		<!-- Browse Button-->
-		<JFXButton fx:id="buttonBrowse" mnemonicParsing="false" styleClass="button-raised"
-				   onAction="#onBrowseButtonClicked" text="%browse"
-				   AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0"
-				   AnchorPane.topAnchor="0.0"/>
+		<JFXButton fx:id="buttonBrowse" mnemonicParsing="false" onAction="#onBrowseButtonClicked" styleClass="button-raised" text="%browse" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
 	</AnchorPane>
 
-	<AnchorPane prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="50.0"
-				AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-				AnchorPane.topAnchor="50.0">
-		<Label fx:id="warningLabel" prefHeight="50.0" AnchorPane.leftAnchor="0.0"
-			   AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+	<AnchorPane prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="60.0">
+		<Label fx:id="warningLabel" prefHeight="50.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 			<styleClass>
-				<String fx:value="box-with-padding"/>
-				<String fx:value="warning-default"/>
+				<String fx:value="box-with-padding" />
+				<String fx:value="warning-default" />
 			</styleClass>
 		</Label>
-		<ScrollPane layoutX="-1.0" layoutY="50.0" prefHeight="473.0"
-					prefWidth="849.0" AnchorPane.bottomAnchor="0.0"
-					AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-					AnchorPane.topAnchor="50.0">
+		<ScrollPane layoutX="-1.0" layoutY="50.0" prefHeight="473.0" prefWidth="849.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="50.0">
 			<styleClass>
-				<String fx:value="box-with-padding"/>
+				<String fx:value="box-with-padding" />
 			</styleClass>
-			<TextFlow fx:id="messageLabel" maxHeight="1.7976931348623157E308"
-					  maxWidth="1.7976931348623157E308">
+			<TextFlow fx:id="messageLabel" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
 			</TextFlow>
 		</ScrollPane>
 
 	</AnchorPane>
-	<StackPane id="package-container" prefHeight="50.0" AnchorPane.bottomAnchor="0.0"
-			   AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
-		<JFXButton id="package-button" fx:id="packageButton" disable="true"
-				   styleClass="button-raised"
-				   mnemonicParsing="false" onAction="#onPackageButtonClicked" text="Package"/>
+	<StackPane id="package-container" prefHeight="50.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+		<JFXButton id="package-button" fx:id="packageButton" disable="true" mnemonicParsing="false" onAction="#onPackageButtonClicked" styleClass="button-raised" text="Package" />
 	</StackPane>
 
 

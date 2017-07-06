@@ -53,7 +53,7 @@
 }
 
 .button-raised {
-    -fx-padding: 0.8em 0.6em;
+    -fx-padding: 0.5em 0.6em;
     -fx-font-size: 14px;
     -jfx-button-type: FLAT;
     -fx-background-color: rgb(204, 105, 30);
