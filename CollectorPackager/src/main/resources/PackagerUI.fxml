@@ -21,7 +21,8 @@
 		<Label fx:id="workingDirectoryLabel" text="Please select the working directory of the Sapelli project" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
 
 		<!-- Browse Button-->
-		<JFXButton fx:id="buttonBrowse" mnemonicParsing="false" onAction="#onBrowseButtonClicked" styleClass="button-raised" text="%browse" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+		<JFXButton fx:id="buttonBrowse" mnemonicParsing="false" onAction="#onBrowseButtonClicked" styleClass="button-raised" text="%browse" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="60.0" AnchorPane.topAnchor="0.0" />
+		<JFXButton fx:id="buttonAbout" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#onAboutButtonClicked" prefWidth="20" styleClass="button-about" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
 	</AnchorPane>
 
 	<AnchorPane prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="60.0">

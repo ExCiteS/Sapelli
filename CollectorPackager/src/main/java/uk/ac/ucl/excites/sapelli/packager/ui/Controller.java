@@ -29,11 +29,16 @@ import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
 import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import jiconfont.icons.FontAwesome;
+import jiconfont.javafx.IconFontFX;
+import jiconfont.javafx.IconNode;
 import lombok.extern.slf4j.Slf4j;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.packager.io.ProjectWatcher;
@@ -77,12 +82,25 @@ public class Controller
 	//--- Packager
 	@FXML
 	private JFXButton packageButton;
+	@FXML
+	private JFXButton buttonAbout;
 
 	@FXML
 	public void initialize()
 	{
 		// Do any initialisation required here
 		uiMessageManager = new UiMessageManager(resources);
+
+		// Register FontAwesome
+		IconFontFX.register(FontAwesome.getIconFont());
+
+		// Create About icons
+		IconNode aboutIcon = new IconNode(FontAwesome.INFO);
+		aboutIcon.setIconSize(18);
+		aboutIcon.setFill(Color.WHITE);
+
+		buttonAbout.setGraphic(aboutIcon);
+		buttonAbout.setContentDisplay(ContentDisplay.RIGHT);
 	}
 
 	/**
@@ -169,6 +187,16 @@ public class Controller
 
 		// Update the UI
 		updateUI();
+	}
+
+	/**
+	 * Method to be called when the Package button is clicked
+	 *
+	 * @param actionEvent {@link ActionEvent}
+	 */
+	public void onAboutButtonClicked(ActionEvent actionEvent)
+	{
+		// TODO: 06/07/2017  
 	}
 
 	/**

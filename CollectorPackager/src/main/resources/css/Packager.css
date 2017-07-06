@@ -60,3 +60,12 @@
     -fx-pref-width: 200;
     -fx-text-fill: WHITE;
 }
+
+.button-about {
+    -fx-padding: 0;
+    -fx-font-size: 14px;
+    -jfx-button-type: FLAT;
+    -fx-background-color: rgb(204, 105, 30);
+    -fx-pref-width: 50;
+    -fx-text-fill: WHITE;
+}
