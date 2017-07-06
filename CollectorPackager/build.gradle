@@ -38,9 +38,7 @@ compileJava {
 dependencies {
 	// Sapelli Library:
 	compile project(':Library')
-
 	// Other dependencies:
-
 	// Add Logging tools
 	compile 'ch.qos.logback:logback-classic:1.2.3'
 	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
@@ -50,6 +48,9 @@ dependencies {
 	compile 'org.projectlombok:lombok:1.16.16'
 	// Material Design for JavaFX
 	compile 'com.jfoenix:jfoenix:1.5.0'
+	// Font Awesome
+	compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
+	compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.0'
 }
 
 // Define Logger
