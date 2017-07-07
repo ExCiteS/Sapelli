@@ -24,10 +24,11 @@ plugins {
 	id 'edu.sc.seis.launch4j' version '2.3.0'
 }
 
-def artifactId = 'sapelli-collector-packager'
 def packagerTitle = 'Sapelli Packager'
 def packagerMainClass = 'uk.ac.ucl.excites.sapelli.packager.Packager'
-def packagerVersion = '1.0.0-SNAPSHOT'
+def packagerVersion = '1.0.0'
+def appNameVesion = packagerTitle + ' v' + packagerVersion
+
 
 compileJava {
 	options.encoding = 'UTF-8'
@@ -64,9 +65,9 @@ configurations.all {
  */
 shadowJar {
 	// Name the file sapelli-collector-packager.jar
-	baseName = artifactId
-	classifier = 'with-dependencies'
-	version = packagerVersion
+	baseName = appNameVesion
+	classifier = ''
+	version = ''
 	mainClassName = packagerMainClass
 
 	manifest {
@@ -83,11 +84,11 @@ shadowJar {
  * launch4j (Create an .exe) configuration
  */
 launch4j {
-	outfile = packagerTitle + ' v' + packagerVersion + '.exe'
+	outfile = appNameVesion + '.exe'
 	productName = packagerTitle
 	mainClassName = packagerMainClass
 	icon = "${project.buildDir}\\resources\\main\\icon\\SapelliPackager.ico"
-	jar = "${project.buildDir}\\libs\\sapelli-collector-packager-${packagerVersion}-with-dependencies.jar"
+	jar = "${project.buildDir}\\libs\\${appNameVesion}.jar"
 }
 
 /**
@@ -136,7 +137,6 @@ task archiveReleaseWindows(type: Zip) {
 	group "Sapelli CollectorPackager"
 
 	// Define variables
-	def appNameVesion = packagerTitle + ' v' + packagerVersion
 	def fromDirectory = "${project.buildDir}\\launch4j\\"
 
 	// Gradle ZIP parameters
@@ -167,7 +167,6 @@ task archiveReleaseUnix(type: Zip) {
 	group "Sapelli CollectorPackager"
 
 	// Define variables
-	def appNameVesion = packagerTitle + ' v' + packagerVersion
 	def fromDirectory = "${project.buildDir}\\libs\\"
 
 	// Gradle ZIP parameters

@@ -14,7 +14,7 @@ There are two ways to run the CollectorPackager:
 ## Run as a Jar
 To run use:
 ```shell
-java -jar sapelli-collector-cmdln-VERSION-with-dependencies.jar
+java -jar "Sapelli Packager v1.x.x.jar"
 ```
 
 
@@ -51,13 +51,8 @@ gradlew CollectorPackager:shadowJar
 
 which outputs the jar in:
 ```
-..\CollectorPackager\build\libs\sapelli-collector-packager-VERSION-with-dependencies.jar
+..\CollectorPackager\build\libs\Sapelli Packager v1.x.x.jar
 ```
-and will also push the `jar` to the Local Maven Repository. In Windows this is usually under:
-```
-C:\Users\USER_NAME\.m2\repository\uk\ac\ucl\excites\sapelli-collector-packager\VERSION
-```
-
 (You can copy the jar and run it anywhere there is a Java 8+ JDK. It contains all the dependencies it needs so you don't need to install any dependencies on the target machine).
 
 
@@ -91,21 +86,22 @@ gradlew CollectorPackager:createExe
 
 This will place the exe in:
 ```
-..\CollectorPackager\build\launch4j\Sapelli Packager VERSION.exe
+..\CollectorPackager\build\launch4j\Sapelli Packager v1.x.x.exe
 ```
 
 
 ### Prepare archive for GitHub:
 
-This task will create a zip archive, containing the latest version of the packager in an executable (exe) format. The task will firstly run **clean**, **build**, **shadowJar** and **createExe**, so there is no need to run any of those before that. The task will ensure that the version is a release and not a SNAPSHOT version.
+This task will create a zip archive, containing the latest version of the packager for Windows and Unix operating systems (an executable exe and a jar respectively). The task will firstly run **clean**, **build**, **shadowJar** and **createExe**, so there is no need to run any of those before that. The task will ensure that the version is a release and not a **SNAPSHOT** version.
 
 ```
 gradlew CollectorPackager:archiveRelease
 ```
 
-This will place the exe in:
+This will place the the archives under the `\build` directory:
 
 ```
-..\CollectorPackager\build\Sapelli Packager VERSION.exe
+..\CollectorPackager\build\Sapelli Packager v1.x.x-Unix.zip
+..\CollectorPackager\build\Sapelli Packager v1.x.x-Windows.zip
 ```
 
