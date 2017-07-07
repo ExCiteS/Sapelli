@@ -128,9 +128,71 @@ def checkSnapshot = {
 }
 
 /**
+ * Task to zip the release for Windows (exe)
+ */
+task archiveReleaseWindows(type: Zip) {
+
+	description "Prepare a Windows archive for the Sapelli CollectorPackager"
+	group "Sapelli CollectorPackager"
+
+	// Define variables
+	def appNameVesion = packagerTitle + ' v' + packagerVersion
+	def fromDirectory = "${project.buildDir}\\launch4j\\"
+
+	// Gradle ZIP parameters
+	archiveName = appNameVesion + '-Windows.zip'
+	destinationDir = new File("${project.buildDir}")
+	includeEmptyDirs = true
+	from fromDirectory
+	into appNameVesion // Add a directory in the zip with the name version of the packager
+	include '*.exe' // Include only the executable
+
+	// Show debug info firstly
+	doFirst {
+		println "----------"
+		println "Collector Packager to Windows Archive"
+		println project.name + ": archiveName: " + archiveName
+		println project.name + ": fromDirectory: " + fromDirectory
+		println project.name + ": destinationDir: " + destinationDir
+		println "----------"
+	}
+}
+
+/**
+ * Task to zip the release for Unix (Linux/MacOS) (jar)
+ */
+task archiveReleaseUnix(type: Zip) {
+
+	description "Prepare a Unix archive for the Sapelli CollectorPackager"
+	group "Sapelli CollectorPackager"
+
+	// Define variables
+	def appNameVesion = packagerTitle + ' v' + packagerVersion
+	def fromDirectory = "${project.buildDir}\\libs\\"
+
+	// Gradle ZIP parameters
+	archiveName = appNameVesion + '-Unix.zip'
+	destinationDir = new File("${project.buildDir}")
+	includeEmptyDirs = true
+	from fromDirectory
+	into appNameVesion // Add a directory in the zip with the name version of the packager
+	include '*.jar' // Include only the executable
+
+	// Show debug info firstly
+	doFirst {
+		println "----------"
+		println "Collector Packager to Unix Archive"
+		println project.name + ": archiveName: " + archiveName
+		println project.name + ": fromDirectory: " + fromDirectory
+		println project.name + ": destinationDir: " + destinationDir
+		println "----------"
+	}
+}
+
+/**
  * Task to zip the release, ready to be upload on GitHub
  */
-task archiveRelease(type: Zip) {
+task archiveRelease() {
 
 	description "Prepare an archive for the Sapelli CollectorPackager"
 	group "Sapelli CollectorPackager"
@@ -142,30 +204,13 @@ task archiveRelease(type: Zip) {
 	dependsOn(clean)
 	dependsOn(shadowJar)
 	dependsOn(createExe)
+	dependsOn(archiveReleaseWindows)
+	dependsOn(archiveReleaseUnix)
 
 	// Ensure order of dependancies
 	shadowJar.mustRunAfter(clean)
 	createExe.mustRunAfter(shadowJar)
+	archiveReleaseWindows.mustRunAfter(createExe)
+	archiveReleaseUnix.mustRunAfter(archiveReleaseWindows)
 
-	// Define variables
-	def appNameVesion = packagerTitle + ' v' + packagerVersion
-	def fromDirectory = "${project.buildDir}\\launch4j\\"
-
-	// Gradle ZIP parameters
-	archiveName = appNameVesion + '.zip'
-	destinationDir = new File("${project.buildDir}")
-	includeEmptyDirs = true
-	from fromDirectory
-	into appNameVesion // Add a directory in the zip with the name version of the packager
-	include '*.exe' // Include only the executable
-
-	// Show debug info firstly
-	doFirst {
-		println "----------"
-		println "Collector Packager to archive"
-		println project.name + ": archiveName: " + archiveName
-		println project.name + ": fromDirectory: " + fromDirectory
-		println project.name + ": destinationDir: " + destinationDir
-		println "----------"
-	}
 }
