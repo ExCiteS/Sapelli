@@ -19,7 +19,7 @@
    ..\CollectorPackager\build\Sapelli Packager v1.x.x-Windows.zip
    ````
 
-8. Edit the version in CollectorPackager/build.gradle to the correct `1.0.0-SNAPSHOT` (!!!)
+8. Edit the version in `CollectorPackager/build.gradle` to the correct `1.0.0-SNAPSHOT` (!!!)
 
 9. Commit to git (message: _Changed version to 1.0.0-SNAPSHOT to open development of v1.0.X+1_)
 
