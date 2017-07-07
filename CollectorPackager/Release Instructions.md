@@ -2,7 +2,7 @@
 
 1. Edit or create [CollectorPackager/CHANGELOG.md](CHANGELOG.md) to list changes since last release.
 
-2. Edit the version in the [CollectorPackager/build.gradle](build.gradle) to the correct version e.g. 1.0.0
+2. Edit the version in the [CollectorPackager/build.gradle](build.gradle) to the correct version e.g. 1.x.x
 
 3. Ensure that the CollectorPackager builds correctly by running: `gradlew CollectorPackager:build`
 
@@ -19,8 +19,8 @@
    ..\CollectorPackager\build\Sapelli Packager v1.x.x-Windows.zip
    ````
 
-8. Edit the version in `CollectorPackager/build.gradle` to the correct `1.0.0-SNAPSHOT` (!!!)
+8. Edit the version in `CollectorPackager/build.gradle` to the correct `1.x.x-SNAPSHOT` (!!!)
 
-9. Commit to git (message: _Changed version to 1.0.0-SNAPSHOT to open development of v1.0.X+1_)
+9. Commit to git (message: _Changed version to 1.x.x-SNAPSHOT to open development of v1.x.x+1_)
 
 10. Push to github
