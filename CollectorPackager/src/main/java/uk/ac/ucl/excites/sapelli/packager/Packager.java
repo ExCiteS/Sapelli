@@ -18,13 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.packager;
 
+import java.io.IOException;
 import java.util.ResourceBundle;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import uk.ac.ucl.excites.sapelli.packager.ui.Controller;
@@ -37,13 +40,19 @@ import uk.ac.ucl.excites.sapelli.packager.ui.Controller;
 @Slf4j
 public class Packager extends Application
 {
+	private static Stage stage;
+	private static Rectangle2D screenSize;
+	private static ResourceBundle bundle;
+
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
-		final ResourceBundle bundle = ResourceBundle.getBundle("LanguageBundle");
+		// Store stage
+		stage = primaryStage;
+
 		final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/PackagerUI.fxml"), bundle);
 		final Parent root = fxmlLoader.load();
-		final Scene scene = new Scene(root);
+		final Scene scene = new Scene(root, screenSize.getWidth(), screenSize.getHeight());
 		primaryStage.setMaximized(true);
 		primaryStage.setTitle(bundle.getString("app"));
 		primaryStage.setScene(scene);
@@ -61,10 +70,15 @@ public class Packager extends Application
 
 	public static void main(String[] args)
 	{
-		log.info("Sapelli Packer is starting!");
-
 		try
 		{
+			// Get the screen size of the monitor
+			screenSize = Screen.getPrimary().getVisualBounds();
+			log.info("Sapelli Packer is starting to screen with size {} x {} px", screenSize.getWidth(), screenSize.getHeight());
+
+			// Language Bundle
+			bundle = ResourceBundle.getBundle("LanguageBundle");
+
 			launch(args);
 		}
 		catch(Exception e)
