@@ -68,6 +68,21 @@ public class Packager extends Application
 		);
 	}
 
+	/**
+	 * Change the scene of the this Stage
+	 *
+	 * @param sceneName name of the scene
+	 * @throws IOException
+	 */
+	public static void changeScene(String sceneName) throws IOException
+	{
+		final FXMLLoader fxmlLoader = new FXMLLoader(Packager.class.getResource(sceneName), bundle);
+		final Parent root = fxmlLoader.load();
+		final Scene scene = new Scene(root, screenSize.getWidth(), screenSize.getHeight());
+		stage.setScene(scene);
+		stage.sizeToScene();
+	}
+
 	public static void main(String[] args)
 	{
 		try
