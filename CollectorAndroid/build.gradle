@@ -25,6 +25,7 @@ apply plugin: 'org.ajoberstar.grgit'
 def keysFolder = file('../../Keys/') // location of signing keys and other private credentials
 
 repositories {
+    google()
     maven { url 'https://maven.fabric.io/public' }
 }
 
