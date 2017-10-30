@@ -90,7 +90,7 @@ paperwork {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '25.0.0'
+    buildToolsVersion '26.0.2'
 
     signingConfigs {
         release {
@@ -260,8 +260,8 @@ dependencies {
     compile project(':Library')
 
     // Google:
-    compile 'com.android.support:support-v4:25.1.0'
-    compile 'com.android.support:appcompat-v7:25.1.0'
+    compile 'com.android.support:support-v4:25.4.0'
+    compile 'com.android.support:appcompat-v7:25.4.0'
 
     // Other dependencies:
     compile 'com.github.michalis-vitos:aFileChooser:e359025948'

@@ -32,22 +32,22 @@ dependencies {
     //compile fileTree(dir: 'libs', include: ['*.jar'])
 
     // Joda:
-    compile 'joda-time:joda-time:2.9.7'
+    compile 'joda-time:joda-time:2.9.9'
 
     // Apache:
-    compile 'commons-io:commons-io:2.5'
-    compile 'org.apache.commons:commons-lang3:3.5'
-    compile 'com.github.ExCiteS:apache-commons-codec-shaded:1.10' // See https://github.com/ExCiteS/apache-commons-codec-shaded
+    compile 'commons-io:commons-io:2.6'
+    compile 'org.apache.commons:commons-lang3:3.6'
+    compile 'com.github.ExCiteS:apache-commons-codec-shaded:1.11' // See https://github.com/ExCiteS/apache-commons-codec-shaded
     compile 'org.apache.commons:commons-collections4:4.1'
-    compile 'org.apache.commons:commons-compress:1.13'
+    compile 'org.apache.commons:commons-compress:1.15'
     xerces 'xerces:xercesImpl:2.11.0:sources@jar'
-    validator 'commons-validator:commons-validator:1.5.1:sources@jar'
+    validator 'commons-validator:commons-validator:1.6:sources@jar'
 
     // Non-Apache compression libs:
     compile 'org.tukaani:xz:1.6'
 
     // Google:
-    compile 'com.googlecode.libphonenumber:libphonenumber:7.7.5'
+    compile 'com.googlecode.libphonenumber:libphonenumber:8.8.4'
 }
 
 def thirdPartySrcFolder = new File(project.buildDir, 'third-party-src')
