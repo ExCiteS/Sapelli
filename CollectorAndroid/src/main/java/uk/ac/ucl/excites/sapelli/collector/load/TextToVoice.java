@@ -10,7 +10,8 @@ import android.content.Context;
 import android.os.Build;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.util.Log;
+
+import timber.log.Timber;
 
 /**
  * Class that uses the Android TTS (Text-To-Speech) Engine to synthesise a string to a (WAV) file. This class is a synchronous abstraction of Android's
@@ -22,8 +23,6 @@ import android.util.Log;
  */
 public class TextToVoice implements TextToSpeech.OnInitListener
 {
-	
-	private static final String TAG = "TextToVoice";
 	
 	private Context context;
 	private Locale locale;
@@ -54,17 +53,17 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		// Set up listener for when synthesis jobs complete (pre-API 15 listener is now deprecated):
 		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 /* 15 */)
 		{
-			Log.d(TAG, ">= 15 build version detected");
+			Timber.d(">= 15 build version detected");
 			new UtteranceListener15Plus(tts);
 		}
 		else
 		{
-			Log.d(TAG, "< 15 build version detected");
+			Timber.d("< 15 build version detected");
 			new UtteranceListenerSub15(tts);
 		}
 
 		// Block calling thread until the TTS engine is initialised:
-		Log.d("TTV","Waiting for init...");
+		Timber.d("Waiting for init...");
 		try
 		{
 			ttvInitialised.acquire();
@@ -73,7 +72,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		{
 			e.printStackTrace();
 		}
-		Log.d("TTV","Init complete");
+		Timber.d("Init complete");
 
 	}
 
@@ -83,7 +82,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	@Override
 	public void onInit(int status)
 	{
-		Log.d("TTV","INIT !!");
+		Timber.d("INIT !!");
 		if(status == TextToSpeech.SUCCESS && tts != null)
 			ttvInitialised.release();
 		// if null, has probably been destroyed before initialisation completed
@@ -117,14 +116,14 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		
 		// Block thread until synthesis job completes:
 		try
-		{	Log.d("TTV","Waiting for job to complete...");
+		{	Timber.d("Waiting for job to complete...");
 			ttvJobComplete.acquire();
 		}
 		catch(InterruptedException e)
 		{
 			e.printStackTrace();
 		}
-		Log.d("TTV", "Job completed");
+		Timber.d("Job completed");
 	}
 	
 	private int synthesizeToFile(String textToSynthesize, String filepath)
@@ -204,7 +203,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	 */
 	private void onTTSJobCompleted(String synthesisText)
 	{
-		Log.d(TAG, "Completed synthesis for text: " + synthesisText);
+		Timber.d("Completed synthesis for text: " + synthesisText);
 		ttvJobComplete.release();
 	}
 
@@ -239,7 +238,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		@Override
 		public void onStart(String utteranceId)
 		{
-			Log.d(TAG, "Started processing text: " + utteranceId);
+			Timber.d("Started processing text: " + utteranceId);
 		}
 
 		@Override
@@ -251,7 +250,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		@Override
 		public void onError(String utteranceId)
 		{
-			Log.e(TAG, "Error processing text: " + utteranceId);
+			Timber.e("Error processing text: " + utteranceId);
 		}
 
 	}

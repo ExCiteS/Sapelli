@@ -278,7 +278,7 @@ dependencies {
     compile 'hu.supercluster:paperwork:1.2.7'
 
     // Timber for logging:
-    compile 'com.jakewharton.timber:timber:4.5.1'
+    compile 'com.jakewharton.timber:timber:4.6.0'
     // Debug and Crashlytics trees
     compile 'com.github.michalis-vitos:timberutils:1.0.0'
     //  This lib is built using minSdkVersion=15, which we are overriding to the minSdkVersion
