@@ -1,15 +1,16 @@
 package uk.ac.ucl.excites.sapelli.collector.load;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.concurrent.Semaphore;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
 
@@ -43,13 +44,15 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	 */
 	private void setupTTS()
 	{
+		Timber.d("Setting up TTS...");
+
 		// Set up initialisation semaphore so thread blocks waiting for TTS init (else jobs will fail)
 		if(ttvInitialised == null)
 			ttvInitialised = new Semaphore(0);
-		
+
 		// Instantiate TTS engine and subscribe to updates as to when it is ready (it will then call onInit()):
 		tts = new TextToSpeech(context, this);
-		
+
 		// Set up listener for when synthesis jobs complete (pre-API 15 listener is now deprecated):
 		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 /* 15 */)
 		{
@@ -66,14 +69,13 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		Timber.d("Waiting for init...");
 		try
 		{
-			ttvInitialised.acquire();
+			ttvInitialised.tryAcquire(10, TimeUnit.SECONDS);
 		}
 		catch(InterruptedException e)
 		{
-			e.printStackTrace();
+			Timber.e(e);
 		}
 		Timber.d("Init complete");
-
 	}
 
 	/**
@@ -82,7 +84,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	@Override
 	public void onInit(int status)
 	{
-		Timber.d("INIT !!");
+		Timber.d("The TTS has been initialized with status code: %s ", status);
 		if(status == TextToSpeech.SUCCESS && tts != null)
 			ttvInitialised.release();
 		// if null, has probably been destroyed before initialisation completed
@@ -100,6 +102,10 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		if(tts == null)
 			setupTTS();
 
+		// Check again if the the initialization has been completed. If not, just return
+		if(tts == null)
+			return;
+
 		if(text == null || text.isEmpty())
 			throw new TTVSynthesisFailedException("(No text provided)");
 
@@ -116,12 +122,13 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		
 		// Block thread until synthesis job completes:
 		try
-		{	Timber.d("Waiting for job to complete...");
+		{
+			Timber.d("Waiting for job to complete...");
 			ttvJobComplete.acquire();
 		}
 		catch(InterruptedException e)
 		{
-			e.printStackTrace();
+			Timber.e(e);
 		}
 		Timber.d("Job completed");
 	}
