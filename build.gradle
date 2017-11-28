@@ -49,7 +49,7 @@ buildscript {
 
 allprojects {
     group = 'uk.ac.ucl.excites'
-    version = '2.0.0-beta-26'
+    version = '2.0.0-SNAPSHOT'
     // ^ this is the *only* place where we define the Sapelli (app/lib) version
 
     repositories {
