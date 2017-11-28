@@ -840,7 +840,14 @@ public class ProjectManagerActivity extends BaseActivity implements StoreUser, D
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
 				skipRefreshOnMainTabResume = true; // see explanation below
 				// Get the File path from the Uri
-				loadProject(FileUtils.getPath(this, uri));
+				try
+				{
+					loadProject(FileUtils.getPath(this, uri));
+				}
+				catch(Exception e)
+				{
+					Toast.makeText(this, "Cannot load: " + uri, Toast.LENGTH_LONG).show();
+				}
 				break;
 
 			// File browse dialog for record importing:
