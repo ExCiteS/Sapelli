@@ -27,9 +27,15 @@ import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
 import com.crashlytics.android.core.CrashlyticsCore;
+import com.facebook.stetho.InspectorModulesProvider;
 import com.facebook.stetho.Stetho;
+import com.facebook.stetho.inspector.database.DatabaseFilesProvider;
+import com.facebook.stetho.inspector.database.DefaultDatabaseConnectionProvider;
+import com.facebook.stetho.inspector.database.SqliteDatabaseDriver;
+import com.facebook.stetho.inspector.protocol.ChromeDevtoolsDomain;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -57,6 +63,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
 import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 
 /**
@@ -180,11 +187,38 @@ public class CollectorApp extends Application
 	private void setStetho()
 	{
 		// Enable Stetho in Debug versions
-		if (!BuildConfig.DEBUG)
+		if(!BuildConfig.DEBUG)
 			return;
 
-		// Start with a default initialisation
-		Stetho.initializeWithDefaults(this);
+		Timber.d("Enable Stetho");
+
+		Stetho.initialize(Stetho.newInitializerBuilder(this)
+		  .enableWebKitInspector(new InspectorModulesProvider()
+		  {
+			  @Override
+			  public Iterable<ChromeDevtoolsDomain> get()
+			  {
+				  return new Stetho.DefaultInspectorModulesBuilder(CollectorApp.this)
+					.provideDatabaseDriver(createCustomDatabaseDriver(CollectorApp.this))
+					.finish();
+			  }
+		  }).build());
+	}
+
+	private SqliteDatabaseDriver createCustomDatabaseDriver(Context context)
+	{
+		return new SqliteDatabaseDriver(context, new DatabaseFilesProvider()
+		{
+			@Override
+			public List<File> getDatabaseFiles()
+			{
+				List<File> dbs = new ArrayList<>();
+				final String dbPath = SQLiteRecordStore.GetDBFileName(fileStorageProvider.getDBFolder(false).getAbsolutePath() + File.separator + DATABASE_BASENAME);
+				Timber.d("Try to connect to db at: %s", dbPath);
+				dbs.add(new File(dbPath));
+				return dbs;
+			}
+		}, new DefaultDatabaseConnectionProvider());
 	}
 
 	/**
