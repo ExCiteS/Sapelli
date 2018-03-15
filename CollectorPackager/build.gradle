@@ -19,9 +19,9 @@
 plugins {
 	id 'java'
 	id 'application'
-	id "com.github.johnrengelman.shadow" version "2.0.1"
-	id 'com.github.ben-manes.versions' version '0.15.0'
-	id 'edu.sc.seis.launch4j' version '2.3.0'
+	id "com.github.johnrengelman.shadow" version "2.0.2"
+	id 'com.github.ben-manes.versions' version '0.17.0'
+	id 'edu.sc.seis.launch4j' version '2.4.3'
 }
 
 def packagerTitle = 'Sapelli Packager'
@@ -44,11 +44,11 @@ dependencies {
 	compile 'ch.qos.logback:logback-classic:1.2.3'
 	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
 	// Add JetBrains Annotations
-	compile 'org.jetbrains:annotations:15.0'
+	compile 'org.jetbrains:annotations:16.0.1'
 	// Add project lombok
-	compile 'org.projectlombok:lombok:1.16.16'
+	compile 'org.projectlombok:lombok:1.16.20'
 	// Material Design for JavaFX
-	compile 'com.jfoenix:jfoenix:1.5.0'
+	compile 'com.jfoenix:jfoenix:9.0.3'
 	// Font Awesome
 	compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
 	compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.0'
