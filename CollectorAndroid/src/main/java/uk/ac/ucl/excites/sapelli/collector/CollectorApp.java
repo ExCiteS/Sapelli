@@ -1,14 +1,14 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- *
+ * <p>
  * Copyright 2012-2016 University College London - ExCiteS group
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package uk.ac.ucl.excites.sapelli.collector;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.support.v4.os.EnvironmentCompat;
 import android.util.Log;
@@ -35,6 +37,9 @@ import com.facebook.stetho.inspector.database.SqliteDatabaseDriver;
 import com.facebook.stetho.inspector.protocol.ChromeDevtoolsDomain;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +75,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteReco
  * Application App to keep the db4o object throughout the life-cycle of the Collector
  *
  * @author Michalis Vitos, mstevens
- *
  */
 public class CollectorApp extends Application
 {
@@ -158,8 +162,6 @@ public class CollectorApp extends Application
 	 */
 	private void setFabric()
 	{
-		final Context context = getApplicationContext();
-
 		// Set up Crashlytics, disabled for debug builds
 		final CrashlyticsCore crashlyticsCore = new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build();
 		final Crashlytics crashlyticsKit = new Crashlytics.Builder().core(crashlyticsCore).build();
@@ -234,11 +236,13 @@ public class CollectorApp extends Application
 		{
 			sapelliFolder = new File(preferences.getSapelliFolderPath());
 		}
-		catch(NullPointerException npe) {}
+		catch(NullPointerException npe)
+		{
+		}
 
 		// Did we get the folder path from preferences? ...
 		if(sapelliFolder == null)
-		{	// No: first installation or reset
+		{    // No: first installation or reset
 
 			// Find appropriate files dir (using application-specific folder, which is removed upon app uninstall!):
 			File[] paths = DeviceControl.getExternalFilesDirs(this, null);
@@ -262,7 +266,7 @@ public class CollectorApp extends Application
 				throw new FileStorageUnavailableException();
 		}
 		else
-		{	// Yes, we got path from preferences, check if it is available ...
+		{    // Yes, we got path from preferences, check if it is available ...
 			if(!isMountedReadableWritableDir(sapelliFolder)) // (will also attempt to create the directory if it doesn't exist)
 				// No :-(
 				throw new FileStorageRemovedException(sapelliFolder.getAbsolutePath());
@@ -276,8 +280,94 @@ public class CollectorApp extends Application
 			// No :-(
 			throw new FileStorageException("Cannot access downloads folder: " + downloadsFolder.getAbsolutePath());
 
-		// Return path provider
-		return new AndroidFileStorageProvider(sapelliFolder, downloadsFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
+		// Create a test database to get the DB folder
+		TestDatabaseHelper testDatabaseHelper = new TestDatabaseHelper(this);
+
+		// Try to get the Databases folder...
+		File databaseFolder = testDatabaseHelper.getDatabaseFolder();
+		if(!isMountedReadableWritableDir(databaseFolder)) // check if we can access it (will also attempt to create the directory if it doesn't exist)
+			// No :-(
+			throw new FileStorageException("Cannot access database folder: " + databaseFolder.getAbsolutePath());
+
+		final AndroidFileStorageProvider androidFileStorageProvider = new AndroidFileStorageProvider(sapelliFolder, databaseFolder, downloadsFolder);
+
+		moveDB(androidFileStorageProvider);
+
+		return androidFileStorageProvider; // Android specific subclass of FileStorageProvider, which generates .nomedia files
+	}
+
+	/**
+	 * The location for the Sapelli database has changed on Sapelli v2.0.0 beta 27, therefore move
+	 * the DB from the old location to the new one.
+	 *
+	 * @param androidFileStorageProvider
+	 */
+	private void moveDB(AndroidFileStorageProvider androidFileStorageProvider)
+	{
+
+		Timber.d("Old DB path: %s", androidFileStorageProvider.getOldDBFolder(false));
+		Timber.d("New DB path: %s", androidFileStorageProvider.getDBFolder(false));
+
+		try
+		{
+			File oldDB = new File(SQLiteRecordStore.GetDBFileName(androidFileStorageProvider.getOldDBFolder(false).getAbsolutePath() + File.separator + DATABASE_BASENAME));
+			File newDB = new File(androidFileStorageProvider.getDBFolder(false) + File.separator + oldDB.getName());
+
+			Timber.d("Old DB: %s", oldDB);
+			Timber.d("New DB: %s", newDB);
+
+			if(!newDB.exists())
+				newDB.createNewFile();
+
+			if(oldDB.exists())
+			{
+				FileChannel src = new FileInputStream(oldDB).getChannel();
+				FileChannel dst = new FileOutputStream(newDB).getChannel();
+				dst.transferFrom(src, 0, src.size());
+				src.close();
+				dst.close();
+			}
+
+			oldDB.delete();
+		}
+		catch(Exception e)
+		{
+			Timber.e(e);
+		}
+	}
+
+	/**
+	 * Create a "Test.db" in the default location of Android. Use this to get the directory where
+	 * Android stores by default the SQLite database
+	 */
+	public class TestDatabaseHelper extends SQLiteOpenHelper
+	{
+		private static final String DATABASE_NAME = "Test.db";
+		private static final int DATABASE_VERSION = 1;
+		private Context context;
+
+		public TestDatabaseHelper(Context context)
+		{
+			super(context, DATABASE_NAME, null, DATABASE_VERSION);
+			this.context = context;
+		}
+
+		@Override
+		public void onCreate(SQLiteDatabase sqLiteDatabase)
+		{
+			// Do nothing
+		}
+
+		@Override
+		public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1)
+		{
+			// Do nothing
+		}
+
+		public File getDatabaseFolder()
+		{
+			return context.getDatabasePath(DATABASE_NAME).getParentFile();
+		}
 	}
 
 	/**
@@ -315,16 +405,16 @@ public class CollectorApp extends Application
 	{
 		try
 		{
-			return	// Null check:
-					(dir != null)
-					// Try to create the directory if it is not there
-					&& FileHelpers.createDirectory(dir)
+			return    // Null check:
+			  (dir != null)
+				// Try to create the directory if it is not there
+				&& FileHelpers.createDirectory(dir)
 					/* Check storage state, accepting both MEDIA_MOUNTED and MEDIA_UNKNOWN.
 					 * 	The MEDIA_UNKNOWN state occurs when a path isn't backed by known storage media; e.g. the SD Card on
 					 * the Samsung Xcover 2 (the detection of which we have to force in DeviceControl#getExternalFilesDirs()). */
-					&& (Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) || EnvironmentCompat.MEDIA_UNKNOWN.equals(EnvironmentCompat.getStorageState(dir)))
-					// Check whether we have read & write access to the directory:
-					&& FileHelpers.isReadableWritableDirectory(dir);
+				&& (Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) || EnvironmentCompat.MEDIA_UNKNOWN.equals(EnvironmentCompat.getStorageState(dir)))
+				// Check whether we have read & write access to the directory:
+				&& FileHelpers.isReadableWritableDirectory(dir);
 		}
 		catch(Exception e)
 		{
@@ -378,20 +468,19 @@ public class CollectorApp extends Application
 	 */
 	public StoreHandle<?>[] getStoreHandlesForBackup()
 	{
-		return new StoreHandle[] { 	collectorClient.recordStoreHandle,
-									collectorClient.transmissionStoreHandle,
-									collectorClient.projectStoreHandle };
+		return new StoreHandle[]{collectorClient.recordStoreHandle,
+		  collectorClient.transmissionStoreHandle,
+		  collectorClient.projectStoreHandle};
 	}
 
 	/**
 	 * @author mstevens
-	 *
 	 */
 	public final class AndroidCollectorClient extends CollectorClient implements SQLRecordStoreUpgrader.UpgradeCallback
 	{
 
 		private int oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
-		private List<String> upgradeWarnings = Collections.<String> emptyList();
+		private List<String> upgradeWarnings = Collections.<String>emptyList();
 
 		@Override
 		public FileStorageProvider getFileStorageProvider()
@@ -451,7 +540,7 @@ public class CollectorApp extends Application
 		public final void forgetAboutUpgrade()
 		{
 			oldDatabaseVersion = CURRENT_COLLECTOR_RECORDSTORE_VERSION;
-			upgradeWarnings = Collections.<String> emptyList();
+			upgradeWarnings = Collections.<String>emptyList();
 		}
 
 		@Override
