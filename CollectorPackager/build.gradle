@@ -41,14 +41,17 @@ dependencies {
 	compile project(':Library')
 	// Other dependencies:
 	// Add Logging tools
-	compile 'ch.qos.logback:logback-classic:1.2.3'
-	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
+	compile 'ch.qos.logback:logback-core:1.3.0-alpha4'
+	compile 'ch.qos.logback:logback-classic:1.3.0-alpha4'
+	compile 'org.slf4j:slf4j-api:1.8.0-beta1'
+	compile 'org.slf4j:slf4j-simple:1.8.0-beta1'
+	compile 'org.slf4j:log4j-over-slf4j:1.8.0-beta1'
 	// Add JetBrains Annotations
 	compile 'org.jetbrains:annotations:16.0.1'
 	// Add project lombok
 	compile 'org.projectlombok:lombok:1.16.20'
 	// Material Design for JavaFX
-	compile 'com.jfoenix:jfoenix:9.0.3'
+	compile 'com.jfoenix:jfoenix:1.11.1'
 	// Font Awesome
 	compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
 	compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.0'
