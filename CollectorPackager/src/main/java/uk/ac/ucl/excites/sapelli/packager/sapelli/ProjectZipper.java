@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sapelli.packager.sapelli;
 
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
@@ -150,7 +151,11 @@ public class ProjectZipper
 		{
 			byte[] data = new byte[BUFFER_SIZE];
 			source = new BufferedInputStream(new FileInputStream(file), BUFFER_SIZE);
-			zipOutputStream.putNextEntry(new ZipEntry(file.getAbsolutePath().substring(basePathLength))); // use path relative to basePath
+			// Use path relative to basePath e.g. img\cancel.png
+			final String relativePathFile = file.getAbsolutePath().substring(basePathLength);
+			// Convert to Unix file seperators e.g. img/cancel.png
+			final String unixRelativePathFile = FilenameUtils.separatorsToUnix(relativePathFile);
+			zipOutputStream.putNextEntry(new ZipEntry(unixRelativePathFile));
 			int count;
 			while((count = source.read(data, 0, BUFFER_SIZE)) != -1)
 				zipOutputStream.write(data, 0, count);
