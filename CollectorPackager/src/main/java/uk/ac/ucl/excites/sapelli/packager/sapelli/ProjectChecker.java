@@ -159,25 +159,32 @@ public class ProjectChecker
 	public List<String> getMissingFiles()
 	{
 		List<String> missing = new ArrayList<>();
-		File installationDir = fsp.getProjectInstallationFolder(project, false);
-		final Set<File> files = project.getFiles(fsp);
-
-		// Sapelli uses the installation dir to store the imgs/snds/resources etc.
-		// Here we clean the installation dir, thus this:
-		// -- C:\Users\Michalis\Desktop\Working Dir\Projects\GPS Test 5m\v3.0\img\Back.png
-		// will become this:
-		// -- C:\Users\Michalis\Desktop\Working Dir\img\Back.png
-		for(File file : files)
+		try
 		{
-			// Remove installation dir from file
-			String relativePath = FileHelpers.getRelativePath(installationDir, file);
-			File missingFile = new File(sapelliProjectDir + relativePath);
+			File installationDir = fsp.getProjectInstallationFolder(project, false);
+			final Set<File> files = project.getFiles(fsp);
 
-			log.info("Check if '{}' is missing.", missingFile);
+			// Sapelli uses the installation dir to store the imgs/snds/resources etc.
+			// Here we clean the installation dir, thus this:
+			// -- C:\Users\Michalis\Desktop\Working Dir\Projects\GPS Test 5m\v3.0\img\Back.png
+			// will become this:
+			// -- C:\Users\Michalis\Desktop\Working Dir\img\Back.png
+			for(File file : files)
+			{
+				// Remove installation dir from file
+				String relativePath = FileHelpers.getRelativePath(installationDir, file);
+				File missingFile = new File(sapelliProjectDir + relativePath);
 
-			// Check if the file exists or it is missing:
-			if(!missingFile.exists() || !missingFile.isFile())
-				missing.add(missingFile.toString());
+				log.info("Check if '{}' is missing.", missingFile);
+
+				// Check if the file exists or it is missing:
+				if(!missingFile.exists() || !missingFile.isFile())
+					missing.add(missingFile.toString());
+			}
+		}
+		catch(Exception e)
+		{
+			log.error("Cannot get missing files: ", e);
 		}
 
 		return missing;
