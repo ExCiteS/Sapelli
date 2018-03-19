@@ -101,6 +101,17 @@ public class FileStorageProvider
 	private final File sapelliFolder;
 	private final File databaseFolder;
 	private final File downloadsFolder;
+
+
+	/**
+	 * @param sapelliFolder
+	 * @param downloadsFolder
+	 * @throws FileStorageException
+	 */
+	public FileStorageProvider(File sapelliFolder, File downloadsFolder) throws FileStorageException
+	{
+		this(sapelliFolder, sapelliFolder, downloadsFolder);
+	}
 	
 	/**
 	 * @param sapelliFolder
