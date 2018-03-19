@@ -131,7 +131,7 @@ public class SapColCmdLn
 		}
 
 		if(cmd.hasOption("help"))
-			formatter.printHelp("To use CollectorCmdLn, run the jar with the folowing arguments:", options);
+			formatter.printHelp("To use CollectorCmdLn, run the jar with the following arguments:", options);
 
 		System.exit(0);
 	}

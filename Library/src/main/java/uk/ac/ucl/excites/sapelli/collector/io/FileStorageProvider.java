@@ -47,6 +47,11 @@ public class FileStorageProvider
 		DB,
 		
 		/**
+		 * The location for the Sapelli database has changed on Sapelli v2.0.0 beta 27. This points to the old location
+		 */
+		OLD_DB,
+
+		/**
 		 * Folder for back-ups of old database versions (put here before being upgrade by {@link uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader})
 		 */
 		OldDBVersions,
@@ -94,8 +99,10 @@ public class FileStorageProvider
 
 	// DYNAMICS------------------------------------------------------
 	private final File sapelliFolder;
+	private final File databaseFolder;
 	private final File downloadsFolder;
-	
+
+
 	/**
 	 * @param sapelliFolder
 	 * @param downloadsFolder
@@ -103,15 +110,32 @@ public class FileStorageProvider
 	 */
 	public FileStorageProvider(File sapelliFolder, File downloadsFolder) throws FileStorageException
 	{
+		this(sapelliFolder, sapelliFolder, downloadsFolder);
+	}
+	
+	/**
+	 * @param sapelliFolder
+	 * @param databaseFolder
+	 * @param downloadsFolder
+	 * @throws FileStorageException
+	 */
+	public FileStorageProvider(File sapelliFolder, File databaseFolder, File downloadsFolder) throws FileStorageException
+	{
 		try
 		{
 			if(sapelliFolder == null)
 				throw new NullPointerException("SapelliFolder cannot be null!");
 			if(!FileHelpers.createDirectory(sapelliFolder))
 				throw new FileStorageException("Could not access or create directory (" + sapelliFolder.getAbsolutePath() + ")");
-			
+
 			this.sapelliFolder = sapelliFolder;
-	
+
+			if(databaseFolder == null)
+				throw new NullPointerException("DatabaseFolder cannot be null!");
+			if(!FileHelpers.createDirectory(databaseFolder))
+				throw new FileStorageException("Could not access or create directory (" + databaseFolder.getAbsolutePath() + ")");
+			this.databaseFolder = databaseFolder;
+
 			if(downloadsFolder == null)
 				throw new NullPointerException("DownloadsFolder cannot be null!");
 			if(!FileHelpers.createDirectory(downloadsFolder))
@@ -123,20 +147,20 @@ public class FileStorageProvider
 			throw new FileStorageException("Security exception", se);
 		}
 	}
-	
+
 	/**
 	 * @return the root Sapelli folder
 	 * @throws FileStorageException
 	 */
 	public File getSapelliFolder() throws FileStorageException
-	{	
+	{
 		// Use FileHelpers.createFolder() to check if folder exists, and create it if it doesn't:
 		if(FileHelpers.createDirectory(sapelliFolder) && sapelliFolder.canRead())
 			return sapelliFolder;
 		else
 			throw new FileStorageException("Sapelli folder is not or no longer accessible (path: " + sapelliFolder.getAbsolutePath());
 	}
-	
+
 	/**
 	 * @return absolute path to the root Sapelli folder, including trailing file separator (/ or \)
 	 */
@@ -147,7 +171,7 @@ public class FileStorageProvider
 
 	/**
 	 * Return a File for a given folder type.
-	 * 
+	 *
 	 * @param folderType
 	 *            the type of storage file to return.
 	 * @return
@@ -156,9 +180,11 @@ public class FileStorageProvider
 	{
 		switch(folderType)
 		{
-			case DB: 
+			case DB:
 				return getDBFolder(create);
-			case OldDBVersions: 
+			case OLD_DB:
+				return getOldDBFolder(create);
+			case OldDBVersions:
 				return getOldDBVersionsFolder(create);
 			case Attachments:
 				return getAttachmentsFolder(create);
@@ -199,7 +225,7 @@ public class FileStorageProvider
 	{
 		return getProjectSpecificSubFolder(parent, projDescr.getName(), projDescr.getVariant(), projDescr.getVersion(), create);
 	}
-	
+
 	/**
 	 * @param parent
 	 * @param projectName
@@ -218,25 +244,25 @@ public class FileStorageProvider
 								FileHelpers.makeValidFileName("v" + projectVersion),
 								create);
 	}
-	
+
 	public File getProjectsFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.Projects.name(), create);
 	}
 
 	public File getProjectInstallationFolder(ProjectDescriptor projDescr, boolean create) throws FileStorageException
-	{	
+	{
 		return getProjectSpecificSubFolder(getProjectsFolder(create), projDescr, create);
 	}
-	
+
 	public File getProjectInstallationFolder(String projectName, String projectVariant, String projectVersion, boolean create) throws FileStorageException
-	{	
+	{
 		return getProjectSpecificSubFolder(getProjectsFolder(create), projectName, projectVariant, projectVersion, create);
 	}
-	
+
 	/**
 	 * Returns and creates a Sapelli-specific subfolder of the device/system Download folder
-	 * 
+	 *
 	 * @return
 	 * @throws FileStorageException
 	 */
@@ -254,30 +280,35 @@ public class FileStorageProvider
 			throw new FileStorageException("Security exception", se);
 		}
 	}
-	
+
 	public File getDBFolder(boolean create) throws FileStorageException
+	{
+		return getSubFolder(databaseFolder, "", create);
+	}
+
+	public File getOldDBFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.DB.name(), create);
 	}
-	
+
 	public File getOldDBVersionsFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.OldDBVersions.name(), create);
 	}
-	
+
 	public File getCrashFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.Crashes.name(), create);
 	}
-	
+
 	public File getTempFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.Temp.name(), create);
 	}
-	
+
 	/**
 	 * Creates a folder with the given name inside of the Sapelli Temp folder
-	 * 
+	 *
 	 * @param name
 	 * @return
 	 * @throws FileStorageException
@@ -286,7 +317,7 @@ public class FileStorageProvider
 	{
 		return getSubFolder(getTempFolder(true), name, true);
 	}
-	
+
 	public File getExportFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliDownloadsFolder(), Folder.Export.name(), create);
@@ -296,22 +327,22 @@ public class FileStorageProvider
 	{
 		return getSubFolder(getSapelliFolder(), Folder.Attachments.name(), create);
 	}
-	
+
 	public File getProjectAttachmentFolder(ProjectDescriptor projDescr, boolean create) throws FileStorageException
 	{
 		return getProjectSpecificSubFolder(getAttachmentsFolder(create), projDescr, create);
 	}
-	
+
 	public File getLogsFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.Logs.name(), create);
 	}
-	
+
 	public File getProjectLogsFolder(ProjectDescriptor projDescr, boolean create) throws FileStorageException
 	{
 		return getProjectSpecificSubFolder(getLogsFolder(create), projDescr, create);
 	}
-	
+
 	/**
 	 * @param projDescr
 	 * @param imageFileRelativePath
@@ -329,9 +360,9 @@ public class FileStorageProvider
 		{
 			fse.printStackTrace(System.err);
 			return null;
-		}		
+		}
 	}
-	
+
 	/**
 	 * @param projDescr
 	 * @param soundFileRelativePath
@@ -369,11 +400,11 @@ public class FileStorageProvider
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Returns a File object representing a (still uncreated) ZIP file which will be used for a Collector back-up.
 	 * The path will be: <device_download_folder>/Sapelli/Backup_timestamp.zip
-	 * 
+	 *
 	 * @return the ZIP file (not yet created!)
 	 * @throws FileStorageException
 	 */
@@ -400,5 +431,5 @@ public class FileStorageProvider
 			throw new FileStorageException(e);
 		}
 	}
-	
+
 }

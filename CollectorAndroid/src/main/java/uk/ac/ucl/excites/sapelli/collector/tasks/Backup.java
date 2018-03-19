@@ -1,22 +1,30 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ *
  * Copyright 2012-2016 University College London - ExCiteS group
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
 package uk.ac.ucl.excites.sapelli.collector.tasks;
+
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.view.ContextThemeWrapper;
+
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,13 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
-
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
-import android.view.ContextThemeWrapper;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -39,7 +40,6 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folder;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
@@ -52,7 +52,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.sources.Source;
 
 /**
  * Sapelli Collector Back-up procedure 
- * 
+ *
  * @author Michalis Vitos, mstevens
  */
 public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCallback
@@ -61,7 +61,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 	// STATIC -----------------------------------------------------------------
 	static public final Folder[] BACKUPABLE_FOLDERS = { Folder.Attachments, Folder.Crashes, Folder.Export, Folder.Logs, Folder.Projects };
 	static public final String EMPTY_FILE = ".empty";
-	
+
 	static private int getFolderStringID(Folder folder)
 	{
 		switch(folder)
@@ -85,7 +85,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 				throw new IllegalArgumentException("This folder (" + folder.name() + ") cannot be backed-up!");
 		}
 	}
-	
+
 	static private boolean isFolderDefaultSelected(Folder folder)
 	{
 		switch(folder)
@@ -101,6 +101,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			case Downloads:
 			case Temp:
 			case DB: // (see comment above)
+			case OLD_DB: // (see comment above)
 			case OldDBVersions: // (see comment above)
 			default:
 				throw new IllegalArgumentException("This folder (" + folder.name() + ") cannot be backed-up!");
@@ -112,23 +113,21 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		// create Backup instance and start the back-up process by showing the selection diagram...
 		new Backup(activity, fileStorageProvider).showSelectionDialog();
 	}
-	
+
 	// DYNAMIC ----------------------------------------------------------------
 	private final BaseActivity activity;
 	private final FileStorageProvider fileStorageProvider;
 	private final Set<Folder> foldersToExport;
-	
+
 	private final Runnable runBackup;
-	
+
 	private Backup(BaseActivity activity, FileStorageProvider fileStorageProvider)
 	{
 		// Initialise:
 		this.activity = activity;
 		this.fileStorageProvider = fileStorageProvider;
-		foldersToExport = new HashSet<Folder>();
-		// Already add the OldDBVersion folder (not user-selectable but always included):
-		foldersToExport.add(Folder.OldDBVersions);
-		
+		foldersToExport = new HashSet<>();
+
 		// Create runnable:
 		runBackup = new Runnable()
 		{
@@ -139,10 +138,10 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			}
 		};
 	}
-	
+
 	/**
 	 * Brings up the selection dialog (= start of back-up procedure)
-	 * 
+	 *
 	 * Note:
 	 * 	Due to an Android bug (reported by mstevens: https://code.google.com/p/android/issues/detail?id=187416)
 	 * 	we cannot insert a header into the ListView on this dialog as it causes Android to use incorrect list
@@ -163,7 +162,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 				foldersToExport.add(folder);
 			f++;
 		}
-		
+
 		// Get dialog builder & configure the dialog...
 		AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(activity, R.style.AppTheme))
 		//	Set icon:
@@ -214,7 +213,7 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		// Show the dialog:
 		dialog.show();
 	}
-	
+
 	private void showExportYesNoDialog()
 	{
 		// TODO query _before_ asking!?
@@ -248,13 +247,13 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		// Create & show the dialog:
 		.create().show();
 	}
-	
+
 	@Override
 	public void querySuccess(final List<Record> result)
 	{
 		if(result != null && !result.isEmpty())
 		{
-			String title = activity.getString(R.string.preBackupExportTitle); 
+			String title = activity.getString(R.string.preBackupExportTitle);
 			ExportFragment.ShowChoseFormatDialog(
 				activity,
 				title,
@@ -303,13 +302,13 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		else
 			doBackup();
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private void doBackup()
 	{
 		new AsyncBackup(activity).execute(foldersToExport);
 	}
-	
+
 	private void showSuccessDialog(final File destZipFile)
 	{
 		// Get dialog builder & configure the dialog...
@@ -336,28 +335,28 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 		// Create & show the dialog:
 		.create().show();
 	}
-	
+
 	private void showFailureDialog(Exception cause)
 	{
 		activity.showErrorDialog(activity.getString(R.string.backupFailDueTo, ExceptionHelpers.getMessageAndCause(cause)), false);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @author Michalis Vitos, mstevens
 	 */
 	private class AsyncBackup extends AsyncTaskWithWaitingDialog<BaseActivity, Set<Folder>, File>
 	{
-		
+
 		private final CollectorApp app;
 		private Exception failure = null;
-		
+
 		public AsyncBackup(BaseActivity activity)
 		{
 			super(activity);
 			app = activity.getCollectorApp();
 		}
-	
+
 		@Override
 		protected File runInBackground(@SuppressWarnings("unchecked") Set<Folder>... params)
 		{
@@ -369,19 +368,13 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 				publishProgress(activity.getString(R.string.backup_progress_init));
 				//	Create array with file paths of the selected items as well as the Temp/DB folder:
 				Set<Folder> selectedFolders = params[0];
-				File[] toZip = new File[selectedFolders.size() + 1]; // +1 for tmp/DB folder!
+				File[] toZip = new File[selectedFolders.size()];
 				tmpFolder = fileStorageProvider.getTempSubFolder("Backup_" + System.currentTimeMillis());
 				int z = 0;
 				for(Folder folder : foldersToExport)
 					toZip[z++] = getFolderFile(folder, tmpFolder); // add folders as File objects
-				toZip[z] = FileHelpers.getSubDirectory(tmpFolder, Folder.DB.name(), true); // add Temp/Backup_[timestamp]/DB/ folder
-				
-				// Phase 2: Back-up database(s)
-				publishProgress(activity.getString(R.string.backup_progress_db));
-				// 	Create backups in the Temp/Backup_[timestamp]/DB/ folder and use original file names (not labelled as backups):				
-				StoreBackupper.Backup(toZip[z], false, app.getStoreHandlesForBackup());
-				
-				// Phase 3: Create ZIP archive
+
+				// Phase 2: Create ZIP archive
 				publishProgress(activity.getString(R.string.backup_progress_zipping));
 				destZipFile = fileStorageProvider.getNewBackupFile();
 				Zipper.Zip(destZipFile, toZip);
@@ -394,11 +387,12 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			}
 			finally
 			{	// Clean-up
-				FileUtils.deleteQuietly(tmpFolder);
+				for(File file : fileStorageProvider.getTempFolder(false).listFiles())
+					FileUtils.deleteQuietly(file);
 			}
 			return destZipFile;
 		}
-		
+
 		private File getFolderFile(Folder folder, File tmpFolder) throws IOException
 		{
 			File folderFile = fileStorageProvider.getFolder(folder, false);
@@ -411,20 +405,20 @@ public class Backup implements RecordsTasks.QueryCallback, RecordsTasks.ExportCa
 			}
 			return folderFile;
 		}
-	
+
 		@Override
 		protected void onPostExecute(File destZipFile)
 		{
 			// Dismiss progress dialog:
 			super.onPostExecute(destZipFile);
-			
+
 			// Show success or failure dialog:
 			if(destZipFile != null && failure == null)
 				showSuccessDialog(destZipFile);
 			else
 				showFailureDialog(failure);
 		}
-		
+
 	}
-	
+
 }

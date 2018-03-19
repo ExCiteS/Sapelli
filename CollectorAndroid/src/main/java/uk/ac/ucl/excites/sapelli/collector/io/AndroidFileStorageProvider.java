@@ -35,9 +35,9 @@ public class AndroidFileStorageProvider extends FileStorageProvider
 	 */
 	static public final String NO_MEDIA_FILE = ".nomedia";
 
-	public AndroidFileStorageProvider(File sapelliFolder, File downloadsFolder)
+	public AndroidFileStorageProvider(File sapelliFolder, File databaseFolder, File downloadsFolder)
 	{
-		super(sapelliFolder, downloadsFolder);
+		super(sapelliFolder, databaseFolder, downloadsFolder);
 	}
 
 	@Override
