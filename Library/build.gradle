@@ -35,7 +35,7 @@ dependencies {
     compile 'joda-time:joda-time:2.9.9'
 
     // Apache:
-    compile 'commons-io:commons-io:2.6'
+    compile 'commons-io:commons-io:2.5'  // Don't update this to 2.6+ because the latest versions require Java 7 that crashes on certain Android devices because of changes in the io.java.File class
     compile 'org.apache.commons:commons-lang3:3.6'
     compile 'com.github.ExCiteS:apache-commons-codec-shaded:1.11' // See https://github.com/ExCiteS/apache-commons-codec-shaded
     compile 'org.apache.commons:commons-collections4:4.1'
