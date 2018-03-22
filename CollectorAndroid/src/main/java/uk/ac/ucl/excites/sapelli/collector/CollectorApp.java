@@ -36,6 +36,8 @@ import com.facebook.stetho.inspector.database.DefaultDatabaseConnectionProvider;
 import com.facebook.stetho.inspector.database.SqliteDatabaseDriver;
 import com.facebook.stetho.inspector.protocol.ChromeDevtoolsDomain;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -305,30 +307,39 @@ public class CollectorApp extends Application
 	private void moveDB(AndroidFileStorageProvider androidFileStorageProvider)
 	{
 
-		Timber.d("Old DB path: %s", androidFileStorageProvider.getOldDBFolder(false));
-		Timber.d("New DB path: %s", androidFileStorageProvider.getDBFolder(false));
+		final File oldDBFolder = androidFileStorageProvider.getOldDBFolder(false);
+		final File nedDBFolder = androidFileStorageProvider.getDBFolder(false);
+		Timber.d("Old DB path: %s", oldDBFolder);
+		Timber.d("New DB path: %s", nedDBFolder);
 
 		try
 		{
-			File oldDB = new File(SQLiteRecordStore.GetDBFileName(androidFileStorageProvider.getOldDBFolder(false).getAbsolutePath() + File.separator + DATABASE_BASENAME));
-			File newDB = new File(androidFileStorageProvider.getDBFolder(false) + File.separator + oldDB.getName());
-
-			Timber.d("Old DB: %s", oldDB);
-			Timber.d("New DB: %s", newDB);
+			File oldDB = new File(SQLiteRecordStore.GetDBFileName(oldDBFolder.getAbsolutePath() + File.separator + DATABASE_BASENAME));
+			File newDB = new File(nedDBFolder + File.separator + oldDB.getName());
 
 			if(!newDB.exists())
 				newDB.createNewFile();
 
-			if(oldDB.exists())
+			if(oldDB.exists() && newDB.exists())
 			{
+				Timber.d("Move Old DB: %s to %s", oldDB, newDB);
+
 				FileChannel src = new FileInputStream(oldDB).getChannel();
 				FileChannel dst = new FileOutputStream(newDB).getChannel();
 				dst.transferFrom(src, 0, src.size());
 				src.close();
 				dst.close();
-			}
 
-			oldDB.delete();
+				// Delete the old DB
+				FileUtils.deleteQuietly(oldDB);
+
+				// Delete all other files in the old DB e.g. the journal etc.
+				for(File file : oldDBFolder.listFiles())
+					FileUtils.deleteQuietly(file);
+
+				// Finally delete the old directory
+				FileUtils.deleteQuietly(oldDBFolder);
+			}
 		}
 		catch(Exception e)
 		{
