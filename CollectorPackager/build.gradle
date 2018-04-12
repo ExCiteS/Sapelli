@@ -26,7 +26,7 @@ plugins {
 
 def packagerTitle = 'Sapelli Packager'
 def packagerMainClass = 'uk.ac.ucl.excites.sapelli.packager.Packager'
-def packagerVersion = '1.0.2-SNAPSHOT'
+def packagerVersion = '1.0.3'
 def appNameVesion = packagerTitle + ' v' + packagerVersion
 
 

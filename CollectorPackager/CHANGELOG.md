@@ -1,3 +1,8 @@
+## V1.0.3
+
+* Package project even when has warnings.
+* Add refresh button, to quickly refresh the interface.
+
 ## V1.0.2
 
 - Fix bug of UI not refreshing when the PROJECT.xml is empty
