@@ -255,7 +255,7 @@ public class Controller
 			if(project != null && warnings.isEmpty() && errors.isEmpty() && missing.isEmpty())
 			{
 				uiMessageManager.setState(State.SUCCESS);
-				uiMessageManager.addProject(ProjectUtils.printProjectInfo(project));
+				uiMessageManager.addProject(ProjectUtils.printProjectInfo(project), false);
 
 				// Enable the Package button
 				packageButton.setDisable(false);
@@ -264,12 +264,16 @@ public class Controller
 			// Project exists with warnings or missing files, no errors
 			if(project != null && (!warnings.isEmpty() || !missing.isEmpty()) && errors.isEmpty())
 			{
-				// Disable the Package button
-				packageButton.setDisable(true);
+				// Enable the Package button
+				packageButton.setDisable(false);
 
+				// Show warnings
 				uiMessageManager.setState(State.WARNING);
 				uiMessageManager.addWarnings(warnings);
 				uiMessageManager.addMissingFiles(missing);
+
+				// Show the project info
+				uiMessageManager.addProject(ProjectUtils.printProjectInfo(project), true);
 			}
 
 			// CASE 3: ERROR

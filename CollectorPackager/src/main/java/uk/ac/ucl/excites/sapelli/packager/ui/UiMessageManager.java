@@ -50,9 +50,12 @@ public class UiMessageManager
 		messages.add(text);
 	}
 
-	public void addProject(String projectInfo)
+	public void addProject(String projectInfo, boolean hasWarnings)
 	{
-		addString(resources.getString("project_looks_good"), projectInfo);
+		if(hasWarnings)
+			addString(resources.getString("project_with_warnings"), projectInfo);
+		else
+			addString(resources.getString("project_looks_good"), projectInfo);
 	}
 
 	public void addMissingFiles(List<String> missing)
