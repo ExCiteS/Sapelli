@@ -81,6 +81,8 @@ public class Controller
 
 	//--- Packager
 	@FXML
+	private JFXButton buttonRefresh;
+	@FXML
 	private JFXButton packageButton;
 	@FXML
 	private JFXButton buttonAbout;
@@ -94,6 +96,14 @@ public class Controller
 		// Register FontAwesome
 		IconFontFX.register(FontAwesome.getIconFont());
 
+		// Create Refresh icons
+		IconNode refreshIcon = new IconNode(FontAwesome.REFRESH);
+		refreshIcon.setIconSize(18);
+		refreshIcon.setFill(Color.WHITE);
+
+		buttonRefresh.setGraphic(refreshIcon);
+		buttonRefresh.setContentDisplay(ContentDisplay.RIGHT);
+
 		// Create About icons
 		IconNode aboutIcon = new IconNode(FontAwesome.INFO);
 		aboutIcon.setIconSize(18);
@@ -101,6 +111,16 @@ public class Controller
 
 		buttonAbout.setGraphic(aboutIcon);
 		buttonAbout.setContentDisplay(ContentDisplay.RIGHT);
+	}
+
+	/**
+	 * Method to be called when the Refresh button is clicked
+	 *
+	 * @param actionEvent {@link ActionEvent}
+	 */
+	public void onRefreshButtonClicked(ActionEvent actionEvent)
+	{
+		validateProject();
 	}
 
 	/**
