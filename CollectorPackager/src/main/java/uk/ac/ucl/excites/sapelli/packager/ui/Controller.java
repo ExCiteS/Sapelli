@@ -103,6 +103,7 @@ public class Controller
 
 		buttonRefresh.setGraphic(refreshIcon);
 		buttonRefresh.setContentDisplay(ContentDisplay.RIGHT);
+		buttonRefresh.setDisable(true);
 
 		// Create About icons
 		IconNode aboutIcon = new IconNode(FontAwesome.INFO);
@@ -235,6 +236,9 @@ public class Controller
 
 			// Set text
 			workingDirectoryLabel.setText(projectChecker.getSapelliProjectDir().toString());
+
+			// Set refresh button
+			buttonRefresh.setDisable(false);
 		}
 		else
 		{
