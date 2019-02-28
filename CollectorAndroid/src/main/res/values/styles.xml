@@ -19,7 +19,7 @@
 <resources
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:compat="http://schemas.android.com/apk/res-auto"
-    xmlns:app="http://schemas.android.com/apk/res/uk.ac.ucl.excites.sapelli.collector">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <style name="AppTheme" parent="BaseTheme" />
 
