@@ -23,11 +23,6 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.SEND_SMS"/>
-    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
-    <!-- <uses-permission android:name="android.permission.BROADCAST_SMS" /> -->
-    <uses-permission android:name="android.permission.READ_SMS"/>
-    <uses-permission android:name="android.permission.WRITE_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -61,6 +56,7 @@
         android:icon="@drawable/ic_sapelli_logo"
         android:label="@string/app_name"
         android:largeHeap="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/AppTheme">
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"
@@ -115,59 +111,6 @@
             android:name="uk.ac.ucl.excites.sapelli.collector.transmission.DataSendingService"
             android:icon="@drawable/ic_sapelli_logo"
             android:label="CollectorDataSendingService">
-        </service>
-
-        <receiver
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.OutgoingSMSBroadcastReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <!-- These *must* @string/action_sms_sent and @string/action_sms_delivered,
-                	 but sadly Google Play does not allow us to use String resources in intent-filters -->
-                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_SENT"/>
-                <action android:name="uk.ac.ucl.excites.sapelli.tranmission.protocol.sms.out.SMS_DELIVERED"/>
-            </intent-filter>
-        </receiver>
-
-        <service
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.OutgoingSMSCallbackService"
-            android:icon="@drawable/ic_sapelli_logo"
-            android:label="OutgoingSMSCallbackService">
-        </service>
-
-        <receiver
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService$BootListener"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Text"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSBroadcastReceiver$Binary"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter>
-                <action android:name="android.intent.action.DATA_SMS_RECEIVED"/>
-
-                <data android:scheme="sms"/>
-                <data android:port="@integer/binary_sms_port"/>
-            </intent-filter>
-        </receiver>
-
-        <service
-            android:name="uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService"
-            android:icon="@drawable/ic_sapelli_logo"
-            android:label="IncomingSMSReceiverService">
         </service>
 
         <meta-data

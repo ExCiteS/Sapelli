@@ -124,7 +124,7 @@ public class CollectorApp extends Application
 		Debug.d("CollectorApp started.\nBuild info:\n" + buildInfo.getAllInfo());
 
 		// Start Fabric
-		setFabric();
+//		setFabric();
 
 		// Set Timber for logging
 		setTimber();

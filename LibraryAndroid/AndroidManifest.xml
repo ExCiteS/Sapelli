@@ -16,12 +16,10 @@
 	limitations under the License.
  -->
  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.ucl.excites.sapelli"
-    android:versionCode="2"
-    android:versionName="10" >
+    package="uk.ac.ucl.excites.sapelli">
 
     <uses-sdk
-        android:minSdkVersion="10"
+        android:minSdkVersion="14"
         android:targetSdkVersion="19" />
 
     <application />

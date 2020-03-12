@@ -90,16 +90,9 @@ public class PickReceiverTypeFragment extends ProjectManagerFragment implements 
 	@Override
 	public void onClick(View v)
 	{
-		switch(v.getId())
-		{
-			case R.id.btnSMSReceiver:
-				getDialog().dismiss();
-				SMSReceiverFragment.ShowAddDialog(getOwner(), callback);
-				break;
-			case R.id.btnGeoKeyReceiver:
-				getDialog().dismiss();
-				GeoKeyReceiverFragment.ShowAddDialog(getOwner(), callback);
-				break;
+		if (v.getId() == R.id.btnGeoKeyReceiver) {
+			getDialog().dismiss();
+			GeoKeyReceiverFragment.ShowAddDialog(getOwner(), callback);
 		}
 	}
 	

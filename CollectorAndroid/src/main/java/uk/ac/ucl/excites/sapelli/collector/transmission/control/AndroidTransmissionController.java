@@ -26,8 +26,6 @@ import org.joda.time.DateTime;
 import android.telephony.PhoneNumberUtils;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.geokey.AndroidGeoKeyClient;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.in.IncomingSMSReceiverService;
-import uk.ac.ucl.excites.sapelli.collector.transmission.protocol.sms.out.AndroidSMSClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
@@ -35,7 +33,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.android.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 
 /**
  * 
@@ -45,7 +42,6 @@ public class AndroidTransmissionController extends TransmissionController
 {
 
 	private final CollectorApp app;
-	private AndroidSMSClient smsClient;
 	private AndroidGeoKeyClient gkClient;
 	
 	public AndroidTransmissionController(CollectorApp app) throws DBException
@@ -71,14 +67,6 @@ public class AndroidTransmissionController extends TransmissionController
 	}
 
 	@Override
-	public SMSClient getSMSClient()
-	{
-		if(smsClient == null)
-			smsClient = new AndroidSMSClient(app);
-		return smsClient;
-	}
-
-	@Override
 	public GeoKeyClient getGeoKeyClient()
 	{
 		if(gkClient == null)
@@ -90,23 +78,6 @@ public class AndroidTransmissionController extends TransmissionController
 	protected String getApplicationInfo()
 	{
 		return app.getBuildInfo().getNameAndVersion() + " [" + app.getBuildInfo().getExtraVersionInfo() + "]";
-	}
-
-	/**
-	 * @param localID local ID of an incomplete SMSTransmission
-	 * @param time at which to send the request, or null (in which case no request will be scheduled)
-	 */
-	public synchronized void scheduleSMSResendRequest(int localID, TimeStamp time)
-	{
-		IncomingSMSReceiverService.ScheduleResendRequest(app, localID, time.toDateTime());
-	}
-	
-	/**
-	 * @param localID local ID of an incomplete SMSTransmission
-	 */
-	protected synchronized void cancelSMSResendRequest(int localID)
-	{
-		IncomingSMSReceiverService.CancelResendRequest(app, localID);
 	}
 	
 	static public boolean isValidPhoneNumber(String number)

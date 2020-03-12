@@ -136,9 +136,6 @@ public class DataSendingService extends SignalMonitoringService implements Store
 	{
 		switch(sendSchedule.getReceiver().getTransmissionType())
 		{
-			case TEXTUAL_SMS:
-			case BINARY_SMS:
-				return signalMonitor.isInService();
 			case HTTP:
 			case GeoKey:
 				return DeviceControl.isOnline(getApplicationContext());

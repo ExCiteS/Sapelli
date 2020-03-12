@@ -90,7 +90,7 @@ paperwork {
 }
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 28
     buildToolsVersion '26.0.3'
 
     signingConfigs {
@@ -113,11 +113,11 @@ android {
     }
     defaultConfig {
         applicationId project.group + '.sapelli.collector'
-        minSdkVersion 10 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1))
-        targetSdkVersion 22 // = LOLLIPOP_MR1 (for now we do not target 23 or higher, this is to avoid the run-time/revocable permissions of Android 6.0 and higher)
+        minSdkVersion 16 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1))
+        targetSdkVersion 28 // = LOLLIPOP_MR1 (for now we do not target 23 or higher, this is to avoid the run-time/revocable permissions of Android 6.0 and higher)
 
         versionName project.version // defined in root build.gradle file
-        versionCode buildTimeBasedVersionCode() // the number of hours since 2012-01-01T00:00:00.000Z
+        versionCode 70798//buildTimeBasedVersionCode() // the number of hours since 2012-01-01T00:00:00.000Z
         setProperty("archivesBaseName", "sapelli-collector-android-$versionName")
 
         vectorDrawables.useSupportLibrary = true
@@ -129,14 +129,14 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
-            // Signing the app
-            signingConfig signingConfigs.release
-
-            // Fabric release info
-            ext.betaDistributionReleaseNotesFilePath = "$projectDir" + "/beta-notes.txt"
-            // ext.betaDistributionEmailsFilePath = "This is not used for now"
-            // Release it to UCL ExCiteS internal group
-            ext.betaDistributionGroupAliases = "ucl-excites-internal"
+//            // Signing the app
+//            signingConfig signingConfigs.release
+//
+//            // Fabric release info
+//            ext.betaDistributionReleaseNotesFilePath = "$projectDir" + "/beta-notes.txt"
+//            // ext.betaDistributionEmailsFilePath = "This is not used for now"
+//            // Release it to UCL ExCiteS internal group
+//            ext.betaDistributionGroupAliases = "ucl-excites-internal"
         }
         releaseTest { // identical to release except it's debuggable
             initWith(buildTypes.release)
@@ -148,7 +148,7 @@ android {
             versionNameSuffix "-debug"
 
             // Signing the app
-            signingConfig signingConfigs.debug
+//            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -258,34 +258,35 @@ dependencies {
     //testCompile 'junit:junit:4.12'
 
     // Sapelli Library:
-    compile project(':Library')
+    implementation project(':Library')
 
     // Google:
-    compile 'com.android.support:support-v4:25.4.0'
-    compile 'com.android.support:appcompat-v7:25.4.0'
+    implementation 'com.android.support:support-v4:28.0.0'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
 
     // Other dependencies:
-    compile 'com.github.michalis-vitos:aFileChooser:e359025948'
-    compile 'com.caverock:androidsvg:1.2.2-beta-1'
-    compile 'com.jpardogo.materialtabstrip:library:1.1.1'
-    compile 'com.loopj.android:android-async-http:1.4.9'
+    implementation 'com.github.michalis-vitos:aFileChooser:e359025948'
+    implementation 'com.caverock:androidsvg:1.2.2-beta-1'
+    implementation 'com.jpardogo.materialtabstrip:library:1.1.1'
+    implementation 'com.loopj.android:android-async-http:1.4.9'
+//    implementation 'com.github.k0shk0sh:PermissionHelper:1.1.0'
 
     // Crashlytics Kit
-    compile('com.crashlytics.sdk.android:crashlytics:2.6.5@aar') {
+    implementation('com.crashlytics.sdk.android:crashlytics:2.6.5@aar') {
         transitive = true
     }
     // Paperwork
-    compile 'hu.supercluster:paperwork:1.2.7'
+    implementation 'hu.supercluster:paperwork:1.2.7'
 
     // Timber for logging:
-    compile 'com.jakewharton.timber:timber:4.6.0'
+    implementation 'com.jakewharton.timber:timber:4.6.0'
     // Debug and Crashlytics trees
-    compile 'com.github.michalis-vitos:timberutils:1.0.0'
+    implementation 'com.github.michalis-vitos:timberutils:1.0.0'
     //  This lib is built using minSdkVersion=15, which we are overriding to the minSdkVersion
     //  of the app (currently 10) in AndroidManifest.xml, seemingly without problems. If we
     //  switch to a newer release of timber we must re-evaluate whether this is still needed
     //  and still does not cause problems.
 
     // Stetho debugging
-    compile 'com.facebook.stetho:stetho:1.5.0'
+    implementation 'com.facebook.stetho:stetho:1.5.0'
 }

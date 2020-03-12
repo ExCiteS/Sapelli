@@ -33,8 +33,6 @@ import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionReceivingException;
@@ -54,8 +52,6 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	public static enum Type
 	{
-		BINARY_SMS,
-		TEXTUAL_SMS,
 		HTTP,
 		GeoKey,
 		// More later?
@@ -66,11 +62,6 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	static public interface Handler
 	{
-
-		public void handle(BinarySMSTransmission binSMST);
-		
-		public void handle(TextSMSTransmission txtSMST);
-		
 		public void handle(GeoKeyTransmission geoKeyT);
 		
 	}
@@ -486,7 +477,6 @@ public abstract class Transmission<C extends Correspondent>
 	}
 	
 	/**
-	 * @param transmissionController
 	 * @throws TransmissionSendingException
 	 */
 	protected abstract void doSend(TransmissionController controller) throws TransmissionSendingException;

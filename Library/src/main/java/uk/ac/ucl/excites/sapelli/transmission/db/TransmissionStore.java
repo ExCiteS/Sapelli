@@ -67,13 +67,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission.Type;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.UnknownCorrespondentException;
 
 /**
@@ -348,12 +341,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		Correspondent corr;
 		switch(ttype)
 		{
-			case BINARY_SMS:
-				corr = new SMSCorrespondent(localID, name, address, true);
-				break;
-			case TEXTUAL_SMS:
-				corr = new SMSCorrespondent(localID, name, address, false);
-				break;
 			case GeoKey:
 				corr = new GeoKeyServer(localID, name, address);
 				break;
@@ -391,25 +378,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		for(Record record : recordStore.retrieveRecords(query))
 			CollectionUtils.addIgnoreNull(correspondents, correspondentFromRecord(record)); // convert to Correspondent objects
 		return correspondents;
-	}
-
-	/**
-	 * Retrieves the SMSCorrespondent with the given phone number and binary/text mode
-	 * 
-	 * @param phoneNumber
-	 * @param binarySMS
-	 * @return the correspondent or null
-	 */
-	public SMSCorrespondent retrieveSMSCorrespondent(PhoneNumber phoneNumber, boolean binarySMS)
-	{
-		return (SMSCorrespondent) retrieveCorrespondentByQuery(
-			new FirstRecordQuery(	CORRESPONDENT_SCHEMA,
-									new EqualityConstraint(CORRESPONDENT_COLUMN_ADDRESS, SMSCorrespondent.getAddressString(phoneNumber)),
-									new RuleConstraint(	CORRESPONDENT_COLUMN_TRANSMISSION_TYPE,
-														Comparison.EQUAL,
-														(binarySMS ?
-															Transmission.Type.BINARY_SMS :
-															Transmission.Type.TEXTUAL_SMS).ordinal())));
 	}
 	
 	/**
@@ -613,33 +581,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 		// Instantiate Transmissions & Messages:
 		switch(type)
 		{
-			case BINARY_SMS:
-				// create a new SMSTransmission object:
-				BinarySMSTransmission binarySMST =  new BinarySMSTransmission(client, this.<SMSCorrespondent> correspondentFromRecord(cRec), incoming, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, (BinarySMSTransmission) response, numberOfSentResendRequests, lastResendReqSentAt);
-				// add each part we got from the query:
-				for(Record tPartRec : tPartRecs)
-					binarySMST.addPart(new BinaryMessage(	binarySMST,
-															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
-															totalParts,
-															retrieveTimeStamp(COLUMN_SENT_AT, tPartRec),
-															retrieveTimeStamp(TRANSMISSION_PART_COLUMN_DELIVERED_AT, tPartRec),
-															retrieveTimeStamp(COLUMN_RECEIVED_AT, tPartRec),
-															BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec),
-																				TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(tPartRec).intValue())));
-				return binarySMST;
-			case TEXTUAL_SMS:
-				// create a new SMSTransmission object:
-				TextSMSTransmission textSMST = new TextSMSTransmission(client, this.<SMSCorrespondent> correspondentFromRecord(cRec), incoming, localID, remoteID, payloadType, payloadHash, sentAt, receivedAt, (TextSMSTransmission) response, numberOfSentResendRequests, lastResendReqSentAt);
-				// add each part we got from the query:
-				for(Record tPartRec : tPartRecs)
-					textSMST.addPart(new TextMessage(	textSMST,
-														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(tPartRec).intValue(),
-														totalParts,
-														retrieveTimeStamp(COLUMN_SENT_AT, tPartRec),
-														retrieveTimeStamp(TRANSMISSION_PART_COLUMN_DELIVERED_AT, tPartRec),
-														retrieveTimeStamp(COLUMN_RECEIVED_AT, tPartRec),
-														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRec))));
-				return textSMST;
 			case GeoKey:
 				return new GeoKeyTransmission(client, this.<GeoKeyServer> correspondentFromRecord(cRec), incoming, localID, remoteID, payloadType, payloadHash, lastResendReqSentAt, receivedAt, (GeoKeyTransmission) response, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)));
 			default:
@@ -738,39 +679,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	public Transmission<?> retrieveTransmission(boolean incoming, Transmission.Type type, Correspondent correspondent, int remoteID, int payloadHash, int numberOfParts) throws IllegalStateException, UnknownCorrespondentException
 	{
 		return retrieveTransmissionByQuery(getTransmissionsQuery(incoming, type, null, remoteID, correspondent, payloadHash, numberOfParts), false);
-	}
-	
-	/**
-	 * Retrieve an incoming or outgoing SMS transmission by its local ID, type (binary/textual) and number of parts.
-	 * 
-	 * @param incoming if {@code true} the transmission was received on the local device, if {@code false} it was created for sending from the local device to another one
-	 * @param localID
-	 * @param binary
-	 * @param numberOfParts
-	 * @return a matching Transmission, or {@code null} if no such transmission was found or an error occurred (check log output).
-	 */
-	public SMSTransmission<?> retrieveSMSTransmission(boolean incoming, int localID, boolean binary, int numberOfParts)
-	{
-		return (SMSTransmission<?>) retrieveTransmissionByQuery(getTransmissionsQuery(incoming, binary ? Type.BINARY_SMS : Type.TEXTUAL_SMS, localID, null, null, null, numberOfParts), true);
-	}
-
-	/**
-	 * Returns a list of received but incomplete SMSTransmissions.
-	 * 
-	 * Note: this only deals with SMSTransmissions as an HTTPTransmission cannot (yet) be incomplete.
-	 * 
-	 * @return a list of incomplete SMSTransmissions
-	 */
-	public List<SMSTransmission<?>> retrieveIncompleteSMSTransmissions()
-	{
-		List<SMSTransmission<?>> incompleteSMSTs = new ArrayList<SMSTransmission<?>>();
-		
-		// query DB for transmissions which are incomplete (have "null" as their receivedAt value):
-		for(Transmission<?> t : retrieveTransmissionsByQuery(new RecordsQuery(Source.From(getTransmissionSchema(true)), EqualityConstraint.IsNull(COLUMN_RECEIVED_AT))))
-			if(t instanceof SMSTransmission)
-				incompleteSMSTs.add((SMSTransmission<?>) t); // cast these transmissions as SMSTransmissions
-		
-		 return incompleteSMSTs;
 	}
 	
 	/**
@@ -923,7 +831,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * (and therefore intended for its receiver).
 	 * Note that the result should be the (bar order) as getting the records from the Transmission's RecordsPayload.
 	 * 
-	 * @param correspondent
 	 * @param model
 	 * @param transmission
 	 * @return
@@ -989,7 +896,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	/**
 	 * @param correspondent
 	 * @param model
-	 * @param timeOutS
 	 * @return
 	 */
 	public synchronized List<Record> retrieveTransmittableRecordsForResending(Correspondent correspondent, Model model)
@@ -1087,7 +993,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	/**
 	 * @param correspondent
 	 * @param model
-	 * @param contraint - may be null
+	 * @param constraint - may be null
 	 * @return a possibly empty list of {@link #TRANSMITTABLE_RECORDS_SCHEMA} records
 	 */
 	private List<Record> retrieveTransmittableRecords(Correspondent correspondent, Model model, Order order, Constraint constraint)
@@ -1185,12 +1091,6 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			// Use double dispatch for subclass-specific work:
 			correspondent.handle(this);
 		}
-		
-		@Override
-		public void handle(SMSCorrespondent smsCorrespondent)
-		{
-			// does nothing (for now)
-		}
 
 		@Override
 		public void handle(GeoKeyServer geokeyAccount)
@@ -1205,7 +1105,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 	 * 
 	 * @author mstevens
 	 */
-	private class TransmissionRecordGenerator implements Transmission.Handler, Message.Handler
+	private class TransmissionRecordGenerator implements Transmission.Handler
 	{
 
 		private Record tRecord;
@@ -1259,54 +1159,7 @@ public class TransmissionStore extends RecordStoreWrapper<TransmissionClient>
 			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, partNumber);
 			return tPartRec;
 		}
-		
-		private void handleSMS(SMSTransmission<?> smsT)
-		{
-			// Set SMS-specific values:
-			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRecord, smsT.getTotalNumberOfParts());
-			if(smsT.incoming)
-			{	// columns only occuring on receiving side:
-				TRANSMISSION_COLUMN_NUMBER_OF_RESEND_REQS_SENT.storeValue(tRecord, smsT.getNumberOfSentResendRequests());
-				TRANSMISSION_COLUMN_LAST_RESEND_REQS_SENT_AT.storeValue(tRecord, smsT.getLastResendRequestSentAt());
-			}
-			// Make records for the parts...
-			for(Message<?, ?> msg : smsT.getParts())
-			{
-				Record tPartRec = newPartRecord(smsT, msg.getPartNumber()); // adds to the tPartRecords list as well
-				
-				// Set columns (except for foreign key):
-				COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
-				TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
-				COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
-				msg.handle(this); // will set part body and body bit length
-			}
-		}
-		
-		@Override
-		public void handle(BinarySMSTransmission binSMST)
-		{
-			handleSMS(binSMST);
-		}
 
-		@Override
-		public void handle(TextSMSTransmission txtSMST)
-		{
-			handleSMS(txtSMST);
-		}
-
-		@Override
-		public void handle(BinaryMessage binMsg)
-		{
-			BitArray bits = binMsg.getBody();
-			setPartBody(bits.toByteArray(), bits.length());
-		}
-
-		@Override
-		public void handle(TextMessage txtMsg)
-		{
-			setPartBody(StringToBytes(txtMsg.getBody()));
-		}
-		
 		@Override
 		public void handle(GeoKeyTransmission geoKeyT)
 		{
