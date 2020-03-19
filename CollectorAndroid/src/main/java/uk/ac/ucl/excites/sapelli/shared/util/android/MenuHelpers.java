@@ -49,7 +49,7 @@ public final class MenuHelpers
 		AndroidMenuBuilderClass = amb;
 	}
 
-	static private final Class<?> AppCompatMenuBuilderClass = android.support.v7.view.menu.MenuBuilder.class;
+	static private final Class<?> AppCompatMenuBuilderClass = androidx.appcompat.view.menu.MenuBuilder.class;
 
 	static private final Class<?>[] MenuBuilderClasses = { AndroidMenuBuilderClass, AppCompatMenuBuilderClass };
 
@@ -68,7 +68,7 @@ public final class MenuHelpers
 		AndroidMenuItemImplClass = amii;
 	}
 
-	static private final Class<?> AppCompatMenuItemImplClass = android.support.v7.view.menu.MenuItemImpl.class;
+	static private final Class<?> AppCompatMenuItemImplClass = androidx.appcompat.view.menu.MenuItemImpl.class;
 
 	static protected final Class<?>[] MenuItemImplClasses = { AndroidMenuItemImplClass, AppCompatMenuItemImplClass };
 

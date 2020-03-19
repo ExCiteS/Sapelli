@@ -21,8 +21,10 @@ package uk.ac.ucl.excites.sapelli.collector.fragments;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -70,7 +72,7 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	/**
 	 * Note: it's OK to return null from here
 	 * 
-	 * @see android.support.v4.app.Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
+	 * @see Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
 	 */
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
@@ -183,8 +185,8 @@ public abstract class ProjectManagerFragment extends DialogFragment
 	 * Adds a child fragment to the given container view.
 	 * 
 	 * Note:
-	 * 	We use {@link android.support.v4.app.FragmentTransaction#commitAllowingStateLoss()}
-	 * 	instead of {@link android.support.v4.app.FragmentTransaction#commit()} to avoid the
+	 * 	We use {@link FragmentTransaction#commitAllowingStateLoss()}
+	 * 	instead of {@link FragmentTransaction#commit()} to avoid the
 	 * 	"Can not perform this action after onSaveInstanceState" IllegalStateException, which
 	 * 	may occur if this method called while the activity is finishing (for example when it
 	 * 	is being called from the onPostExecute() method of an AsyncTask which was running

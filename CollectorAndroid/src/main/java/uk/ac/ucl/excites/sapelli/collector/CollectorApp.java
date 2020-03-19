@@ -19,59 +19,25 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import android.app.Application;
-import android.content.Context;
-import android.content.res.Configuration;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.os.Environment;
-import android.support.v4.os.EnvironmentCompat;
 import android.util.Log;
 
-import com.crashlytics.android.Crashlytics;
-import com.crashlytics.android.core.CrashlyticsCore;
-import com.facebook.stetho.InspectorModulesProvider;
-import com.facebook.stetho.Stetho;
-import com.facebook.stetho.inspector.database.DatabaseFilesProvider;
-import com.facebook.stetho.inspector.database.DefaultDatabaseConnectionProvider;
-import com.facebook.stetho.inspector.database.SqliteDatabaseDriver;
-import com.facebook.stetho.inspector.protocol.ChromeDevtoolsDomain;
-
-import org.apache.commons.io.FileUtils;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import gr.michalisvitos.timberutils.CrashlyticsTree;
-import gr.michalisvitos.timberutils.DebugTree;
-import io.fabric.sdk.android.Fabric;
-import timber.log.Timber;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorSQLRecordStoreUpgrader;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.io.AndroidFileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
-import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreSetter;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.android.Debug;
-import uk.ac.ucl.excites.sapelli.shared.util.android.DeviceControl;
-import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStoreUpgrader;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 
 /**
@@ -152,7 +118,7 @@ public class CollectorApp extends Application
 		if(fileStorageException != null)
 			throw fileStorageException;
 		else //if(fileStorageProvider == null && fileStorageException == null
-			throw new FileStorageUnavailableException("FileStorageProvider has not been initialised yet, please call initialiseFileStorage() first."); // this shouldn't happen
+			return null;
 	}
 
 	/**

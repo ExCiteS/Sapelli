@@ -113,8 +113,8 @@ android {
     }
     defaultConfig {
         applicationId project.group + '.sapelli.collector'
-        minSdkVersion 10 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1))
-        targetSdkVersion 22
+        minSdkVersion 14 // = GINGERBREAD_MR1 (as found on Samsung Galaxy Xcover(1))
+        targetSdkVersion 28
         // = LOLLIPOP_MR1 (for now we do not target 23 or higher, this is to avoid the run-time/revocable permissions of Android 6.0 and higher)
 
         versionName project.version // defined in root build.gradle file
@@ -155,8 +155,8 @@ android {
     }
     compileOptions {
         encoding 'UTF-8'
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
@@ -263,8 +263,8 @@ dependencies {
     implementation project(':Library')
 
     // Google:
-    implementation 'com.android.support:support-v4:25.4.0'
-    implementation 'com.android.support:appcompat-v7:25.4.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.0.0'
 
     // Other dependencies:
     implementation 'com.github.michalis-vitos:aFileChooser:e359025948'
@@ -290,4 +290,7 @@ dependencies {
 
     // Stetho debugging
     implementation 'com.facebook.stetho:stetho:1.5.0'
+
+    implementation 'pub.devrel:easypermissions:2.0.1'
+    implementation 'com.yanzhenjie:permission:2.0.3'
 }

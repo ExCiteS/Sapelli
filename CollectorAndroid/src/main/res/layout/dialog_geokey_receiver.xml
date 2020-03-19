@@ -28,14 +28,14 @@
         android:paddingTop="10dp"
         android:text="@string/url" />
 
-    <android.support.v7.widget.AppCompatEditText
+    <androidx.appcompat.widget.AppCompatEditText
         android:id="@+id/txtGeoKeyServerURL"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textUri">
         <requestFocus/>
-    </android.support.v7.widget.AppCompatEditText>
+    </androidx.appcompat.widget.AppCompatEditText>
     
 	<LinearLayout
 	    android:layout_width="match_parent"
