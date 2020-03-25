@@ -3,19 +3,15 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.os.EnvironmentCompat;
 
 import com.crashlytics.android.Crashlytics;
@@ -26,10 +22,6 @@ import com.facebook.stetho.inspector.database.DatabaseFilesProvider;
 import com.facebook.stetho.inspector.database.DefaultDatabaseConnectionProvider;
 import com.facebook.stetho.inspector.database.SqliteDatabaseDriver;
 import com.facebook.stetho.inspector.protocol.ChromeDevtoolsDomain;
-import com.yanzhenjie.permission.AndPermission;
-import com.yanzhenjie.permission.Rationale;
-import com.yanzhenjie.permission.RequestExecutor;
-import com.yanzhenjie.permission.runtime.Permission;
 
 import org.apache.commons.io.FileUtils;
 
@@ -65,7 +57,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 
 import static uk.ac.ucl.excites.sapelli.collector.CollectorApp.DATABASE_BASENAME;
 
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
     // STATICS------------------------------------------------------------
     static protected final String TAG = "CollectorApp";
@@ -74,10 +66,12 @@ public class SplashActivity extends AppCompatActivity {
     static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
     static private final int PERMISSIONS_REQUEST = 123;
     String[] perms = {
-            Permission.CAMERA,
-            Permission.ACCESS_FINE_LOCATION,
-            Permission.RECORD_AUDIO,
-            Permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.CAMERA,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_EXTERNAL_STORAGE
     };
     private CollectorApp app;
 
@@ -360,6 +354,15 @@ public class SplashActivity extends AppCompatActivity {
 
     public CollectorApp.AndroidCollectorClient getCollectorClient() {
         return getCollectorApp().collectorClient;
+    }
+
+    @Override
+    public void onPermissionsGranted(int requestCode, @NonNull List<String> perms) {
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode, @NonNull List<String> perms) {
+        recreate();
     }
 
     public static enum StorageStatus {

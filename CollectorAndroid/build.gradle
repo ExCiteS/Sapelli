@@ -85,7 +85,7 @@ paperwork {
             gitTag      : gitTag(),
             gitInfo     : gitInfo(),
             gitBranch   : gitBranch(),
-            userName    : "bala"//System.getProperty("user.name") // OS user
+            userName    : System.getProperty("user.name") // OS user
     ]
 }
 
@@ -291,6 +291,5 @@ dependencies {
     // Stetho debugging
     implementation 'com.facebook.stetho:stetho:1.5.0'
 
-    implementation 'pub.devrel:easypermissions:2.0.1'
-    implementation 'com.yanzhenjie:permission:2.0.3'
+    implementation 'pub.devrel:easypermissions:3.0.0'
 }
