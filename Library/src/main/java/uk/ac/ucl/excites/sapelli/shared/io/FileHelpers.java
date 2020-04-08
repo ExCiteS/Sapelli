@@ -470,13 +470,19 @@ public final class FileHelpers
 	}
 
 	/**
-	 * @param file
+	 * @param directory
 	 * @return true if the file object is not null and represents an existing, read/writable directory, false otherwise
 	 */
 	static public boolean isReadableWritableDirectory(File directory)
 	{
 		try
 		{
+			System.out.println("null " + directory != null +
+					"\n exists " + directory.exists() +
+					"\n isDirectory " + directory.isDirectory() +
+					"\n canRead " + directory.canRead() +
+					"\n canWrite " + directory.canWrite());
+
 			return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
 		}
 		catch(SecurityException se)

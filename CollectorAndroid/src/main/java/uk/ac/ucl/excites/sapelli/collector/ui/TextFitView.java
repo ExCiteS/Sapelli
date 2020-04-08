@@ -183,7 +183,10 @@ public class TextFitView extends View
 		
 		// Draw text on shifted canvas:
 		layout.draw(canvas);
-		
+
+		// Save translate
+		canvas.save();
+
 		// Undo translate:
 		canvas.restore();
 	}

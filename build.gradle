@@ -49,13 +49,14 @@ buildscript {
 
 allprojects {
     group = 'uk.ac.ucl.excites'
-    version = '2.0.0-SNAPSHOT'
+    version = '2.0.5'
     // ^ this is the *only* place where we define the Sapelli (app/lib) version
 
     repositories {
         jcenter()
         mavenCentral()
         maven { url 'https://jitpack.io' }
+        google()
     }
 }
 

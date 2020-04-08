@@ -82,7 +82,7 @@
                 android:padding="2dp"
                 android:src="@drawable/ic_sms_bin_black_24dp" />
 
-            <android.support.v7.widget.SwitchCompat
+            <androidx.appcompat.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="fill_parent"
                 android:clickable="false"
@@ -105,7 +105,7 @@
                 android:padding="2dp"
                 android:src="@drawable/ic_sms_txt_black_24dp" />
 
-            <android.support.v7.widget.SwitchCompat
+            <androidx.appcompat.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="fill_parent"
                 android:clickable="false"

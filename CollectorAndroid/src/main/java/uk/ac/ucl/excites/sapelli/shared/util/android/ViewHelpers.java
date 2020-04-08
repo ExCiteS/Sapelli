@@ -23,7 +23,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -74,7 +74,7 @@ public final class ViewHelpers
 		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && !(activity instanceof AppCompatActivity))
 			return activity.findViewById(android.R.id.home);
 		else
-			return activity.findViewById(android.support.v7.appcompat.R.id.home);
+			return activity.findViewById(androidx.appcompat.R.id.home);
 	}
 	
 	/**
@@ -86,7 +86,7 @@ public final class ViewHelpers
 	static public int getDefaultDialogPaddingPx(Activity activity)
 	{
 		TypedValue typedValue = new TypedValue(); 
-		activity.getTheme().resolveAttribute(android.support.v7.appcompat.R.attr.dialogPreferredPadding, typedValue, true);
+		activity.getTheme().resolveAttribute(androidx.appcompat.R.attr.dialogPreferredPadding, typedValue, true);
 		return (int) TypedValue.complexToDimensionPixelSize(typedValue.data, activity.getResources().getDisplayMetrics());
 	}
 

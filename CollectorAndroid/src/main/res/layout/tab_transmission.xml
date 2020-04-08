@@ -30,7 +30,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal" >
 
-        <android.support.v7.widget.SwitchCompat
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switchSend"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -107,7 +107,7 @@
         android:orientation="horizontal"
         android:visibility="gone" ><!-- hidden (for now) -->
 
-        <android.support.v7.widget.SwitchCompat
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switchReceive"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

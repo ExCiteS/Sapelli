@@ -37,7 +37,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
@@ -75,8 +74,6 @@ public abstract class Payload
 				return new RecordsPayload();
 			case Ack:
 				return new AckPayload();
-			case ResendRequest:
-				return new ResendRequestPayload();
 			case ModelQuery:
 				return new ModelQueryPayload();
 			case ModelRequest:
@@ -139,9 +136,7 @@ public abstract class Payload
 		public void handle(AckPayload ackPayload) throws Exception;
 		
 		public void handle(RecordsPayload recordsPayload) throws Exception;
-		
-		public void handle(ResendRequestPayload resendRequestPayload) throws Exception;
-		
+
 		public void handle(ModelQueryPayload modelQueryPayload) throws Exception;
 		
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception;

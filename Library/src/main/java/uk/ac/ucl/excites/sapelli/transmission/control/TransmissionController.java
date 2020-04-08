@@ -26,12 +26,9 @@ import java.util.Map;
 
 import org.joda.time.DateTime;
 
-import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
-
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileStorageException;
-import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
@@ -39,7 +36,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -52,24 +48,14 @@ import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelQueryPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.NoSuchTransmissionPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyServer;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.geokey.GeoKeyTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.protocol.geokey.GeoKeyClient;
-import uk.ac.ucl.excites.sapelli.transmission.protocol.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionReceivingException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionSendingException;
-import uk.ac.ucl.excites.sapelli.transmission.util.UnknownCorrespondentException;
 
 /**
  * Controller class to handling all incoming / outgoing transmissions.
@@ -97,7 +83,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	protected final TransmissionStore transmissionStore;
 	
 	// Handlers:
-	private final SMSReceiver smsReceiver = new SMSReceiver();
 	private final PayloadReceiver payloadReceiver;
 	private final PayloadAckHandler payloadAckHandler;
 	
@@ -171,8 +156,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		return false; // default
 	}
-	
-	public abstract SMSClient getSMSClient();
 	
 	public abstract GeoKeyClient getGeoKeyClient();
 	
@@ -310,10 +293,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	{
 		switch(receiver.getTransmissionType())
 		{
-			case BINARY_SMS:
-				return new BinarySMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
-			case TEXTUAL_SMS:
-				return new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
 			case GeoKey:
 				return new GeoKeyTransmission(transmissionClient, (GeoKeyServer) receiver, payload);
 			default:
@@ -411,187 +390,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	}
 	
 	// ----- "handle"/"receive" methods for different transmission types:
-	
-	/**
-	 * @param phoneNumber
-	 * @param binarySMS
-	 * @return
-	 * @throws Exception
-	 */
-	public SMSCorrespondent getSendingCorrespondentFor(PhoneNumber phoneNumber, boolean binarySMS) throws Exception
-	{
-		// Try to find sender:
-		SMSCorrespondent corr = transmissionStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
-		if(corr == null)
-			// make new correspondent
-			corr = new SMSCorrespondent(Correspondent.UNKNOWN_SENDER_NAME, phoneNumber, binarySMS);
-		return corr;
-	}
-
-	/**
-	 * @param msg
-	 */
-	public synchronized void receiveSMS(Message<?, ?> msg) throws Exception
-	{
-		try
-		{
-			// Receive the message:
-			smsReceiver.receive(msg);
-			SMSTransmission<?> smsTrans = smsReceiver.transmission;
-			
-			// Store transmission:
-			transmissionStore.store(smsTrans);
-			
-			// Try receiving the transmission:
-			if(!smsTrans.isComplete())
-			{	// Transmission incomplete, we need to wait for more parts and schedule a resend request (in case they don't come):
-				addLogLine("INCOMING", "Transmission incomplete (got " + smsTrans.getCurrentNumberOfParts() + "/" + smsTrans.getTotalNumberOfParts() + " parts) waiting for others...");
-				scheduleSMSResendRequest(smsTrans.getLocalID(), smsTrans.getNextResendRequestSendingTime());
-			}	
-			else
-			{	// Transmission is complete ...
-				if(smsTrans.getTotalNumberOfParts() > 1) // ... and consisted of more than one part:
-					cancelSMSResendRequest(smsTrans.getLocalID()); // cancel any pending resend requests
-				// Further (payload) receiving work:
-				doReceive(smsReceiver.transmission);
-			}
-		}
-		catch(Exception e)
-		{
-			addLogLine("ERROR", "Upon SMS message reception", ExceptionHelpers.getMessageAndCause(e));
-			throw e;
-		}
-	}
-
-	/**
-	 * @param localID local ID of an incomplete SMSTransmission (i.e. the subject of the resend request)
-	 * @param force if {@code true} the request is sent even if it is too early
-	 * @return whether or not future resend requests may needed for this transmission 
-	 * @throws Exception
-	 */
-	public synchronized void sendSMSResendRequest(int localID, boolean force)
-	{
-		// Query for the subject transmission:
-		Transmission<?> trans = transmissionStore.retrieveTransmission(true, localID);
-		
-		// Check if it makes sense to send the request...
-		if(trans == null || !( trans instanceof SMSTransmission) || trans.isComplete())
-			return;
-
-		// Cast to SMSTransmission:
-		final SMSTransmission<?> smsTrans = (SMSTransmission<?>) trans;
-		
-		// Further checks...
-		TimeStamp sendReqAt = smsTrans.getNextResendRequestSendingTime();
-		if(sendReqAt == null || (!force && sendReqAt.isAfter(TimeStamp.now())))
-			return; // either no more reqs are allowed, or it is too early to send the next one (shouldn't happen)
-		
-		addLogLine("PREPARING", "Outgoing resend request for incomplete transmission with local ID: " + localID);
-		
-		// Send request:
-		storeAndSendResponse(new ResendRequestPayload(smsTrans, this));
-	}
-	
-	/**
-	 * Schedules resend requests for all incomplete SMSTransmissions
-	 * To be called upon device boot.
-	 * 
-	 * @return whether any requests were scheduled
-	 * @throws Exception
-	 */
-	public synchronized boolean scheduleSMSResendRequests() throws Exception
-	{
-		// Query for incomplete SMSTransmissions:
-		List<SMSTransmission<?>> incompleteSMSTs = transmissionStore.retrieveIncompleteSMSTransmissions();		
-		addLogLine("Incomplete SMS transmissions found: " + incompleteSMSTs.size());
-		
-		boolean atLeast1 = false;
-		for(SMSTransmission<?> incomplete : incompleteSMSTs)
-		{
-			TimeStamp sendReqAt = incomplete.getNextResendRequestSendingTime();
-			if(sendReqAt != null)
-			{
-				scheduleSMSResendRequest(incomplete.getLocalID(), sendReqAt);
-				atLeast1 = true;
-			}
-		}
-		return atLeast1;
-	}
-	
-	/**
-	 * @param localID local ID of an incomplete SMSTransmission
-	 * @param time at which to send the request
-	 */
-	public abstract void scheduleSMSResendRequest(int localID, TimeStamp time);
-	
-	/**
-	 * @param localID local ID of an incomplete SMSTransmission
-	 */
-	protected abstract void cancelSMSResendRequest(int localID);
-	
-	/**
-	 * Helper class to handle incoming SMS messages
-	 * 
-	 * @author mstevens
-	 */
-	private class SMSReceiver implements Message.Handler
-	{
-		
-		public SMSTransmission<?> transmission;
-		
-		public void receive(Message<?, ?> smsMsg)
-		{
-			transmission = null; // wipe previous transmission !!!
-			try
-			{	// try finding an (incomplete) transmission this message belongs to (assuming this is not the first part):
-				transmission = (SMSTransmission<?>) transmissionStore.retrieveTransmission(true, smsMsg.getTransmissionType(), smsMsg.getSender(), smsMsg.getSendingSideTransmissionID(), smsMsg.getPayloadHash(), smsMsg.getTotalParts());
-			}
-			catch(UnknownCorrespondentException uce)
-			{
-				// ignore (this just means this is the first SMS te be received from that sender)
-			}
-			catch(Exception e)
-			{
-				addLogLine("ERROR", "Upon querying for existing SMS transmission", ExceptionHelpers.getMessageAndCause(e));
-			}
-			
-			// Handle specific message type:
-			smsMsg.handle(this);
-		}
-		
-		@Override
-		public void handle(BinaryMessage binSms)
-		{
-			log(binSms, true);
-			if(transmission == null)
-				// we received the first part
-				transmission = new BinarySMSTransmission(transmissionClient, binSms);
-			else
-				// this is not the first part, add it to the existing transmission:
-				((BinarySMSTransmission) transmission).addPart(binSms);
-		}
-
-		@Override
-		public void handle(TextMessage txtSms)
-		{
-			log(txtSms, false);
-			if(transmission == null)
-				// we received the first part
-				transmission = new TextSMSTransmission(transmissionClient, txtSms);
-			else
-				// this is not the first part, add it to the existing transmission:
-				((TextSMSTransmission) transmission).addPart(txtSms);
-		}
-		
-		private void log(Message<?, ?> msg, boolean binary)
-		{
-			addLogLine(	"INCOMING", "SMS", binary ? "Binary" : "Text",
-						"SendingSideTransmissionID: " + msg.getSendingSideTransmissionID(),
-						"Part: " + msg.getPartNumber() + "/" + msg.getTotalParts(),
-						"From: "+ msg.getSender());
-		}
-		
-	}
 	
 	/**
 	 * Helper class with "handle" methods for different payload types (called once the transmission is complete).
@@ -722,35 +520,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 		
 		@Override
-		public void handle(final ResendRequestPayload resendReq) throws Exception
-		{
-			handleResponse(resendReq, new ResponseSubjectHandler()
-			{
-				@Override
-				public void announce(Transmission<?> responseSubject)
-				{
-					addLogLine(	"INCOMING", "Payload", "ResendReq",
-							"Subject local ID: " + resendReq.getSubjectSenderSideID(),
-							"Subject hash: " + resendReq.getSubjectPayloadHash(),
-							"Subject total parts: " + resendReq.getSubjectTotalParts(),
-							"Requested part numbers: " + StringUtils.join(resendReq.getRequestedPartNumbers(), ", "),
-							"Subject found: " + (responseSubject != null));
-				}
-				
-				@Override
-				public void handle(Transmission<?> responseSubject) throws Exception
-				{
-					SMSTransmission<?> smsTransmission = (SMSTransmission<?>) responseSubject;
-					if(!smsTransmission.isReceived()) // ... and we haven't received a ACK yet (check just in case):
-					{
-						// Resend requested parts:
-						smsTransmission.resend(TransmissionController.this, resendReq.getRequestedPartNumbers());
-					}
-				}
-			});		
-		}
-		
-		@Override
 		public void handle(final ModelRequestPayload modelRequestPayload) throws Exception
 		{
 			handleResponse(modelRequestPayload, new ResponseSubjectHandler()
@@ -800,28 +569,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(NoSuchTransmissionPayload noSuchTransmissionPayload) throws Exception
 		{
-			Transmission<?> subject = transmissionStore.retrieveTransmission(false, noSuchTransmissionPayload.getSubjectSenderSideID(), noSuchTransmissionPayload.getSubjectPayloadHash());
-			
-			addLogLine(	"INCOMING", "Payload", "NoSuchTransmission",
-						"Subject local ID: " + noSuchTransmissionPayload.getSubjectSenderSideID(),
-						"Subject hash: " + noSuchTransmissionPayload.getSubjectPayloadHash(),
-						"Subject found: " + (subject != null));
-			
-			if(subject != null && subject.getPayloadType() == Payload.BuiltinType.ResendRequest.ordinal())
-			{	// Stop future resend requests:
-				try
-				{
-					SMSTransmission<?> incompleteSMST = (SMSTransmission<?>) transmissionStore.retrieveTransmission(true, noSuchTransmissionPayload.getOriginalSubjectSendingSideID());
-					addLogLine("Canceling furter resend requests for received SMSTransmission (localID: " + incompleteSMST.getLocalID() + ")");
-					cancelSMSResendRequest(incompleteSMST.getLocalID());
-					incompleteSMST.setNumberOfSentResendRequests(SMSTransmission.MAX_RESEND_REQUESTS + 1);
-					transmissionStore.store(incompleteSMST);
-				}
-				catch(Exception e)
-				{
-					transmissionClient.logError("Error upon handling NoSuchTransmissionPayload reply to ResendRequestPayload", e);
-				}
-			}
 		}
 		
 	}
@@ -843,7 +590,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	private class DefaultPayloadReceiver extends PayloadReceiver
 	{
-
 		@Override
 		public void handle(Payload customPayload, int type) throws Exception
 		{
@@ -871,12 +617,6 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		public void handle(AckPayload ackPayload) throws Exception
 		{
 			// never happens because AckPayload#acknowledgeReception() returns false.
-		}
-
-		@Override
-		public void handle(ResendRequestPayload resendRequestPayload) throws Exception
-		{
-			// never happens because ResendRequestPayload#acknowledgeReception() returns false.
 		}
 
 		@Override

@@ -25,6 +25,7 @@
 	    android:id="@+id/btnSMSReceiver"
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
+		android:visibility="gone"
 	    android:drawableLeft="@drawable/ic_sms_black_36dp"
 	    android:drawableStart="@drawable/ic_sms_black_36dp"
 	    android:text="@string/SMSReceiver" />

@@ -26,7 +26,7 @@ import com.caverock.androidsvg.SVG;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.PictureDrawable;
-import android.support.v4.view.ViewCompat;
+import androidx.core.view.ViewCompat;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;

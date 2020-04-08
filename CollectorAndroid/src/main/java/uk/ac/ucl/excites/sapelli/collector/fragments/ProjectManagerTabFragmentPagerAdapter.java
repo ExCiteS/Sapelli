@@ -27,8 +27,8 @@ import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.ExportTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.MainTabFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.tabs.TransmissionTabFragment;
 import android.content.Context;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
 import android.util.Log;
 
 /**

@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.transmission.util;
 
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 
 /**
  * @author mstevens
@@ -55,14 +54,6 @@ public class IncompleteTransmissionException extends TransmissionReceivingExcept
 	public IncompleteTransmissionException(Transmission<?> transmission)
 	{
 		super(transmission, "Incomplete transmission");
-	}
-	
-	/**
-	 * @param transmission
-	 */
-	public IncompleteTransmissionException(SMSTransmission<?> transmission)
-	{
-		super(transmission, "Incomplete transmission, " + (transmission.getTotalNumberOfParts() - transmission.getCurrentNumberOfParts()) + "/" + transmission.getTotalNumberOfParts() + " parts missing");
 	}
 
 }
