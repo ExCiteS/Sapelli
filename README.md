@@ -13,6 +13,7 @@ Sapelli is being developed by the [Extreme Citizen Science (ExCiteS) research gr
 Currently the core Sapelli team consists of:
   * [Dr Matthias Stevens](https://github.com/mstevens83), [UCL](https://www.ucl.ac.uk/excites/people/affiliated-staff/matthias)/[iMinds](http://www.iminds.be/en/profiles/2016/07/12/matthias-stevens): lead architect/developer
   * [Michalis Vitos](https://github.com/michalis-vitos), UCL: developer
+  * [Gulbala Salamov](https://github.com/gulbalasalamov), UCL: developer
   * [Julia Altenbuchner](https://github.com/julia-altenbuchner), UCL: developer
   * [Gillian Conquest](http://gillconquest.co.uk), UCL: anthropologist, field tester
   * [Carolina Comandulli](https://www.ucl.ac.uk/excites/people/phd-students/carolina-comandulli), UCL: anthropologist, field tester
